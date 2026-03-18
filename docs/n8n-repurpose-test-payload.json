@@ -1,0 +1,33 @@
+{
+  "jobId": "test-job-aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee",
+  "userId": "test-user-id",
+  "fileUrl": "https://media.istockphoto.com/id/695729088/video/tossing-coin-to-flip-on-heads-or-tails.mp4?s=mp4-640x640-is&k=20&c=8W2UBDeMwSk-CHS0qv2jmzcRNR3DJFtorsn_u-8MBL0=",
+  "watermarkUrl": null,
+  "settings": {
+    "copies": 1,
+    "filters": {},
+    "metadata": {
+      "device_metadata": { "enabled": true, "platform": "iphone", "modelKey": "" },
+      "timestamps": { "enabled": true, "date_taken": "2025-03-15T12:00:00.000Z" },
+      "gps_location": { "enabled": true, "mode": "pinpoint", "country": "US", "lat": 39.8, "lng": -98.5 }
+    }
+  },
+  "isImage": false,
+  "callbackUrl": "https://YOUR_APP_URL/api/video-repurpose/n8n-callback",
+  "secret": "YOUR_N8N_CALLBACK_SECRET",
+  "copies": 1,
+  "metadataInstruction": {
+    "creationTime": "2025-03-15T12:00:00.000Z",
+    "comment": "Recorded on iPhone 16 Pro",
+    "encoder": "Apple iPhone 16 Pro",
+    "gps": { "lat": 39.8, "lng": -98.5, "alt": 120 }
+  },
+  "ffmpegCommand": "-i {input} -c copy -metadata creation_time=2025-03-15T12:00:00.000Z -metadata comment=\"Recorded on iPhone 16 Pro\" {output}",
+  "outputs": [
+    {
+      "fileName": "repurpose_001.mp4",
+      "uploadUrl": "https://YOUR_R2_PRESIGNED_PUT_URL",
+      "fileUrl": "https://YOUR_R2_PUBLIC_URL/repurpose/test-user-id/test-job-aaaaaaaa-bbbb-4ccc-dddd-eeeeeeeeeeee/repurpose_001.mp4"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    
+    <!-- Primary Meta Tags -->
+    <title>ModelClone - AI Identity Recreation & Video Generation</title>
+    <meta name="title" content="ModelClone - AI Identity Recreation & Video Generation" />
+    <meta name="description" content="Transform any motion into your personalized video with AI-powered identity recreation. Create professional images and videos with your AI model." />
+    <meta name="keywords" content="AI video generation, identity recreation, AI model, video creation, motion transfer, content creation, deepfake alternative" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://modelclone.app/" />
+    <meta property="og:title" content="ModelClone - AI Identity Recreation & Video Generation" />
+    <meta property="og:description" content="Transform any motion into your personalized video with AI-powered identity recreation." />
+    <meta property="og:image" content="/og-image.jpg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://modelclone.app/" />
+    <meta property="twitter:title" content="ModelClone - AI Identity Recreation & Video Generation" />
+    <meta property="twitter:description" content="Transform any motion into your personalized video with AI-powered identity recreation." />
+    <meta property="twitter:image" content="/og-image.jpg" />
+
+    <!-- Favicon & PWA -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#a855f7" />
+    
+    <!-- Additional -->
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://modelclone.app/" />
+    
+    <!-- Rewardful Affiliate Tracking -->
+    <script>
+    (function(w,r){w._rwq=r;w[r]=w[r]||function(){(w[r].q=w[r].q||[]).push(arguments)}})(window,'rewardful');
+    </script>
+    <script async src='https://r.wdfl.co/rw.js' data-rewardful='%VITE_REWARDFUL_API_KEY%'></script>
+    
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '2646986295699980');
+    fbq('track', 'PageView');
+    </script>
+    <!-- End Meta Pixel Code -->
+  </head>
+  <body style="background:#000">
+    <!-- Meta Pixel noscript fallback -->
+    <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2646986295699980&ev=PageView&noscript=1" /></noscript>
+    <div id="root"></div>
+    <script>
+    // Guard: browser translate tools (Google Translate, etc.) wrap text nodes in <font> tags,
+    // which corrupts React's virtual DOM diffing. This intercepts the crash and reloads the page
+    // cleanly rather than showing a broken white screen.
+    (function() {
+      var _origInsertBefore = Node.prototype.insertBefore;
+      Node.prototype.insertBefore = function(newNode, refNode) {
+        try {
+          return _origInsertBefore.call(this, newNode, refNode);
+        } catch (e) {
+          if (e instanceof TypeError && refNode && refNode.parentNode !== this) {
+            // Translation tool moved a reference node — silently append instead
+            try { return this.appendChild(newNode); } catch (_) {}
+            return newNode;
+          }
+          throw e;
+        }
+      };
+    })();
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,5223 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
+import {
+  Flame,
+  Sparkles,
+  Check,
+  ChevronDown,
+  Loader2,
+  RefreshCcw,
+  Download,
+  AlertTriangle,
+  Lock,
+  Unlock,
+  Image as ImageIcon,
+  Video,
+  Wand2,
+  Camera,
+  User,
+  Users,
+  Zap,
+  Coins,
+  Eye,
+  X,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Grid3X3,
+  Settings,
+  Info,
+  Save,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Layers,
+  FastForward,
+  Play,
+  ScanSearch,
+  Edit3,
+  RefreshCw,
+  Search,
+  Upload,
+} from "lucide-react";
+import {
+  MagnifyingGlass,
+  CaretUpDown,
+  CheckCircle,
+  Lightning,
+  Sparkle,
+  Warning,
+  UserCircle,
+  Trash,
+  FloppyDisk,
+  PencilSimple,
+  ArrowsClockwise,
+  StackSimple,
+} from "@phosphor-icons/react";
+import { Badge } from "../components/ui/badge";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { cn } from "../lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import api from "../services/api";
+import { useAuthStore } from "../store";
+import { sound } from "../utils/sounds";
+import { useCachedModels } from "../hooks/useCachedModels";
+import { useDraft } from "../hooks/useDraft";
+import AddCreditsModal from "../components/AddCreditsModal";
+import { useGenerations } from "../hooks/useGenerations";
+import { useNsfwGallery } from "../hooks/useNsfwGallery";
+import AppSidebar from "../components/AppSidebar";
+import LazyVideo from "../components/LazyVideo";
+import CourseTipBanner from "../components/CourseTipBanner";
+import { selectorCategories, buildSelectionsString, buildSelectionsSummary, applyChipConstraints, getBlockedChips, SCENE_PRESETS } from "../data/nsfwSelectors";
+
+const RED_CORNER_GLOW_STYLE = {
+  background:
+    "radial-gradient(ellipse 100% 100% at 0% 0%, rgba(244,63,94,0.24) 0%, rgba(244,63,94,0.08) 42%, transparent 68%)",
+};
+const PREVIEW_BADGE_STYLE = {
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.18)",
+  color: "#E5E7EB",
+};
+
+function useMainViewportBounds() {
+  const [bounds, setBounds] = useState({ left: 0, width: null });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let rafId = 0;
+    let ro = null;
+    let mo = null;
+    const update = () => {
+      const mainEl = document.querySelector("main");
+      if (mainEl && window.innerWidth >= 768) {
+        const rect = mainEl.getBoundingClientRect();
+        setBounds({ left: Math.max(0, Math.round(rect.left)), width: Math.max(320, Math.round(rect.width)) });
+      } else {
+        setBounds({ left: 0, width: null });
+      }
+    };
+    const schedule = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(update);
+    };
+
+    schedule();
+    window.addEventListener("resize", schedule);
+    const mainEl = document.querySelector("main");
+    if (mainEl && "ResizeObserver" in window) {
+      ro = new ResizeObserver(schedule);
+      ro.observe(mainEl);
+    }
+    if (mainEl && "MutationObserver" in window) {
+      mo = new MutationObserver(schedule);
+      mo.observe(mainEl, { attributes: true, attributeFilter: ["class", "style"] });
+    }
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", schedule);
+      if (ro) ro.disconnect();
+      if (mo) mo.disconnect();
+    };
+  }, []);
+
+  return bounds;
+}
+
+
+// ============================================
+// Gallery Picker for NSFW Face Swap
+// SECURITY: Only shows images generated for the selected model
+// ============================================
+function NsfwFaceSwapGalleryPicker({ modelId, selectedImage, onSelect }) {
+  const { all: allGenerations } = useGenerations("all");
+  
+  const modelImages = allGenerations.filter(g => 
+    g.modelId === modelId && 
+    g.status === 'completed' && 
+    g.outputUrl &&
+    ['prompt-image', 'image', 'image-identity', 'face-swap-image', 'nsfw'].includes(g.type)
+  );
+
+  if (modelImages.length === 0) {
+    return (
+      <div className="mt-3 p-4 rounded-lg text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
+        <ImageIcon className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+        <p className="text-xs text-slate-500">No images in gallery for this model</p>
+        <p className="text-[10px] text-slate-600 mt-1">Generate images first, then select one for face swap</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3">
+      <p className="text-[10px] text-slate-500 mb-2">Select source image for face swap:</p>
+      <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5">
+        {modelImages.slice(0, 18).map((gen) => (
+          <button
+            key={gen.id}
+            onClick={() => {
+             
+              onSelect(selectedImage?.id === gen.id ? null : { id: gen.id, url: gen.outputUrl });
+            }}
+            className="relative rounded-lg overflow-hidden transition-all aspect-square hover:scale-105"
+            style={{
+              border: selectedImage?.id === gen.id ? '2px solid rgba(34,211,238,0.8)' : '1px solid rgba(255,255,255,0.1)',
+              boxShadow: selectedImage?.id === gen.id ? '0 0 10px rgba(34,211,238,0.3)' : 'none',
+            }}
+            data-testid={`nsfw-faceswap-image-${gen.id}`}
+          >
+            <img src={gen.outputUrl} alt="Gallery" className="w-full h-full object-cover" />
+            {selectedImage?.id === gen.id && (
+              <div className="absolute inset-0 bg-cyan-500/30 flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-white" />
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+      {selectedImage && (
+        <p className="text-[10px] text-cyan-400 mt-2 flex items-center gap-1">
+          <CheckCircle2 className="w-3 h-3" />
+          Face swap source selected
+        </p>
+      )}
+      {!selectedImage && (
+        <p className="text-[10px] text-amber-400 mt-2">
+          No image selected - will use auto-generated face reference
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// NSFW Gallery - Full image gallery with grid, preview, download, pagination
+// ============================================
+function NsfwGallery({ modelId }) {
+  const [page, setPage] = useState(1);
+  const pageSize = 24;
+  const { data, isLoading, processingCount } = useNsfwGallery(modelId, page, pageSize);
+  const [previewGen, setPreviewGen] = useState(null);
+  const viewportBounds = useMainViewportBounds();
+
+  const generations = data?.generations || [];
+  const total = data?.pagination?.total || 0;
+  const totalPages = Math.ceil(total / pageSize);
+
+  const completedGens = generations.filter(g => g.outputUrl);
+
+  const parseUrls = (outputUrl) => {
+    if (!outputUrl) return [];
+    try {
+      const parsed = JSON.parse(outputUrl);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+    return [outputUrl];
+  };
+
+  const handleDownload = (url, genId, index = 0) => {
+    const lowerUrl = url.toLowerCase();
+    const ext = lowerUrl.includes(".mp4") ? "mp4" : lowerUrl.includes(".webm") ? "webm" : "jpg";
+    const filename = `nsfw-${genId ? genId.substring(0, 8) : "image"}-${index + 1}.${ext}`;
+    const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  return (
+    <div
+      className="rounded-2xl p-4 sm:p-5"
+      style={{
+        background: "linear-gradient(180deg, rgba(15,15,23,0.9) 0%, rgba(10,10,18,0.95) 100%)",
+        border: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Grid3X3 className="w-4 h-4 text-white" />
+          <h3 className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">
+            Gallery
+          </h3>
+          {total > 0 && (
+            <span
+              className="px-2 py-0.5 rounded-full text-[9px] font-medium"
+              style={{ background: "rgba(255,255,255,0.9)", color: "#111827" }}
+            >
+              {total} total
+            </span>
+          )}
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 rounded-lg text-slate-400 disabled:opacity-30 transition-colors"
+              style={{ background: "rgba(255,255,255,0.05)" }}
+              data-testid="button-gallery-prev"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[10px] text-slate-500">
+              {page}/{totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-1.5 rounded-lg text-slate-400 disabled:opacity-30 transition-colors"
+              style={{ background: "rgba(255,255,255,0.05)" }}
+              data-testid="button-gallery-next"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Processing indicator */}
+      {processingCount > 0 && (
+        <div
+          className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl"
+          style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)" }}
+        >
+          <Loader2 className="w-4 h-4 animate-spin text-red-400" />
+          <span className="text-[11px] text-red-300">
+            {processingCount} image{processingCount > 1 ? "s" : ""} generating...
+          </span>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
+        </div>
+      ) : completedGens.length === 0 && processingCount === 0 ? (
+        <div className="text-center py-10">
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+          >
+            <ImageIcon className="w-6 h-6 text-slate-600" />
+          </div>
+          <p className="text-[12px] text-slate-500">No images generated yet</p>
+          <p className="text-[10px] text-slate-600 mt-1">Generate your first image above</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+          {completedGens.map((gen) => {
+            const urls = parseUrls(gen.outputUrl);
+            const thumbnailUrl = urls[0];
+            return (
+              <div
+                key={gen.id}
+                className="relative aspect-[3/4] rounded-xl overflow-hidden cursor-pointer group"
+                style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+                onClick={() => setPreviewGen(gen)}
+                data-testid={`gallery-image-${gen.id}`}
+              >
+                <img
+                  src={thumbnailUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between">
+                  <span className="text-[9px] text-white/70">
+                    {new Date(gen.createdAt).toLocaleDateString()}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    {urls.length > 1 && (
+                      <span
+                        className="px-1.5 py-0.5 rounded text-[8px] font-bold"
+                        style={{ background: "rgba(139,92,246,0.9)", color: "#fff" }}
+                      >
+                        {urls.length}
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownload(thumbnailUrl, gen.id, 0);
+                      }}
+                      className="p-1 rounded-md"
+                      style={{ background: "rgba(0,0,0,0.5)" }}
+                      data-testid={`button-download-${gen.id}`}
+                    >
+                      <Download className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Preview Modal - Responsive, fits screen */}
+      {previewGen && createPortal(
+        <div
+          className="fixed inset-y-0 right-0 bg-black/95 backdrop-blur-sm z-[9999] flex items-center justify-center"
+          style={{ left: viewportBounds.left, width: viewportBounds.width ? `${viewportBounds.width}px` : undefined }}
+          onClick={() => setPreviewGen(null)}
+        >
+          <div
+            className="relative flex flex-col w-full max-w-[86vw] sm:max-w-[72vw] md:max-w-[56vw] lg:max-w-[42vw] max-h-[84vh] rounded-2xl overflow-hidden"
+            style={{ background: "linear-gradient(180deg, rgba(17,17,26,0.97) 0%, rgba(10,10,18,0.98) 100%)", border: "1px solid rgba(255,255,255,0.2)", boxShadow: "0 12px 42px rgba(0,0,0,0.45)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewGen(null)}
+              className="absolute top-3 right-3 z-10 p-2 rounded-full transition-all"
+              style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.2)" }}
+              data-testid="button-close-preview"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+
+            <div className="flex-1 min-h-0 overflow-auto">
+              {(() => {
+                const urls = parseUrls(previewGen.outputUrl);
+                if (urls.length === 1) {
+                  return (
+                    <div className="flex items-center justify-center p-2 sm:p-3">
+                      <img
+                        src={urls[0]}
+                        alt=""
+                        className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                      />
+                    </div>
+                  );
+                }
+                return (
+                  <div className="p-3 sm:p-4">
+                    <div className={`grid gap-2.5 ${urls.length === 2 ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
+                      {urls.map((url, idx) => (
+                        <div key={idx} className="relative group/img">
+                          <img
+                            src={url}
+                            alt=""
+                            className="w-full h-auto rounded-lg object-cover aspect-[3/4] cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDownload(url, previewGen.id, idx); }}
+                            className="absolute bottom-2 right-2 p-2 rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity bg-white border border-white/20"
+                          >
+                            <Download className="w-4 h-4 text-black" />
+                          </button>
+                          <div
+                            className="absolute top-2 left-2 px-2 py-1 rounded-md text-[10px] font-medium"
+                            style={{ background: "rgba(0,0,0,0.6)", color: "#fff" }}
+                          >
+                            {idx + 1}/{urls.length}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div
+              className="flex-shrink-0 px-3 py-2.5 sm:px-4 sm:py-3"
+              style={{ background: "rgba(0,0,0,0.3)", borderTop: "1px solid rgba(255,255,255,0.2)" }}
+            >
+              {(() => {
+                let loraInfo = null;
+                try {
+                  if (previewGen.inputImageUrl) {
+                    loraInfo = JSON.parse(previewGen.inputImageUrl);
+                  }
+                } catch {}
+                return (
+                  <>
+                    {previewGen.prompt && (
+                      <div className="mb-2">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Prompt</p>
+                        <p className="text-[11px] text-slate-300 leading-relaxed" data-testid="text-preview-prompt">
+                          {previewGen.prompt}
+                        </p>
+                      </div>
+                    )}
+                    {loraInfo && (
+                      <>
+                        <div className="flex flex-wrap gap-1.5 mb-2" data-testid="generation-payload-badges">
+                          {(loraInfo.loraName || loraInfo.triggerWord) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-lora-name">
+                              <Layers className="w-3 h-3" />
+                              {loraInfo.loraName || loraInfo.triggerWord}
+                            </span>
+                          )}
+                          {loraInfo.triggerWord && loraInfo.loraName && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-trigger-word">
+                              {loraInfo.triggerWord}
+                            </span>
+                          )}
+                          {(loraInfo.girlLoraStrength != null || loraInfo.loraStrength != null) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-lora-strength">
+                              <Zap className="w-3 h-3" />
+                              Girl {loraInfo.girlLoraStrength ?? loraInfo.loraStrength}
+                            </span>
+                          )}
+                          {loraInfo.clipStrength != null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-clip-strength">
+                              CLIP {loraInfo.clipStrength}
+                            </span>
+                          )}
+                          {loraInfo.activePose && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-pose">
+                              Pose: {loraInfo.activePose.replace(/_/g, " ")} @ {loraInfo.activePoseStrength}
+                            </span>
+                          )}
+                          {loraInfo.runningMakeup && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-makeup">
+                              Makeup @ {loraInfo.runningMakeupStrength}
+                            </span>
+                          )}
+                          {loraInfo.cumEffect && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-cum">
+                              Cum FX
+                            </span>
+                          )}
+                          {loraInfo.seed != null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-seed">
+                              Seed {loraInfo.seed}
+                            </span>
+                          )}
+                          {loraInfo.steps != null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-steps">
+                              {loraInfo.steps} steps
+                            </span>
+                          )}
+                          {loraInfo.cfg != null && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-cfg">
+                              CFG {loraInfo.cfg}
+                            </span>
+                          )}
+                          {loraInfo.width && loraInfo.height && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-resolution">
+                              {loraInfo.width}x{loraInfo.height}
+                            </span>
+                          )}
+                        </div>
+                        {loraInfo.negativePrompt && (
+                          <details className="mb-2">
+                            <summary className="text-[10px] uppercase tracking-wider text-slate-500 cursor-pointer select-none">
+                              Negative Prompt
+                            </summary>
+                            <p className="text-[10px] text-slate-400 leading-relaxed mt-1" data-testid="text-negative-prompt">
+                              {loraInfo.negativePrompt}
+                            </p>
+                          </details>
+                        )}
+                        {loraInfo.builtPrompt && (
+                          <details className="mb-2">
+                            <summary className="text-[10px] uppercase tracking-wider text-slate-500 cursor-pointer select-none">
+                              Full Built Prompt
+                            </summary>
+                            <p className="text-[10px] text-slate-400 leading-relaxed mt-1" data-testid="text-built-prompt">
+                              {loraInfo.builtPrompt}
+                            </p>
+                          </details>
+                        )}
+                      </>
+                    )}
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[10px] text-slate-500">
+                        {new Date(previewGen.createdAt).toLocaleString()}
+                      </p>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {parseUrls(previewGen.outputUrl).length > 1 && (
+                          <button
+                            onClick={() => {
+                              parseUrls(previewGen.outputUrl).forEach((url, i) => {
+                                setTimeout(() => handleDownload(url, previewGen.id, i), i * 500);
+                              });
+                            }}
+                            className="px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1.5 text-white"
+                            style={{ background: "rgba(255,255,255,0.1)" }}
+                            data-testid="button-download-all"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            All
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDownload(parseUrls(previewGen.outputUrl)[0], previewGen.id, 0)}
+                          className="px-3 py-1.5 rounded-lg text-[11px] font-medium flex items-center gap-1.5 text-black bg-white border border-white/20"
+                          data-testid="button-download-single"
+                        >
+                          <Download className="w-3.5 h-3.5 text-black" />
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// NSFW Img2Img Tab — Photo-to-Photo with LoRA
+// ============================================
+function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
+  const { refreshUserCredits } = useAuthStore();
+  const { draft: i2iDraft, isLoading: i2iDraftLoading, saveDraft: saveI2iDraft, clearDraft: clearI2iDraft } = useDraft("nsfw-img2img");
+  const i2iDraftRestoredRef = useRef(false);
+  const i2iInitialLoadDoneRef = useRef(false);
+
+  // Source image selection — "gallery" or "upload"
+  const [sourceMode, setSourceMode] = useState("gallery");
+  const [galleryPage, setGalleryPage] = useState(1);
+  const [sourceImageUrl, setSourceImageUrl] = useState(null);
+  const [uploadedBase64, setUploadedBase64] = useState(null);
+  const [uploadedPreview, setUploadedPreview] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Describe step
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState(null);
+  const [rawDescription, setRawDescription] = useState("");
+  const [editablePrompt, setEditablePrompt] = useState("");
+
+  // Generate step
+  const [loraStrength, setLoraStrength] = useState(0.80);
+  const [denoise, setDenoise] = useState(0.65);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [jobId, setJobId] = useState(null);
+  const [jobStatus, setJobStatus] = useState(null);
+  const [outputUrl, setOutputUrl] = useState(null);
+  const [genError, setGenError] = useState(null);
+  const [bgJobs, setBgJobs] = useState([]); // [{jobId, status, outputUrl, error, prompt}]
+  const pollRef = useRef(null);
+  const bgPollRefs = useRef({});
+
+  useEffect(() => {
+    if (i2iDraftLoading || i2iDraftRestoredRef.current) {
+      if (!i2iDraftLoading) {
+        i2iDraftRestoredRef.current = true;
+        setTimeout(() => { i2iInitialLoadDoneRef.current = true; }, 0);
+      }
+      return;
+    }
+    i2iDraftRestoredRef.current = true;
+    if (!i2iDraft?.data) {
+      setTimeout(() => { i2iInitialLoadDoneRef.current = true; }, 0);
+      return;
+    }
+    const d = i2iDraft.data;
+    if (d.sourceMode) setSourceMode(d.sourceMode);
+    if (d.sourceImageUrl) setSourceImageUrl(d.sourceImageUrl);
+    if (d.rawDescription) setRawDescription(d.rawDescription);
+    if (d.editablePrompt) setEditablePrompt(d.editablePrompt);
+    if (d.loraStrength !== undefined) setLoraStrength(Math.max(0.65, d.loraStrength));
+    if (d.denoise !== undefined) setDenoise(d.denoise);
+    if (d.outputUrl) setOutputUrl(d.outputUrl);
+    setTimeout(() => { i2iInitialLoadDoneRef.current = true; }, 0);
+  }, [i2iDraftLoading, i2iDraft]);
+
+  useEffect(() => {
+    if (!i2iInitialLoadDoneRef.current) return;
+    const data = {
+      sourceMode,
+      sourceImageUrl,
+      rawDescription,
+      editablePrompt,
+      loraStrength,
+      denoise,
+      outputUrl,
+    };
+    const imageUrls = [sourceImageUrl, outputUrl].filter(Boolean);
+    saveI2iDraft(data, imageUrls);
+  }, [sourceMode, sourceImageUrl, rawDescription, editablePrompt, loraStrength, denoise, outputUrl]);
+
+  const pageSize = 12;
+  const { data: imageData, isLoading: imagesLoading } = useQuery({
+    queryKey: ["nsfw-i2i-source-images", modelId, galleryPage],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        type: "nsfw",
+        status: "completed",
+        limit: String(pageSize),
+        offset: String((galleryPage - 1) * pageSize),
+      });
+      if (modelId) params.set("modelId", modelId);
+      const response = await api.get(`/generations?${params}`);
+      return {
+        generations: response.data.generations || [],
+        pagination: response.data.pagination || { total: 0 },
+      };
+    },
+    enabled: !!modelId,
+    staleTime: 15000,
+  });
+
+  const sourceImages = imageData?.generations || [];
+  const totalImages = imageData?.pagination?.total || 0;
+  const totalPages = Math.ceil(totalImages / pageSize);
+
+  // Whether we have a source ready
+  const hasSource = sourceMode === "gallery" ? !!sourceImageUrl : !!uploadedBase64;
+  // Preview URL for the source image
+  const sourcePreviewUrl = sourceMode === "gallery" ? sourceImageUrl : uploadedPreview;
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset analysis when new file is chosen
+    setRawDescription("");
+    setEditablePrompt("");
+    setAnalyzeError(null);
+    setOutputUrl(null);
+    setGenError(null);
+    // Object URL for preview
+    if (uploadedPreview) URL.revokeObjectURL(uploadedPreview);
+    setUploadedPreview(URL.createObjectURL(file));
+    // Convert to base64 (strip data: prefix)
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const b64 = ev.target.result.split(",")[1];
+      setUploadedBase64(b64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAnalyze = async () => {
+    if (!hasSource) return;
+    if (!activeLoraObj?.triggerWord && !activeLoraObj?.loraTriggerWord) {
+      toast.error("No active LoRA with a trigger word found.");
+      return;
+    }
+    setIsAnalyzing(true);
+    setAnalyzeError(null);
+    setRawDescription("");
+    setEditablePrompt("");
+    setOutputUrl(null);
+    setGenError(null);
+    setJobId(null);
+    setJobStatus(null);
+    try {
+      const triggerWord = activeLoraObj.loraTriggerWord || activeLoraObj.triggerWord;
+      const loraAppearance = (() => {
+        const raw = activeLoraObj.defaultAppearance;
+        if (!raw) return {};
+        if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
+        return raw;
+      })();
+      const appearanceKeys = [
+        "ethnicity", "hairColor", "hairType", "skinTone", "eyeColor", "eyeShape",
+        "faceShape", "noseShape", "lipSize", "bodyType", "height",
+        "breastSize", "buttSize", "waist", "hips", "tattoos",
+      ];
+      const merged = {};
+      for (const k of appearanceKeys) {
+        merged[k] = loraAppearance[k] || chipSelections[k] || "";
+      }
+      const labelMap = {
+        ethnicity: "ethnicity", hairColor: "hair color", hairType: "hair style",
+        skinTone: "skin tone", eyeColor: "eye color", eyeShape: "eye shape",
+        faceShape: "face shape", noseShape: "nose", lipSize: "lips",
+        bodyType: "body type", height: "height", breastSize: "breast size",
+        buttSize: "butt", waist: "waist", hips: "hips", tattoos: "tattoos/piercings",
+      };
+      const labeledParts = appearanceKeys
+        .filter(k => merged[k])
+        .map(k => `${labelMap[k]}: ${merged[k]}`)
+        .join(", ");
+
+      const payload = {
+        triggerWord,
+        lookDescription: labeledParts,
+      };
+      if (sourceMode === "upload") {
+        payload.inputImageBase64 = uploadedBase64;
+      } else {
+        payload.inputImageUrl = sourceImageUrl;
+      }
+      const response = await api.post("/img2img/describe", payload);
+      setEditablePrompt(response.data.prompt || "");
+    } catch (err) {
+      const errData = err.response?.data;
+      const msg = errData?.errors?.length
+        ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
+        : (errData?.error || err.message);
+      setAnalyzeError(msg);
+      toast.error("Analysis failed: " + msg);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const startBgPolling = (jid, promptLabel) => {
+    setBgJobs(prev => [...prev, { jobId: jid, status: 'pending', outputUrl: null, error: null, prompt: promptLabel }]);
+    let failCount = 0;
+    const maxFails = 5;
+    const intervalMs = 1000;
+    const maxPolls = Math.ceil((4.5 * 60 * 1000) / intervalMs);
+    let pollCount = 0;
+    const tick = async () => {
+      pollCount++;
+      if (pollCount > maxPolls) {
+        clearInterval(bgPollRefs.current[jid]);
+        delete bgPollRefs.current[jid];
+        setBgJobs(prev => prev.map(j => j.jobId === jid ? { ...j, status: 'failed', error: 'Timed out' } : j));
+        refreshUserCredits();
+        return;
+      }
+      try {
+        const res = await api.get(`/img2img/status/${jid}`);
+        failCount = 0;
+        const { status, outputUrl: url, error } = res.data;
+        setBgJobs(prev => prev.map(j => j.jobId === jid ? { ...j, status, outputUrl: url || null, error: error || null } : j));
+        if (status === 'completed' || status === 'failed') {
+          clearInterval(bgPollRefs.current[jid]);
+          delete bgPollRefs.current[jid];
+          refreshUserCredits();
+          if (status === 'failed') toast.error(error || 'Generation failed — credits refunded');
+          else toast.success('img2img generation ready!');
+        }
+      } catch (err) {
+        failCount++;
+        if (failCount >= maxFails) {
+          clearInterval(bgPollRefs.current[jid]);
+          delete bgPollRefs.current[jid];
+          setBgJobs(prev => prev.map(j => j.jobId === jid ? { ...j, status: 'failed', error: 'Connection lost' } : j));
+        }
+      }
+    };
+    tick();
+    bgPollRefs.current[jid] = setInterval(tick, intervalMs);
+  };
+
+  const startPolling = (jid) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    let failCount = 0;
+    const maxFails = 5;
+    const pollIntervalMs = 1000; // RunPod is fast — poll more frequently
+    const maxPolls = Math.ceil((4.5 * 60 * 1000) / pollIntervalMs); // ~4.5 min timeout
+    let pollCount = 0;
+    const pollOnce = async () => {
+      pollCount++;
+      if (pollCount > maxPolls) {
+        clearInterval(pollRef.current);
+        setGenError("Generation timed out — check your history for the result.");
+        setIsGenerating(false);
+        return;
+      }
+      try {
+        const res = await api.get(`/img2img/status/${jid}`);
+        failCount = 0;
+        const { status, outputUrl: url, error } = res.data;
+        setJobStatus(status);
+        if (status === "completed") {
+          clearInterval(pollRef.current);
+          if (url) {
+            setOutputUrl(url);
+            clearI2iDraft();
+          } else {
+            setGenError("Generation completed but no image was returned.");
+          }
+          setIsGenerating(false);
+          refreshUserCredits();
+        } else if (status === "failed") {
+          clearInterval(pollRef.current);
+          setGenError(error || "Generation failed");
+          setIsGenerating(false);
+        }
+      } catch (err) {
+        failCount++;
+        console.warn(`img2img poll error (${failCount}/${maxFails}):`, err.message);
+        if (failCount >= maxFails) {
+          clearInterval(pollRef.current);
+          setGenError("Lost connection to server — check your history for the result.");
+          setIsGenerating(false);
+        }
+      }
+    };
+
+    // Immediate check, then poll at interval
+    pollOnce();
+    pollRef.current = setInterval(pollOnce, pollIntervalMs);
+  };
+
+  const handleGenerate = async () => {
+    if (!hasSource || !editablePrompt.trim()) return;
+    if (!activeLoraObj?.loraUrl) {
+      toast.error("Active LoRA has no file URL.");
+      return;
+    }
+    setIsGenerating(true);
+    setGenError(null);
+    setJobStatus("pending");
+    try {
+      const triggerWord = activeLoraObj.loraTriggerWord || activeLoraObj.triggerWord;
+      const payload = {
+        loraUrl: activeLoraObj.loraUrl,
+        triggerWord,
+        prompt: editablePrompt,
+        loraStrength,
+        denoise,
+        modelId,
+      };
+      if (sourceMode === "upload") {
+        payload.inputImageBase64 = uploadedBase64;
+      } else {
+        payload.inputImageUrl = sourceImageUrl;
+      }
+      const response = await api.post("/img2img/generate", payload);
+      const jid = response.data.jobId;
+      setJobId(jid);
+      // Hand off to background queue and immediately unblock the form
+      startBgPolling(jid, editablePrompt.slice(0, 60));
+      setOutputUrl(null);
+      setJobStatus(null);
+      setIsGenerating(false);
+      toast.success("Generation queued — you can generate again while it processes.");
+    } catch (err) {
+      const errData = err.response?.data;
+      const msg = errData?.errors?.length
+        ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
+        : (errData?.error || err.message);
+      setGenError(msg);
+      setIsGenerating(false);
+      setJobStatus(null);
+      toast.error("Submit failed: " + msg);
+    }
+  };
+
+  useEffect(() => () => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    // Clean up all background job poll intervals on unmount
+    Object.values(bgPollRefs.current).forEach(clearInterval);
+    bgPollRefs.current = {};
+  }, []);
+
+  const promptReady = !!editablePrompt.trim();
+
+  const statusLabel = {
+    pending: "Queued…",
+    processing: "Generating…",
+    completed: "Done",
+    failed: "Failed",
+  }[jobStatus] || "";
+
+  const parseUrls = (maybeJson) => {
+    if (!maybeJson) return [];
+    try {
+      const parsed = JSON.parse(maybeJson);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {}
+    return [maybeJson];
+  };
+
+  return (
+    <div className="space-y-5 mt-4">
+
+      {/* ── Source Photo ───────────────────────────────── */}
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+        {/* Mode tabs */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-white">Source Photo</span>
+          <div className="flex gap-1 bg-white/[0.04] rounded-lg p-0.5">
+            <button
+              onClick={() => { setSourceMode("gallery"); setUploadedBase64(null); setUploadedPreview(null); }}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${sourceMode === "gallery" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}`}
+            >
+              Gallery
+            </button>
+            <button
+              onClick={() => { setSourceMode("upload"); setSourceImageUrl(null); }}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${sourceMode === "upload" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}`}
+            >
+              Upload
+            </button>
+          </div>
+        </div>
+
+        {sourceMode === "upload" ? (
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/jpg"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              data-testid="input-i2i-file-upload"
+            />
+            {uploadedPreview ? (
+              <div className="relative">
+                <img src={uploadedPreview} alt="uploaded" className="w-full max-h-56 object-contain rounded-xl border border-white/10" />
+                <button
+                  onClick={() => { setUploadedBase64(null); setUploadedPreview(null); setRawDescription(""); setEditablePrompt(""); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                  className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-white/10 rounded-xl py-8 flex flex-col items-center gap-2 text-slate-400 hover:text-white hover:border-white/20 transition-all"
+                data-testid="button-i2i-pick-file"
+              >
+                <ImageIcon className="w-8 h-8" />
+                <span className="text-sm">Click to pick a photo</span>
+                <span className="text-xs text-slate-500">JPG · PNG · WebP</span>
+              </button>
+            )}
+            {uploadedBase64 && !uploadedPreview && (
+              <p className="text-xs text-emerald-400">Image loaded</p>
+            )}
+          </div>
+        ) : (
+          <>
+            {imagesLoading ? (
+              <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading gallery…</span>
+              </div>
+            ) : sourceImages.length === 0 ? (
+              <p className="text-slate-500 text-sm py-2">No generated images yet — generate some on the Generate tab first.</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+                  {sourceImages.map(g => {
+                    const url = Array.isArray(g.outputUrl)
+                      ? g.outputUrl[0]
+                      : (() => { try { const p = JSON.parse(g.outputUrl); return Array.isArray(p) ? p[0] : g.outputUrl; } catch { return g.outputUrl; } })();
+                    const selected = sourceImageUrl === url;
+                    return (
+                      <button
+                        key={g.id}
+                        onClick={() => { setSourceImageUrl(selected ? null : url); setRawDescription(""); setEditablePrompt(""); }}
+                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selected ? "border-white/80" : "border-transparent"}`}
+                        data-testid={`button-i2i-source-${g.id}`}
+                      >
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        {selected && (
+                          <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-black" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    <button onClick={() => setGalleryPage(p => Math.max(1, p - 1))} disabled={galleryPage === 1} className="p-1 rounded text-slate-400 disabled:opacity-30 hover:text-white">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-slate-400">{galleryPage}/{totalPages}</span>
+                    <button onClick={() => setGalleryPage(p => Math.min(totalPages, p + 1))} disabled={galleryPage === totalPages} className="p-1 rounded text-slate-400 disabled:opacity-30 hover:text-white">
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+            {/* Preview strip for selected gallery image */}
+            {sourceImageUrl && (
+              <div className="flex items-center gap-3 pt-1">
+                <img src={sourceImageUrl} alt="source" className="w-14 h-14 object-cover rounded-lg flex-shrink-0 border border-white/10" />
+                <div className="text-xs text-slate-400 min-w-0">
+                  <p className="text-slate-300 font-medium">Selected from gallery</p>
+                  <p className="truncate">{sourceImageUrl.split("/").pop()}</p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── Step 1: Analyze ─────────────────────────────── */}
+      <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-5 h-5 rounded-full bg-white/90 flex items-center justify-center flex-shrink-0">
+            <span className="text-black text-[10px] font-bold">1</span>
+          </div>
+          <span className="text-sm font-medium text-white">Analyze Photo</span>
+          <span className="text-xs text-slate-400 ml-1">FREE</span>
+        </div>
+
+        <button
+          onClick={handleAnalyze}
+          disabled={!hasSource || isAnalyzing || isGenerating}
+          data-testid="button-i2i-analyze"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{
+            background: hasSource && !isAnalyzing
+              ? "linear-gradient(135deg, rgba(168,85,247,0.3) 0%, rgba(236,72,153,0.2) 100%)"
+              : "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(168,85,247,0.3)",
+          }}
+        >
+          {isAnalyzing ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /><span>Analyzing…</span></>
+          ) : (
+            <><ScanSearch className="w-4 h-4" /><span>{editablePrompt ? "Re-analyze" : "Analyze Photo"}</span></>
+          )}
+        </button>
+
+        {analyzeError && (
+          <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{analyzeError}</p>
+        )}
+
+      </div>
+
+      {/* ── Step 2: Edit Prompt ──────────────────────────── */}
+      {editablePrompt !== "" && (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-4 space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-emerald-400 text-[10px] font-bold">2</span>
+            </div>
+            <span className="text-sm font-medium text-white">Edit Prompt</span>
+            <span className="text-xs text-slate-500 ml-1">— modify before generation</span>
+          </div>
+
+          <textarea
+            value={editablePrompt}
+            onChange={e => setEditablePrompt(e.target.value)}
+            rows={6}
+            data-testid="textarea-i2i-prompt"
+            className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/40 resize-y leading-relaxed"
+            placeholder="Injected prompt will appear here…"
+          />
+
+          <div className="flex items-center gap-2">
+            <Edit3 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+            <p className="text-xs text-slate-500">Edit freely — trigger word, pose, scene, attire, anatomy.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step 3: Settings + Generate ─────────────────── */}
+      {promptReady && (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
+              <span className="text-red-400 text-[10px] font-bold">3</span>
+            </div>
+            <span className="text-sm font-medium text-white">Generate</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">LoRA Strength</span>
+                <span className="text-xs text-white font-mono">{loraStrength.toFixed(2)}</span>
+              </div>
+              <input
+                type="range" min={0.65} max={1.0} step={0.05}
+                value={loraStrength}
+                onChange={e => setLoraStrength(Math.max(0.65, parseFloat(e.target.value)))}
+                data-testid="slider-i2i-lora-strength"
+                className="w-full accent-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400">Denoise</span>
+                <span className="text-xs text-white font-mono">{denoise.toFixed(2)}</span>
+              </div>
+              <input
+                type="range" min={0.3} max={0.9} step={0.05}
+                value={denoise}
+                onChange={e => setDenoise(parseFloat(e.target.value))}
+                data-testid="slider-i2i-denoise"
+                className="w-full accent-white"
+              />
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDenoise(0.4)}
+                  data-testid="preset-i2i-denoise-0-4"
+                  className={`w-full px-3 py-2 rounded-lg text-[11px] font-medium border transition-colors ${
+                    Math.abs(denoise - 0.4) < 0.001
+                      ? "bg-white/10 border-white/30 text-white/80"
+                      : "bg-white/[0.03] border-white/[0.08] text-slate-300 hover:bg-white/[0.06]"
+                  }`}
+                >
+                  Complex poses preset — denoise 0.40
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="text-[11px] text-slate-500">Higher denoise = more creative, lower = closer to source.</p>
+
+          <button
+            onClick={handleGenerate}
+            disabled={isGenerating || isAnalyzing}
+            data-testid="button-i2i-generate"
+            className="w-full py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            style={{
+              background: !isGenerating
+                ? "linear-gradient(135deg, rgba(168,85,247,0.5) 0%, rgba(236,72,153,0.35) 100%)"
+                : "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(168,85,247,0.4)",
+            }}
+          >
+            {isGenerating ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /><span>{statusLabel || "Processing…"}</span></>
+            ) : (
+              <><Flame className="w-4 h-4 text-white/70" /><span>Generate</span><span className="inline-flex items-center gap-0.5 text-yellow-400">30 <Coins className="w-3.5 h-3.5" /></span></>
+            )}
+          </button>
+
+          {genError && (
+            <p className="text-xs text-red-400 bg-red-500/10 rounded-lg px-3 py-2">{genError}</p>
+          )}
+
+          {/* Background generation queue */}
+          {bgJobs.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Processing Queue</p>
+              {bgJobs.map((job) => (
+                <div key={job.jobId} className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs ${
+                  job.status === 'completed' ? 'border-emerald-500/20 bg-emerald-500/[0.06]'
+                  : job.status === 'failed'   ? 'border-red-500/20 bg-red-500/[0.06]'
+                  : 'border-white/[0.07] bg-white/[0.03]'
+                }`}>
+                  {job.status === 'completed' ? (
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                  ) : job.status === 'failed' ? (
+                    <div className="w-2 h-2 rounded-full bg-red-400 flex-shrink-0" />
+                  ) : (
+                    <Loader2 className="w-3 h-3 animate-spin text-purple-400 flex-shrink-0" />
+                  )}
+                  <span className="flex-1 text-slate-400 truncate">{job.prompt || job.jobId}</span>
+                  {job.status === 'completed' && job.outputUrl && (
+                    <a
+                      href={parseUrls(job.outputUrl)[0]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400 hover:text-emerald-300 font-medium flex-shrink-0"
+                    >View</a>
+                  )}
+                  {(job.status === 'completed' || job.status === 'failed') && (
+                    <button
+                      onClick={() => setBgJobs(prev => prev.filter(j => j.jobId !== job.jobId))}
+                      className="text-slate-600 hover:text-slate-400 flex-shrink-0 ml-1"
+                    >✕</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Result preview (full-width) */}
+          {outputUrl && (
+            <div className="pt-4 border-t border-white/[0.06] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-white">Result</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload(parseUrls(outputUrl)[0], jobId || "img2img", 0)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 hover:bg-white/10 transition-colors text-slate-300"
+                    type="button"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => { setOutputUrl(null); setJobId(null); setJobStatus(null); setGenError(null); }}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-slate-400"
+                    data-testid="button-i2i-clear-result"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {parseUrls(outputUrl).length === 1 ? (
+                <img
+                  src={parseUrls(outputUrl)[0]}
+                  alt="img2img result"
+                  className="w-full h-auto rounded-xl object-contain border border-white/[0.06]"
+                  data-testid="img-i2i-result"
+                />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" data-testid="grid-i2i-results">
+                  {parseUrls(outputUrl).map((url, idx) => (
+                    <img
+                      key={`${url}-${idx}`}
+                      src={url}
+                      alt={`img2img result ${idx + 1}`}
+                      className="w-full h-auto rounded-xl object-contain border border-white/[0.06]"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// NSFW Video Tab - Image-to-Video generation
+// ============================================
+function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, videoPrompt, setVideoPrompt, videoDuration, setVideoDuration, isSubmittingVideo, setIsSubmittingVideo }) {
+  const { user, refreshUserCredits } = useAuthStore();
+  const [videoGalleryPage, setVideoGalleryPage] = useState(1);
+  const [extendingVideoId, setExtendingVideoId] = useState(null);
+  const [extendDuration, setExtendDuration] = useState(5);
+  const [extendPrompt, setExtendPrompt] = useState("");
+  const [isSubmittingExtend, setIsSubmittingExtend] = useState(false);
+  const [videoModal, setVideoModal] = useState(null); // { url, title, chain }
+  const [viewingSegment, setViewingSegment] = useState({}); // { [chainRootId]: 'original' | 'extended' }
+  const pageSize = 12;
+
+  const { data: imageData, isLoading: imagesLoading } = useQuery({
+    queryKey: ["nsfw-video-source-images", modelId, videoGalleryPage],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        type: "nsfw",
+        status: "completed",
+        limit: String(pageSize),
+        offset: String((videoGalleryPage - 1) * pageSize),
+      });
+      if (modelId) params.set("modelId", modelId);
+      const response = await api.get(`/generations?${params}`);
+      return {
+        generations: response.data.generations || [],
+        pagination: response.data.pagination || { total: 0 },
+      };
+    },
+    enabled: !!modelId,
+    staleTime: 10000,
+  });
+
+  const { data: videoData, isLoading: videosLoading } = useQuery({
+    queryKey: ["nsfw-videos", modelId],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        type: "nsfw-video",
+        limit: "50",
+      });
+      if (modelId) params.set("modelId", modelId);
+      const response = await api.get(`/generations?${params}`);
+      const nsfwVideos = response.data.generations || [];
+
+      const extendParams = new URLSearchParams({
+        type: "nsfw-video-extend",
+        limit: "50",
+      });
+      if (modelId) extendParams.set("modelId", modelId);
+      const extendResponse = await api.get(`/generations?${extendParams}`);
+      const extendVideos = extendResponse.data.generations || [];
+
+      return [...nsfwVideos, ...extendVideos].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    },
+    enabled: !!modelId,
+    refetchInterval: 5000,
+    staleTime: 3000,
+  });
+
+  const sourceImages = imageData?.generations || [];
+  const totalImages = imageData?.pagination?.total || 0;
+  const totalImagePages = Math.ceil(totalImages / pageSize);
+  const videos = videoData || [];
+  const processingVideos = videos.filter(v => v.status === "processing" || v.status === "pending");
+
+  const originals = videos.filter(v => v.type === "nsfw-video");
+  const extendsList = videos.filter(v => v.type === "nsfw-video-extend");
+
+  const extendsBySource = {};
+  extendsList.forEach(v => {
+    try {
+      const data = JSON.parse(v.inputImageUrl || "{}");
+      const srcId = data.sourceGenerationId;
+      if (srcId) {
+        if (!extendsBySource[srcId]) extendsBySource[srcId] = [];
+        extendsBySource[srcId].push(v);
+      }
+    } catch {}
+  });
+  Object.keys(extendsBySource).forEach(k => {
+    extendsBySource[k].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  });
+
+  const buildChain = (gen) => {
+    const chain = [gen];
+    let current = gen;
+    const visited = new Set([gen.id]);
+    while (true) {
+      const nextList = extendsBySource[current.id];
+      if (!nextList || nextList.length === 0) break;
+      const next = nextList[0];
+      if (visited.has(next.id)) break;
+      visited.add(next.id);
+      chain.push(next);
+      current = next;
+    }
+    return chain;
+  };
+
+  const videoChains = originals
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map(buildChain);
+
+  const getSegmentDuration = (v) => {
+    try {
+      const data = JSON.parse(v.inputImageUrl || "{}");
+      return data.duration || data.extendDuration || 5;
+    } catch { return 5; }
+  };
+
+  const parseUrls = (outputUrl) => {
+    if (!outputUrl) return [];
+    try { const p = JSON.parse(outputUrl); if (Array.isArray(p)) return p; } catch {}
+    return [outputUrl];
+  };
+
+  const creditsNeeded = videoDuration === 8 ? 8 : 5;
+
+  const handleSubmitVideo = async () => {
+    if (!videoSelectedImage || isSubmittingVideo) return;
+    setIsSubmittingVideo(true);
+    try {
+      const response = await api.post("/nsfw/generate-video", {
+        modelId,
+        imageUrl: videoSelectedImage,
+        prompt: videoPrompt || undefined,
+        duration: videoDuration,
+      });
+      if (response.data.success) {
+        toast.success(`Video generating! ${response.data.creditsUsed} 🪙 used`);
+        sound.playSuccess();
+        await refreshUserCredits();
+      } else {
+        toast.error(response.data.message || "Failed to submit video");
+      }
+    } catch (err) {
+      const errData = err.response?.data;
+      const msg = errData?.errors?.length
+        ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
+        : (errData?.message || "Video generation failed");
+      toast.error(msg);
+    } finally {
+      setIsSubmittingVideo(false);
+    }
+  };
+
+  const handleDownload = (url, genId) => {
+    const filename = `nsfw-video-${genId ? genId.substring(0, 8) : "vid"}.mp4`;
+    const downloadUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleExtendVideo = async (genId) => {
+    if (isSubmittingExtend) return;
+    setIsSubmittingExtend(true);
+    try {
+      const payload = {
+        generationId: genId,
+        duration: extendDuration,
+      };
+      if (extendPrompt.trim()) {
+        payload.prompt = extendPrompt.trim();
+      }
+      const response = await api.post("/nsfw/extend-video", payload);
+      if (response.data.success) {
+        toast.success(`Extending video by ${extendDuration}s! ${response.data.creditsUsed} 🪙 used`);
+        sound.playSuccess();
+        setExtendingVideoId(null);
+        setExtendPrompt("");
+        await refreshUserCredits();
+      } else {
+        toast.error(response.data.message || "Failed to extend video");
+      }
+    } catch (err) {
+      const errData = err.response?.data;
+      const msg = errData?.errors?.length
+        ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
+        : (errData?.message || "Video extension failed");
+      toast.error(msg);
+    } finally {
+      setIsSubmittingExtend(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 space-y-5">
+      {/* Step 1: Select Source Image */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
+            <span className="text-[10px] font-bold text-white">1</span>
+          </div>
+          <span className="text-sm font-medium text-white">Select Source Image</span>
+          <span className="text-[10px] text-slate-500">Choose an NSFW image to animate</span>
+        </div>
+        <div className="p-3 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+          {imagesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+            </div>
+          ) : sourceImages.length === 0 ? (
+            <p className="text-center text-slate-500 py-8 text-sm">
+              No NSFW images yet. Generate some images first in the Generate tab.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                {sourceImages.map((gen) => {
+                  const urls = parseUrls(gen.outputUrl);
+                  return urls.map((url, idx) => {
+                    const isSelected = videoSelectedImage === url;
+                    return (
+                      <button
+                        key={`${gen.id}-${idx}`}
+                        onClick={() => setVideoSelectedImage(isSelected ? null : url)}
+                        className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
+                          isSelected
+                            ? "border-red-500 ring-2 ring-red-500/30 scale-[1.02]"
+                            : "border-transparent hover:border-white/20"
+                        }`}
+                        data-testid={`button-select-video-source-${gen.id}-${idx}`}
+                      >
+                        <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
+                            <CheckCircle2 className="w-6 h-6 text-red-400" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  });
+                })}
+              </div>
+              {totalImagePages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <button
+                    onClick={() => setVideoGalleryPage(p => Math.max(1, p - 1))}
+                    disabled={videoGalleryPage <= 1}
+                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 disabled:opacity-30"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs text-slate-400">{videoGalleryPage} / {totalImagePages}</span>
+                  <button
+                    onClick={() => setVideoGalleryPage(p => Math.min(totalImagePages, p + 1))}
+                    disabled={videoGalleryPage >= totalImagePages}
+                    className="p-1.5 rounded-lg bg-white/5 border border-white/10 disabled:opacity-30"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Selected Image Preview */}
+      {videoSelectedImage && (
+        <div className="flex items-start gap-4 p-3 rounded-xl border border-red-500/20 bg-red-500/5">
+          <img src={videoSelectedImage} alt="" className="w-20 h-28 object-cover rounded-lg flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-red-400 font-medium mb-2">Selected image</p>
+            <textarea
+              value={videoPrompt}
+              onChange={(e) => setVideoPrompt(e.target.value)}
+              placeholder="Optional: describe motion (e.g. 'slow hip movement', 'moaning softly')..."
+              className="w-full h-16 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50 resize-none text-sm"
+              data-testid="input-video-prompt"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Duration & Generate */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
+            <span className="text-[10px] font-bold text-white">2</span>
+          </div>
+          <span className="text-sm font-medium text-white">Duration & Generate</span>
+        </div>
+        <div className="flex items-center gap-3 mb-4">
+          {[5, 8].map((dur) => (
+            <button
+              key={dur}
+              onClick={() => setVideoDuration(dur)}
+              className={`relative px-4 py-2.5 rounded-xl text-sm font-medium transition-all border group ${
+                videoDuration === dur
+                  ? "bg-white/[0.08] border-white/20 text-white"
+                  : "bg-white/[0.03] border-white/10 text-slate-400 hover:bg-white/[0.06] hover:text-white"
+              }`}
+              data-testid={`button-duration-${dur}`}
+            >
+              {videoDuration === dur && (
+                <>
+                  <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={RED_CORNER_GLOW_STYLE} />
+                  <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
+                </>
+              )}
+              {dur}s
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={handleSubmitVideo}
+          disabled={!videoSelectedImage || isSubmittingVideo}
+          className="w-full py-3.5 rounded-xl font-semibold text-white flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: videoSelectedImage && !isSubmittingVideo
+              ? "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)"
+              : "rgba(255,255,255,0.1)",
+          }}
+          data-testid="button-generate-video"
+        >
+          {isSubmittingVideo ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>
+              <Video className="w-5 h-5" />
+              Generate {videoDuration}s Video
+              <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1.5">
+                <Coins className="w-3 h-3 text-yellow-400" />
+                <span>{creditsNeeded}</span>
+              </span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Processing Videos Banner */}
+      {processingVideos.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" />
+            <span className="text-xs text-red-400 font-medium">
+              {processingVideos.length} generating...
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Video Chains Gallery */}
+      {videoChains.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Video className="w-4 h-4 text-red-400" />
+            <h3 className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Your Videos</h3>
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-medium" style={{ background: "rgba(239,68,68,0.15)", color: "#F87171" }}>
+              {videoChains.length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {videoChains.map((chain) => {
+              const lastSegment = chain[chain.length - 1];
+              const lastCompleted = [...chain].reverse().find(v => v.status === "completed" && v.outputUrl);
+              const isLastProcessing = lastSegment.status === "processing" || lastSegment.status === "pending";
+              const totalDuration = chain.reduce((sum, v) => sum + getSegmentDuration(v), 0);
+              const isExtendOpen = extendingVideoId === lastSegment.id;
+              const hasExtensions = chain.length > 1 && lastCompleted;
+              const selectedSeg = viewingSegment[chain[0].id] || "original";
+              const displayUrl = (hasExtensions && selectedSeg === "extended")
+                ? lastCompleted.outputUrl
+                : chain[0].outputUrl;
+              const displayDuration = selectedSeg === "extended" ? totalDuration : getSegmentDuration(chain[0]);
+
+              return (
+                <div
+                  key={chain[0].id}
+                  className={`rounded-xl border border-white/[0.06] bg-white/[0.02] flex flex-col${isExtendOpen ? " col-span-2" : ""}`}
+                >
+                  {/* Segment toggle tabs — only shown when extensions exist */}
+                  {hasExtensions && (
+                    <div className="flex border-b border-white/[0.06]">
+                      <button
+                        onClick={() => setViewingSegment(s => ({ ...s, [chain[0].id]: "original" }))}
+                        className={`flex-1 py-1.5 text-[10px] font-medium transition-colors rounded-tl-xl ${
+                          selectedSeg === "original"
+                            ? "bg-white/[0.08] text-white border-b-2 border-white/40"
+                            : "text-slate-500 hover:text-slate-300"
+                        }`}
+                        data-testid={`button-seg-original-${chain[0].id}`}
+                      >
+                        Original · {getSegmentDuration(chain[0])}s
+                      </button>
+                      <button
+                        onClick={() => setViewingSegment(s => ({ ...s, [chain[0].id]: "extended" }))}
+                        className={`flex-1 py-1.5 text-[10px] font-medium transition-colors rounded-tr-xl flex items-center justify-center gap-1 ${
+                          selectedSeg === "extended"
+                            ? "bg-white/[0.08] text-white border-b-2 border-white/40"
+                            : "text-slate-500 hover:text-slate-300"
+                        }`}
+                        data-testid={`button-seg-extended-${chain[0].id}`}
+                      >
+                        Extended · {totalDuration}s
+                        {isLastProcessing && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Thumbnail — click to open modal */}
+                  <div
+                    className="relative w-full bg-black overflow-hidden cursor-pointer group"
+                    style={{ height: "9rem", borderRadius: hasExtensions ? "0" : "0.75rem 0.75rem 0 0" }}
+                    onClick={() => {
+                      if (displayUrl) {
+                        setVideoModal({ url: displayUrl, title: chain[0].prompt, chain, totalDuration });
+                      }
+                    }}
+                    data-testid={`video-thumbnail-${chain[0].id}`}
+                  >
+                    {displayUrl ? (
+                      <LazyVideo
+                        key={displayUrl}
+                        src={displayUrl}
+                        muted
+                        loop
+                        playsInline
+                        videoClassName="object-contain"
+                        className="w-full h-full"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin text-red-400" />
+                          <span className="text-[10px] text-slate-500">Generating...</span>
+                        </div>
+                      </div>
+                    )}
+                    {displayUrl && (
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                          <Play className="w-4 h-4 text-white ml-0.5" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-1.5 right-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-black/70 text-white backdrop-blur-sm">
+                        {displayDuration}s
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card footer */}
+                  <div className="p-2.5 space-y-2 flex-1 flex flex-col">
+                    <p className="text-[10px] text-slate-400 truncate leading-tight">{chain[0].prompt || "No prompt"}</p>
+
+                    {/* Chain timeline */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {chain.map((seg, i) => {
+                        const dur = getSegmentDuration(seg);
+                        const isProcessing = seg.status === "processing" || seg.status === "pending";
+                        return (
+                          <span key={seg.id} className="flex items-center gap-0.5">
+                            {i > 0 && <ChevronRight className="w-2.5 h-2.5 text-slate-700 flex-shrink-0" />}
+                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium border bg-white/[0.06] border-white/[0.12] text-slate-300`}>
+                              {i > 0 ? "+" : ""}{dur}s
+                              {isProcessing && <Loader2 className="w-2 h-2 animate-spin" />}
+                            </span>
+                          </span>
+                        );
+                      })}
+                      {chain.length > 1 && (
+                        <span className="text-[9px] text-slate-600">= {totalDuration}s</span>
+                      )}
+                    </div>
+
+                    {/* Actions row */}
+                    <div className="flex items-center gap-1.5 mt-auto">
+                      {!isLastProcessing && (
+                        <button
+                          onClick={() => {
+                            setExtendingVideoId(isExtendOpen ? null : lastSegment.id);
+                            setExtendDuration(5);
+                            setExtendPrompt("");
+                          }}
+                          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all border flex-1 justify-center ${
+                            isExtendOpen
+                              ? "bg-white/[0.08] border-white/20 text-white"
+                              : "bg-white/[0.03] border-white/10 text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                          }`}
+                          data-testid={`button-extend-video-${chain[0].id}`}
+                        >
+                          <FastForward className="w-3 h-3" />
+                          Extend
+                        </button>
+                      )}
+                      {displayUrl && (
+                        <button
+                          onClick={() => handleDownload(displayUrl, chain[0].id)}
+                          className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 flex-shrink-0"
+                          data-testid={`button-download-video-${chain[0].id}`}
+                        >
+                          <Download className="w-3 h-3 text-white" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Extend Video panel — sits below card footer, spans full col-span-2 width */}
+                  {isExtendOpen && (
+                    <div className="border-t border-white/[0.10] rounded-b-xl bg-white/[0.03] p-4 space-y-4">
+                      {/* Header row */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <FastForward className="w-4 h-4 text-white" />
+                          <span className="text-sm font-semibold text-white">Extend Video</span>
+                          <span className="text-[10px] text-slate-500">— add more seconds to the end</span>
+                        </div>
+                        <button
+                          onClick={() => setExtendingVideoId(null)}
+                          className="p-1 rounded-md hover:bg-white/10 text-slate-500 hover:text-slate-300 transition-colors"
+                          data-testid="button-cancel-extend"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="flex gap-5 items-start">
+                        {/* Left column: duration preview + picker */}
+                        <div className="flex-1 space-y-3">
+                          {/* Duration preview */}
+                          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.12]">
+                            <div className="text-center">
+                              <p className="text-[9px] text-slate-500 uppercase tracking-wider mb-1">Current</p>
+                              <p className="text-xl font-bold text-white leading-none">{totalDuration}s</p>
+                            </div>
+                            <div className="flex-1 flex items-center justify-center gap-1">
+                              <div className="flex-1 h-px bg-white/15" />
+                              <FastForward className="w-3.5 h-3.5 text-white flex-shrink-0" />
+                              <div className="flex-1 h-px bg-white/15" />
+                            </div>
+                            <div className="text-center">
+                              <p className="text-[9px] text-slate-500 uppercase tracking-wider mb-1">After extend</p>
+                              <p className="text-xl font-bold text-white leading-none">{totalDuration + extendDuration}s</p>
+                            </div>
+                          </div>
+
+                          {/* Duration picker */}
+                          <div>
+                            <p className="text-[9px] text-slate-500 uppercase tracking-wider mb-2">Add how many seconds?</p>
+                            <div className="flex gap-2">
+                              {[5, 8].map((dur) => (
+                                <button
+                                  key={dur}
+                                  onClick={() => setExtendDuration(dur)}
+                                  className={`flex-1 py-2.5 rounded-xl text-xs font-medium transition-all border flex flex-col items-center gap-1 ${
+                                    extendDuration === dur
+                                      ? "bg-white/[0.08] border-white/20 text-white"
+                                      : "bg-white/[0.03] border-white/10 text-slate-400 hover:bg-white/[0.06] hover:text-slate-300"
+                                  }`}
+                                  data-testid={`button-extend-duration-${dur}`}
+                                >
+                                  <span className="text-base font-bold">+{dur}s</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right column: optional prompt + confirm */}
+                        <div className="flex-1 space-y-3">
+                          <div>
+                            <p className="text-[9px] text-slate-500 uppercase tracking-wider mb-2">Custom prompt (optional)</p>
+                            <input
+                              type="text"
+                              value={extendPrompt}
+                              onChange={(e) => setExtendPrompt(e.target.value)}
+                              placeholder="Leave blank to continue with original prompt"
+                              className="w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-white/30"
+                              data-testid={`input-extend-prompt-${chain[0].id}`}
+                            />
+                          </div>
+
+                          <button
+                            onClick={() => handleExtendVideo(lastSegment.id)}
+                            disabled={isSubmittingExtend}
+                            className="w-full py-3 rounded-xl font-semibold text-white text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            style={{
+                              background: isSubmittingExtend
+                                ? "rgba(255,255,255,0.08)"
+                                : "linear-gradient(135deg, #f43f5e 0%, #be123c 100%)",
+                            }}
+                            data-testid={`button-confirm-extend-${chain[0].id}`}
+                          >
+                            {isSubmittingExtend ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Submitting...
+                              </>
+                            ) : (
+                              <>
+                                <FastForward className="w-4 h-4" />
+                                Extend +{extendDuration}s
+                                <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1.5">
+                                  <Coins className="w-3 h-3 text-yellow-400" />
+                                  <span>{extendDuration}</span>
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Video Modal — plays the latest extended video with full controls */}
+      {videoModal && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setVideoModal(null)}
+        >
+          <div
+            className="relative w-full max-w-xl flex flex-col gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close */}
+            <button
+              onClick={() => setVideoModal(null)}
+              className="absolute -top-10 right-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+              data-testid="button-close-video-modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Player */}
+            <video
+              src={videoModal.url}
+              controls
+              autoPlay
+              className="w-full rounded-xl bg-black"
+              style={{ maxHeight: "70vh" }}
+            />
+
+            {/* Info row */}
+            <div className="flex items-start justify-between gap-3 px-1">
+              <div className="flex-1 min-w-0">
+                {videoModal.title && (
+                  <p className="text-sm text-white font-medium truncate mb-1.5">{videoModal.title}</p>
+                )}
+                {/* Chain timeline */}
+                <div className="flex items-center gap-1 flex-wrap">
+                  {videoModal.chain.map((seg, i) => {
+                    const dur = getSegmentDuration(seg);
+                    return (
+                      <span key={seg.id} className="flex items-center gap-0.5">
+                        {i > 0 && <ChevronRight className="w-2.5 h-2.5 text-slate-600 flex-shrink-0" />}
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium border ${
+                          i === 0
+                            ? "bg-red-500/10 border-red-500/20 text-red-400"
+                            : "bg-white/5 border-white/10 text-white/60"
+                        }`}>
+                          {i > 0 ? "+" : ""}{dur}s
+                        </span>
+                      </span>
+                    );
+                  })}
+                  {videoModal.chain.length > 1 && (
+                    <span className="text-[9px] text-slate-500 ml-0.5">= {videoModal.totalDuration}s total</span>
+                  )}
+                </div>
+              </div>
+              {/* Download latest */}
+              <button
+                onClick={() => handleDownload(videoModal.url, videoModal.chain[0].id)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 text-[11px] font-medium transition-colors flex-shrink-0"
+                data-testid="button-download-modal-video"
+              >
+                <Download className="w-3 h-3" />
+                Download
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// LocalStorage helpers for training state persistence
+// ============================================
+const TRAINING_STATE_KEY = "nsfw_training_state";
+
+function saveTrainingState(modelId, status) {
+  try {
+    const state = JSON.parse(localStorage.getItem(TRAINING_STATE_KEY) || "{}");
+    state[modelId] = { status, timestamp: Date.now() };
+    localStorage.setItem(TRAINING_STATE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error("Failed to save training state:", e);
+  }
+}
+
+function getTrainingState(modelId) {
+  try {
+    const state = JSON.parse(localStorage.getItem(TRAINING_STATE_KEY) || "{}");
+    const modelState = state[modelId];
+    if (!modelState) return null;
+    return modelState.status;
+  } catch (e) {
+    console.error("Failed to get training state:", e);
+    return null;
+  }
+}
+
+function clearTrainingState(modelId) {
+  try {
+    const state = JSON.parse(localStorage.getItem(TRAINING_STATE_KEY) || "{}");
+    delete state[modelId];
+    localStorage.setItem(TRAINING_STATE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error("Failed to clear training state:", e);
+  }
+}
+
+// ============================================
+// NSFW Unlock Request Modal
+// Shows when user needs to unlock NSFW access
+// ============================================
+function NsfwUnlockModal({ isOpen, onClose, sidebarCollapsed = false }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60]">
+      <div 
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className={`fixed top-0 right-0 bottom-0 z-[60] overflow-y-auto p-4 left-0 ${
+        sidebarCollapsed ? "md:left-[80px]" : "md:left-[260px]"
+      }`}>
+      <div className="relative min-h-full flex items-center justify-center">
+      <div 
+        className="relative w-full max-w-md rounded-2xl glass-panel-strong p-5 max-h-[calc(100dvh-48px)] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-white transition-colors z-10"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-bold text-white mb-2">
+            NSFW Access Required
+          </h3>
+          <p className="text-sm text-slate-400">
+            To protect everyone, NSFW features require verification
+          </p>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+            <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              Two Ways to Get Access
+            </h4>
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-xs font-medium text-emerald-300 mb-1">Option 1: AI-Generated Models</p>
+                <p className="text-[11px] text-slate-400">
+                  Create your model using AI-generated photos. Automatic approval.
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                <p className="text-xs font-medium text-white/70 mb-1">Option 2: Real Person (KYC Required)</p>
+                <p className="text-[11px] text-slate-400">
+                  Use your own photos or photos of someone who gave consent. We'll do a quick KYC verification to confirm identity and rights.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <p className="text-xs text-amber-200">
+              <strong className="text-amber-100">Why verification?</strong> We protect both you and the people in photos. KYC ensures only authorized content is generated.
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <a
+            href="https://discord.gg/vpwGygjEaB"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+            </svg>
+            Contact on Discord
+          </a>
+          <a
+            href="https://t.me/modelclonechat"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 rounded-xl bg-[#0088cc] hover:bg-[#006699] text-white font-medium transition-colors flex items-center justify-center gap-2"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            </svg>
+            Contact on Telegram
+          </a>
+        </div>
+
+        <p className="text-[10px] text-slate-500 text-center mt-4">
+          Usually verified within 24 hours
+        </p>
+      </div>
+      </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// NSFW Model Selector - Searchable with shadcn/Phosphor
+// ============================================
+function NSFWModelSelector({ models, selectedModel, onSelect, onShowUnlockModal, modelsLoadError, onRetry, isLoading: modelsLoading = false }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef(null);
+  const searchRef = useRef(null);
+
+  // Verified = AI-generated, admin override, or has trained LoRA (nsfwUnlocked)
+  // Exclude models still generating (no usable photos yet)
+  const aiModels = models.filter((m) => m.status !== "processing" && (m.isAIGenerated === true || m.nsfwOverride === true || m.nsfwUnlocked === true));
+  const selectedModelData = aiModels.find((m) => m.id === selectedModel);
+
+  const filteredModels = search.trim()
+    ? aiModels.filter((m) => m.name?.toLowerCase().includes(search.toLowerCase()))
+    : aiModels;
+
+  const handleSelect = (modelId) => {
+   
+    onSelect(modelId);
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  useEffect(() => {
+    if (isOpen && searchRef.current) {
+      setTimeout(() => searchRef.current?.focus(), 50);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    };
+    if (isOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
+          <span className="text-[10px] font-bold text-white">1</span>
+        </div>
+        <span className="text-sm font-medium text-white tracking-wide">SELECT MODEL</span>
+        {aiModels.length > 0 && (
+          <Badge variant="secondary" className="ml-auto">{aiModels.length} models</Badge>
+        )}
+      </div>
+
+      {modelsLoading ? (
+        <div className="p-4 rounded-xl border border-white/[0.08] bg-white/[0.03]">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 text-slate-400 animate-spin shrink-0" weight="duotone" />
+            <div>
+              <p className="text-sm font-medium text-slate-200">Loading your models...</p>
+              <p className="text-xs text-slate-500">Please wait</p>
+            </div>
+          </div>
+        </div>
+      ) : modelsLoadError ? (
+        <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/[0.06]">
+          <div className="flex items-center gap-3">
+            <Warning className="w-5 h-5 text-red-400 shrink-0" weight="duotone" />
+            <div>
+              <p className="text-sm font-medium text-red-200">Couldn&apos;t load your models</p>
+              <p className="text-xs text-red-300/70 mb-2">This can happen if the connection dropped. Please try again.</p>
+              {typeof onRetry === "function" && (
+                <button
+                  type="button"
+                  onClick={() => onRetry()}
+                  className="text-xs font-medium text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg border border-white/20 transition-colors"
+                >
+                  Retry loading models
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : aiModels.length === 0 ? (
+        <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.06]">
+          <div className="flex items-center gap-3">
+            <Warning className="w-5 h-5 text-amber-400" weight="duotone" />
+            <div>
+              <p className="text-sm font-medium text-amber-200">No Verified Models Available</p>
+              <p className="text-xs text-amber-300/60 mb-2">Create an AI model or verify a real person model to use NSFW features</p>
+              <button onClick={onShowUnlockModal} className="text-xs text-white hover:text-white/70 transition-colors">
+                Learn about verification options →
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => { setIsOpen(!isOpen); }}
+            className={cn(
+              "w-full p-3 rounded-xl border bg-white/[0.03] flex items-center justify-between transition-all duration-200",
+              isOpen
+                ? "border-white/25 ring-1 ring-white/15 bg-white/[0.06]"
+                : "border-white/[0.08] hover:border-white/15 hover:bg-white/[0.05]"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              {selectedModelData ? (
+                <>
+                  <img
+                    src={selectedModelData.photo1Url}
+                    alt={selectedModelData.name}
+                    className="w-10 h-10 rounded-lg object-cover ring-1 ring-white/10"
+                  />
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-white">{selectedModelData.name}</p>
+                    <p className="text-[11px] flex items-center gap-1">
+                      {selectedModelData.nsfwUnlocked ? (
+                        <><CheckCircle className="w-3.5 h-3.5 text-emerald-400" weight="fill" /><span className="text-emerald-400">LoRA Ready</span></>
+                      ) : (
+                        <><Lightning className="w-3.5 h-3.5 text-amber-400" weight="fill" /><span className="text-amber-400">Needs Training</span></>
+                      )}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <UserCircle className="w-5 h-5 text-slate-500" weight="duotone" />
+                  <span className="text-sm text-slate-500">Select a model...</span>
+                </div>
+              )}
+            </div>
+            <CaretUpDown className={cn("w-4 h-4 text-slate-500 transition-transform", isOpen && "text-white")} weight="bold" />
+          </button>
+
+          {isOpen && (
+            <div
+              className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-white/[0.14] bg-[#0d0d14]/80 backdrop-blur-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+              style={{ boxShadow: "0 18px 44px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)" }}
+            >
+              <div className="p-2 border-b border-white/[0.06]">
+                <div className="relative">
+                  <MagnifyingGlass className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" weight="bold" />
+                  <input
+                    ref={searchRef}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search models..."
+                    className="flex w-full rounded-lg border px-3 py-1 text-white transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:border-white/30 focus-visible:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50 pl-8 h-8 text-xs bg-white/[0.08] border-white/[0.12]"
+                  />
+                </div>
+              </div>
+
+              <ScrollArea maxHeight="240px">
+                <div className="p-1.5">
+                  {filteredModels.length === 0 ? (
+                    <div className="py-6 text-center">
+                      <MagnifyingGlass className="w-6 h-6 text-slate-600 mx-auto mb-1.5" weight="duotone" />
+                      <p className="text-xs text-slate-500">No models match "{search}"</p>
+                    </div>
+                  ) : (
+                    filteredModels.map((model) => {
+                      const isSelected = selectedModel === model.id;
+                      return (
+                        <button
+                          key={model.id}
+                          onClick={() => handleSelect(model.id)}
+                          className={cn(
+                            "relative overflow-hidden w-full p-2 rounded-lg flex items-center gap-3 transition-all duration-150 group",
+                            isSelected
+                              ? "bg-white/[0.08] ring-1 ring-white/20"
+                              : "hover:bg-white/[0.10]"
+                          )}
+                        >
+                          {isSelected && (
+                            <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
+                          )}
+                          <img
+                            src={model.photo1Url}
+                            alt={model.name}
+                            className={cn(
+                              "w-9 h-9 rounded-lg object-cover transition-all",
+                              isSelected ? "ring-2 ring-white/30" : "ring-1 ring-white/[0.06] group-hover:ring-white/15"
+                            )}
+                          />
+                          <div className="text-left flex-1 min-w-0">
+                            <p className={cn("text-sm font-medium truncate", isSelected ? "text-white" : "text-white")}>
+                              {model.name}
+                            </p>
+                            <p className="text-[11px] flex items-center gap-1 text-slate-500">
+                              {model.nsfwUnlocked ? (
+                                <><CheckCircle className="w-3 h-3 text-emerald-500" weight="fill" /><span className="text-emerald-500/80">LoRA Ready</span></>
+                              ) : (
+                                <><Lightning className="w-3 h-3 text-amber-500" weight="fill" /><span className="text-amber-500/80">Needs Training</span></>
+                              )}
+                            </p>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle className="w-4 h-4 text-white flex-shrink-0" weight="fill" />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// Training Image Pool - Single flat pool of images
+// ============================================
+function TrainingImagePool({ modelId, loraId, selectedImages, onToggle, onPreview, maxImages = 15, minImages = 15, allowCustomUpload = false }) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [customImages, setCustomImages] = useState([]);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryPage, setGalleryPage] = useState(1);
+  const galleryPageSize = 60;
+  const { data: poolData } = useQuery({
+    queryKey: ["/api/nsfw/training-images", "training-pool", modelId, loraId || "none"],
+    queryFn: async () => {
+      if (!modelId) return { generations: [], trainingImages: [] };
+      const trainingUrl = loraId
+        ? `/api/nsfw/training-images/${modelId}?loraId=${loraId}`
+        : `/api/nsfw/training-images/${modelId}`;
+
+      const trainingRes = await fetch(trainingUrl, { credentials: "include" });
+      const trainingData = trainingRes.ok ? await trainingRes.json() : { trainingImages: [], linkedGenerations: [] };
+
+      return {
+        generations: trainingData?.linkedGenerations || [],
+        trainingImages: trainingData?.trainingImages || [],
+      };
+    },
+    enabled: !!modelId,
+    staleTime: 30000,
+  });
+
+  const parseOutputUrls = (outputUrl) => {
+    if (!outputUrl) return [];
+    if (Array.isArray(outputUrl)) return outputUrl.filter(Boolean);
+    if (typeof outputUrl !== "string") return [];
+    const trimmed = outputUrl.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {
+      // Single URL string
+    }
+    return [trimmed];
+  };
+
+  const isLikelyVideoUrl = (url = "") =>
+    typeof url === "string" && /\.(mp4|webm|mov|m4v|avi|mkv)(\?|$)/i.test(url);
+
+  const mapGenerationsToItems = (generations = []) =>
+    generations
+      .filter((g) => g?.outputUrl)
+      .flatMap((g) =>
+        parseOutputUrls(g.outputUrl)
+          .filter((url) => url && !isLikelyVideoUrl(url))
+          .map((url, index) => ({
+            id: `${g.id}-${index}`,
+            generationId: g.id,
+            outputUrl: url,
+          }))
+      );
+
+  const generationPool = mapGenerationsToItems(poolData?.generations || []);
+  const trainingPool = (poolData?.trainingImages || [])
+    .filter((img) => img?.status === "completed" && img?.imageUrl)
+    .map((img) => ({
+      id: `training-${img.id}`,
+      customImageId: img.id,
+      outputUrl: img.imageUrl,
+      _training: true,
+    }));
+  const seenUrls = new Set();
+  const modelImages = [...generationPool, ...trainingPool].filter((item) => {
+    if (!item?.outputUrl || seenUrls.has(item.outputUrl)) return false;
+    seenUrls.add(item.outputUrl);
+    return true;
+  });
+
+  const galleryGenerations = mapGenerationsToItems(poolData?.generations || []);
+  const galleryTrainingPool = (poolData?.trainingImages || [])
+    .filter((img) => img?.status === "completed" && img?.imageUrl)
+    .map((img) => ({
+      id: `training-${img.id}`,
+      customImageId: img.id,
+      outputUrl: img.imageUrl,
+      _training: true,
+    }));
+  const gallerySeen = new Set();
+  const galleryItems = [...galleryGenerations, ...galleryTrainingPool].filter((item) => {
+    if (!item?.outputUrl || gallerySeen.has(item.outputUrl)) return false;
+    gallerySeen.add(item.outputUrl);
+    return true;
+  });
+  const galleryTotal = galleryItems.length;
+  const galleryTotalPages = Math.max(1, Math.ceil(galleryTotal / galleryPageSize));
+  const galleryOffset = (galleryPage - 1) * galleryPageSize;
+  const pagedGalleryItems = galleryItems.slice(galleryOffset, galleryOffset + galleryPageSize);
+  const isGalleryLoading = false;
+
+  const selected = selectedImages || [];
+  const count = selected.length;
+  const available = modelImages.filter(g => !selected.some(s => s.id === g.id));
+
+  const handleCustomUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length || !modelId) return;
+    const targetLoraId = loraId;
+    if (!targetLoraId) {
+      toast.error("Select or create a LoRA first");
+      return;
+    }
+    const remaining = maxImages - count;
+    if (remaining <= 0) {
+      toast.error("Maximum images already selected");
+      return;
+    }
+    const toUpload = files.slice(0, remaining);
+    setIsUploading(true);
+    try {
+      // Try presigned URL flow first (works on Vercel which has 4.5MB body limit)
+      let uploaded = [];
+      let trimmed = 0;
+      let usedPresigned = false;
+
+      if (toUpload.length > 0) {
+        try {
+          const presignResults = await Promise.all(
+            toUpload.map(async (file) => {
+              const res = await api.post("/upload/presign", { contentType: file.type || "image/jpeg", folder: "training" });
+              return { file, uploadUrl: res.data.uploadUrl, publicUrl: res.data.publicUrl };
+            })
+          );
+          await Promise.all(
+            presignResults.map(({ file, uploadUrl }) =>
+              fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type || "image/jpeg" } })
+            )
+          );
+          const urls = presignResults.map((r) => r.publicUrl);
+          const { data } = await api.post("/nsfw/register-training-images", { modelId, loraId: targetLoraId, imageUrls: urls });
+          if (data.success) {
+            uploaded = data.images.map((img) => ({ id: img.id, outputUrl: img.imageUrl, _custom: true }));
+            trimmed = data.trimmed || 0;
+            usedPresigned = true;
+          }
+        } catch (_presignErr) {
+          // Fall through to direct multipart upload
+        }
+      }
+
+      if (!usedPresigned) {
+        const formData = new FormData();
+        formData.append("modelId", modelId);
+        formData.append("loraId", targetLoraId);
+        toUpload.forEach((f) => formData.append("photos", f));
+        const { data } = await api.post("/nsfw/upload-training-images", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 120000,
+        });
+        if (data.success && data.images) {
+          uploaded = data.images.map((img) => ({ id: img.id, outputUrl: img.imageUrl, _custom: true }));
+          trimmed = data.trimmed || 0;
+        } else {
+          toast.error(data.message || "Upload failed");
+          return;
+        }
+      }
+
+      if (uploaded.length > 0) {
+        setCustomImages((prev) => [...prev, ...uploaded]);
+        uploaded.forEach((img) => onToggle(img));
+        if (trimmed > 0) {
+          toast(`Only ${uploaded.length} of ${toUpload.length} images uploaded (slot limit reached).`, { icon: "⚠️", duration: 6000 });
+        } else {
+          toast.success(`Uploaded ${uploaded.length} custom image${uploaded.length > 1 ? "s" : ""}`);
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Upload failed");
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className={`p-1.5 rounded-lg ${count >= minImages ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400"}`}>
+            <ImageIcon className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-sm font-medium text-white">Training Images</span>
+            <span className="text-[10px] text-slate-500 ml-2">Different angles, poses & expressions</span>
+          </div>
+        </div>
+        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+          count >= minImages 
+            ? "bg-emerald-500/15 text-emerald-400" 
+            : count > 0 
+              ? "bg-amber-500/15 text-amber-400" 
+              : "bg-white/5 text-slate-500"
+        }`}>
+          {count}/{minImages}
+        </span>
+      </div>
+
+      {selected.length > 0 && (
+        <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-1.5 sm:gap-2 mb-3">
+          {selected.map((gen, idx) => (
+            <div key={gen.id} className="relative aspect-square rounded-xl overflow-hidden ring-2 ring-emerald-500/60 group cursor-pointer">
+              <img src={gen.outputUrl} alt={`Training ${idx + 1}`} className="w-full h-full object-cover" />
+              <div className="absolute top-1 right-1 bg-emerald-500 rounded-full p-0.5">
+                <Check className="w-2.5 h-2.5 text-white" />
+              </div>
+              {gen._custom && (
+                <div className="absolute top-1 left-1 px-1 py-0.5 rounded bg-white/70 text-[8px] text-white font-medium">
+                  Custom
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-2">
+                <button
+                  onClick={() => onPreview(gen.outputUrl)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-white/20 hover:bg-white/30"
+                  data-testid={`preview-training-${idx}`}
+                >
+                  <Eye className="w-4 h-4 text-white" />
+                </button>
+                <button
+                  onClick={() => onToggle(gen)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-red-500/80 hover:bg-red-500"
+                  data-testid={`remove-training-${idx}`}
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {allowCustomUpload && count < maxImages && (
+        <div className="mb-3 p-3 rounded-xl border border-dashed border-white/15 bg-white/[0.02]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Upload className="w-3.5 h-3.5 text-white/60" />
+              <span className="text-xs font-medium text-white/70">Upload Custom Photos</span>
+            </div>
+            <span className="text-[10px] text-slate-500">{maxImages - count} slots left</span>
+          </div>
+          <label
+            className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-white/10 text-xs text-slate-300 transition-colors cursor-pointer ${
+              isUploading ? "opacity-50 pointer-events-none" : "hover:bg-white/[0.04] hover:text-white"
+            }`}
+            data-testid="button-upload-custom-training"
+          >
+            {isUploading ? (
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...</>
+            ) : (
+              <><Plus className="w-3.5 h-3.5" /> Choose images</>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/jpg"
+              multiple
+              onChange={handleCustomUpload}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </label>
+          <p className="text-[10px] text-slate-500 mt-1.5">Your own photos for higher quality LoRA training</p>
+        </div>
+      )}
+
+      {modelImages.length === 0 && !allowCustomUpload ? (
+        <div className="p-5 rounded-xl text-center bg-white/[0.02] border border-dashed border-white/10">
+          <ImageIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+          <p className="text-xs text-slate-400">No images in gallery for this model</p>
+          <p className="text-[10px] text-slate-500 mt-1">Generate images first using the Generate tab</p>
+        </div>
+      ) : available.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] text-slate-500">
+              {count >= maxImages
+                ? `${maxImages} images selected (max reached — deselect one to swap)`
+                : `Tap to select (${count < minImages ? `${minImages - count} more needed` : `${maxImages - count} more available`}):`}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setGalleryPage(1);
+                setShowGallery(true);
+              }}
+              className="text-[10px] text-purple-300 hover:text-purple-200 px-2 py-1 rounded-md border border-purple-500/30 bg-purple-500/10"
+              data-testid="button-open-training-gallery"
+            >
+              Open full gallery
+            </button>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2">
+            {available.map((gen) => (
+              <button
+                key={gen.id}
+                onClick={() => {
+                  if (count < maxImages) {
+                   
+                    onToggle(gen);
+                  }
+                }}
+                disabled={count >= maxImages}
+                className="relative rounded-xl overflow-hidden transition-all aspect-square hover:ring-2 hover:ring-white/30 disabled:opacity-30 disabled:cursor-not-allowed border border-white/10 hover:border-transparent"
+                data-testid={`select-training-pool-${gen.id}`}
+              >
+                <img src={gen.outputUrl} alt="Gallery" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {count >= minImages && count <= maxImages && (
+        <p className="text-[10px] text-emerald-400 flex items-center gap-1 mt-2">
+          <CheckCircle2 className="w-3 h-3" /> {count} images selected - ready to train
+        </p>
+      )}
+
+      {showGallery && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-5xl rounded-2xl border border-white/10 bg-slate-950 shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+              <div>
+                <p className="text-sm font-semibold text-white">Training Gallery</p>
+                <p className="text-[11px] text-slate-400">
+                  Select images from your full generation history
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowGallery(false)}
+                className="p-1.5 rounded-lg hover:bg-white/5 text-slate-300"
+                data-testid="button-close-training-gallery"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-4 py-3">
+              {isGalleryLoading ? (
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading gallery...
+                </div>
+              ) : galleryItems.length === 0 ? (
+                <p className="text-xs text-slate-400">No gallery images found yet.</p>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                  {pagedGalleryItems.map((item) => {
+                    const isSelected = selected.some((s) => s.id === item.id);
+                    const isDisabled = !isSelected && count >= maxImages;
+                    return (
+                      <button
+                        key={`gallery-${item.id}`}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => onToggle(item)}
+                        className={`relative aspect-square rounded-lg overflow-hidden border transition-all ${
+                          isSelected
+                            ? "border-emerald-400 ring-2 ring-emerald-500/60"
+                            : "border-white/10 hover:border-white/40"
+                        } ${isDisabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                        data-testid={`gallery-select-${item.id}`}
+                      >
+                        <img src={item.outputUrl} alt="Gallery" className="w-full h-full object-cover" />
+                        {isSelected && (
+                          <span className="absolute top-1 right-1 bg-emerald-500 rounded-full p-0.5">
+                            <Check className="w-2.5 h-2.5 text-white" />
+                          </span>
+                        )}
+                        {item._training && (
+                          <span className="absolute bottom-1 left-1 bg-white/70 text-[8px] text-white px-1 rounded">
+                            Custom
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
+              <span className="text-[11px] text-slate-500">
+                {count}/{maxImages} selected
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGalleryPage((p) => Math.max(1, p - 1))}
+                  disabled={galleryPage === 1}
+                  className="px-2 py-1 text-[10px] rounded border border-white/10 text-slate-300 disabled:opacity-40"
+                  data-testid="button-training-gallery-prev"
+                >
+                  Prev
+                </button>
+                <span className="text-[10px] text-slate-400">
+                  {galleryPage}/{galleryTotalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setGalleryPage((p) => Math.min(galleryTotalPages, p + 1))}
+                  disabled={galleryPage >= galleryTotalPages}
+                  className="px-2 py-1 text-[10px] rounded border border-white/10 text-slate-300 disabled:opacity-40"
+                  data-testid="button-training-gallery-next"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// LoRA Manager - Create, switch, delete LoRAs
+// ============================================
+function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, onDeleteLora, onSelectLora, currentLoraId, isLoading, onRefreshLoras, modelSavedAppearance }) {
+  const [showCreateInput, setShowCreateInput] = useState(false);
+  const [newLoraName, setNewLoraName] = useState("");
+  const [newLoraAppearance, setNewLoraAppearance] = useState({});
+  const [newLoraMode, setNewLoraMode] = useState("standard");
+  const [showAppearancePanel, setShowAppearancePanel] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingLoraId, setEditingLoraId] = useState(null);
+  const [editAppearance, setEditAppearance] = useState({});
+  const [isSavingAppearance, setIsSavingAppearance] = useState(false);
+  const [isAutoDetecting, setIsAutoDetecting] = useState(false);
+
+  const appearanceGroups = selectorCategories.find(c => c.id === "appearance")?.groups || [];
+  const prevShowCreateInput = useRef(false);
+
+  // Auto-load model's saved looks when user opens "New LoRA" (once per open)
+  useEffect(() => {
+    const justOpened = showCreateInput && !prevShowCreateInput.current;
+    prevShowCreateInput.current = showCreateInput;
+    if (!justOpened || !modelSavedAppearance) return;
+    let appearance = modelSavedAppearance;
+    if (typeof appearance === "string") {
+      try {
+        appearance = JSON.parse(appearance);
+      } catch {
+        appearance = {};
+      }
+    }
+    if (appearance && typeof appearance === "object" && Object.keys(appearance).length > 0) {
+      setNewLoraAppearance({ ...appearance });
+    }
+  }, [showCreateInput, modelSavedAppearance]);
+
+  const statusColors = {
+    ready: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    training: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    failed: "bg-red-500/15 text-red-400 border-red-500/30",
+    awaiting_images: "bg-slate-500/15 text-slate-400 border-slate-500/30",
+    images_ready: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+    legacy_flux: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+  };
+
+  const statusLabels = {
+    ready: "Ready",
+    training: "Training...",
+    failed: "Failed",
+    awaiting_images: "Awaiting Images",
+    images_ready: "Images Ready",
+    legacy_flux: "Outdated",
+  };
+
+  const handleCreate = async () => {
+    if (!newLoraName.trim()) {
+      toast.error("Enter a name for your LoRA");
+      return;
+    }
+    setIsCreating(true);
+    try {
+      const hasAppearance = Object.values(newLoraAppearance).some(Boolean);
+      await onCreateLora(newLoraName.trim(), hasAppearance ? newLoraAppearance : null, newLoraMode);
+      setNewLoraName("");
+      setNewLoraAppearance({});
+      setNewLoraMode("standard");
+      setShowCreateInput(false);
+      setShowAppearancePanel(false);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const toggleAppearanceChip = (key, value) => {
+    setNewLoraAppearance(prev =>
+      prev[key] === value ? { ...prev, [key]: "" } : { ...prev, [key]: value }
+    );
+  };
+
+  const toggleEditChip = (key, value) => {
+    setEditAppearance(prev =>
+      prev[key] === value ? { ...prev, [key]: "" } : { ...prev, [key]: value }
+    );
+  };
+
+  const handleSaveAppearance = async (loraId) => {
+    setIsSavingAppearance(true);
+    try {
+      const hasAny = Object.values(editAppearance).some(Boolean);
+      await api.put(`/nsfw/lora/${loraId}/appearance`, { appearance: hasAny ? editAppearance : null });
+      toast.success("LoRA appearance saved");
+      setEditingLoraId(null);
+      if (onRefreshLoras) onRefreshLoras();
+    } catch (err) {
+      toast.error("Failed to save: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSavingAppearance(false);
+    }
+  };
+
+  const startEditAppearance = (lora) => {
+    if (editingLoraId === lora.id) {
+      setEditingLoraId(null);
+      return;
+    }
+    const raw = lora.defaultAppearance;
+    let appearance = raw || {};
+    if (typeof appearance === 'string') { try { appearance = JSON.parse(appearance); } catch { appearance = {}; } }
+    setEditAppearance(appearance);
+    setEditingLoraId(lora.id);
+  };
+
+  const handleAutoDetect = async (loraId) => {
+    setIsAutoDetecting(true);
+    try {
+      const res = await api.post(`/nsfw/lora/${loraId}/auto-appearance`);
+      if (res.data.success && res.data.defaultAppearance) {
+        setEditAppearance(res.data.defaultAppearance);
+        toast.success(`Detected ${Object.keys(res.data.defaultAppearance).length} features`);
+        if (onRefreshLoras) onRefreshLoras();
+      } else {
+        toast.error(res.data.message || "Could not detect appearance");
+      }
+    } catch (err) {
+      toast.error("Auto-detect failed: " + (err.response?.data?.message || err.message));
+    } finally {
+      setIsAutoDetecting(false);
+    }
+  };
+
+  const appearanceCount = Object.values(newLoraAppearance).filter(Boolean).length;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+        <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+        <span className="text-xs text-slate-400">Loading LoRAs...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <StackSimple className="w-4 h-4 text-rose-400" weight="duotone" />
+          <span className="text-sm font-medium text-white tracking-wide">Your LoRAs</span>
+          <Badge variant="secondary">{loras.length}</Badge>
+        </div>
+        <button
+          onClick={() => setShowCreateInput(!showCreateInput)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.06] border border-white/[0.15] text-white text-xs font-medium hover:bg-white/[0.10] transition-colors"
+          data-testid="button-create-lora"
+        >
+          <Plus className="w-3 h-3" />
+          New LoRA
+        </button>
+      </div>
+
+      {showCreateInput && (
+        <div className="mb-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-3">
+          <input
+            type="text"
+            value={newLoraName}
+            onChange={(e) => setNewLoraName(e.target.value)}
+            placeholder="LoRA name (e.g., v2-lingerie)"
+            className="w-full px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-white/30"
+            data-testid="input-lora-name"
+          />
+
+          <div>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">Training Mode</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setNewLoraMode("standard")}
+                className={`p-2.5 rounded-lg text-left transition-all ${
+                  newLoraMode === "standard"
+                    ? "bg-white/[0.08] border border-white/25 ring-1 ring-white/15"
+                    : "bg-white/[0.02] border border-white/[0.08] hover:bg-white/[0.05]"
+                }`}
+                data-testid="button-mode-standard"
+              >
+                <span className="text-xs font-medium text-white">Standard</span>
+                <p className="text-[10px] text-slate-400 mt-0.5 inline-flex items-center gap-1">15 images, 750 <Coins className="w-3 h-3 text-yellow-400" /></p>
+                <p className="text-[10px] text-slate-500 mt-0.5">~1h to finish</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewLoraMode("pro")}
+                className={`p-2.5 rounded-lg text-left transition-all relative overflow-visible ${
+                  newLoraMode === "pro"
+                    ? "bg-rose-500/10 border border-rose-400/30 ring-1 ring-rose-400/20"
+                    : "bg-white/[0.02] border border-white/[0.08] hover:bg-white/[0.05]"
+                }`}
+                data-testid="button-mode-pro"
+              >
+                <span className="text-xs font-medium text-rose-300 flex items-center gap-1">
+                  <Flame className="w-3 h-3" />
+                  Pro
+                </span>
+                <p className="text-[10px] text-slate-400 mt-0.5 inline-flex items-center gap-1">30 curated images, 1500 <Coins className="w-3 h-3 text-yellow-400" /></p>
+                <p className="text-[10px] text-slate-500 mt-0.5">~2h to finish</p>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <button
+              onClick={() => setShowAppearancePanel(!showAppearancePanel)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.06] transition-colors"
+              data-testid="button-toggle-appearance"
+            >
+              <span className="flex items-center gap-2 text-xs text-slate-300">
+                <User className="w-3.5 h-3.5" />
+                Default Appearance
+                {appearanceCount > 0 && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-white/[0.08] border border-white/[0.15] text-white text-[10px]">{appearanceCount}</span>
+                )}
+              </span>
+              <ChevronRight className={`w-3.5 h-3.5 text-slate-500 transition-transform ${showAppearancePanel ? "rotate-90" : ""}`} />
+            </button>
+
+            {showAppearancePanel && (
+              <div className="mt-2 space-y-2.5 pl-1 max-h-[40vh] overflow-y-auto">
+                <p className="text-[10px] text-slate-500">Pre-filled from model looks. Edit or add Custom per category.</p>
+                {appearanceGroups.map(g => {
+                  const value = newLoraAppearance[g.key] || "";
+                  const isCustom = value && !g.options.includes(value);
+                  return (
+                    <div key={g.key}>
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">{g.label}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {g.options.map(opt => {
+                          const isActive = value === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => setNewLoraAppearance(prev => ({ ...prev, [g.key]: isActive ? "" : opt }))}
+                              className={`px-2 py-0.5 rounded-full text-[11px] transition-all ${
+                                isActive
+                                  ? "bg-white border border-white/35 text-black"
+                                  : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
+                              }`}
+                              data-testid={`chip-appearance-${g.key}-${opt.replace(/\s+/g, '-')}`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          onClick={() => setNewLoraAppearance(prev => ({ ...prev, [g.key]: isCustom ? "" : " " }))}
+                          className={`px-2 py-0.5 rounded-full text-[11px] transition-all ${
+                            isCustom ? "bg-white border border-white/35 text-black" : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
+                          }`}
+                        >
+                          Custom
+                        </button>
+                      </div>
+                      {(isCustom || value === " ") && (
+                        <input
+                          type="text"
+                          value={value === " " ? "" : value}
+                          onChange={(e) => setNewLoraAppearance(prev => ({ ...prev, [g.key]: e.target.value }))}
+                          placeholder="Type custom…"
+                          className="mt-1 w-full px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white text-[10px] placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleCreate}
+            disabled={isCreating || !newLoraName.trim()}
+            className="w-full py-2 rounded-lg bg-white/[0.08] border border-white/[0.15] text-white text-xs font-medium hover:bg-white/[0.12] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+            data-testid="button-confirm-create-lora"
+          >
+            {isCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+            Create LoRA
+          </button>
+        </div>
+      )}
+
+      {loras.length === 0 ? (
+        <div className="p-4 rounded-xl text-center bg-white/[0.02] border border-dashed border-white/10">
+          <Layers className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+          <p className="text-xs text-slate-400">No LoRAs yet</p>
+          <p className="text-[10px] text-slate-500 mt-1">Create a new LoRA to start training</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {loras.map((lora) => {
+            const isLegacy = lora.status === "legacy_flux";
+            const isActive = !isLegacy && activeLora === lora.id;
+            const isSelected = !isLegacy && currentLoraId === lora.id;
+            const canSelect = !isLegacy && ['awaiting_images', 'images_ready'].includes(lora.status);
+            const isReady = lora.status === 'ready';
+            const isClickable = !isLegacy && (canSelect || isReady);
+            const statusColor = statusColors[lora.status] || statusColors.awaiting_images;
+            const statusLabel = statusLabels[lora.status] || lora.status;
+
+            return (
+              <div
+                key={lora.id}
+                onClick={() => {
+                  if (canSelect) onSelectLora?.(lora.id);
+                  else if (isReady) startEditAppearance(lora);
+                }}
+                className={`p-3 rounded-xl border transition-all ${
+                  isLegacy
+                    ? "border-orange-500/20 bg-orange-500/5 opacity-60"
+                    : editingLoraId === lora.id
+                    ? "border-white/35 bg-white/10 ring-1 ring-white/25"
+                    : isSelected
+                    ? "border-white/25 bg-white/[0.06] ring-1 ring-white/15"
+                    : isActive
+                    ? "border-emerald-500/40 bg-emerald-500/5 ring-1 ring-emerald-500/20"
+                    : "border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.04]"
+                } ${isClickable ? "cursor-pointer" : ""}`}
+                data-testid={`lora-card-${lora.id}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-sm font-medium truncate ${isLegacy ? "text-slate-400 line-through" : "text-white"}`}>{lora.name || `LoRA ${lora.id.slice(0, 6)}`}</span>
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${statusColor}`}>
+                          {statusLabel}
+                        </span>
+                        {lora.trainingMode === "pro" && (
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-rose-400/30 bg-rose-500/15 text-rose-300 gap-0.5">
+                            <Flame className="w-2.5 h-2.5" />Pro
+                          </span>
+                        )}
+                        {isActive && (
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">Active</span>
+                        )}
+                        {isSelected && (
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-white/20 bg-white/[0.08] text-white">Setting Up</span>
+                        )}
+                      </div>
+                      {isLegacy && (
+                        <span className="text-[10px] text-orange-400/80 mt-0.5">
+                          Old model - please train a new one
+                        </span>
+                      )}
+                      {!isLegacy && lora.trainedAt && (
+                        <span className="text-[10px] text-slate-500 mt-0.5">
+                          Trained {new Date(lora.trainedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {lora.status === "ready" && !isActive && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onSetActive(lora.id); }}
+                        className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-medium hover:bg-emerald-500/25 transition-colors"
+                        data-testid={`button-set-active-${lora.id}`}
+                      >
+                        Set Active
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startEditAppearance(lora); }}
+                      className={cn(
+                        "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-all",
+                        editingLoraId === lora.id
+                          ? "bg-white text-black border border-white/35"
+                          : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <PencilSimple className="w-3 h-3" weight="bold" />
+                      {lora.defaultAppearance ? "Edit Look" : "Set Look"}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteLora(lora.id); }}
+                      disabled={lora.status === "training"}
+                      title={lora.status === "training" ? "Cannot delete while training is in progress" : "Delete LoRA"}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:text-slate-500 disabled:hover:bg-transparent"
+                      data-testid={`button-delete-lora-${lora.id}`}
+                    >
+                      <Trash className="w-3.5 h-3.5" weight="bold" />
+                    </button>
+                  </div>
+                </div>
+
+                {editingLoraId === lora.id && (
+                  <div className="mt-3 pt-3 border-t border-white/[0.06] space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-slate-500">Set this LoRA's base appearance — used for img2img prompt injection</p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleAutoDetect(lora.id); }}
+                        disabled={isAutoDetecting}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-white/35 text-[10px] font-medium text-black hover:bg-white/90 transition-all disabled:opacity-50"
+                      >
+                        {isAutoDetecting ? <ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> : <Sparkle className="w-3 h-3" weight="fill" />}
+                        {isAutoDetecting ? "Detecting..." : "Auto-detect"}
+                      </button>
+                    </div>
+                    {appearanceGroups.map(g => (
+                      <div key={g.key}>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">{g.label}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {g.options.map(opt => {
+                            const isActive = editAppearance[g.key] === opt;
+                            return (
+                              <button
+                                key={opt}
+                                onClick={(e) => { e.stopPropagation(); toggleEditChip(g.key, opt); }}
+                                className={`px-2 py-0.5 rounded-full text-[11px] transition-all ${
+                                  isActive
+                                    ? "bg-white border border-white/35 text-black"
+                                    : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSaveAppearance(lora.id); }}
+                      disabled={isSavingAppearance}
+                      className="w-full py-1.5 rounded-lg bg-white border border-white/35 text-black text-xs font-medium hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      {isSavingAppearance ? <ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> : <FloppyDisk className="w-3 h-3" weight="bold" />}
+                      Save Appearance
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// Main NSFW Page Component
+// ============================================
+export default function NSFWPage({ embedded = false, sidebarCollapsed = false, setDashboardTab }) {
+  const navigate = useNavigate();
+  const { user, refreshUserCredits, logout } = useAuthStore();
+  const {
+    models,
+    isLoading: modelsLoading,
+    isError: modelsLoadError,
+    refetch: refetchModels,
+  } = useCachedModels();
+  
+  const { draft: nsfwDraft, isLoading: nsfwDraftLoading, saveDraft: saveNsfwDraft, clearDraft: clearNsfwDraft } = useDraft("nsfw");
+  const nsfwDraftRestoredRef = useRef(false);
+  const nsfwInitialLoadDoneRef = useRef(false);
+  const presetSelectionInProgressRef = useRef(false);
+  const modelLooksLockedRef = useRef({});
+
+  // Sidebar state
+  const [showAddCredits, setShowAddCredits] = useState(false);
+  const [showEarnModal, setShowEarnModal] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
+  // State
+  const [selectedModel, setSelectedModel] = useState(null);
+  const [activePhase, setActivePhase] = useState("training"); // "training", "generate", or "video"
+  const [videoSelectedImage, setVideoSelectedImage] = useState(null);
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [videoDuration, setVideoDuration] = useState(5);
+  const [isSubmittingVideo, setIsSubmittingVideo] = useState(false);
+  const [trainingImages, setTrainingImages] = useState([]);
+  const [trainingSelections, setTrainingSelections] = useState([]);
+  const [modelLoras, setModelLoras] = useState([]);
+  const [activeLora, setActiveLora] = useState(null);
+  const [currentLoraId, setCurrentLoraId] = useState(null);
+  const [isLoadingLoras, setIsLoadingLoras] = useState(false);
+  const [trainingStatus, setTrainingStatus] = useState(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [isAssigningImages, setIsAssigningImages] = useState(false);
+  const [isTraining, setIsTraining] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+
+  // NSFW Generation state
+  const [sceneDescription, setSceneDescription] = useState("");
+  const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [isGeneratingNsfw, setIsGeneratingNsfw] = useState(false);
+  const [generatedNsfwImages, setGeneratedNsfwImages] = useState([]);
+  const [selectedPreset, setSelectedPreset] = useState(null);
+  const [imageQuantity, setImageQuantity] = useState(1);
+
+  // AI Prompt generation state
+  const [isGeneratingAiPrompt, setIsGeneratingAiPrompt] = useState(false);
+
+  // Aspect Ratio state
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState("1024x1024");
+
+  // Chip selector state
+  const [chipSelections, setChipSelections] = useState({});
+  const [openCategory, setOpenCategory] = useState("appearance");
+  const [hasSavedAppearance, setHasSavedAppearance] = useState(false);
+  const [isSavingAppearance, setIsSavingAppearance] = useState(false);
+
+  const activeLoraObj = modelLoras.find(l => l.id === activeLora);
+  const lockedAppearance = (() => {
+    const raw = activeLoraObj?.defaultAppearance;
+    if (!raw) return {};
+    if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { return {}; } }
+    return raw;
+  })();
+
+  // Seed looks chips from model's savedAppearance when we have it (instant load from list/detail)
+  const appearanceGroupKeys = (selectorCategories.find(c => c.id === "appearance")?.groups || []).map(g => g.key);
+  useEffect(() => {
+    if (!selectedModel || !models.length) return;
+    if (presetSelectionInProgressRef.current) return;
+    const modelData = models.find(m => m.id === selectedModel);
+    const saved = modelData?.savedAppearance;
+    if (!saved || typeof saved !== "object") return;
+    let normalized = saved;
+    if (typeof saved === "string") {
+      try { normalized = JSON.parse(saved); } catch { return; }
+    }
+    modelLooksLockedRef.current = { ...normalized };
+    setChipSelections(prev => {
+      const next = { ...prev };
+      for (const [k, v] of Object.entries(normalized)) {
+        if (v != null && String(v).trim() !== "") next[k] = v;
+      }
+      return next;
+    });
+  }, [selectedModel, models]);
+
+  useEffect(() => {
+    if (selectedModel) {
+      api.get(`/nsfw/appearance/${selectedModel}`)
+        .then(res => {
+          if (presetSelectionInProgressRef.current) return;
+          if (res.data?.success && res.data.savedAppearance) {
+            setHasSavedAppearance(true);
+            const saved = res.data.savedAppearance;
+            modelLooksLockedRef.current = typeof saved === "object" && saved !== null ? { ...saved } : {};
+            setChipSelections(prev => {
+              const updated = { ...prev };
+              for (const [key, value] of Object.entries(saved)) {
+                if (value) updated[key] = value;
+              }
+              return updated;
+            });
+          } else {
+            setHasSavedAppearance(false);
+            modelLooksLockedRef.current = {};
+          }
+        })
+        .catch(() => {
+          setHasSavedAppearance(false);
+          modelLooksLockedRef.current = {};
+        });
+    }
+  }, [selectedModel]);
+
+  useEffect(() => {
+    if (presetSelectionInProgressRef.current) return;
+    if (lockedAppearance && Object.keys(lockedAppearance).length > 0) {
+      setChipSelections(prev => {
+        const updated = { ...prev };
+        for (const [key, value] of Object.entries(lockedAppearance)) {
+          if (value) updated[key] = value;
+        }
+        return updated;
+      });
+    }
+  }, [activeLora, modelLoras.length]);
+
+  const handleSaveAppearance = async () => {
+    if (!selectedModel) return;
+    // Save all appearance keys from chip groups (single source of truth, same as Models page)
+    const appearance = {};
+    for (const key of appearanceGroupKeys) {
+      const v = chipSelections[key];
+      if (v != null && String(v).trim() !== "") appearance[key] = v;
+    }
+    setIsSavingAppearance(true);
+    try {
+      const res = await api.post("/nsfw/appearance/save", { modelId: selectedModel, appearance });
+      if (res.data?.success) {
+        setHasSavedAppearance(Object.keys(appearance).length > 0);
+        toast.success("Appearance saved");
+      }
+    } catch (err) {
+      toast.error("Failed to save appearance");
+    }
+    setIsSavingAppearance(false);
+  };
+
+  const toggleChip = (key, value) => {
+    setChipSelections((prev) => {
+      const next = prev[key] === value ? { ...prev, [key]: "" } : { ...prev, [key]: value };
+      return applyChipConstraints(next, lockedAppearance);
+    });
+    setGeneratedPrompt("");
+  };
+
+  const blockedChips = getBlockedChips(chipSelections);
+  const chipCount = Object.values(chipSelections).filter(Boolean).length;
+
+  // Legacy compat
+  const nsfwAttributes = chipSelections;
+
+  // Skip face swap toggle (generate raw LoRA output without face swap)
+  const [skipFaceSwap, setSkipFaceSwap] = useState(true);
+  
+  // Selected face swap image from gallery (SECURITY: only gallery images allowed)
+  const [faceSwapImage, setFaceSwapImage] = useState(null);
+
+  const GENERATION_CONFIG_KEY = "nsfw_generation_config";
+  const DEFAULT_CONFIG = {
+    loraStrength: 0,
+    blurEnabled: true,
+    blurStrength: 0.3,
+    grainEnabled: true,
+    grainStrength: 0.06,
+  };
+
+  const loadSavedConfig = () => {
+    try {
+      const saved = localStorage.getItem(GENERATION_CONFIG_KEY);
+      if (saved) return { ...DEFAULT_CONFIG, ...JSON.parse(saved) };
+    } catch (e) {}
+    return DEFAULT_CONFIG;
+  };
+
+  const [genConfig, setGenConfig] = useState(loadSavedConfig);
+  const [showGenSettings, setShowGenSettings] = useState(false);
+  const [configSaved, setConfigSaved] = useState(false);
+  const POST_PROCESSING_PRESETS = [
+    { id: "balanced", label: "Balanced", blurEnabled: true, blurStrength: 0.3, grainEnabled: true, grainStrength: 0.06 },
+    { id: "soft", label: "Soft Blur", blurEnabled: true, blurStrength: 0.55, grainEnabled: false, grainStrength: 0.06 },
+    { id: "film", label: "Film Grain", blurEnabled: false, blurStrength: 0.3, grainEnabled: true, grainStrength: 0.45 },
+    { id: "off", label: "Raw", blurEnabled: false, blurStrength: 0.3, grainEnabled: false, grainStrength: 0.06 },
+  ];
+
+  const getActivePostPreset = () => {
+    const bOn = genConfig.blurEnabled !== false;
+    const gOn = genConfig.grainEnabled !== false;
+    const b = Number(genConfig.blurStrength ?? 0.3);
+    const g = Number(genConfig.grainStrength ?? 0.06);
+    return (
+      POST_PROCESSING_PRESETS.find((p) =>
+        p.blurEnabled === bOn &&
+        p.grainEnabled === gOn &&
+        Math.abs(p.blurStrength - b) < 0.001 &&
+        Math.abs(p.grainStrength - g) < 0.001
+      )?.id || null
+    );
+  };
+
+  const applyPostPreset = (preset) => {
+    setGenConfig((prev) => ({
+      ...prev,
+      blurEnabled: preset.blurEnabled,
+      blurStrength: preset.blurStrength,
+      grainEnabled: preset.grainEnabled,
+      grainStrength: preset.grainStrength,
+    }));
+  };
+
+  const handleSaveConfig = () => {
+    try {
+      localStorage.setItem(GENERATION_CONFIG_KEY, JSON.stringify(genConfig));
+      setConfigSaved(true);
+      toast.success("Settings saved!");
+      setTimeout(() => setConfigSaved(false), 2000);
+    } catch (e) {
+      toast.error("Failed to save settings");
+    }
+  };
+
+  const handleResetConfig = () => {
+    setGenConfig(DEFAULT_CONFIG);
+    localStorage.removeItem(GENERATION_CONFIG_KEY);
+    toast.success("Settings reset to defaults");
+  };
+
+  useEffect(() => {
+    if (nsfwDraftLoading || nsfwDraftRestoredRef.current || presetSelectionInProgressRef.current) {
+      if (!nsfwDraftLoading) {
+        nsfwDraftRestoredRef.current = true;
+        setTimeout(() => { nsfwInitialLoadDoneRef.current = true; }, 0);
+      }
+      return;
+    }
+    nsfwDraftRestoredRef.current = true;
+    if (!nsfwDraft?.data) {
+      setTimeout(() => { nsfwInitialLoadDoneRef.current = true; }, 0);
+      return;
+    }
+    const d = nsfwDraft.data;
+    if (d.selectedModel) setSelectedModel(d.selectedModel);
+    if (d.sceneDescription) setSceneDescription(d.sceneDescription);
+    if (d.chipSelections && typeof d.chipSelections === "object") setChipSelections(d.chipSelections);
+    if (d.selectedPreset) setSelectedPreset(d.selectedPreset);
+    if (d.selectedAspectRatio) setSelectedAspectRatio(d.selectedAspectRatio);
+    if (d.skipFaceSwap !== undefined) setSkipFaceSwap(d.skipFaceSwap);
+    if (d.faceSwapImage) setFaceSwapImage(d.faceSwapImage);
+    if (d.genConfig && typeof d.genConfig === "object") setGenConfig(prev => ({ ...prev, ...d.genConfig }));
+    if (d.activePhase) setActivePhase(d.activePhase);
+    if (d.currentLoraId) setCurrentLoraId(d.currentLoraId);
+    if (Array.isArray(d.trainingSelections) && d.trainingSelections.length > 0) {
+      setTrainingSelections(d.trainingSelections);
+    }
+    setTimeout(() => { nsfwInitialLoadDoneRef.current = true; }, 0);
+  }, [nsfwDraftLoading, nsfwDraft]);
+
+  useEffect(() => {
+    if (!nsfwInitialLoadDoneRef.current) return;
+    const data = {
+      selectedModel,
+      sceneDescription,
+      chipSelections,
+      selectedPreset,
+      selectedAspectRatio,
+      skipFaceSwap,
+      faceSwapImage,
+      genConfig,
+      activePhase,
+      currentLoraId,
+      trainingSelections: trainingSelections.map(s => ({ id: s.id, outputUrl: s.outputUrl, _custom: s._custom || false })),
+    };
+    const imageUrls = [faceSwapImage?.url].filter(Boolean);
+    saveNsfwDraft(data, imageUrls);
+  }, [selectedModel, sceneDescription, chipSelections, selectedPreset, selectedAspectRatio, skipFaceSwap, faceSwapImage, genConfig, activePhase, currentLoraId, trainingSelections]);
+
+  // Ref to track if component is mounted
+  const isMountedRef = useRef(true);
+  const lastTrainingStatusRef = useRef({});
+  const checkTrainingStatusRef = useRef(null);
+
+  const showTrainingCompletedToast = () => {
+    toast.custom(
+      () => (
+        <div
+          className="rounded-xl px-4 py-3 text-white"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(22,22,30,0.9) 0%, rgba(14,14,22,0.92) 100%)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow:
+              "0 16px 38px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+              <CheckCircle2 className="w-3.5 h-3.5 text-rose-300" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">LoRA training completed</p>
+              <p className="text-[11px] text-slate-300">Your model is ready for NSFW generation.</p>
+            </div>
+          </div>
+        </div>
+      ),
+      { duration: 4200, position: "top-right" },
+    );
+  };
+
+  // Get selected model data
+  const selectedModelData = models.find((m) => m.id === selectedModel);
+  const hasNsfwAccess = models.some((m) => m.isAIGenerated === true || m.nsfwOverride === true || m.nsfwUnlocked === true);
+  const isLoraReady = selectedModelData?.nsfwUnlocked === true || 
+    modelLoras.some(l => l.status === 'ready');
+
+  // Auto-select first verified model (AI-generated or nsfwOverride approved)
+  useEffect(() => {
+    const aiModels = models.filter((m) => m.status !== "processing" && (m.isAIGenerated === true || m.nsfwOverride === true || m.nsfwUnlocked === true));
+    if (aiModels.length > 0 && !selectedModel) {
+      setSelectedModel(aiModels[0].id);
+    }
+  }, [models, selectedModel]);
+
+  const prevSelectedModelRef = useRef(null);
+
+  useEffect(() => {
+    if (selectedModel) {
+      loadModelLoras();
+      loadTrainingImages();
+
+      const cachedStatus = getTrainingState(selectedModel);
+      if (cachedStatus === "training") {
+        setTrainingStatus("training");
+        setIsLoadingStatus(false);
+      }
+
+      checkTrainingStatus();
+      
+      const isModelSwitch = prevSelectedModelRef.current !== null && prevSelectedModelRef.current !== selectedModel;
+      if (isModelSwitch) {
+        setTrainingSelections([]);
+        setCurrentLoraId(null);
+      }
+      prevSelectedModelRef.current = selectedModel;
+    } else {
+      setIsLoadingStatus(false);
+    }
+  }, [selectedModel, models]);
+
+  // Poll training status while in progress (no hard timeout)
+  useEffect(() => {
+    let interval;
+
+    if (trainingStatus === "training" && selectedModel) {
+      // Save to localStorage so state persists across page refresh
+      saveTrainingState(selectedModel, "training");
+
+      interval = setInterval(() => {
+        checkTrainingStatusRef.current?.();
+      }, 60000); // Check every 60 seconds
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [trainingStatus, selectedModel]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Load LoRAs for the selected model
+  const loadModelLoras = async () => {
+    if (!selectedModel) return;
+    setIsLoadingLoras(true);
+    try {
+      const response = await api.get(`/nsfw/loras/${selectedModel}`);
+      if (response.data.success) {
+        setModelLoras(response.data.loras || []);
+        setActiveLora(response.data.activeLoraId || null);
+        const pendingLora = (response.data.loras || []).find(l => 
+          ['awaiting_images', 'images_ready', 'training'].includes(l.status)
+        );
+        if (pendingLora) {
+          setCurrentLoraId(pendingLora.id);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load loras:", error);
+    } finally {
+      setIsLoadingLoras(false);
+    }
+  };
+
+  // Create a new LoRA
+  const handleCreateLora = async (name, defaultAppearance, trainingMode) => {
+    try {
+      const response = await api.post("/nsfw/lora/create", { modelId: selectedModel, name, defaultAppearance, trainingMode });
+      if (response.data.success) {
+        toast.success(`LoRA "${response.data.lora.name}" created!`);
+        setCurrentLoraId(response.data.lora.id);
+        await loadModelLoras();
+        return response.data.lora;
+      }
+      toast.error(response.data.message || "Failed to create LoRA");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create LoRA");
+    }
+  };
+
+  // Set active LoRA
+  const handleSetActiveLora = async (loraId) => {
+    try {
+      const response = await api.post("/nsfw/lora/set-active", { modelId: selectedModel, loraId });
+      if (response.data.success) {
+        toast.success("Active LoRA updated!");
+        setActiveLora(loraId);
+        await loadModelLoras();
+        refetchModels();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to set active LoRA");
+    }
+  };
+
+  // Delete a LoRA
+  const handleDeleteLora = async (loraId) => {
+    if (!confirm("Are you sure you want to delete this LoRA? This cannot be undone.")) return;
+    try {
+      const response = await api.delete(`/nsfw/lora/${loraId}`);
+      if (response.data.success) {
+        toast.success("LoRA deleted");
+        await loadModelLoras();
+        refetchModels();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete LoRA");
+    }
+  };
+
+  // Load training images from API
+  const loadTrainingImages = async () => {
+    if (!selectedModel) return;
+    try {
+      const loraId = currentLoraId;
+      const url = loraId 
+        ? `/nsfw/training-images/${selectedModel}?loraId=${loraId}`
+        : `/nsfw/training-images/${selectedModel}`;
+      const response = await api.get(url);
+      if (response.data.success && isMountedRef.current) {
+        setTrainingImages(response.data.trainingImages || []);
+      }
+    } catch (error) {
+      console.error("Failed to load training images:", error);
+    }
+  };
+
+  // Check training status
+  const checkTrainingStatus = async () => {
+    if (!selectedModel) return;
+
+    try {
+      const loraId = currentLoraId;
+      const url = loraId
+        ? `/nsfw/training-status/${selectedModel}?loraId=${loraId}`
+        : `/nsfw/training-status/${selectedModel}`;
+      const response = await api.get(url);
+      if (response.data.success && isMountedRef.current) {
+        const newStatus = response.data.status;
+        const previousStatus = lastTrainingStatusRef.current[selectedModel];
+        const hadTrainingState =
+          previousStatus === "training" ||
+          getTrainingState(selectedModel) === "training";
+        lastTrainingStatusRef.current[selectedModel] = newStatus;
+        setTrainingStatus(newStatus);
+        setIsLoadingStatus(false);
+
+        if (newStatus === "training") {
+          saveTrainingState(selectedModel, "training");
+        } else if (
+          newStatus === "ready" ||
+          newStatus === "failed" ||
+          newStatus === "partial_failure" ||
+          newStatus === "images_ready"
+        ) {
+          clearTrainingState(selectedModel);
+
+          if (newStatus === "ready") {
+            refetchModels();
+            await loadModelLoras();
+            if (hadTrainingState) {
+              showTrainingCompletedToast();
+            }
+          } else if (newStatus === "images_ready") {
+            refetchModels();
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to check training status:", error);
+      if (isMountedRef.current) {
+        setIsLoadingStatus(false);
+      }
+    }
+  };
+  // Keep the ref up-to-date so the polling interval always calls the latest version
+  checkTrainingStatusRef.current = checkTrainingStatus;
+
+  // Toggle image selection for training
+  const selectedLoraForTraining = currentLoraId ? modelLoras.find(l => l.id === currentLoraId) : null;
+  const isProTraining = selectedLoraForTraining?.trainingMode === "pro";
+  const requiredTrainingImages = isProTraining ? 30 : 15;
+  const maxTrainingImages = isProTraining ? 30 : 15;
+  const trainingCreditCost = isProTraining ? 150 : 75;
+
+  const handleToggleTrainingImage = (gen) => {
+    setTrainingSelections(prev => {
+      const exists = prev.some(s => s.id === gen.id);
+      if (exists) {
+        return prev.filter(s => s.id !== gen.id);
+      }
+      if (prev.length >= maxTrainingImages) return prev;
+      return [...prev, gen];
+    });
+  };
+
+  // Assign selected images and start LoRA training
+  const handleAssignAndTrain = async () => {
+    if (!selectedModel) return;
+    
+    const totalSelected = trainingSelections.length;
+    if (totalSelected < requiredTrainingImages) {
+      toast.error(`Select at least ${requiredTrainingImages} images. Currently have ${totalSelected}.`);
+      return;
+    }
+    if (totalSelected > maxTrainingImages) {
+      toast.error(`Maximum ${maxTrainingImages} images allowed. Currently have ${totalSelected}.`);
+      return;
+    }
+
+    const loraId = currentLoraId;
+    if (!loraId) {
+      toast.error("Please create a New LoRA first before training.");
+      return;
+    }
+
+    setIsAssigningImages(true);
+    try {
+      const images = trainingSelections.map((gen) => {
+        if (gen._custom || gen._training || gen.customImageId) {
+          return {
+            customImageId: gen.customImageId || gen.id,
+            imageUrl: gen.outputUrl,
+          };
+        }
+        return {
+          generationId: gen.generationId || gen.id,
+        };
+      });
+
+      const assignResponse = await api.post("/nsfw/assign-training-images", {
+        modelId: selectedModel,
+        loraId,
+        images,
+      });
+
+      if (!assignResponse.data.success) {
+        toast.error(assignResponse.data.message || "Failed to assign images");
+        setIsAssigningImages(false);
+        return;
+      }
+
+      toast.success("Images assigned! Starting LoRA training...");
+
+      // Lock UI immediately before long-running preprocessing on backend
+      // (captioning + ZIP creation) to prevent accidental resubmits.
+      setTrainingStatus("training");
+      saveTrainingState(selectedModel, "training");
+
+      const trainResponse = await api.post("/nsfw/train-lora", {
+        modelId: selectedModel,
+        loraId,
+      });
+
+      if (trainResponse.data.success) {
+        const lora = modelLoras.find((l) => l.id === loraId);
+        const isPro = lora?.trainingMode === "pro";
+        toast.success(isPro ? "LoRA training started! Pro LoRA takes about 2 hours to finish." : "LoRA training started! Basic LoRA takes about 1 hour to finish.");
+        setTrainingStatus("training");
+        setTrainingSelections([]);
+        saveTrainingState(selectedModel, "training");
+        refreshUserCredits();
+        refetchModels();
+        await loadModelLoras();
+      } else {
+        // Backend failed before job start — unlock UI and clear optimistic lock.
+        clearTrainingState(selectedModel);
+        await checkTrainingStatus();
+        toast.error(trainResponse.data.message || "Failed to start training");
+      }
+    } catch (error) {
+      clearTrainingState(selectedModel);
+      await checkTrainingStatus();
+      console.error("Assign and train error:", error);
+      toast.error(error.response?.data?.message || "Failed to start training");
+    } finally {
+      setIsAssigningImages(false);
+    }
+  };
+
+  // Start LoRA training
+  const handleStartTraining = async () => {
+    if (!selectedModel) return;
+    let loraId = currentLoraId;
+    if (!loraId) {
+      toast.error("No LoRA selected for training");
+      return;
+    }
+
+    setIsTraining(true);
+    // Immediate optimistic lock for long preprocessing stage on backend.
+    setTrainingStatus("training");
+    saveTrainingState(selectedModel, "training");
+
+    try {
+      const response = await api.post("/nsfw/train-lora", {
+        modelId: selectedModel,
+        loraId,
+      });
+
+      if (response.data.success) {
+        const lora = modelLoras.find((l) => l.id === loraId);
+        const isPro = lora?.trainingMode === "pro";
+        toast.success(isPro ? "LoRA training started! Pro LoRA takes about 2 hours to finish." : "LoRA training started! Basic LoRA takes about 1 hour to finish.");
+        setTrainingStatus("training");
+        // Save to localStorage immediately
+        saveTrainingState(selectedModel, "training");
+        refreshUserCredits();
+      } else {
+        clearTrainingState(selectedModel);
+        await checkTrainingStatus();
+        toast.error(response.data.message || "Failed to start training");
+      }
+    } catch (error) {
+      clearTrainingState(selectedModel);
+      await checkTrainingStatus();
+      console.error("Start training error:", error);
+      toast.error(error.response?.data?.message || "Failed to start training");
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
+  // Generate prompt with AI (Grok) from selections + scene description
+  const handleGeneratePrompt = async () => {
+    if (!selectedModel) return;
+    const sceneText = sceneDescription.trim() || "intimate bedroom scene";
+
+    setIsGeneratingAiPrompt(true);
+
+    try {
+      const attributesString = buildSelectionsString(chipSelections);
+      const response = await api.post("/nsfw/generate-prompt", {
+        modelId: selectedModel,
+        userRequest: sceneText,
+        attributes: attributesString,
+        attributesDetail: chipSelections,
+      });
+
+      if (response.data.success && response.data.prompt) {
+        setGeneratedPrompt(response.data.prompt);
+        const keep = { ...modelLooksLockedRef.current };
+        for (const [k, v] of Object.entries(lockedAppearance || {})) {
+          if (v) keep[k] = v;
+        }
+        setChipSelections(applyChipConstraints(keep, lockedAppearance));
+        toast.success("Prompt generated!");
+      } else {
+        toast.error(response.data.message || "Failed to generate prompt");
+      }
+    } catch (error) {
+      console.error("Generate prompt error:", error);
+      toast.error(error.response?.data?.message || "Failed to generate prompt");
+    } finally {
+      setIsGeneratingAiPrompt(false);
+    }
+  };
+
+  // Auto-select chips based on scene description using AI
+  const [isAutoSelecting, setIsAutoSelecting] = useState(false);
+  const handleAutoSelect = async () => {
+    const desc = sceneDescription.trim();
+    if (!desc) {
+      toast.error("Type a scene description first");
+      return;
+    }
+    if (!selectedModel) {
+      toast.error("Select a model first");
+      return;
+    }
+    setIsAutoSelecting(true);
+    try {
+      const response = await api.post("/nsfw/auto-select", {
+        description: desc,
+        modelId: selectedModel,
+      });
+
+      if (response.data.success && response.data.selections) {
+        setChipSelections(prev => {
+          const updated = { ...prev };
+          for (const [key, value] of Object.entries(response.data.selections)) {
+            if (!lockedAppearance[key]) {
+              updated[key] = value;
+            }
+          }
+          return applyChipConstraints(updated, lockedAppearance);
+        });
+        setGeneratedPrompt("");
+        const count = Object.keys(response.data.selections).length;
+        toast.success(`AI selected ${count} matching options`);
+      } else {
+        toast.error(response.data.message || "Auto-select failed");
+      }
+    } catch (error) {
+      console.error("Auto-select error:", error);
+      toast.error(error.response?.data?.message || "Auto-select failed");
+    } finally {
+      setIsAutoSelecting(false);
+    }
+  };
+
+  const handlePresetSelect = (preset) => {
+    if (!selectedModel) {
+      toast.error("Select a model first");
+      return;
+    }
+    setSelectedPreset(preset.id);
+    setSceneDescription(preset.description);
+    setGeneratedPrompt("");
+    const baseSelections = { ...modelLooksLockedRef.current };
+    for (const [key, value] of Object.entries(lockedAppearance || {})) {
+      if (value) baseSelections[key] = value;
+    }
+    setChipSelections(applyChipConstraints(baseSelections, lockedAppearance));
+  };
+
+  // Generate NSFW image
+  const handleGenerateNsfw = async () => {
+    const promptToUse = generatedPrompt.trim();
+    if (!selectedModel || !promptToUse) {
+      toast.error("Generate a prompt first");
+      return;
+    }
+
+    if (!isLoraReady) {
+      toast.error("Please complete LoRA training first");
+      setActivePhase("training");
+      return;
+    }
+
+    setIsGeneratingNsfw(true);
+
+    try {
+      const [width, height] = selectedAspectRatio.split("x").map(Number);
+      const attributesString = buildSelectionsString(chipSelections);
+
+      const response = await api.post("/nsfw/generate", {
+        modelId: selectedModel,
+        prompt: promptToUse,
+        quantity: imageQuantity,
+        attributes: attributesString,
+        attributesDetail: chipSelections,
+        sceneDescription: sceneDescription.trim(),
+        skipFaceSwap,
+        faceSwapImageUrl: faceSwapImage?.url || null,
+        options: {
+          loraStrength: genConfig.loraStrength || null,
+          postProcessing: {
+            blur: {
+              enabled: genConfig.blurEnabled !== false,
+              strength: Number(genConfig.blurStrength ?? 0.3),
+            },
+            grain: {
+              enabled: genConfig.grainEnabled !== false,
+              strength: Number(genConfig.grainStrength ?? 0.06),
+            },
+          },
+        },
+      });
+
+      if (response.data.success) {
+        const qty = response.data.imageQuantity || 1;
+        toast(qty === 2 
+          ? "2 images generating! Check Live Preview." 
+          : "Generation submitted! You can create more while it processes.", 
+          { icon: "🔥" }
+        );
+        refreshUserCredits();
+        clearNsfwDraft();
+
+        setGeneratedPrompt("");
+        setSceneDescription("");
+        const keep = { ...modelLooksLockedRef.current };
+        for (const [k, v] of Object.entries(lockedAppearance || {})) {
+          if (v) keep[k] = v;
+        }
+        setChipSelections(applyChipConstraints(keep, lockedAppearance));
+
+        const generations = response.data.generations || [];
+        if (generations.length > 0) {
+          generations.forEach(g => pollNsfwGeneration(g.id).catch(() => {}));
+        } else {
+          const generationId = response.data.generation?.id;
+          if (generationId) {
+            pollNsfwGeneration(generationId).catch(() => {});
+          }
+        }
+      } else {
+        toast.error(response.data.message || "Failed to generate");
+      }
+    } catch (error) {
+      console.error("Generate NSFW error:", error);
+      const errData = error.response?.data;
+      const msg = errData?.errors?.length
+        ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
+        : (errData?.message || "Failed to generate");
+      toast.error(msg);
+    } finally {
+      setIsGeneratingNsfw(false);
+    }
+  };
+
+  // Poll for NSFW generation completion
+  const pollNsfwGeneration = async (generationId) => {
+    const maxAttempts = 60; // 5 minutes max (5 sec intervals)
+    const pollInterval = 5000; // 5 seconds
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await api.get(`/generations/${generationId}`);
+        const generation = response.data.generation;
+
+        if (generation?.status === "completed" && generation?.outputUrl) {
+          // Parse outputUrl - can be single URL or JSON array of URLs
+          let imageUrls = [];
+          try {
+            // Try to parse as JSON array
+            const parsed = JSON.parse(generation.outputUrl);
+            if (Array.isArray(parsed)) {
+              imageUrls = parsed;
+            } else {
+              imageUrls = [generation.outputUrl];
+            }
+          } catch {
+            // Not JSON, treat as single URL
+            imageUrls = [generation.outputUrl];
+          }
+
+          const imageCount = imageUrls.length;
+          toast.success(
+            `${imageCount} NSFW image${imageCount > 1 ? "s" : ""} generated!`,
+          );
+
+          // Add all images to the generated list
+          const newImages = imageUrls.map((url, index) => ({
+            id: `${generation.id}-${index}`,
+            url: url,
+            prompt: generation.prompt,
+            createdAt: generation.createdAt,
+          }));
+
+          setGeneratedNsfwImages((prev) => [...newImages, ...prev]);
+          return;
+        }
+
+        if (generation?.status === "failed") {
+          toast.error(generation.errorMessage || "Generation failed");
+          return;
+        }
+
+        // Wait before next poll
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
+      } catch (error) {
+        console.error("Poll error:", error);
+      }
+    }
+
+    toast.error("Generation timed out. Check history for results.");
+  };
+
+  // Calculate completed training images (from backend)
+  const completedTrainingImages = Array.isArray(trainingImages)
+    ? trainingImages.filter(i => i.status === 'completed').length
+    : 0;
+
+  // Calculate selected training images (from gallery picker)
+  const totalSelectedTrainingImages = trainingSelections.length;
+
+  const contentBlock = (
+    <div className={embedded ? "" : "min-h-screen relative"}>
+      {!embedded && (
+        <>
+          {/* Static gradient background */}
+          <div
+            className="fixed inset-0 bg-gradient-to-b from-black/5 to-black pointer-events-none"
+            style={{ zIndex: 0 }}
+          />
+          
+          {/* Desktop Sidebar - hidden on mobile */}
+          <div className="hidden md:block">
+            <AppSidebar
+              activeTab="nsfw"
+              setActiveTab={(tab) => {
+                if (tab === "nsfw") return;
+                navigate(`/dashboard?tab=${tab}`);
+              }}
+              user={user}
+              onLogout={handleLogout}
+              onOpenCredits={() => setShowCreditsModal(true)}
+              onOpenEarn={() => setShowEarnModal(true)}
+              onOpenReferral={() => setShowReferralModal(true)}
+              onOpenAdmin={() => navigate("/admin")}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Main Content - with left margin for sidebar on desktop (only when standalone) */}
+      <div className={embedded ? "flex justify-center" : "md:ml-[260px] px-3 py-4 sm:p-6 lg:p-8 relative z-10 flex justify-center"}>
+        <div className="w-full max-w-5xl">
+        {/* NSFW Unlock Modal */}
+        <NsfwUnlockModal 
+          isOpen={showUnlockModal} 
+          onClose={() => setShowUnlockModal(false)}
+          sidebarCollapsed={sidebarCollapsed}
+        />
+
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+            <div className="p-1.5 sm:p-2 rounded-xl border border-white/20 bg-white/[0.08] backdrop-blur-xl">
+              <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">NSFW Studio</h1>
+            <span className="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.15] text-rose-400 text-[10px] sm:text-xs font-medium">
+              Verified Models
+            </span>
+            {!hasNsfwAccess && (
+              <button
+                onClick={() => setShowUnlockModal(true)}
+                className="ml-auto px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] sm:text-xs font-medium hover:bg-amber-500/20 transition-colors flex items-center gap-1.5"
+                data-testid="button-nsfw-unlock-info"
+              >
+                <Lock className="w-3 h-3" />
+                Need Access?
+              </button>
+            )}
+        </div>
+        <p className="text-xs sm:text-sm text-slate-400">
+          Train custom LoRA models and generate NSFW content with verified models
+        </p>
+      </div>
+
+      <CourseTipBanner type="nsfw" onNavigateToCourse={() => setDashboardTab?.("course", "generate-nsfw")} />
+
+      {/* Phase Tabs */}
+      <div
+        className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6 p-1.5 rounded-2xl glass-card"
+      >
+        {[
+          { key: "training", label: "Train Model", sub: "Create LoRA", Icon: Wand2, locked: false },
+          { key: "generate", label: "Generate", sub: isLoraReady ? "NSFW Ready" : "Train first", Icon: Flame, locked: !isLoraReady },
+          { key: "video", label: "Video", sub: isLoraReady ? "Image to Video" : "Train first", Icon: Video, locked: !isLoraReady, testId: "button-video-tab" },
+          { key: "img2img", label: "Img2Img", sub: isLoraReady ? "Photo swap" : "Train first", Icon: ScanSearch, locked: !isLoraReady, testId: "button-img2img-tab" },
+        ].map(({ key, label, sub, Icon, locked, testId }) => {
+          const active = activePhase === key;
+          return (
+            <button
+              key={key}
+              onClick={() => { if (!locked) { setActivePhase(key); } }}
+              disabled={locked}
+              className={`relative w-full py-2.5 px-2.5 sm:py-3 sm:px-3 md:px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 sm:gap-2 min-h-[52px] sm:min-h-[60px] group overflow-hidden ${
+                active
+                  ? "text-white bg-white/[0.08] border border-white/20"
+                  : "text-slate-400 hover:text-white bg-white/[0.03] border border-transparent hover:border-white/10"
+              } ${locked ? "opacity-50 cursor-not-allowed" : ""}`}
+              data-testid={testId}
+            >
+              {active && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
+              {active && <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={RED_CORNER_GLOW_STYLE} />}
+              <div className="relative flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <div className={`p-1.5 sm:p-2 rounded-lg ${active ? "bg-white/10 border border-white/20" : "bg-white/5"}`}>
+                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${active ? "text-rose-400" : ""}`} />
+                </div>
+                <div className="text-left min-w-0">
+                  <span className="font-semibold text-[12px] sm:text-sm md:text-base block leading-tight">{label}</span>
+                  <span className="text-[10px] text-slate-500 hidden xl:block leading-tight">{sub}</span>
+                </div>
+                {locked && <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 ml-1 sm:ml-2" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Content */}
+      <div className="space-y-6">
+        {/* Model Selector & Main Content */}
+        <div
+          className="rounded-2xl p-3 sm:p-5 md:p-6 glass-card"
+        >
+            <NSFWModelSelector
+              models={models}
+              selectedModel={selectedModel}
+              onSelect={setSelectedModel}
+              onShowUnlockModal={() => setShowUnlockModal(true)}
+              modelsLoadError={modelsLoadError}
+              onRetry={refetchModels}
+              isLoading={modelsLoading}
+            />
+
+            {activePhase === "training" && selectedModel && (
+              <>
+                {/* LoRA Manager */}
+                <div className="mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
+                      <span className="text-[10px] font-bold text-white">2</span>
+                    </div>
+                    <span className="text-sm font-medium text-white">
+                      MANAGE LoRAs
+                    </span>
+                  </div>
+                  <div className="p-2.5 sm:p-4 rounded-xl border border-white/[0.10] bg-white/[0.03]">
+                    <LoRAManager
+                      modelId={selectedModel}
+                      loras={modelLoras}
+                      activeLora={activeLora}
+                      currentLoraId={currentLoraId}
+                      onCreateLora={handleCreateLora}
+                      onSetActive={handleSetActiveLora}
+                      onDeleteLora={handleDeleteLora}
+                      onSelectLora={(loraId) => setCurrentLoraId(loraId)}
+                      isLoading={isLoadingLoras}
+                      onRefreshLoras={loadModelLoras}
+                      modelSavedAppearance={(() => {
+                        const s = selectedModelData?.savedAppearance;
+                        if (!s) return {};
+                        if (typeof s === "object") return s;
+                        try { return JSON.parse(s); } catch { return {}; }
+                      })()}
+                    />
+                  </div>
+                </div>
+
+                {/* Training Images + Train Button - only show when a LoRA is selected */}
+                {(() => {
+                  const selectedLora = currentLoraId ? modelLoras.find(l => l.id === currentLoraId) : null;
+                  const loraStatus = selectedLora?.status;
+                  const effectiveStatus = trainingStatus === "training" ? "training" : loraStatus;
+                  const showImagePicker = selectedLora && ['awaiting_images', 'images_ready'].includes(effectiveStatus);
+                  const showTrainingStatus = selectedLora && ['training', 'ready', 'failed'].includes(effectiveStatus);
+
+                  if (!currentLoraId) {
+                    return (
+                      <div className="mt-6 p-4 rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-center">
+                        <Layers className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+                        <p className="text-sm text-slate-400">Click "New LoRA" above to start training</p>
+                        <p className="text-[11px] text-slate-500 mt-1">Or click an existing LoRA in "Awaiting Images" status to add images</p>
+                      </div>
+                    );
+                  }
+
+                  if (isLoadingStatus) {
+                    return (
+                      <div className="mt-6">
+                        <div className="p-4 rounded-xl border border-slate-500/30 bg-slate-500/10">
+                          <div className="flex items-center gap-3">
+                            <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+                            <div>
+                              <p className="text-sm font-medium text-slate-200">Checking training status...</p>
+                              <p className="text-xs text-slate-400">Please wait</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (showTrainingStatus) {
+                    return (
+                      <div className="mt-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
+                            <span className="text-[10px] font-bold text-white">3</span>
+                          </div>
+                          <span className="text-sm font-medium text-white">
+                            TRAINING STATUS — {selectedLora?.name || "LoRA"}
+                          </span>
+                        </div>
+                        {effectiveStatus === "training" ? (
+                          <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10">
+                            <div className="flex items-center gap-3">
+                              <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+                              <div>
+                                <p className="text-sm font-medium text-amber-200">Training in Progress</p>
+                                <p className="text-xs text-amber-300/70">
+                                  {selectedLora?.trainingMode === "pro"
+                                    ? "This may take about 2 hours. You can leave this page and come back later."
+                                    : "This may take about 1 hour. You can leave this page and come back later."}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : effectiveStatus === "ready" ? (
+                          <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10">
+                            <div className="flex items-center gap-3">
+                              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                              <div>
+                                <p className="text-sm font-medium text-emerald-200">LoRA Training Complete!</p>
+                                <p className="text-xs text-emerald-300/70">Switch to Generate tab to create NSFW content</p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : effectiveStatus === "failed" ? (
+                          <div className="p-4 rounded-xl border border-red-500/30 bg-red-500/10">
+                            <div className="flex items-center gap-3">
+                              <XCircle className="w-5 h-5 text-red-400" />
+                              <div>
+                                <p className="text-sm font-medium text-red-200">Training Failed</p>
+                                <p className="text-xs text-red-300/70">Please try again or contact support</p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={handleStartTraining}
+                              disabled={completedTrainingImages < requiredTrainingImages || isTraining}
+                              className="mt-3 w-full py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              data-testid="button-retry-training"
+                            >
+                              <RefreshCcw className="w-4 h-4" />
+                              Retry Training
+                              <span className="text-xs opacity-70 inline-flex items-center gap-0.5">({trainingCreditCost} <Coins className="w-3 h-3" />)</span>
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }
+
+                  if (showImagePicker) {
+                    const isProMode = selectedLora?.trainingMode === "pro";
+                    const proCategories = [
+                      { label: "Face Portraits", count: 10, desc: "Different angles showing your face clearly", slots: ["Front facing", "Left 3/4 angle", "Right 3/4 angle", "Left profile", "Right profile", "Looking up", "Looking down", "Slight tilt left", "Slight tilt right", "Neutral expression"] },
+                      { label: "Full Body", count: 5, desc: "Head-to-toe shots in different poses", slots: ["Standing front", "Standing back", "Walking pose", "Seated full view", "Leaning pose"] },
+                      { label: "Half Body", count: 5, desc: "Waist-up shots with varied framing", slots: ["Centered front", "Turned left", "Turned right", "Arms visible", "Over shoulder"] },
+                      { label: "Selfies", count: 5, desc: "Casual self-shot angles", slots: ["High angle", "Eye level", "Low angle", "Mirror selfie", "Outdoor light"] },
+                      { label: "Nude Poses", count: 5, desc: "Unclothed reference shots for NSFW training", slots: ["Front standing", "Side pose", "Seated", "Reclining", "Back view"] },
+                    ];
+
+                    return (
+                      <>
+                        <div className="mt-6">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
+                              <span className="text-[10px] font-bold text-white">3</span>
+                            </div>
+                            <span className="text-sm font-medium text-white flex items-center gap-1.5">
+                              ADD IMAGES — {selectedLora?.name || "LoRA"}
+                              {isProMode && <Flame className="w-3.5 h-3.5 text-rose-400" />}
+                            </span>
+                            <span className={`text-xs ml-auto ${totalSelectedTrainingImages >= requiredTrainingImages ? "text-emerald-400" : "text-slate-500"}`}>
+                              {totalSelectedTrainingImages}/{requiredTrainingImages} selected
+                            </span>
+                          </div>
+
+                          {isProMode ? (
+                            <div className="mb-3 sm:mb-4 p-3 sm:p-4 rounded-xl border border-rose-400/20 bg-rose-500/[0.04]">
+                              <div className="flex items-start gap-2 mb-3">
+                                <Flame className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-xs text-rose-200 font-medium mb-1">Pro Training Mode — 30 Curated Images</p>
+                                  <p className="text-[11px] text-slate-400">
+                                    For best results, follow the category guide below. Select images that match each category to train a higher-quality model with better likeness and pose accuracy.
+                                  </p>
+                                  <p className="text-[11px] text-slate-500 mt-1.5">Pro LoRA training takes about 2 hours to finish.</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                {proCategories.map((cat) => {
+                                  const startIdx = proCategories.slice(0, proCategories.indexOf(cat)).reduce((sum, c) => sum + c.count, 0);
+                                  const catSelected = Math.min(cat.count, Math.max(0, totalSelectedTrainingImages - startIdx));
+                                  return (
+                                    <div key={cat.label} className="flex items-center gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[11px] font-medium text-white">{cat.label}</span>
+                                          <span className="text-[10px] text-slate-500">{cat.count} images</span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 truncate">{cat.desc}</p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                                <p className="text-[10px] text-slate-500">
+                                  <span className="text-slate-400 font-medium">Slot guide per category:</span>
+                                </p>
+                                <div className="mt-1.5 flex flex-wrap gap-1">
+                                  {proCategories.map(cat => (
+                                    <span key={cat.label} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.06] text-[9px] text-slate-400">
+                                      {cat.label}: {cat.slots.slice(0, 3).join(", ")}...
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mb-3 sm:mb-4 p-3 sm:p-4 rounded-xl border border-white/[0.10] bg-white/[0.03]">
+                              <p className="text-xs text-slate-300 mb-1">
+                                Select exactly 15 images showing different angles, poses, and expressions. Include face close-ups, half-body, and full-body shots for best results.
+                              </p>
+                              <p className="text-[11px] text-slate-500 mt-1.5">Basic LoRA training takes about 1 hour to finish.</p>
+                            </div>
+                          )}
+
+                          <div className="p-2.5 sm:p-4 rounded-xl border border-white/[0.10] bg-white/[0.03]">
+                            <TrainingImagePool
+                              modelId={selectedModel}
+                              loraId={currentLoraId}
+                              selectedImages={trainingSelections}
+                              onToggle={handleToggleTrainingImage}
+                              onPreview={setPreviewImage}
+                              allowCustomUpload={!!user?.allowCustomLoraTrainingPhotos}
+                              maxImages={maxTrainingImages}
+                              minImages={requiredTrainingImages}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-6">
+                          <button
+                            onClick={handleAssignAndTrain}
+                            disabled={totalSelectedTrainingImages < requiredTrainingImages || isAssigningImages || isTraining}
+                            className="w-full py-4 rounded-xl font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            style={{
+                              background:
+                                totalSelectedTrainingImages >= requiredTrainingImages
+                                  ? isProMode
+                                    ? "linear-gradient(135deg, #f43f5e 0%, #ec4899 100%)"
+                                    : "linear-gradient(135deg, #f43f5e 0%, #f97316 100%)"
+                                  : "rgba(255,255,255,0.1)",
+                            }}
+                            data-testid="button-train-lora"
+                          >
+                            {isAssigningImages || isTraining ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                {isAssigningImages ? "Assigning Images..." : "Starting Training..."}
+                              </>
+                            ) : (
+                              <>
+                                <Zap className="w-5 h-5" />
+                                {isProMode ? "Train Pro LoRA" : "Generate LoRA"}
+                                <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1">
+                                  <Coins className="w-3 h-3 text-yellow-400" />{trainingCreditCost}
+                                </span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  return null;
+                })()}
+              </>
+            )}
+
+            {activePhase === "generate" && selectedModel && (selectedModelData?.isAIGenerated || selectedModelData?.nsfwOverride) && (
+              <div className="mt-6 space-y-4">
+                {/* LoRA Switcher */}
+                {(() => {
+                  const readyLoras = modelLoras.filter(l => l.status === "ready");
+                  if (readyLoras.length <= 1) return null;
+                  const activeLoraData = readyLoras.find(l => l.id === activeLora);
+                  return (
+                    <div className="p-3 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Layers className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                          <span className="text-xs font-medium text-slate-400">Active LoRA:</span>
+                          <span className="text-sm font-medium text-white truncate">
+                            {activeLoraData?.name || "None"}
+                          </span>
+                        </div>
+                        <div className="flex gap-1.5 flex-shrink-0 flex-wrap">
+                          {readyLoras.map((lora) => (
+                            <button
+                              key={lora.id}
+                              onClick={() => handleSetActiveLora(lora.id)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                activeLora === lora.id
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                  : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                              }`}
+                              data-testid={`button-switch-lora-${lora.id}`}
+                            >
+                              {lora.name || `LoRA ${lora.id.slice(0, 6)}`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Scene Description */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Describe the Scene
+                  </label>
+                  <textarea
+                    value={sceneDescription}
+                    onChange={(e) => { setSceneDescription(e.target.value); setGeneratedPrompt(""); setSelectedPreset(null); }}
+                    placeholder="Describe what's happening... e.g., 'laying on bed taking a selfie', 'bent over kitchen counter'"
+                    className="w-full h-20 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-white/40 resize-none"
+                  />
+                  {sceneDescription.trim() && (
+                    <button
+                      onClick={handleAutoSelect}
+                      disabled={isAutoSelecting}
+                      className="mt-2 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all disabled:opacity-50"
+                      style={{
+                        background: isAutoSelecting
+                          ? "rgba(255,255,255,0.75)"
+                          : "rgba(255,255,255,0.95)",
+                        border: "1px solid rgba(255,255,255,0.35)",
+                        color: "#111827",
+                      }}
+                      data-testid="button-auto-select"
+                    >
+                      {isAutoSelecting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          AI is picking options...
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4" />
+                          Auto-select matching options
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                {/* Quick Preset Poses */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Quick Presets
+                  </label>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Pick a pose — AI fills in the scene, selects chips, and creates your prompt
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {SCENE_PRESETS.map((preset) => {
+                      const isActive = selectedPreset === preset.id;
+                      return (
+                        <button
+                          key={preset.id}
+                          onClick={() => handlePresetSelect(preset)}
+                          data-testid={`button-preset-${preset.id}`}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                            isActive
+                              ? "bg-rose-500/15 border border-rose-400/40 text-rose-100 shadow-[0_0_10px_rgba(244,63,94,0.15)]"
+                              : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Click-to-Select Chip Panels */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-sm font-medium text-white">
+                      Select Details
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleSaveAppearance}
+                        disabled={isSavingAppearance}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all bg-white border border-white/35 text-black hover:bg-white/90"
+                        data-testid="button-save-appearance"
+                      >
+                        {isSavingAppearance ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                        {hasSavedAppearance ? "Update" : "Save"}
+                      </button>
+                      {chipCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/30 text-rose-200 text-xs">
+                          {chipCount} selected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-white/[0.08] overflow-hidden">
+                    {selectorCategories.map((cat) => {
+                      const isOpen = openCategory === cat.id;
+                      const catCount = cat.groups.reduce(
+                        (n, g) => n + (chipSelections[g.key] ? 1 : 0), 0,
+                      );
+
+                      return (
+                        <div key={cat.id} className="border-b border-white/[0.06] last:border-b-0">
+                          <button
+                            onClick={() => setOpenCategory(isOpen ? null : cat.id)}
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                          >
+                            <span className="flex items-center gap-2 text-sm text-white">
+                              <span>{cat.icon}</span>
+                              {cat.label}
+                              {catCount > 0 && (
+                                <span className="px-1.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-400/30 text-rose-200 text-[10px]">
+                                  {catCount}
+                                </span>
+                              )}
+                            </span>
+                            <ChevronRight className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                          </button>
+
+                          {isOpen && (
+                            <div className="px-4 pb-4 space-y-3">
+                              {cat.groups.map((g) => {
+                                const value = chipSelections[g.key] || "";
+                                const isCustom = value && value !== " " && !g.options.includes(value);
+                                const isEmptyCustom = value === " ";
+                                const showCustomInput = isCustom || isEmptyCustom;
+                                return (
+                                  <div key={g.key}>
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">{g.label}</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {g.options.map((opt) => {
+                                        const isActive = value === opt;
+                                        const isLocked = lockedAppearance[g.key] === opt;
+                                        const isBlocked = !isActive && blockedChips[g.key]?.includes(opt);
+                                        return (
+                                          <button
+                                            key={opt}
+                                            type="button"
+                                            onClick={() => !isBlocked && toggleChip(g.key, opt)}
+                                            disabled={isBlocked}
+                                            title={isBlocked ? "Blocked by current selections" : (isLocked ? "From model looks" : "")}
+                                            className={`px-2.5 py-1 rounded-full text-xs transition-all ${
+                                              isLocked
+                                                ? "bg-white/[0.06] border border-white/20 text-white/70"
+                                                : isBlocked
+                                                ? "bg-white/[0.02] border border-red-500/20 text-slate-600 cursor-not-allowed line-through opacity-40"
+                                                : isActive
+                                                ? "bg-rose-500/15 border border-rose-400/40 text-rose-100 shadow-[0_0_10px_rgba(244,63,94,0.15)]"
+                                                : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
+                                            }`}
+                                          >
+                                            {isLocked && <Lock className="w-2.5 h-2.5 inline mr-1" />}
+                                            {opt}
+                                          </button>
+                                        );
+                                      })}
+                                      {(
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setGeneratedPrompt("");
+                                            setChipSelections(prev => {
+                                              const current = prev[g.key];
+                                              const isCustomVal = current && current !== " " && !g.options.includes(current);
+                                              const isEmptyCustomVal = current === " ";
+                                              const next = { ...prev };
+                                              next[g.key] = (isCustomVal || isEmptyCustomVal) ? "" : " ";
+                                              return applyChipConstraints(next, lockedAppearance);
+                                            });
+                                          }}
+                                          className={`px-2.5 py-1 rounded-full text-xs transition-all ${
+                                            isCustom || isEmptyCustom
+                                              ? "bg-rose-500/15 border border-rose-400/40 text-rose-100"
+                                              : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
+                                          }`}
+                                        >
+                                          Custom
+                                        </button>
+                                      )}
+                                    </div>
+                                    {showCustomInput && !lockedAppearance[g.key] && (
+                                      <input
+                                        type="text"
+                                        value={value === " " ? "" : value}
+                                        onChange={(e) => {
+                                          setGeneratedPrompt("");
+                                          setChipSelections(prev => applyChipConstraints({ ...prev, [g.key]: e.target.value }, lockedAppearance));
+                                        }}
+                                        placeholder="Type custom…"
+                                        className="mt-1.5 w-full px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Step 1: Generate Prompt */}
+                <div>
+                  <button
+                    onClick={handleGeneratePrompt}
+                    disabled={isGeneratingAiPrompt}
+                    className="w-full py-3 rounded-xl font-semibold text-black transition-all flex items-center justify-center gap-2 bg-white border border-white/35 hover:bg-white/90"
+                  >
+                    {isGeneratingAiPrompt ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Generating prompt...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" /> Generate Prompt with AI</>
+                    )}
+                  </button>
+                </div>
+
+                {/* Generated Prompt Preview */}
+                {generatedPrompt && (
+                  <div className="p-3 rounded-xl bg-white/[0.06] border border-white/[0.18]">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      <span className="text-xs font-medium text-white">AI Generated Prompt</span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed font-mono">{generatedPrompt}</p>
+                  </div>
+                )}
+
+                {/* Aspect Ratio Selector */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Image Resolution
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                    {[
+                      { id: "512x512", label: "Square", size: "512x512" },
+                      {
+                        id: "1024x1024",
+                        label: "Square HD",
+                        size: "1024x1024",
+                      },
+                      {
+                        id: "1024x576",
+                        label: "Landscape",
+                        size: "1024x576",
+                      },
+                      {
+                        id: "576x1024",
+                        label: "Selfie",
+                        size: "576x1024",
+                      },
+                      {
+                        id: "1024x768",
+                        label: "Landscape Classic",
+                        size: "1024x768",
+                      },
+                      {
+                        id: "768x1024",
+                        label: "Portrait Classic",
+                        size: "768x1024",
+                      },
+                    ].map((ratio) => (
+                      <button
+                        key={ratio.id}
+                        onClick={() => setSelectedAspectRatio(ratio.id)}
+                        className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
+                          selectedAspectRatio === ratio.id
+                            ? "bg-white text-black border border-white/35"
+                            : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        <span>{ratio.label}</span>
+                        <span className="text-[10px] opacity-70">
+                          {ratio.size}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Advanced Generation Settings */}
+                <div className="rounded-xl border border-white/[0.08] overflow-visible">
+                  <button
+                    onClick={() => setShowGenSettings(!showGenSettings)}
+                    className="w-full flex items-center justify-between p-4 text-left"
+                    data-testid="button-toggle-gen-settings"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-white" />
+                      <span className="text-sm font-medium text-white">Advanced Settings</span>
+                      {JSON.stringify(genConfig) !== JSON.stringify(DEFAULT_CONFIG) && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-white/90 text-black text-[10px]">Modified</span>
+                      )}
+                    </div>
+                    <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${showGenSettings ? "rotate-90" : ""}`} />
+                  </button>
+
+                  {showGenSettings && (
+                    <div className="px-4 pb-4 space-y-5">
+                      {/* Post-processing presets */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-slate-300">Blur + Grain Presets</label>
+                          <span className="text-[10px] text-slate-500">One tap setup</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {POST_PROCESSING_PRESETS.map((preset) => {
+                            const activePreset = getActivePostPreset();
+                            const isActive = activePreset === preset.id;
+                            return (
+                              <button
+                                key={preset.id}
+                                onClick={() => applyPostPreset(preset)}
+                                className={`px-2.5 py-2 rounded-lg text-[11px] font-medium transition-colors ${
+                                  isActive
+                                    ? "bg-white text-black border border-white/40"
+                                    : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10 hover:text-white"
+                                }`}
+                                data-testid={`preset-post-processing-${preset.id}`}
+                              >
+                                {preset.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* LoRA Strength */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <label className="text-xs font-medium text-slate-300">LoRA Strength</label>
+                            <div className="group relative">
+                              <Info className="w-3 h-3 text-slate-500 cursor-help" />
+                              <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-[11px] text-slate-300 leading-relaxed z-50 shadow-xl">
+                                Controls how strongly your face model is applied. Set to 0 for AI Auto (recommended) - Grok will pick the best strength based on your scene. Override manually if needed.
+                                <div className="text-[10px] text-slate-500 mt-1">Default: AI Auto | Range: 0.65 - 0.90</div>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-xs font-mono text-white">{genConfig.loraStrength === 0 ? "AI Auto" : genConfig.loraStrength.toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="0.90"
+                          step="0.05"
+                          value={genConfig.loraStrength}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            const clamped = val > 0 && val < 0.65 ? 0.65 : val;
+                            setGenConfig(prev => ({ ...prev, loraStrength: clamped }));
+                          }}
+                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700 accent-white"
+                          data-testid="slider-lora-strength"
+                        />
+                        <div className="flex justify-between mt-1">
+                          <span className="text-[10px] text-slate-600">AI Auto</span>
+                          <span className="text-[10px] text-slate-600">0.90</span>
+                        </div>
+                      </div>
+
+                      {/* Blur Controls */}
+                      <div className="rounded-lg border border-white/10 p-3 bg-white/[0.02]">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-slate-300">Post Blur</label>
+                          <button
+                            onClick={() => setGenConfig(prev => ({ ...prev, blurEnabled: !(prev.blurEnabled !== false) }))}
+                            className={`relative w-10 h-5 rounded-full transition-colors ${genConfig.blurEnabled !== false ? "bg-white" : "bg-slate-600"}`}
+                            data-testid="toggle-post-blur"
+                          >
+                            <span
+                              className={`absolute top-0.5 w-4 h-4 rounded-full transition-transform ${genConfig.blurEnabled !== false ? "bg-black translate-x-5" : "bg-white translate-x-0.5"}`}
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] text-slate-500">Strength</span>
+                          <span className="text-xs font-mono text-white">{Number(genConfig.blurStrength ?? 0.3).toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={Number(genConfig.blurStrength ?? 0.3)}
+                          onChange={(e) => {
+                            const val = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
+                            setGenConfig(prev => ({ ...prev, blurStrength: val }));
+                          }}
+                          disabled={genConfig.blurEnabled === false}
+                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700 accent-white disabled:opacity-40 disabled:cursor-not-allowed"
+                          data-testid="slider-post-blur-strength"
+                        />
+                      </div>
+
+                      {/* Grain Controls */}
+                      <div className="rounded-lg border border-white/10 p-3 bg-white/[0.02]">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-xs font-medium text-slate-300">Film Grain</label>
+                          <button
+                            onClick={() => setGenConfig(prev => ({ ...prev, grainEnabled: !(prev.grainEnabled !== false) }))}
+                            className={`relative w-10 h-5 rounded-full transition-colors ${genConfig.grainEnabled !== false ? "bg-white" : "bg-slate-600"}`}
+                            data-testid="toggle-post-grain"
+                          >
+                            <span
+                              className={`absolute top-0.5 w-4 h-4 rounded-full transition-transform ${genConfig.grainEnabled !== false ? "bg-black translate-x-5" : "bg-white translate-x-0.5"}`}
+                            />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] text-slate-500">Strength</span>
+                          <span className="text-xs font-mono text-white">{Number(genConfig.grainStrength ?? 0.06).toFixed(2)}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.02"
+                          value={Number(genConfig.grainStrength ?? 0.06)}
+                          onChange={(e) => {
+                            const val = Math.max(0, Math.min(1, parseFloat(e.target.value) || 0));
+                            setGenConfig(prev => ({ ...prev, grainStrength: val }));
+                          }}
+                          disabled={genConfig.grainEnabled === false}
+                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700 accent-white disabled:opacity-40 disabled:cursor-not-allowed"
+                          data-testid="slider-post-grain-strength"
+                        />
+                      </div>
+
+                      {/* Save / Reset Buttons */}
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={handleSaveConfig}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white border border-white/35 text-black text-xs font-medium transition-colors hover:bg-white/90"
+                          data-testid="button-save-config"
+                        >
+                          {configSaved ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              Saved!
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-3.5 h-3.5" />
+                              Save Config
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={handleResetConfig}
+                          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-slate-500/10 text-slate-400 text-xs font-medium transition-colors hover:bg-slate-500/20"
+                          data-testid="button-reset-config"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" />
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Face Swap Toggle */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-white/10 border border-cyan-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-white" />
+                      <span className="text-sm font-medium text-white">Face Swap</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSkipFaceSwap(!skipFaceSwap);
+                        if (!skipFaceSwap) setFaceSwapImage(null); // Clear selection when disabling
+                      }}
+                      className={`relative w-12 h-6 rounded-full transition-colors flex items-center ${
+                        !skipFaceSwap ? "bg-cyan-500" : "bg-slate-600"
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                          !skipFaceSwap ? "translate-x-[28px]" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">
+                    {skipFaceSwap 
+                      ? "Face swap disabled - generating raw LoRA output only"
+                      : "Face swap enabled - select source image from your gallery"
+                    }
+                  </p>
+                  
+                  {/* Gallery Picker for Face Swap - SECURITY: Only gallery images for this model */}
+                  {!skipFaceSwap && (
+                    <NsfwFaceSwapGalleryPicker
+                      modelId={selectedModel}
+                      selectedImage={faceSwapImage}
+                      onSelect={setFaceSwapImage}
+                    />
+                  )}
+                </div>
+
+                {/* Image Quantity Selector */}
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-sm text-slate-300">Quantity:</span>
+                  <div className="flex gap-2">
+                    <button
+                      data-testid="button-quantity-1"
+                      onClick={() => setImageQuantity(1)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        imageQuantity === 1
+                          ? "bg-white border border-white/35 text-black"
+                          : "bg-slate-700/50 border border-slate-600/30 text-slate-400 hover:bg-slate-600/50"
+                      }`}
+                    >
+                      1 Image
+                    </button>
+                    <button
+                      data-testid="button-quantity-2"
+                      onClick={() => setImageQuantity(2)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        imageQuantity === 2
+                          ? "bg-white border border-white/35 text-black"
+                          : "bg-slate-700/50 border border-slate-600/30 text-slate-400 hover:bg-slate-600/50"
+                      }`}
+                    >
+                      2 Images
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 text-[10px] font-bold">
+                        SAVE
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <button
+                  data-testid="button-generate-nsfw"
+                  onClick={handleGenerateNsfw}
+                  disabled={
+                    !generatedPrompt.trim() || isGeneratingNsfw
+                  }
+                  className="w-full py-4 rounded-xl font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{
+                    background:
+                      generatedPrompt.trim()
+                        ? "linear-gradient(135deg, #f43f5e 0%, #ec4899 100%)"
+                        : "rgba(255,255,255,0.1)",
+                    border: generatedPrompt.trim()
+                      ? "1px solid rgba(244,63,94,0.4)"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    boxShadow: generatedPrompt.trim()
+                      ? "0 0 20px rgba(244,63,94,0.15)"
+                      : "none",
+                  }}
+                >
+                  {isGeneratingNsfw ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Generating {imageQuantity === 2 ? "2 images" : ""}...
+                    </>
+                  ) : (
+                    <>
+                      <Flame className="w-5 h-5 text-rose-300" />
+                      Generate {imageQuantity === 2 ? "2 Images" : "Image"}
+                      <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1.5">
+                        <Coins className="w-3 h-3 text-yellow-400" />
+                        <span>
+                          {imageQuantity === 2
+                            ? (skipFaceSwap ? "50" : "70")
+                            : (skipFaceSwap ? "30" : "40")}
+                        </span>
+                      </span>
+                    </>
+                  )}
+                </button>
+
+                {/* Full NSFW Gallery - All Generated Images */}
+                <div className="mt-6">
+                  <NsfwGallery modelId={selectedModel} />
+                </div>
+              </div>
+            )}
+
+            {/* ===== VIDEO TAB ===== */}
+            {activePhase === "video" && selectedModel && (selectedModelData?.isAIGenerated || selectedModelData?.nsfwOverride) && (
+              <NsfwVideoTab
+                modelId={selectedModel}
+                videoSelectedImage={videoSelectedImage}
+                setVideoSelectedImage={setVideoSelectedImage}
+                videoPrompt={videoPrompt}
+                setVideoPrompt={setVideoPrompt}
+                videoDuration={videoDuration}
+                setVideoDuration={setVideoDuration}
+                isSubmittingVideo={isSubmittingVideo}
+                setIsSubmittingVideo={setIsSubmittingVideo}
+              />
+            )}
+
+            {/* ===== IMG2IMG TAB ===== */}
+            {activePhase === "img2img" && selectedModel && isLoraReady && (
+              <NsfwImg2ImgTab
+                modelId={selectedModel}
+                activeLoraObj={activeLoraObj}
+                chipSelections={chipSelections}
+              />
+            )}
+          </div>
+
+        {/* Credit Costs - Compact Inline */}
+        <div
+          className="rounded-2xl p-3 sm:p-4 md:p-5 border border-white/[0.16]"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)",
+          }}
+        >
+          <h3 className="text-sm font-medium text-yellow-400 mb-3 inline-flex items-center gap-1.5">
+            Credit Costs
+            <Coins className="w-4 h-4 text-yellow-400" />
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
+              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">750 <Coins className="w-4 h-4" /></span>
+              <span className="text-slate-400">LoRA Training</span>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
+              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">30 <Coins className="w-4 h-4" /></span>
+              <span className="text-slate-400">NSFW Image</span>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
+              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">40 <Coins className="w-4 h-4" /></span>
+              <span className="text-slate-400">+ Face Swap</span>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
+              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">50-80 <Coins className="w-4 h-4" /></span>
+              <span className="text-slate-400">NSFW Video</span>
+            </div>
+            <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
+              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">0 <Coins className="w-4 h-4" /></span>
+              <span className="text-slate-400">Retry Failed</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Credits Modal */}
+      <AddCreditsModal
+        isOpen={showCreditsModal}
+        onClose={() => setShowCreditsModal(false)}
+      />
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            onClick={() => setPreviewImage(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <img
+            src={previewImage}
+            alt="Preview"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+      </div>
+      </div>
+    </div>
+  );
+
+  return contentBlock;
+}

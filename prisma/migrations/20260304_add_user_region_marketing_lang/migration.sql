@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "region" TEXT;
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "marketingLanguage" TEXT;

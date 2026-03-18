@@ -1,0 +1,9 @@
+{
+  "name": "ModelClone - AI Identity Recreation",
+  "short_name": "ModelClone",
+  "description": "AI-powered identity recreation and video generation platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#a855f7"
+}

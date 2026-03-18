@@ -1,0 +1,366 @@
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Zap, Shield, CheckCircle, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { SiGoogle } from 'react-icons/si';
+import toast from 'react-hot-toast';
+import { authAPI, referralAPI } from '../services/api';
+import { useAuthStore } from '../store';
+import { signInWithGoogle } from '../lib/firebase';
+import { generateFingerprint } from '../utils/fingerprint';
+
+export default function SignupPage() {
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const navigate = useNavigate();
+  const location = useLocation();
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      localStorage.setItem("pendingReferralCode", ref.trim().toLowerCase());
+      (async () => {
+        try {
+          const fp = await generateFingerprint();
+          await referralAPI.captureHint(
+            ref.trim().toLowerCase(),
+            fp?.visitorId || "no-fingerprint-available",
+            navigator.userAgent || "Unknown",
+          );
+        } catch {
+          // Best-effort referral capture only.
+        }
+      })();
+    }
+  }, [location.search]);
+
+  const getPendingReferralCode = () =>
+    localStorage.getItem("pendingReferralCode") || null;
+
+  const handleGoogleSignup = async () => {
+    setGoogleLoading(true);
+    try {
+      const googleResult = await signInWithGoogle();
+      if (!googleResult.success) {
+        toast.error(googleResult.error || 'Google sign-in failed');
+        return;
+      }
+
+      let fingerprintValue = "no-fingerprint-available";
+      try {
+        const fp = await generateFingerprint();
+        fingerprintValue = fp?.visitorId || fingerprintValue;
+      } catch {
+        // Keep fallback fingerprint value.
+      }
+
+      const data = await authAPI.googleAuth(
+        googleResult.idToken,
+        googleResult.user.email,
+        googleResult.user.displayName,
+        googleResult.user.uid,
+        'signup',
+        getPendingReferralCode(),
+        fingerprintValue,
+        navigator.userAgent || "Unknown",
+      );
+
+      if (data.success) {
+        if (data.isNewUser) {
+          localStorage.removeItem("pendingReferralCode");
+        }
+        setAuth(data.user, data.token);
+        toast.success(data.isNewUser ? 'Account created!' : 'Welcome back!');
+        const redirectTo = localStorage.getItem("redirectAfterLogin");
+        if (redirectTo) {
+          localStorage.removeItem("redirectAfterLogin");
+          navigate(redirectTo);
+        } else if (data.isNewUser || !data.user.onboardingCompleted) {
+          navigate('/onboarding');
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        toast.error(data.message || 'Signup failed');
+      }
+    } catch (error) {
+      console.error('Google signup error:', error);
+      toast.error(error.response?.data?.message || 'Google sign-in failed');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleEmailSignup = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      let fingerprintValue = "no-fingerprint-available";
+      try {
+        const fp = await generateFingerprint();
+        fingerprintValue = fp?.visitorId || fingerprintValue;
+      } catch {
+        // Keep fallback fingerprint value.
+      }
+
+      const data = await authAPI.signup(
+        formData.email,
+        formData.password,
+        formData.name,
+        fingerprintValue,
+        navigator.userAgent || "Unknown",
+        getPendingReferralCode(),
+      );
+      
+      if (data.success) {
+        localStorage.removeItem("pendingReferralCode");
+        toast.success('Account created! Check your email for verification code');
+        navigate('/verify', { state: { email: formData.email } });
+      } else {
+        toast.error(data.message || 'Signup failed');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      const errorData = error.response?.data;
+      toast.error(errorData?.message || 'Signup failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black flex items-center justify-center px-6 relative overflow-hidden">
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative"
+      >
+        <Link to="/" className="flex items-center justify-center gap-2 mb-8">
+          <img src="/logo-512.png" alt="ModelClone" className="w-12 h-12 rounded-xl object-cover" />
+          <span className="text-2xl font-bold">ModelClone</span>
+        </Link>
+
+        <div className="glass rounded-3xl p-8">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold mb-2">Create Account</h1>
+            <p className="text-gray-400">Start creating AI content today</p>
+          </div>
+
+          {!showEmailForm ? (
+            <>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-sm text-gray-300">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span>One-click signup with Google</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-300">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span>No password to remember</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-300">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span>Secure authentication by Google</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignup}
+                disabled={googleLoading}
+                className="w-full py-4 rounded-xl bg-white text-gray-900 font-bold flex items-center justify-center gap-3 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="button-google-signup"
+              >
+                {googleLoading ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-900 rounded-full animate-spin" />
+                    <span>Creating account...</span>
+                  </div>
+                ) : (
+                  <>
+                    <SiGoogle className="w-5 h-5" />
+                    Continue with Google
+                  </>
+                )}
+              </button>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-black text-gray-400">or</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowEmailForm(true)}
+                className="w-full py-3 rounded-xl glass hover:bg-white/10 transition font-semibold flex items-center justify-center gap-2"
+                data-testid="button-show-email-form"
+              >
+                <Mail className="w-5 h-5" />
+                Sign up with Email
+              </button>
+            </>
+          ) : (
+            <>
+              <form onSubmit={handleEmailSignup} className="space-y-4">
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
+                    data-testid="input-name"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
+                    data-testid="input-email"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password (min. 8 characters)"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full pl-12 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
+                    data-testid="input-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm Password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                    className="w-full pl-12 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
+                    data-testid="input-confirm-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 rounded-xl bg-white text-black hover:bg-white/90 transition font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  data-testid="button-email-signup"
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                      <span>Creating account...</span>
+                    </div>
+                  ) : (
+                    <>
+                      Create Account
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <button
+                type="button"
+                onClick={() => setShowEmailForm(false)}
+                className="w-full mt-4 py-2 text-gray-400 hover:text-white transition text-sm"
+              >
+                ← Back to Google signup
+              </button>
+            </>
+          )}
+
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-white/5 border border-white/10 mt-6">
+            <Shield className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-gray-400">
+              By signing up, you agree to our Terms of Service and Privacy Policy. 
+              We use device verification for fraud prevention.
+            </p>
+          </div>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/10" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-black text-gray-400">Already have an account?</span>
+            </div>
+          </div>
+
+          <Link
+            to="/login"
+            className="block w-full py-3 rounded-xl glass hover:bg-white/10 transition font-semibold text-center"
+          >
+            Sign In
+          </Link>
+        </div>
+
+        <div className="text-center mt-6">
+          <Link to="/" className="text-gray-400 hover:text-white transition">
+            Back to Home
+          </Link>
+        </div>
+      </motion.div>
+    </div>
+  );
+}

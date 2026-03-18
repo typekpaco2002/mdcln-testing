@@ -1,0 +1,615 @@
+import prisma from "../lib/prisma.js";
+import { isR2Configured, uploadBufferToR2 } from "../utils/r2.js";
+import { getUserFriendlyGenerationError } from "../utils/generationErrorMessages.js";
+import { getErrorMessageForDb } from "../lib/userError.js";
+import { cleanupOldGenerations } from "../controllers/generation.controller.js";
+import { refundGeneration } from "../services/credit.service.js";
+import http from "http";
+const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY;
+const WAVESPEED_API_URL = "https://api.wavespeed.ai/api/v3";
+
+/**
+ * Background service that continuously polls pending generations
+ * and updates their status in the database
+ */
+class GenerationPollerService {
+  constructor() {
+    this.isRunning = false;
+    this.pollInterval = 5000; // Poll every 5 seconds
+    this.activePollers = new Map(); // Track active polling promises
+    this.failureCounts = new Map(); // Track consecutive 400/error counts per generation
+    this.runningSince = new Map(); // Track when provider confirms a job is actually running
+    this.MAX_CONSECUTIVE_FAILURES = 20; // After 20 consecutive poll failures (~100s), mark as failed
+    this.REQUEST_TIMEOUT_MS = 15000;
+  }
+
+  /**
+   * Start the background poller
+   */
+  start() {
+    if (this.isRunning) {
+      console.log("⚠️  Generation poller already running");
+      return;
+    }
+
+    this.isRunning = true;
+    console.log("🚀 Starting generation poller service...");
+    this.poll();
+
+    const PORT = process.env.PORT || 5000;
+    this.selfPingInterval = setInterval(() => {
+      http.get(`http://localhost:${PORT}/health`, (res) => {
+        res.resume();
+      }).on('error', () => {});
+    }, 10000);
+  }
+
+  /**
+   * Stop the background poller
+   */
+  stop() {
+    this.isRunning = false;
+    if (this.selfPingInterval) {
+      clearInterval(this.selfPingInterval);
+      this.selfPingInterval = null;
+    }
+    console.log("🛑 Stopping generation poller service...");
+  }
+
+  /**
+   * Main polling loop - runs continuously
+   */
+  async poll() {
+    while (this.isRunning) {
+      try {
+        await this.checkPendingGenerations();
+      } catch (error) {
+        console.error("❌ Error in generation poller:", error);
+      }
+
+      // Wait before next poll
+      await this.sleep(this.pollInterval);
+    }
+  }
+
+  /**
+   * Check all pending generations and update their status
+   */
+  async checkPendingGenerations() {
+    // Find all processing generations
+    // Exclude talking-head type - it uses inline polling in the background process
+    // Exclude nsfw type - it uses RunComfy polling in nsfw.controller.js
+    const pendingGenerations = await prisma.generation.findMany({
+      where: {
+        status: "processing",
+        type: {
+          notIn: ["talking-head", "nsfw", "prompt-image", "prompt-video", "image-identity", "motion-transfer", "complete-recreation", "face-swap", "advanced-image"],
+        },
+      },
+      select: {
+        id: true,
+        replicateModel: true, // This stores the WaveSpeed request ID
+        createdAt: true,
+      },
+    });
+
+    if (pendingGenerations.length === 0) {
+      return;
+    }
+
+    const wavespeedOnly = pendingGenerations.filter((gen) => {
+      if (gen.replicateModel && gen.replicateModel.startsWith("kie-")) return false;
+      if (gen.replicateModel && gen.replicateModel.startsWith("wavespeed-seedream:")) return false; // completed via WaveSpeed webhook
+      return true;
+    });
+
+    // Also reconcile any stale KIE-backed generations (image or video) that have been
+    // stuck in processing longer than their expected max time.
+    await this.reconcileStaleKieGenerations();
+
+    if (wavespeedOnly.length === 0) {
+      return;
+    }
+
+    console.log(
+      `🔍 Polling ${wavespeedOnly.length} pending generation(s)...`,
+    );
+
+    // Poll each generation (in parallel for efficiency)
+    const promises = wavespeedOnly.map((gen) =>
+      this.pollGeneration(gen.id, gen.replicateModel, gen.createdAt),
+    );
+
+    await Promise.allSettled(promises);
+  }
+
+  /**
+   * Poll a single generation and update its status
+   */
+  async pollGeneration(generationId, requestId, createdAt) {
+    // Skip if we're already polling this generation
+    if (this.activePollers.has(generationId)) {
+      return;
+    }
+
+    this.activePollers.set(generationId, true);
+
+    const TIMEOUT_SECONDS = 90 * 60; // 90 minutes max for any generation
+    const QUEUED_STATES = new Set(["queued", "pending", "waiting", "submitted", "created", "starting"]);
+    const RUNNING_STATES = new Set(["processing", "running", "in_progress", "in-progress"]);
+
+    try {
+      const ageInSeconds = createdAt
+        ? (Date.now() - new Date(createdAt).getTime()) / 1000
+        : null;
+
+      if (!requestId) {
+        // Grace period: don't mark as failed if generation is younger than 30 seconds
+        // This prevents race condition where polling runs before requestId is saved to DB
+        if (ageInSeconds !== null && ageInSeconds < 30) {
+          console.log(
+            `⏳ Generation ${generationId} has no request ID yet, but is only ${ageInSeconds.toFixed(1)}s old - will retry`,
+          );
+          return; // Don't mark as failed, will retry on next poll
+        }
+
+        console.log(
+          `⚠️  Generation ${generationId} has no request ID after ${(ageInSeconds || 0).toFixed(1)}s, marking as failed`,
+        );
+        await this.markFailed(generationId, "No WaveSpeed request ID found", { refund: true });
+        return;
+      }
+
+      // Poll WaveSpeed API
+      const pollUrl = `${WAVESPEED_API_URL}/predictions/${requestId}/result`;
+
+      const response = await this.fetchWithTimeout(
+        pollUrl,
+        {
+          headers: {
+            Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+          },
+        },
+        this.REQUEST_TIMEOUT_MS,
+      );
+
+      if (!response.ok) {
+        if (response.status === 429) {
+        }
+        // Provider 5xx = confirmed provider-side server failure => fail + immediate refund
+        if (response.status >= 500) {
+          console.error(
+            `❌ Generation ${generationId} provider server failure (HTTP ${response.status}), refunding immediately`,
+          );
+          this.failureCounts.delete(generationId);
+          this.runningSince.delete(generationId);
+          await this.markFailed(generationId, `WaveSpeed provider server error (${response.status})`, { refund: true });
+          return;
+        }
+
+        const prevCount = this.failureCounts.get(generationId) || 0;
+        const newCount = prevCount + 1;
+        this.failureCounts.set(generationId, newCount);
+
+        if (newCount >= this.MAX_CONSECUTIVE_FAILURES) {
+          console.error(
+            `❌ Generation ${generationId} failed ${newCount} consecutive polls (HTTP ${response.status}), marking as failed`,
+          );
+          this.failureCounts.delete(generationId);
+          this.runningSince.delete(generationId);
+          await this.markFailed(
+            generationId,
+            `WaveSpeed API returned ${response.status} for ${newCount} consecutive polls`,
+            { refund: true },
+          );
+          return;
+        }
+
+        if (newCount === 1 || newCount % 5 === 0) {
+          console.error(
+            `❌ Failed to poll generation ${generationId}: ${response.status} (attempt ${newCount}/${this.MAX_CONSECUTIVE_FAILURES})`,
+          );
+        }
+        return;
+      }
+
+      this.failureCounts.delete(generationId);
+
+      const result = await response.json();
+      const actualData = result.data || result;
+      const status = actualData.status;
+      const normalizedStatus = String(status || "").toLowerCase();
+      const outputs = actualData.outputs || [];
+
+      // Check if completed
+      if (outputs && outputs.length > 0) {
+        this.runningSince.delete(generationId);
+        await this.markCompleted(generationId, outputs[0]);
+        return;
+      }
+
+      // Check status for completion
+      if (
+        status === "succeeded" ||
+        status === "completed" ||
+        status === "success" ||
+        status === "finished"
+      ) {
+        const output =
+          actualData.output ||
+          actualData.result ||
+          actualData.url ||
+          outputs[0];
+        if (output) {
+          this.runningSince.delete(generationId);
+          await this.markCompleted(generationId, output);
+          return;
+        }
+      }
+
+      // Check if failed
+      if (status === "failed" || status === "error") {
+        this.runningSince.delete(generationId);
+        const rawMsg =
+          actualData.error ||
+          result.error ||
+          result.message ||
+          "Generation failed";
+        const errorMsg = getUserFriendlyGenerationError(rawMsg);
+        await this.markFailed(generationId, errorMsg, { refund: true });
+        return;
+      }
+
+      // Dynamic timeout: only count timeout while provider reports RUNNING/PROCESSING.
+      if (RUNNING_STATES.has(normalizedStatus)) {
+        const runningStartedAt = this.runningSince.get(generationId) || Date.now();
+        if (!this.runningSince.has(generationId)) {
+          this.runningSince.set(generationId, runningStartedAt);
+          console.log(`▶️ Generation ${generationId} entered RUNNING state — timeout clock started`);
+        }
+
+        const runningSeconds = (Date.now() - runningStartedAt) / 1000;
+        if (runningSeconds > TIMEOUT_SECONDS) {
+          console.log(
+            `⏰ Generation ${generationId} timed out after ${Math.round(runningSeconds / 60)}min in RUNNING state, marking failed`,
+          );
+          this.runningSince.delete(generationId);
+          await this.markFailed(generationId, "Generation timed out while in progress (90 min)", { refund: true });
+          return;
+        }
+      } else if (QUEUED_STATES.has(normalizedStatus)) {
+        // Explicitly keep timeout paused while queued.
+        this.runningSince.delete(generationId);
+      }
+
+      // Still processing - do nothing, will check again on next poll
+    } catch (error) {
+      const prevCount = this.failureCounts.get(generationId) || 0;
+      const newCount = prevCount + 1;
+      this.failureCounts.set(generationId, newCount);
+
+      if (newCount >= this.MAX_CONSECUTIVE_FAILURES) {
+        console.error(
+          `❌ Generation ${generationId} errored ${newCount} consecutive times: ${error.message}, marking as failed`,
+        );
+        this.failureCounts.delete(generationId);
+        this.runningSince.delete(generationId);
+        await this.markFailed(
+          generationId,
+          `Polling error after ${newCount} attempts: ${error.message}`,
+          { refund: true },
+        ).catch(() => {});
+      } else if (newCount === 1 || newCount % 5 === 0) {
+        console.error(
+          `❌ Error polling generation ${generationId} (attempt ${newCount}/${this.MAX_CONSECUTIVE_FAILURES}):`,
+          error.message,
+        );
+      }
+    } finally {
+      this.activePollers.delete(generationId);
+    }
+  }
+
+  /**
+   * Mark generation as completed
+   * Downloads output from WaveSpeed and uploads to R2 for permanent storage
+   */
+  async markCompleted(generationId, outputUrl) {
+    console.log(`✅ Generation ${generationId} completed: ${outputUrl}`);
+
+    let finalUrl = outputUrl;
+
+    // Try to save to R2 for permanent storage (WaveSpeed deletes after 7 days)
+    if (isR2Configured()) {
+      try {
+        const r2Url = await this.downloadAndUploadToR2(outputUrl, generationId);
+        if (r2Url) {
+          finalUrl = r2Url;
+          console.log(`📦 Saved to R2: ${r2Url}`);
+        }
+      } catch (error) {
+        console.error(`⚠️ Failed to save to R2, using WaveSpeed URL: ${error.message}`);
+        // Keep original WaveSpeed URL as fallback
+      }
+    }
+
+    const updatedGen = await prisma.generation.update({
+      where: { id: generationId },
+      data: {
+        status: "completed",
+        outputUrl: finalUrl,
+        completedAt: new Date(),
+      },
+      select: { userId: true, modelId: true },
+    });
+
+    if (updatedGen.userId && updatedGen.modelId) {
+      cleanupOldGenerations(updatedGen.userId, updatedGen.modelId).catch((err) => {
+        console.error(`⚠️ Best-effort cleanup failed for user ${updatedGen.userId}: ${err.message}`);
+      });
+    }
+  }
+
+  /**
+   * Download output from WaveSpeed and upload to R2
+   */
+  async downloadAndUploadToR2(sourceUrl, generationId) {
+    // Download from WaveSpeed
+    const response = await this.fetchWithTimeout(sourceUrl, {}, this.REQUEST_TIMEOUT_MS);
+    if (!response.ok) {
+      throw new Error(`Failed to download: ${response.status}`);
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get("content-type") || "image/png";
+    
+    // Determine extension from content type, with URL fallback
+    let extension = "png";
+    if (contentType.includes("video/mp4") || contentType.includes("video/mpeg")) {
+      extension = "mp4";
+    } else if (contentType.includes("video/webm")) {
+      extension = "webm";
+    } else if (contentType.includes("video/")) {
+      extension = "mp4";
+    } else if (contentType.includes("jpeg") || contentType.includes("jpg")) {
+      extension = "jpg";
+    } else if (contentType.includes("webp")) {
+      extension = "webp";
+    } else if (sourceUrl.match(/\.mp4(\?|$)/i)) {
+      extension = "mp4";
+    } else if (sourceUrl.match(/\.webm(\?|$)/i)) {
+      extension = "webm";
+    }
+
+    // Ensure correct content type for video files
+    const finalContentType = (extension === "mp4" || extension === "webm")
+      ? (extension === "mp4" ? "video/mp4" : "video/webm")
+      : contentType;
+
+    // Upload to R2 in "generations" folder
+    const r2Url = await uploadBufferToR2(buffer, "generations", extension, finalContentType);
+    return r2Url;
+  }
+
+  /**
+   * Mark generation as failed and refund credits (if any were charged)
+   */
+  async markFailed(generationId, errorMessage, { refund = false } = {}) {
+    console.log(`❌ Generation ${generationId} failed: ${errorMessage}`);
+
+    // Refund FIRST — before DB update — so credits are never lost even if DB update fails
+    if (refund) {
+      try {
+        const refunded = await refundGeneration(generationId);
+        if (refunded > 0) {
+          console.log(`💰 Refunded ${refunded} credits for failed generation ${generationId}`);
+        }
+      } catch (refundErr) {
+        console.error(`🚨 CRITICAL: Refund FAILED for generation ${generationId}: ${refundErr.message}. Manual recovery needed.`);
+      }
+    }
+
+    try {
+      await prisma.generation.update({
+        where: { id: generationId },
+        data: {
+          status: "failed",
+          errorMessage: getErrorMessageForDb(errorMessage),
+          completedAt: new Date(),
+        },
+      });
+    } catch (dbErr) {
+      console.error(`⚠️ Failed to update generation ${generationId} status to failed: ${dbErr.message}`);
+    }
+  }
+
+  /**
+   * Reconcile KIE-backed generations that are stuck in "processing".
+   * KIE tasks run in detached background functions — if the Vercel instance
+   * that started them gets recycled the generation never gets updated.
+   * This watchdog checks KIE directly and marks them completed or failed.
+   * We check (1) any generation with kie-task: that is at least 2 min old (so taskId was stored),
+   * and (2) generations with only model name that are 15+ min old (timeout only).
+   */
+  async reconcileStaleKieGenerations() {
+    const KIE_API_KEY = process.env.KIE_API_KEY;
+    if (!KIE_API_KEY) return;
+
+    const MIN_AGE_FOR_TASK_ID_MS = 2 * 60 * 1000;  // 2 min — allow onTaskSubmitted to run
+    const IMAGE_STALE_MS = 15 * 60 * 1000;
+    const VIDEO_STALE_MS = 50 * 60 * 1000;
+    const now = Date.now();
+
+    // (1) Generations with stored taskId: check every poll (2+ min old so taskId is saved)
+    const withTaskId = await prisma.generation.findMany({
+      where: {
+        status: "processing",
+        replicateModel: { startsWith: "kie-task:" },
+        createdAt: { lt: new Date(now - MIN_AGE_FOR_TASK_ID_MS) },
+      },
+      select: { id: true, type: true, replicateModel: true, createdAt: true, creditsCost: true },
+      take: 50,
+    });
+
+    // (2) Generations with only model name (no taskId), 15+ min old — timeout only
+    const staleAllKie = await prisma.generation.findMany({
+      where: {
+        status: "processing",
+        replicateModel: { startsWith: "kie-" },
+        createdAt: { lt: new Date(now - IMAGE_STALE_MS) },
+      },
+      select: { id: true, type: true, replicateModel: true, createdAt: true, creditsCost: true },
+      take: 30,
+    });
+    const staleNoTaskId = staleAllKie.filter((g) => !g.replicateModel?.startsWith("kie-task:"));
+
+    const staleKieGens = [...withTaskId, ...staleNoTaskId];
+    if (staleKieGens.length === 0) return;
+
+    if (withTaskId.length > 0) {
+      console.log(`[KIE Watchdog] Checking ${withTaskId.length} KIE task(s) with taskId + ${staleNoTaskId.length} stale (no taskId)...`);
+    }
+
+    for (const gen of staleKieGens) {
+      const ageMs = now - new Date(gen.createdAt).getTime();
+      const isVideo = gen.type && (gen.type.includes("video") || gen.type === "motion-transfer");
+      const staleThreshold = isVideo ? VIDEO_STALE_MS : IMAGE_STALE_MS;
+
+      // Extract taskId from replicateModel field (stored as "kie-task:<taskId>")
+      // If it's a plain model name like "kie-kling-2.6-motion-control" the task ID
+      // was never persisted — we can only time-out these, not recover them.
+      const isTaskId = gen.replicateModel?.startsWith("kie-task:");
+      const taskId = isTaskId ? gen.replicateModel.replace(/^kie-task:/, "").trim() : null;
+
+      // For generations without taskId, only act once they're past stale threshold
+      if (!taskId && ageMs < staleThreshold) continue;
+
+      if (!taskId) {
+        // No recoverable task ID — apply hard timeout only
+        const hardTimeout = isVideo ? 75 * 60 * 1000 : 25 * 60 * 1000;
+        if (ageMs > hardTimeout) {
+          await prisma.generation.update({
+            where: { id: gen.id },
+            data: { status: "failed", errorMessage: getErrorMessageForDb(`Generation timed out after ${Math.round(ageMs / 60000)} min (no task ID stored)`), completedAt: new Date() },
+          });
+          try { await refundGeneration(gen.id); } catch { /**/ }
+          console.log(`[KIE Watchdog] ⏱ No-taskId timeout ${gen.id.slice(0, 8)} after ${Math.round(ageMs / 60000)} min`);
+        }
+        continue;
+      }
+
+      try {
+        const kieRes = await this.fetchWithTimeout(
+          `https://api.kie.ai/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`,
+          { headers: { Authorization: `Bearer ${KIE_API_KEY}` } },
+          15000,
+        );
+        if (!kieRes.ok) {
+          console.warn(`[KIE Watchdog] ${gen.id.slice(0, 8)} HTTP ${kieRes.status} — skipping`);
+          continue;
+        }
+        const kieJson = await kieRes.json();
+        const data = kieJson?.data ?? kieJson;
+        const state = String(data?.state || "").toLowerCase();
+
+        if (state === "success") {
+          // Extract output URL
+          let outputUrl = null;
+          try {
+            const rj = typeof data.resultJson === "string" ? JSON.parse(data.resultJson) : data.resultJson;
+            outputUrl = rj?.resultUrls?.[0] || rj?.result_urls?.[0] || rj?.url;
+            if (!outputUrl && Array.isArray(rj)) outputUrl = rj[0];
+            if (!outputUrl && typeof rj === "string" && rj.startsWith("http")) outputUrl = rj;
+          } catch { /**/ }
+          outputUrl = outputUrl || data.resultUrl || data.outputUrl || data.url;
+
+          if (outputUrl) {
+            // Try to archive to R2
+            let finalUrl = outputUrl;
+            if (isR2Configured()) {
+              try {
+                const dlRes = await this.fetchWithTimeout(outputUrl, {}, 60000);
+                if (dlRes.ok) {
+                  const buf = Buffer.from(await dlRes.arrayBuffer());
+                  const ct = dlRes.headers.get("content-type") || "image/png";
+                  const ext = outputUrl.match(/\.(mp4|webm|jpg|jpeg|webp|png)(\?|$)/i)?.[1]?.toLowerCase() || "jpg";
+                  finalUrl = await uploadBufferToR2(buf, "generations", ext, ct);
+                }
+              } catch (e) {
+                console.warn(`[KIE Watchdog] R2 archive failed for ${gen.id.slice(0, 8)}: ${e.message}`);
+              }
+            }
+            await prisma.generation.update({
+              where: { id: gen.id },
+              data: { status: "completed", outputUrl: finalUrl, completedAt: new Date() },
+            });
+            console.log(`[KIE Watchdog] ✅ Recovered ${gen.id.slice(0, 8)} → ${finalUrl.slice(0, 80)}`);
+          } else {
+            await prisma.generation.update({
+              where: { id: gen.id },
+              data: { status: "failed", errorMessage: getErrorMessageForDb("Generation succeeded but returned no output URL"), completedAt: new Date() },
+            });
+          }
+        } else if (state === "fail") {
+          const failMsg = data.failMsg || data.failCode || "KIE generation failed";
+          await prisma.generation.update({
+            where: { id: gen.id },
+            data: { status: "failed", errorMessage: getErrorMessageForDb(failMsg), completedAt: new Date() },
+          });
+          // Refund credits
+          try { await refundGeneration(gen.id); } catch { /**/ }
+          console.log(`[KIE Watchdog] ❌ Marked failed ${gen.id.slice(0, 8)}: ${failMsg}`);
+        } else if (state === "waiting" || state === "queuing" || state === "generating") {
+          // Still running — only fail if way past max timeout
+          const hardTimeout = isVideo ? 75 * 60 * 1000 : 25 * 60 * 1000;
+          if (ageMs > hardTimeout) {
+            await prisma.generation.update({
+              where: { id: gen.id },
+              data: { status: "failed", errorMessage: getErrorMessageForDb(`Task timed out after ${Math.round(ageMs / 60000)} min (state: ${state})`), completedAt: new Date() },
+            });
+            try { await refundGeneration(gen.id); } catch { /**/ }
+            console.log(`[KIE Watchdog] ⏱ Hard-timeout ${gen.id.slice(0, 8)} after ${Math.round(ageMs / 60000)} min`);
+          }
+        } else {
+          // Unknown state — apply hard timeout
+          const hardTimeout = isVideo ? 75 * 60 * 1000 : 25 * 60 * 1000;
+          if (ageMs > hardTimeout) {
+            await prisma.generation.update({
+              where: { id: gen.id },
+              data: { status: "failed", errorMessage: getErrorMessageForDb(`Task unknown state "${state}" after ${Math.round(ageMs / 60000)} min`), completedAt: new Date() },
+            });
+            try { await refundGeneration(gen.id); } catch { /**/ }
+          }
+        }
+      } catch (e) {
+        console.warn(`[KIE Watchdog] Error checking ${gen.id.slice(0, 8)}: ${e.message}`);
+      }
+    }
+  }
+
+  /**
+   * Helper to sleep
+   */
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
+
+// Create singleton instance
+const generationPoller = new GenerationPollerService();
+
+export default generationPoller;
+

@@ -1,0 +1,646 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  password             String?
+  name                 String?
+  role                 String    @default("user")
+  
+  authProvider         String    @default("email")
+  googleId             String?   @unique
+  
+  isVerified           Boolean   @default(false)
+  verificationCode     String?
+  codeExpiresAt        DateTime?
+  resetCode            String?
+  resetCodeExpiresAt   DateTime?
+  
+  subscriptionTier          String?
+  subscriptionStatus        String    @default("trial")
+  subscriptionBillingCycle  String?
+  stripeCustomerId          String?   @unique
+  stripeSubscriptionId      String?   @unique
+  
+  maxModels            Int       @default(999)
+  
+  subscriptionCredits  Int       @default(25)
+  purchasedCredits     Int       @default(0)
+  creditsExpireAt      DateTime?
+  
+  credits              Int       @default(319)
+  totalCreditsUsed     Int       @default(0)
+  
+  imageCredits         Int       @default(0)
+  videoCredits         Int       @default(0)
+  imagesUsed           Int       @default(0)
+  videosUsed           Int       @default(0)
+  
+  twoFactorEnabled     Boolean   @default(false)
+  twoFactorSecret      String?
+  
+  onboardingCompleted  Boolean   @default(false)
+  hasUsedFreeTrial     Boolean   @default(false)
+  freeTrialGenerationId String?
+  
+  specialOfferEligible Boolean   @default(false)
+  specialOfferLockedAt DateTime?
+  
+  freeVideosCompleted  Int       @default(0)
+  
+  // New: Admin feature gate for custom LoRA training photos
+  allowCustomLoraTrainingPhotos Boolean @default(false)
+  
+  // Admin override: unlock Courses, Reel Finder, Repurposer without subscription
+  premiumFeaturesUnlocked Boolean @default(false)
+  
+  // New: Internal referral program
+  referralCode         String?   @unique
+  referredByUserId     String?
+  referredBy           User?     @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referrals            User[]    @relation("UserReferrals")
+  
+  subscriptionCancelledAt DateTime?
+
+  // Existing: Affiliate conversion guard (preserved)
+  firstSaleAt          DateTime?
+  firstSaleEventType   String?
+  affiliateBlocked     Boolean   @default(false)
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  
+  generations          Generation[]
+  savedModels          SavedModel[]
+  creditTransactions   CreditTransaction[]
+
+  // New referral relations
+  referralCommissions  ReferralCommission[] @relation("ReferrerCommissions")
+  referredCommissions  ReferralCommission[] @relation("ReferredCommissions")
+  referralPayoutRequests ReferralPayoutRequest[]
+
+  // Existing affiliate relations (preserved)
+  affiliateAttribution AffiliateAttribution?
+  affiliateConversions AffiliateConversion[]
+
+  draftTasks           DraftTask[]
+
+  @@index([referredByUserId])
+}
+
+model CreditTransaction {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount            Int
+  type              String
+  description       String?
+  
+  paymentSessionId  String?  @unique
+  
+  emailSentAt       DateTime?
+  
+  createdAt         DateTime @default(now())
+  
+  @@index([userId])
+  @@index([paymentSessionId])
+  @@index([userId, createdAt])
+}
+
+model Generation {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  modelId           String?
+  model             SavedModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
+  
+  type              String
+  prompt            String
+  
+  duration          Int?
+  resolution        String?
+  
+  creditsCost       Int
+  creditsRefunded   Boolean   @default(false)
+  actualCostUSD     Float?
+  
+  inputImageUrl     String?
+  inputVideoUrl     String?
+  outputUrl         String?
+  
+  replicateModel    String?
+  status            String    @default("pending")
+  errorMessage      String?
+  
+  isTrial           Boolean   @default(false)
+  
+  isNsfw            Boolean   @default(false)
+  
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
+  
+  @@index([userId])
+  @@index([modelId])
+  @@index([status])
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model SavedModel {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name          String
+  status        String   @default("ready")
+  
+  photo1Url     String
+  photo2Url     String
+  photo3Url     String
+  
+  thumbnail     String?
+  
+  isAIGenerated       Boolean   @default(false)
+  aiGenerationParams  Json?
+  
+  loraStatus          String?
+  loraSessionPaid     Boolean   @default(false)
+  loraUrl             String?
+  loraTriggerWord     String?
+  loraTrainedAt       DateTime?
+  loraFalRequestId    String?
+  loraError           String?
+  
+  nsfwUnlocked        Boolean   @default(false)
+  
+  nsfwOverride        Boolean   @default(false)
+  
+  paymentIntentId     String?
+
+  faceReferenceUrl    String?
+  
+  age                 Int?
+
+  savedAppearance     Json?
+  
+  activeLoraId        String?
+  
+  trainedLoras        TrainedLora[]
+  
+  trainingImages      LoraTrainingImage[]
+  
+  generations   Generation[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([isAIGenerated])
+  @@index([loraStatus])
+}
+
+model TrainedLora {
+  id              String     @id @default(uuid())
+  modelId         String
+  model           SavedModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  
+  name            String?
+  status          String     @default("awaiting_images")
+  trainingMode    String     @default("standard")
+  
+  loraUrl         String?
+  triggerWord     String?
+  trainedAt       DateTime?
+  falRequestId    String?
+  error           String?
+  
+  faceReferenceUrl String?
+
+  defaultAppearance Json?
+  
+  trainingImages  LoraTrainingImage[]
+  
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  
+  @@index([modelId])
+  @@index([status])
+}
+
+model LoraTrainingImage {
+  id          String     @id @default(uuid())
+  modelId     String
+  model       SavedModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  
+  loraId      String?
+  lora        TrainedLora? @relation(fields: [loraId], references: [id], onDelete: Cascade)
+  
+  imageUrl    String
+  imageType   String     @default("general")
+  imageIndex  Int        @default(0)
+  
+  generationId String?
+  
+  status      String     @default("completed")
+  prompt      String?
+  errorMsg    String?
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  @@index([modelId])
+  @@index([loraId])
+  @@index([status])
+}
+
+model CryptoPayment {
+  id            String    @id
+  orderId       String    @unique
+  userId        String
+  credits       Int
+  priceUsd      Float
+  type          String
+  status        String    @default("pending")
+  invoiceUrl    String?
+  paymentId     String?
+  paidAmount    String?
+  paidCurrency  String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([status])
+}
+
+model RepurposeJob {
+  id            String    @id @default(uuid())
+  userId        String
+  copies        Int       @default(1)
+  status        String    @default("completed")
+  createdAt     DateTime  @default(now())
+
+  outputs       RepurposeOutput[]
+
+  @@index([userId])
+  @@index([userId, createdAt])
+}
+
+model RepurposeOutput {
+  id            String    @id @default(uuid())
+  jobId         String
+  job           RepurposeJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  fileName      String
+  fileUrl       String
+  fileSize      Int?
+  createdAt     DateTime  @default(now())
+
+  @@index([jobId])
+}
+
+// ============================================
+// VIRAL REEL FINDER
+// ============================================
+model ReelFinderProfile {
+  id                  String   @id @default(uuid())
+  username            String   @unique
+  instagramUrl        String
+  isActive            Boolean  @default(true)
+  followerCount       Int?
+  avgViews            Float?
+  avgViewsUpdatedAt   DateTime?
+  lastScrapedAt       DateTime?
+  scrapeCount         Int       @default(0)
+  scrapeGroup         Int       @default(0)
+  addedAt             DateTime  @default(now())
+
+  reels               Reel[]
+
+  @@index([isActive])
+  @@index([scrapeGroup])
+}
+
+model Reel {
+  id                String            @id @default(uuid())
+  profileId         String
+  profile           ReelFinderProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  instagramReelId   String            @unique
+  reelUrl           String?
+  videoUrl          String?
+  thumbnailUrl      String?
+  views             Int               @default(0)
+  likes             Int               @default(0)
+  comments          Int               @default(0)
+  shares            Int               @default(0)
+  caption           String?
+  audioName         String?
+  postedAt          DateTime?
+
+  viralScore          Float             @default(0)
+  viewsToAvgRatio     Float             @default(0)
+  viewsPerHour        Float?
+  viewsPerHourPrev    Float?
+  prevViews           Int?
+  prevViewsAt         DateTime?
+  contentCategory     String?
+  lastScoreUpdate     DateTime?
+  lastScrapedAt       DateTime?
+  scrapeTier          Int               @default(4)
+  momentumMultiplier  Float             @default(1.0)
+  shareBonus          Float             @default(0)
+  audioTrendBonus     Float             @default(0)
+
+  createdAt           DateTime          @default(now())
+
+  @@index([profileId])
+  @@index([viralScore])
+  @@index([postedAt])
+  @@index([viewsPerHour])
+  @@index([scrapeTier, lastScrapedAt])
+  @@index([audioName, postedAt])
+}
+
+model ScrapeLog {
+  id              String    @id @default(uuid())
+  status          String    @default("running")
+  profilesScraped Int?
+  reelsFound      Int?
+  startedAt       DateTime  @default(now())
+  finishedAt      DateTime?
+
+  @@index([startedAt])
+}
+
+model SignupFingerprint {
+  id                String   @id @default(uuid())
+  ipAddress         String
+  deviceFingerprint String
+  userAgent         String?
+  email             String?
+  freeCreditsGiven  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  
+  @@index([ipAddress])
+  @@index([deviceFingerprint])
+  @@index([ipAddress, deviceFingerprint])
+}
+
+// ── New Referral System ─────────────────────────────────────────────────────
+
+model ReferralCommission {
+  id                 String   @id @default(uuid())
+  referrerUserId     String
+  referredUserId     String
+  purchaseAmountCents Int
+  commissionCents    Int
+  sourceType         String
+  sourceId           String
+  createdAt          DateTime @default(now())
+
+  referrerUser       User     @relation("ReferrerCommissions", fields: [referrerUserId], references: [id], onDelete: Cascade)
+  referredUser       User     @relation("ReferredCommissions", fields: [referredUserId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId, referredUserId])
+  @@index([referrerUserId, createdAt])
+  @@index([referredUserId, createdAt])
+}
+
+model ReferralPayoutRequest {
+  id               String   @id @default(uuid())
+  userId           String
+  amountCents      Int
+  walletAddress    String
+  status           String   @default("pending")
+  processedByAdminId String?
+  adminNote        String?
+  requestedAt      DateTime @default(now())
+  processedAt      DateTime?
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, requestedAt])
+  @@index([status, requestedAt])
+}
+
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  adminUserId   String
+  adminEmail    String?
+  action        String
+  targetType    String?
+  targetId      String?
+  detailsJson   String?
+  createdAt     DateTime @default(now())
+
+  @@index([adminUserId, createdAt])
+  @@index([action, createdAt])
+}
+
+// ── Telemetry ───────────────────────────────────────────────────────────────
+
+model ApiRequestMetric {
+  id              String   @id @default(uuid())
+  method          String
+  routePath       String
+  normalizedPath  String
+  statusCode      Int
+  durationMs      Int
+  userId          String?
+  isAdmin         Boolean  @default(false)
+  ipHash          String?
+  userAgent       String?
+  requestBytes    Int?
+  responseBytes   Int?
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([normalizedPath, createdAt])
+  @@index([statusCode, createdAt])
+  @@index([userId, createdAt])
+}
+
+model TelemetryEdgeEvent {
+  id            String   @id @default(uuid())
+  eventType     String
+  severity      String   @default("info")
+  message       String?
+  routePath     String?
+  statusCode    Int?
+  userId        String?
+  ipHash        String?
+  detailsJson   String?
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([eventType, createdAt])
+  @@index([severity, createdAt])
+}
+
+model SystemHealthMetric {
+  id                String   @id @default(uuid())
+  processUptimeSec  Int
+  memoryRssMb       Float
+  memoryHeapUsedMb  Float
+  memoryHeapTotalMb Float
+  eventLoopLagMs    Int?
+  loadAvg1          Float?
+  activeHandles     Int?
+  activeRequests    Int?
+  createdAt         DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model ApiEndpointHealthSnapshot {
+  id             String   @id @default(uuid())
+  runId          String
+  endpointKey    String
+  method         String
+  path           String
+  status         String
+  checksCount    Int      @default(0)
+  errorRatePct   Float?
+  avgLatencyMs   Int?
+  message        String?
+  checkedAt      DateTime @default(now())
+
+  @@index([runId, checkedAt])
+  @@index([endpointKey, checkedAt])
+  @@index([status, checkedAt])
+}
+
+model AppBranding {
+  id          String   @id @default("global")
+  appName     String   @default("ModelClone")
+  logoUrl     String?
+  faviconUrl  String?
+  baseUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Existing Affiliate System (preserved for data) ──────────────────────────
+
+model AffiliatePartner {
+  id             String   @id @default(uuid())
+  code           String   @unique
+  displayName    String
+  email          String?
+  isActive       Boolean  @default(true)
+
+  payoutChain    String?
+  payoutAddress  String?
+  payoutNote     String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  clicks         AffiliateClick[]
+  attributions   AffiliateAttribution[]
+  conversions    AffiliateConversion[]
+  withdrawals    WithdrawalRequest[]
+
+  @@index([isActive])
+}
+
+model AffiliateClick {
+  id           String           @id @default(uuid())
+  affiliateId  String
+  affiliate    AffiliatePartner @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  codeSnapshot String
+  landingPath  String?
+  ipHash       String?
+  userAgent    String?
+  cookieId     String?
+  createdAt    DateTime         @default(now())
+
+  @@index([affiliateId, createdAt])
+  @@index([cookieId])
+}
+
+model AffiliateAttribution {
+  id          String           @id @default(uuid())
+  userId      String           @unique
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  affiliateId String
+  affiliate   AffiliatePartner @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  sourceType  String
+  sourceRef   String?
+  expiresAt   DateTime
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([affiliateId])
+  @@index([expiresAt])
+}
+
+model AffiliateConversion {
+  id             String           @id @default(uuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  affiliateId    String
+  affiliate      AffiliatePartner @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  eventType      String
+  eventRef       String
+  grossUsd       Float
+  commissionUsd  Float
+  commissionRate Float            @default(0.15)
+  status         String           @default("pending")
+  isFirstSale    Boolean          @default(true)
+  payoutTxHash   String?
+  paidAt         DateTime?
+  createdAt      DateTime         @default(now())
+
+  @@unique([eventType, eventRef])
+  @@index([affiliateId, status])
+  @@index([userId])
+}
+
+model WithdrawalRequest {
+  id            String           @id @default(uuid())
+  affiliateId   String
+  affiliate     AffiliatePartner @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+
+  amountUsd     Float
+  cryptoChain   String
+  cryptoAddress String
+
+  status        String           @default("pending")
+  txHash        String?
+  adminNote     String?
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([affiliateId])
+  @@index([status])
+}
+
+model DraftTask {
+  id        String   @id @default(cuid())
+  userId    String
+  feature   String
+  data      Json
+  imageUrls String[]
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, feature])
+  @@index([userId])
+}

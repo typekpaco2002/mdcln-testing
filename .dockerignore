@@ -1,0 +1,25 @@
+# Dependencies (reinstalled in image)
+node_modules
+npm-debug.log
+
+# Env and secrets (set at deploy time)
+.env
+.env.*
+!.env.example
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+.vscode
+*.md
+!README.md
+
+# Build artifacts (rebuilt in image)
+dist
+client/dist
+
+# Optional: tests and docs to keep image smaller
+# docs
+# **/*.test.js
+# **/*.spec.js

@@ -1,0 +1,7 @@
+This is a placeholder. For production, use a real PNG icon:
+1. Create 192x192 PNG icon
+2. Save as icon-192.png
+3. Create 512x512 PNG icon  
+4. Save as icon-512.png
+
+For now, the app works without icons (just a browser warning).

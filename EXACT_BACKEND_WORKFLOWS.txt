@@ -1,0 +1,630 @@
+================================================================================
+MODELCLONE - EXACT BACKEND WORKFLOWS & PROMPTS
+Developer Technical Reference
+================================================================================
+
+This document shows EXACTLY what happens in the backend for each generation type,
+including the EXACT prompts sent to WaveSpeed API.
+
+================================================================================
+TAB 1: IMAGE GENERATION (Identity Recreation)
+================================================================================
+
+ENDPOINT: POST /api/generate/image-identity
+
+REQUEST BODY:
+{
+  "modelId": "uuid-of-model",
+  "identityImages": ["url1", "url2", "url3"],  // Model's 3 photos
+  "targetImage": "url4",                        // Scene to recreate
+  "quantity": 1-10,                             // Number of images
+  "size": "2K",
+  "preserveOptions": {
+    "tattoos": false,
+    "hairColor": false,
+    "hairstyle": false,
+    "facialHair": false,
+    "eyeColor": false,
+    "piercings": false,
+    "makeup": false,
+    "glasses": false
+  },
+  "prompt": "optional custom prompt"  // If user wants custom prompt
+}
+
+EXACT BACKEND WORKFLOW:
+------------------------
+1. Validate modelId and check ownership
+2. Validate identityImages array has exactly 3 URLs
+3. Validate targetImage URL exists
+4. Calculate credits: quantity × 3
+5. Check user has enough credits
+6. Build prompt using this EXACT logic:
+
+   DEFAULT PROMPT (if user doesn't provide custom):
+   "recreate image 4 using identity from images 1, 2 and 3. keep clothes, pose and background from image 4. don't keep clothes or accessories from images 1, 2 and 3."
+
+   IF user provides custom prompt:
+   Use their custom prompt instead
+
+   THEN add emphasis based on checkboxes:
+   - If tattoos checked: "especially preserve all tattoos from images 1, 2 and 3"
+   - If hairColor checked: "especially preserve hair color from images 1, 2 and 3"
+   - If hairstyle checked: "especially preserve hairstyle from images 1, 2 and 3"
+   - If facialHair checked: "especially preserve facial hair and beard from images 1, 2 and 3"
+   - If eyeColor checked: "especially preserve eye color from images 1, 2 and 3"
+   - If piercings checked: "especially preserve piercings from images 1, 2 and 3"
+   - If makeup checked: "especially preserve makeup style from images 1, 2 and 3"
+   - If glasses checked: "especially preserve glasses from images 1, 2 and 3"
+
+   All checked options are joined with ". " and appended to base prompt.
+
+7. Deduct credits UPFRONT (atomic, before generation)
+8. For each image in quantity:
+   a. Create generation record in database (status: "processing")
+   b. Add to request queue (max 20 concurrent)
+   c. Call WaveSpeed API with EXACT parameters:
+      - identityImages: [url1, url2, url3]
+      - targetImage: url4
+      - customImagePrompt: <final prompt from step 6>
+      - size: "2K"
+      - seed: Date.now() + i (unique per image)
+   d. If success: Update status to "completed", save outputUrl
+   e. If failure: Refund 3 credits (atomic), update status to "failed"
+9. Return results with creditsUsed (accounts for all refunds)
+
+EXACT PROMPT EXAMPLES:
+----------------------
+Example 1 - No checkboxes, default prompt:
+"recreate image 4 using identity from images 1, 2 and 3. keep clothes, pose and background from image 4. don't keep clothes or accessories from images 1, 2 and 3."
+
+Example 2 - Tattoos + Glasses checked:
+"recreate image 4 using identity from images 1, 2 and 3. keep clothes, pose and background from image 4. don't keep clothes or accessories from images 1, 2 and 3. especially preserve all tattoos from images 1, 2 and 3. especially preserve glasses from images 1, 2 and 3."
+
+Example 3 - Custom prompt + Hair color checked:
+"make me look like a superhero flying through the sky. especially preserve hair color from images 1, 2 and 3."
+
+WAVESPEED MODEL: seedream-v4-edit
+CREDIT COST: 3 credits per image
+IMPORTANT: Seedream V4 Edit does NOT support negative prompts!
+
+
+================================================================================
+TAB 2: PROMPT-BASED IMAGE GENERATION
+================================================================================
+
+ENDPOINT 1: POST /api/generate/enhance-prompt (OPTIONAL - AI Enhancement)
+
+REQUEST BODY:
+{
+  "prompt": "beach sunset",
+  "contentRating": "sexy",      // "sexy" or "pg13"
+  "style": "professional"       // "professional" or "amateur"
+}
+
+EXACT AI ENHANCEMENT WORKFLOW:
+-------------------------------
+Uses OpenAI GPT-4o-mini with this EXACT system prompt:
+
+"""
+You are a prompt engineer. Transform this scene into a detailed photo description for image generation.
+
+CONTEXT: [Photo Context Based on Style]
+
+Professional Style:
+"Professional editorial photoshoot - intentional artistic session, deliberate composition, model working with photographer, artistic vision, magazine quality with bokeh background blur."
+
+Amateur Style:
+"Casual moment between friends - spontaneous snapshot, friend taking quick photo, playful energy, unplanned authentic moment, everyday vibe, genuine expression."
+
+Write a natural scene description (under 50 words) including:
+- Specific location and environment
+- What the person is doing (their activity)
+- Full body appearance including pose: [Pose Guidance]
+- Full body appearance including clothing: [Clothing Guidance]
+- Lighting (time of day: morning/afternoon/sunset/indoor)
+- Atmosphere and mood
+
+Write it as a natural scene description, NOT as instructions. Describe the complete person (face, body, clothing, pose) naturally in the scene.
+
+AVOID: Camera specs, lens details, "professional quality", "high resolution", technical photography terms
+
+Scene: "[USER INPUT]"
+
+Natural scene description:
+"""
+
+CLOTHING GUIDANCE BY CONTENT RATING:
+-------------------------------------
+SEXY Mode:
+"Form-fitting fashion attire showing skin. Examples: mini dress, crop top with shorts, swimwear, sleepwear, silk outfit, fitted top, athletic wear, sheer fabric, delicate clothing. Should expose shoulders, legs, or midriff in an alluring style."
+
+PG-13 Mode:
+"Modest, family-friendly, appropriate attire. Should cover shoulders and knees, decent and wholesome outfit suitable for all audiences."
+
+POSE GUIDANCE BY CONTENT RATING:
+---------------------------------
+SEXY Mode:
+"Provocative artistic pose that fits the scene. Examples: kneeling position, arched back emphasizing curves, body turned showing profile, reclining with dynamic angles, hand positioning that draws attention to form, bent forward or backward poses, intimate body language. Select pose that suits the location naturally."
+
+PG-13 Mode:
+"Natural, appropriate pose suitable for family-friendly content."
+
+AI ENHANCEMENT EXAMPLE:
+-----------------------
+User Input: "beach sunset"
+Content Rating: sexy
+Style: professional
+
+OpenAI Returns (example):
+"Golden hour beach photoshoot, woman in red bikini with flowing sarong kneeling in shallow waves, arched back with hair flowing, warm sunset light creating silhouette, romantic ocean breeze atmosphere, intentional artistic composition with bokeh background."
+
+
+ENDPOINT 2: POST /api/generate/prompt-image (ACTUAL GENERATION)
+
+REQUEST BODY:
+{
+  "modelId": "uuid",
+  "prompt": "enhanced or custom prompt from user",
+  "quantity": 1-10,
+  "style": "professional",
+  "contentRating": "sexy"
+}
+
+EXACT BACKEND WORKFLOW:
+------------------------
+1. Validate modelId and ownership
+2. Validate prompt is not empty
+3. Calculate credits: quantity × 3
+4. Check user credits
+5. Get model's 3 photos: [photo1Url, photo2Url, photo3Url]
+6. Use NEUTRAL BASE IMAGE for prompt generation:
+   "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&h=800&fit=crop"
+7. Build FINAL PROMPT using this EXACT formula:
+
+   finalPrompt = "refer to the images 1,2 and 3\n" + userPrompt.trim()
+
+   Example:
+   "refer to the images 1,2 and 3
+   Golden hour beach photoshoot, woman in red bikini with flowing sarong kneeling in shallow waves, arched back with hair flowing, warm sunset light creating silhouette, romantic ocean breeze atmosphere."
+
+8. Deduct credits UPFRONT (atomic)
+9. For each image:
+   a. Create generation record (type: "prompt-based")
+   b. Add to queue
+   c. Call WaveSpeed API:
+      - identityImages: [model.photo1Url, model.photo2Url, model.photo3Url]
+      - targetImage: neutralBaseImage (Unsplash URL)
+      - customImagePrompt: <finalPrompt from step 7>
+      - size: "2K"
+   d. Success: Save outputUrl
+   e. Failure: Refund 3 credits
+10. Return results
+
+WAVESPEED MODEL: seedream-v4-edit
+CREDIT COST: 3 credits per image
+IMPORTANT: Style and contentRating are ONLY used in AI enhancement, not in final generation!
+
+
+================================================================================
+TAB 3: VIDEO GENERATION
+================================================================================
+
+METHOD A: QUICK GENERATION (One-Step, Lower Quality)
+-----------------------------------------------------
+
+ENDPOINT: POST /api/generate/video-directly
+
+REQUEST BODY:
+{
+  "modelId": "uuid",
+  "referenceVideoUrl": "url"
+}
+
+EXACT WORKFLOW:
+1. Validate modelId and ownership
+2. Validate referenceVideoUrl
+3. Get model from database
+4. Credits needed: 20 (fixed)
+5. Check user credits
+6. Create generation record:
+   - type: "video"
+   - prompt: "Direct video generation (TikTok/Reel format)"
+   - inputImageUrl: JSON.stringify([photo1, photo2, photo3])
+   - inputVideoUrl: referenceVideoUrl
+   - creditsCost: 20
+   - replicateModel: "wan-2.2-animate-tiktok"
+7. Deduct 20 credits UPFRONT
+8. Add to queue
+9. Call WaveSpeed API:
+   - identityImages: [photo1Url, photo2Url, photo3Url]
+   - referenceVideoUrl: url
+   - resolution: "720p"
+   - aspectRatio: "9:16"
+10. Success: Save video URL
+11. Failure: Refund 20 credits
+
+WAVESPEED MODEL: wan-2.2-animate
+OUTPUT: 720p vertical (9:16), ~5 seconds
+CREDIT COST: 20 credits
+QUALITY: Lower (may have bad frame artifacts)
+
+
+METHOD B: PROFESSIONAL 2-STEP METHOD (Higher Quality, Recommended)
+-------------------------------------------------------------------
+
+STEP 0: Extract Frames (FREE)
+==============================
+
+ENDPOINT: POST /api/generate/extract-frames
+
+REQUEST BODY:
+{
+  "referenceVideoUrl": "url"
+}
+
+EXACT WORKFLOW:
+1. Validate referenceVideoUrl
+2. Use FFmpeg to extract 10 frames at 1fps intervals
+3. Upload frames to Cloudinary
+4. Return array of 10 frame URLs with timestamps
+5. NO CREDITS CHARGED
+
+RETURNS:
+{
+  "success": true,
+  "frames": [
+    { "url": "cloudinary-url", "timestamp": 0 },
+    { "url": "cloudinary-url", "timestamp": 1 },
+    ...
+  ],
+  "videoDuration": 10.5
+}
+
+
+STEP 1: Recreate Selected Frame (3 Credits)
+============================================
+
+ENDPOINT: POST /api/generate/complete-recreation
+
+REQUEST BODY:
+{
+  "modelId": "uuid",
+  "modelIdentityImages": ["url1", "url2", "url3"],
+  "videoScreenshot": "selected-frame-url",  // User picked from extracted frames
+  "originalVideoUrl": "reference-video-url",
+  "videoPrompt": "optional prompt",
+  "aspectRatio": "9:16",
+  "numFrames": 1
+}
+
+EXACT WORKFLOW:
+1. Validate all inputs
+2. Credits needed: 3 (for 1 image) + 20 (for video) = 23 total
+3. Check user has 23 credits
+4. Deduct 23 credits UPFRONT
+5. STEP 1 - Recreate selected frame:
+   a. Create generation record (type: "image")
+   b. Add to queue
+   c. Call WaveSpeed with EXACT prompt:
+      "recreate image 4 using identity from images 1, 2 and 3. keep clothes, pose and background from image 4. don't keep clothes or accessories from images 1, 2 and 3."
+   d. Parameters:
+      - identityImages: [url1, url2, url3]
+      - targetImage: videoScreenshot (selected frame)
+      - customImagePrompt: <above prompt>
+      - size: "2K"
+   e. If failure: Refund 3 credits, mark failed
+6. STEP 2 - Generate video from recreated image:
+   a. Create generation record (type: "video")
+   b. Add to queue
+   c. Call WaveSpeed:
+      - generatedImageUrl: <recreated image from step 1>
+      - referenceVideoUrl: originalVideoUrl
+      - videoPrompt: videoPrompt (if provided)
+      - resolution: "720p"
+      - aspectRatio: "9:16"
+   d. If failure: Refund 20 credits, mark failed
+7. Return both generation IDs
+
+WAVESPEED MODELS: 
+- Image: seedream-v4-edit
+- Video: wan-2.2-animate
+CREDIT COST: 23 total (3 for frame + 20 for video)
+QUALITY: Professional (user-selected high-quality starting frame)
+
+
+STEP 2 ALTERNATIVE: Just Generate Video (if frame already recreated)
+=====================================================================
+
+ENDPOINT: POST /api/generate/video-motion
+
+REQUEST BODY:
+{
+  "modelId": "uuid",
+  "generatedImageUrl": "recreated-image-url",
+  "referenceVideoUrl": "reference-video-url",
+  "prompt": "optional custom prompt"
+}
+
+EXACT WORKFLOW:
+1. Validate inputs
+2. Credits needed: 20
+3. Check user credits
+4. Create generation record:
+   - type: "video"
+   - prompt: prompt || "Motion transfer"
+   - inputImageUrl: generatedImageUrl
+   - inputVideoUrl: referenceVideoUrl
+   - creditsCost: 20
+   - replicateModel: "wan-video/wan-2.2-animate-animation"
+5. Deduct 20 credits UPFRONT
+6. Add to queue
+7. Call WaveSpeed:
+   - generatedImageUrl: url
+   - referenceVideoUrl: url
+   - videoPrompt: prompt || ""
+   - resolution: "720p"
+   - aspectRatio: "9:16"
+8. Success: Save video URL
+9. Failure: Refund 20 credits
+
+WAVESPEED MODEL: wan-2.2-animate
+CREDIT COST: 20 credits
+
+
+================================================================================
+TAB 4: FACE SWAP GENERATION
+================================================================================
+
+ENDPOINT: POST /api/generate/face-swap
+
+REQUEST BODY:
+{
+  "sourceVideoUrl": "video-with-faces",
+  "modelId": "uuid",
+  "videoDuration": 30,           // Calculated in frontend
+  "targetGender": "all",         // "all", "male", or "female"
+  "targetIndex": 0,              // 0 = swap all faces
+  "maxDuration": 0               // 0 = no limit
+}
+
+EXACT BACKEND WORKFLOW:
+-----------------------
+1. Validate sourceVideoUrl
+2. Validate modelId and ownership
+3. Validate videoDuration > 0
+4. Get model from database
+5. Extract face image: faceImageUrl = model.photo1Url (first photo)
+6. Calculate credits: Math.ceil(videoDuration × 1)
+   Examples:
+   - 30.2 seconds = 31 credits
+   - 10 seconds = 10 credits
+   - 1.5 seconds = 2 credits
+7. Check user has enough credits
+8. Create generation record:
+   - type: "faceswap"
+   - prompt: "Face swap - {duration}s video"
+   - inputImageUrl: JSON with {sourceVideoUrl, faceImageUrl, modelId}
+   - creditsCost: creditsNeeded
+   - replicateModel: "wavespeed-video-face-swap"
+9. Deduct credits UPFRONT
+10. Add to queue
+11. Call WaveSpeed API with EXACT parameters:
+    - sourceVideoUrl: url
+    - faceImageUrl: model.photo1Url
+    - targetGender: "all" | "male" | "female"
+    - targetIndex: 0 (swap all matching faces)
+    - maxDuration: 0 (no limit)
+12. Success: Save swapped video URL
+13. Failure: Refund all credits
+
+WAVESPEED MODEL: face-swap-v1
+CREDIT COST: 1 credit per second (rounded up)
+FEATURES:
+- Detects multiple faces automatically
+- Can filter by gender
+- Preserves original video quality
+- Maintains audio
+
+
+================================================================================
+CREDIT SAFETY SYSTEM (APPLIES TO ALL ENDPOINTS)
+================================================================================
+
+TRIPLE-LAYER REFUND PROTECTION:
+--------------------------------
+All generation endpoints implement this EXACT safety pattern:
+
+1. UPFRONT DEDUCTION (Atomic):
+   await deductCredits(userId, creditsNeeded);
+   // Credits removed from user balance BEFORE any API calls
+
+2. IMMEDIATE REFUND (If record creation fails):
+   if (!generationRecord) {
+     await refundCredits(userId, creditsNeeded);
+   }
+
+3. RECORD-BASED REFUND (If API call fails):
+   if (!apiResult.success) {
+     await refundGeneration(generationId);
+     // Uses SELECT FOR UPDATE to prevent double refunds
+   }
+
+4. EXCEPTION REFUND (Emergency safety net):
+   catch (error) {
+     // Refund all failed generations atomically
+   }
+
+5. STUCK GENERATION CLEANUP (On server startup):
+   - Finds all generations in "processing" status > 10 minutes old
+   - Refunds credits using atomic refundGeneration()
+   - Prevents double refunds via creditsRefunded boolean flag
+
+
+REQUEST QUEUE SYSTEM:
+---------------------
+All generation endpoints use request queue:
+
+- Max concurrent: 20 (WaveSpeed Silver tier limit)
+- Queue timeout: 10 minutes
+- Purpose: Prevent 429 errors and server overload
+
+Code pattern:
+const result = await requestQueue.enqueue(async () => {
+  return await wavespeedAPI(...);
+});
+
+
+GENERATION STATUS TRACKING:
+---------------------------
+All generations start with status: "processing"
+
+Backend poller (runs every 5 seconds):
+- Queries WaveSpeed API for status updates
+- Updates generation records in database
+- No frontend involvement needed
+
+Frontend (polls every 5 seconds):
+- Fetches GET /api/generations
+- Displays current database state
+- No localStorage complexity
+
+
+================================================================================
+IMPORTANT TECHNICAL NOTES
+================================================================================
+
+1. SEEDREAM V4 EDIT LIMITATIONS:
+   - NO negative prompts supported
+   - All content control via positive prompts only
+   - Custom prompts replace default prompts entirely
+
+2. IMAGE STRUCTURE:
+   - Image 1, 2, 3 = Identity images (model's 3 photos)
+   - Image 4 = Target image (scene to recreate)
+   - This structure is referenced in prompts
+
+3. PROMPT BUILDING:
+   - User custom prompts REPLACE defaults (not append)
+   - Checkbox emphasis APPENDS to custom or default
+   - AI enhancement happens BEFORE final prompt building
+
+4. CREDIT DEDUCTION ORDER:
+   - ALWAYS deduct upfront (prevents race conditions)
+   - ALWAYS refund on failures (triple-layer safety)
+   - NEVER charge without deducting first
+
+5. VIDEO QUALITY TRADE-OFF:
+   - Quick method: 20 credits, lower quality, fast
+   - 2-Step method: 23 credits, high quality, user control
+   - Difference: User-selected frame vs automatic extraction
+
+6. FACE SWAP PRICING:
+   - Duration calculated in FRONTEND (HTML5 video element)
+   - Sent to backend in request body
+   - Backend trusts frontend calculation (validated > 0)
+
+7. GENERATION TYPES IN DATABASE:
+   - "image" = Image generation or frame recreation
+   - "video" = Video generation
+   - "faceswap" = Face swap
+   - "prompt-based" = Prompt-based image (in frontend tracking)
+
+
+================================================================================
+FILE LOCATIONS FOR VERIFICATION
+================================================================================
+
+Backend Controllers:
+- src/controllers/generation.controller.js (lines 29-1560)
+  - Line 29: generateImageWithIdentity
+  - Line 85-119: Prompt building logic
+  - Line 280: generateVideoWithMotion (new wrapper pattern)
+  - Line 346: generateCompleteRecreation
+  - Line 623: extractVideoFrames
+  - Line 931: generateVideoDirectly
+  - Line 1072: generateFaceSwap
+  - Line 1329: buildGenerationPrompt (prompt-based)
+  - Line 1339: generatePromptBasedImage
+
+API Routes:
+- src/routes/api.routes.js (lines 1-393)
+  - Line 130: POST /generate/image-identity
+  - Line 141: POST /generate/video-motion
+  - Line 153: POST /generate/complete-recreation
+  - Line 167: POST /generate/extract-frames
+  - Line 198: POST /generate/video-directly
+  - Line 213: POST /generate/face-swap
+  - Line 222: POST /generate/enhance-prompt (inline AI logic)
+  - Line 305: POST /generate/prompt-image
+
+WaveSpeed Service:
+- src/services/wavespeed.service.js
+  - generateImageWithIdentity()
+  - generateVideoWithMotion()
+  - faceSwapVideo()
+
+Helper Functions:
+- src/helpers/generation.helpers.js
+  - withGenerationSafety() - Unified wrapper for all safety guarantees
+
+Frontend Components:
+- client/src/pages/GeneratePage.jsx (1744 lines)
+  - Line 105: ImageGeneration component
+  - Line 399: VideoGeneration component
+  - Line 1047: FaceSwapGeneration component
+  - Line 1282: PromptImageGeneration component
+
+
+================================================================================
+TESTING VERIFICATION CHECKLIST
+================================================================================
+
+For each generation type, verify:
+
+1. Image Generation:
+   [ ] Default prompt used when no custom prompt
+   [ ] Custom prompt replaces default
+   [ ] Checkbox emphasis appends correctly
+   [ ] 3 credits deducted per image
+   [ ] Credits refunded on failure
+   [ ] Quantity 1-10 works
+
+2. Prompt-Based:
+   [ ] AI enhancement respects contentRating
+   [ ] AI enhancement respects style
+   [ ] Sexy mode adds revealing clothing
+   [ ] PG-13 mode adds modest clothing
+   [ ] Professional adds editorial context
+   [ ] Amateur adds casual context
+   [ ] Final prompt structure: "refer to images 1,2,3\n<enhanced>"
+
+3. Video Quick:
+   [ ] 20 credits charged
+   [ ] Direct generation without frame selection
+   [ ] 720p vertical output
+   [ ] Credits refunded on failure
+
+4. Video 2-Step:
+   [ ] Frame extraction FREE
+   [ ] Returns 10 frames
+   [ ] Frame recreation costs 3 credits
+   [ ] Video generation costs 20 credits
+   [ ] Total 23 credits
+   [ ] Both steps refund on failure
+
+5. Face Swap:
+   [ ] 1 credit per second (rounded up)
+   [ ] Uses model's photo1 for face
+   [ ] Gender filtering works
+   [ ] Credits match video duration
+
+6. Credit Safety:
+   [ ] All endpoints deduct upfront
+   [ ] All failures trigger refunds
+   [ ] No double refunds possible
+   [ ] Stuck generations refunded on startup
+
+================================================================================
+END OF DOCUMENT
+================================================================================
