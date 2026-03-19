@@ -47,8 +47,8 @@ Model: seedream-v4-edit
 ### Key Features
 - **Batch generation**: Up to 10 images at once
 - **Feature preservation**: Checkboxes add emphasis to prompt
-- **Default prompt**: "recreate image 4 using identity from images 1, 2 and 3. keep clothes, pose and background from image 4. don't keep clothes or accessories from images 1, 2 and 3."
-- **Custom prompts**: User can override default prompt
+- **Prompts**: Defined in `src/constants/identityRecreationPrompts.js` — explicit image roles (1–3 = identity lock, 4 = composition), strict anti–face-bleed from image 4, separate variants for model outfit (from image 3) vs reference outfit (from image 4). Reference mode appends optional user text as `Additional direction: …`.
+- **Custom prompts**: Pipeline and video-recreate paths use the same constants; KIE/WaveSpeed fall back to model-clothes prompt when no override is passed.
 
 ### Output
 - High-resolution images (2K)

@@ -4,6 +4,7 @@ import {
   generateTextToImageNanoBananaKie,
   getKieCallbackUrl,
 } from "./kie.service.js";
+import { IDENTITY_RECREATE_MODEL_CLOTHES } from "../constants/identityRecreationPrompts.js";
 
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY;
 const WAVESPEED_API_URL = "https://api.wavespeed.ai/api/v3";
@@ -560,9 +561,7 @@ export async function generateImageWithSeedreamWaveSpeed(images, prompt, options
  */
 export async function generateImageWithIdentityWaveSpeed(identityImages, targetImage, options = {}) {
   const allImages = [...identityImages, targetImage];
-  const prompt =
-    options.customImagePrompt ||
-    "recreate image 4 using identity from images 1, 2 and 3. keep the exact same body pose hand placement and expression and background from image 4. keep the exact clothes and accessories from image 3. don't use clothes or accessories from image 4.";
+  const prompt = options.customImagePrompt || IDENTITY_RECREATE_MODEL_CLOTHES;
   return generateImageWithSeedreamWaveSpeed(allImages, prompt, {
     ...options,
     onTaskCreated: options.onTaskCreated,

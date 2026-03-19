@@ -1176,17 +1176,17 @@ function ImageGeneration() {
           {clothesMode === "reference" && (
             <div className="mb-6">
               <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-2">
-                Add to prompt (optional)
+                Extra directions (optional)
               </label>
               <p className="text-[11px] text-slate-500 mb-2">
-                e.g. change the bra and thong color to red
+                Added after the built-in identity rules. Use for tweaks: colors, jewelry, makeup, small props — likeness still comes from your model photos.
               </p>
               <textarea
                 value={identityPromptEdit}
                 onChange={(e) => setIdentityPromptEdit(e.target.value)}
                 rows={2}
                 className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/15 text-sm text-slate-200 placeholder-slate-500 focus:border-white/30 focus:outline-none transition resize-none"
-                placeholder="e.g. change the bra and thong color to red"
+                placeholder="e.g. gold hoop earrings, deeper red lipstick"
                 data-testid="textarea-identity-prompt-edit"
               />
             </div>

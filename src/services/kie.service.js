@@ -11,6 +11,7 @@
  */
 
 import { isR2Configured, uploadBufferToR2 } from "../utils/r2.js";
+import { IDENTITY_RECREATE_MODEL_CLOTHES } from "../constants/identityRecreationPrompts.js";
 
 const KIE_API_KEY = process.env.KIE_API_KEY;
 const KIE_API_URL = "https://api.kie.ai/api/v1";
@@ -416,8 +417,7 @@ async function generateImageWithSeedreamKieInternal(images, prompt, options = {}
  */
 async function generateImageWithIdentityKieInternal(identityImages, targetImage, options = {}) {
   const allImages = [...identityImages, targetImage];
-  const prompt = options.customImagePrompt ||
-    `recreate image 4 using identity from images 1, 2 and 3. keep the exact same body pose hand placement and expression and background from image 4. keep the exact clothes and accessories from image 3. don't use clothes or accessories from image 4.`;
+  const prompt = options.customImagePrompt || IDENTITY_RECREATE_MODEL_CLOTHES;
   return generateImageWithSeedreamKieInternal(allImages, prompt, {
     aspectRatio: options.aspectRatio || "9:16",
     quality: options.quality || "basic",

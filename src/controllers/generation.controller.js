@@ -33,6 +33,10 @@ import { getUserFriendlyGenerationError } from "../utils/generationErrorMessages
 import { buildAppearancePrefix } from "../utils/appearancePrompt.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
 import { getGenerationPricing } from "../services/generation-pricing.service.js";
+import {
+  IDENTITY_RECREATE_MODEL_CLOTHES,
+  IDENTITY_RECREATE_REFERENCE_CLOTHES,
+} from "../constants/identityRecreationPrompts.js";
 
 const PERSISTED_IMAGE_TYPES = new Set([
   "image",
@@ -297,15 +301,15 @@ export async function generateImageWithIdentity(req, res) {
       });
     }
 
-    // Identity: "model" = keep model clothes (image 3); "reference" = copy source photo clothes (image 4) + optional user edit
-    const promptKeepModelClothes = "recreate image 4 using identity from images 1, 2 and 3. keep the exact same body pose hand placement and expression and background from image 4. keep the exact clothes and accessories from image 3. don't use clothes or accessories from image 4.";
-    const promptCopySourceClothes = "recreate image 4 using identity from images 1, 2 and 3. keep the exact same body pose hand placement and expression and background from image 4. keep the exact clothes and accessories from image 4.";
+    // Identity: "model" = outfit from image 3; "reference" = outfit + scene styling from image 4 + optional user edit
     let customPrompt;
     if (clothesMode === "reference") {
-      customPrompt = promptCopySourceClothes + (prompt && prompt.trim() ? ` ${prompt.trim()}` : "");
+      customPrompt =
+        IDENTITY_RECREATE_REFERENCE_CLOTHES +
+        (prompt && prompt.trim() ? ` Additional direction: ${prompt.trim()}` : "");
     } else {
-      // "model" or legacy "random" — keep model clothes, no randomising, no user prompt
-      customPrompt = promptKeepModelClothes;
+      // "model" or legacy "random" — keep model clothes from image 3, no user prompt
+      customPrompt = IDENTITY_RECREATE_MODEL_CLOTHES;
     }
 
     const startTime = Date.now();
@@ -1960,8 +1964,7 @@ async function processQuickVideoInBackground(
     const imageResult = await requestQueue.enqueue(async () => {
       return await generateImageWithIdentityWaveSpeed(kieIdentityImgs, kieFrameUrl, {
         aspectRatio: "9:16",
-        customImagePrompt:
-          "recreate image 4 using identity from images 1, 2 and 3. keep the exact same body pose hand placement and expression and background from image 4. keep the exact clothes and accessories from image 3. don't use clothes or accessories from image 4.",
+        customImagePrompt: IDENTITY_RECREATE_MODEL_CLOTHES,
         onTaskCreated: async (taskId) => {
           await prisma.generation.update({
             where: { id: generationId },
