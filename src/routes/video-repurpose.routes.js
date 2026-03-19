@@ -24,6 +24,8 @@ import { authMiddleware } from "../middleware/auth.middleware.js";
 import prisma from "../lib/prisma.js";
 import { uploadToR2, isR2Configured, deleteFromR2, getR2PresignedPutForKey } from "../utils/r2.js";
 import { getSafeErrorMessage } from "../utils/safe-error.js";
+import { buildAiRepurposeFilters } from "../services/repurpose-ai-filters.js";
+import { checkAndExpireCredits, deductCredits, getTotalCredits } from "../services/credit.service.js";
 
 const execFileAsync = promisify(execFileCb);
 const MAX_VIDEO_DURATION_SEC = 60;
@@ -71,6 +73,37 @@ const MAX_COMPARE_CONCURRENT_GLOBAL = 3;
 let activeCompareGlobal = 0;
 const compareGlobalWaitQueue = [];
 const COMPARE_WAIT_TIMEOUT_MS = 10_000;
+
+const AI_REPURPOSE_CREDIT_COST = 10;
+
+async function applyRepurposeSmartFiltersAndCharge(userId, settings, { isImage, hasAudio }) {
+  if (settings.useAiOptimization !== true) return { ok: true };
+  try {
+    await checkAndExpireCredits(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscriptionCredits: true, purchasedCredits: true, credits: true },
+    });
+    const total = getTotalCredits(user || {});
+    if (total < AI_REPURPOSE_CREDIT_COST) {
+      return {
+        ok: false,
+        status: 402,
+        error: `Smart optimization requires ${AI_REPURPOSE_CREDIT_COST} credits. You have ${total}.`,
+      };
+    }
+    await deductCredits(userId, AI_REPURPOSE_CREDIT_COST);
+    settings.filters = buildAiRepurposeFilters({ isImage, hasAudio });
+    return { ok: true };
+  } catch (e) {
+    const msg = e?.message || "Could not deduct credits.";
+    if (msg.includes("Insufficient") || msg.includes("Need")) {
+      return { ok: false, status: 402, error: msg };
+    }
+    console.error("applyRepurposeSmartFiltersAndCharge:", e);
+    return { ok: false, status: 500, error: "Credit deduction failed." };
+  }
+}
 
 function acquireCompareGlobalSlot(timeoutMs = COMPARE_WAIT_TIMEOUT_MS) {
   if (activeCompareGlobal < MAX_COMPARE_CONCURRENT_GLOBAL) {
@@ -406,17 +439,29 @@ router.post("/prepare-browser", requireActiveSubscription, express.json(), async
     if (!isR2Configured()) {
       return res.status(503).json({ ok: false, error: "Storage not configured. Browser repurpose is unavailable." });
     }
-    const { settings: settingsRaw, isImage } = req.body || {};
+    const { settings: settingsRaw, isImage, sourceInfo: sourceInfoRaw } = req.body || {};
     let settings = {};
     try {
       settings = typeof settingsRaw === "string" ? JSON.parse(settingsRaw) : settingsRaw || {};
     } catch {}
     const copies = Math.min(5, Math.max(1, parseInt(settings.copies) || 1));
     settings.copies = copies;
+
+    const imageMode = !!isImage;
+    const sourceInfo = sourceInfoRaw && typeof sourceInfoRaw === "object" ? sourceInfoRaw : {};
+    const hasAudio = sourceInfo.hasAudio !== false;
+
+    const creditResult = await applyRepurposeSmartFiltersAndCharge(userId, settings, {
+      isImage: imageMode,
+      hasAudio,
+    });
+    if (!creditResult.ok) {
+      return res.status(creditResult.status || 500).json({ ok: false, error: creditResult.error });
+    }
+
     const metadataInstructions = buildMetadataInstructionsForCopies(settings.metadata || {}, copies);
     const metadataInstruction = metadataInstructions[0] || buildMetadataInstruction(settings.metadata || {});
     const jobId = uuidv4();
-    const imageMode = !!isImage;
     const outputExt = imageMode ? "jpg" : "mp4";
     const contentType = imageMode ? "image/jpeg" : "video/mp4";
     const outputs = [];
@@ -457,6 +502,8 @@ router.post("/prepare-browser", requireActiveSubscription, express.json(), async
       metadataInstructions,
       metadataInstruction: metadataInstruction || undefined,
       isImage: imageMode,
+      filters: settings.useAiOptimization === true ? settings.filters : undefined,
+      creditsCharged: settings.useAiOptimization === true ? AI_REPURPOSE_CREDIT_COST : 0,
     });
   } catch (e) {
     console.error("prepare-browser error:", e?.message);
@@ -623,11 +670,23 @@ async function handleGenerateFromUrl(req, res, userId) {
     }
 
     const isImage = ["jpg","jpeg","png","webp","gif","bmp"].includes(ext);
+    let urlProbeHasAudio = true;
     if (!isImage) {
       const info = await probeInput(tmpVideoPath);
+      urlProbeHasAudio = info.hasAudio !== false;
       if (info.duration > MAX_VIDEO_DURATION_SEC) {
         return res.status(400).json({ error: `Video too long. Max ${MAX_VIDEO_DURATION_SEC}s, got ${Math.round(info.duration)}s.` });
       }
+    }
+
+    const urlCredit = await applyRepurposeSmartFiltersAndCharge(userId, settings, {
+      isImage,
+      hasAudio: isImage ? false : urlProbeHasAudio,
+    });
+    if (!urlCredit.ok) {
+      if (tmpVideoPath && fs.existsSync(tmpVideoPath)) fs.unlinkSync(tmpVideoPath);
+      if (tmpWatermarkPath && fs.existsSync(tmpWatermarkPath)) fs.unlinkSync(tmpWatermarkPath);
+      return res.status(urlCredit.status || 500).json({ ok: false, error: urlCredit.error });
     }
 
     const jobId = uuidv4();
@@ -727,13 +786,27 @@ router.post(
       const videoPath = req.files.video[0].path;
       const watermarkPath = req.files.watermark?.[0]?.path || null;
       const isImage = req.files.video[0].mimetype.startsWith("image/");
+      let probeHasAudio = true;
       if (!isImage) {
         const info = await probeInput(videoPath);
+        probeHasAudio = info.hasAudio !== false;
         if (info.duration > MAX_VIDEO_DURATION_SEC) {
           fs.unlinkSync(videoPath);
           if (watermarkPath && fs.existsSync(watermarkPath)) fs.unlinkSync(watermarkPath);
           return res.status(400).json({ error: `Video is too long. Maximum allowed duration is ${MAX_VIDEO_DURATION_SEC} seconds. Your video is ${Math.round(info.duration)}s.` });
         }
+      }
+
+      const creditResult = await applyRepurposeSmartFiltersAndCharge(userId, settings, {
+        isImage,
+        hasAudio: isImage ? false : probeHasAudio,
+      });
+      if (!creditResult.ok) {
+        try {
+          if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+          if (watermarkPath && fs.existsSync(watermarkPath)) fs.unlinkSync(watermarkPath);
+        } catch {}
+        return res.status(creditResult.status || 500).json({ ok: false, error: creditResult.error });
       }
 
       const jobId = uuidv4();

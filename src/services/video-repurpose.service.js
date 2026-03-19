@@ -5,7 +5,11 @@ import path from "path";
 import { fileURLToPath } from "url";
 import crypto from "crypto";
 import { getFfmpegPathSync, getFfprobePathSync } from "../utils/ffmpeg-path.js";
-import { IPHONE_PROFILES, getIphoneProfileById, getRandomIphoneProfile } from "../repurposer/data/iphone-profiles.js";
+import {
+  getUnifiedDeviceProfileById,
+  getRandomUnifiedDeviceProfile,
+  getAllDeviceModelIds,
+} from "../repurposer/data/device-profiles.js";
 import { writeMetadata } from "../repurposer/services/metadataWriter.js";
 import { scrubEncoderSignaturesInFile } from "../repurposer/services/encoderScrubber.js";
 import { runFfmpegWasm } from "../repurposer/ffmpeg-wasm-server.js";
@@ -87,10 +91,10 @@ function clamp(v, min, max) {
 function chooseProfile(deviceMetadata = {}) {
   const modelKey = deviceMetadata?.modelKey;
   if (modelKey) {
-    const exact = getIphoneProfileById(modelKey);
+    const exact = getUnifiedDeviceProfileById(modelKey);
     if (exact) return exact;
   }
-  return getRandomIphoneProfile();
+  return getRandomUnifiedDeviceProfile();
 }
 
 function randomGps(country) {
@@ -129,9 +133,9 @@ function cloneJsonSafe(value) {
 function ensureBatchDeviceModelKey(metadataSettings = {}) {
   const next = cloneJsonSafe(metadataSettings);
   const device = { ...(next.device_metadata || {}) };
-  const uniqueDevicePerCopy = device?.uniqueDevicePerCopy === true;
-  if (device.enabled !== false && !device.modelKey && !uniqueDevicePerCopy) {
-    const profile = getRandomIphoneProfile();
+  const deviceMode = device.deviceMode || (device.uniqueDevicePerCopy ? "random_unique" : "single");
+  if (device.enabled !== false && !device.modelKey && deviceMode === "single") {
+    const profile = getRandomUnifiedDeviceProfile();
     if (profile?.id) device.modelKey = profile.id;
   }
   next.device_metadata = device;
@@ -141,32 +145,46 @@ function ensureBatchDeviceModelKey(metadataSettings = {}) {
 function pickDeviceModelKeysForCopies(baseMetadataSettings = {}, copies = 1) {
   const total = Math.min(5, Math.max(1, parseInt(copies, 10) || 1));
   const device = baseMetadataSettings?.device_metadata || {};
-  const uniqueDevicePerCopy = device?.enabled !== false && device?.uniqueDevicePerCopy === true;
+  const enabled = device?.enabled !== false;
+  const deviceMode =
+    device?.deviceMode || (device?.uniqueDevicePerCopy ? "random_unique" : "single");
   const fixedModelKey = device?.modelKey || null;
+  const modelKeys = Array.isArray(device?.modelKeys) ? device.modelKeys : [];
+  const allIds = getAllDeviceModelIds().filter(Boolean);
 
-  if (!uniqueDevicePerCopy) {
-    const modelKey = fixedModelKey || getRandomIphoneProfile()?.id || null;
-    return Array.from({ length: total }, () => modelKey);
+  if (!enabled) {
+    return Array.from({ length: total }, () => null);
   }
 
-  const allIds = IPHONE_PROFILES.map((p) => p.id).filter(Boolean);
-  const pool = allIds.sort(() => Math.random() - 0.5);
-  const chosen = [];
+  const resolveKey = (k) => {
+    if (k && allIds.includes(k)) return k;
+    return null;
+  };
 
-  if (fixedModelKey && allIds.includes(fixedModelKey)) {
-    chosen.push(fixedModelKey);
+  if (deviceMode === "per_copy") {
+    const fallback = resolveKey(fixedModelKey) || getRandomUnifiedDeviceProfile()?.id || null;
+    return Array.from({ length: total }, (_, i) => {
+      const k = resolveKey(modelKeys[i]) || resolveKey(modelKeys[0]) || fallback;
+      return k;
+    });
   }
 
-  for (const id of pool) {
-    if (chosen.length >= total) break;
-    if (!chosen.includes(id)) chosen.push(id);
+  if (deviceMode === "random_unique") {
+    const pool = [...allIds].sort(() => Math.random() - 0.5);
+    const chosen = [];
+    if (fixedModelKey && allIds.includes(fixedModelKey)) chosen.push(fixedModelKey);
+    for (const id of pool) {
+      if (chosen.length >= total) break;
+      if (!chosen.includes(id)) chosen.push(id);
+    }
+    while (chosen.length < total) {
+      chosen.push(getRandomUnifiedDeviceProfile()?.id || fixedModelKey || null);
+    }
+    return chosen;
   }
 
-  while (chosen.length < total) {
-    chosen.push(getRandomIphoneProfile()?.id || fixedModelKey || null);
-  }
-
-  return chosen;
+  const modelKey = resolveKey(fixedModelKey) || getRandomUnifiedDeviceProfile()?.id || null;
+  return Array.from({ length: total }, () => modelKey);
 }
 
 function buildMetadataSettingsForCopy(baseMetadataSettings = {}, copyIndex = 0, forcedModelKey = null) {
@@ -302,10 +320,38 @@ const ENCODER_STRINGS = [
 ];
 
 function profileEncoderString(profile) {
+  const make = String(profile?.make || "").trim();
   const model = String(profile?.model || "").trim();
+  if (make && model) return `${make} ${model}`.slice(0, 120);
   if (!model) return ENCODER_STRINGS[0];
   if (model.toLowerCase().startsWith("iphone")) return `Apple ${model}`;
-  return "Apple iPhone";
+  return model.slice(0, 120);
+}
+
+function pickMetadataComment(profile) {
+  const make = String(profile?.make || "").toLowerCase();
+  const marketing = String(profile?.marketingName || "").trim();
+  if (make === "apple" || (profile?.model || "").toLowerCase().includes("iphone")) {
+    return EF_COMMENTS[randInt(0, EF_COMMENTS.length - 1)] || "Recorded on iPhone";
+  }
+  if (make === "samsung") {
+    const pool = [`Recorded on ${marketing || "Galaxy"}`, "Shot on Samsung", "Samsung Camera"];
+    return pool[randInt(0, pool.length - 1)];
+  }
+  if (make === "google") {
+    const pool = [`Recorded on ${marketing || "Pixel"}`, "Google Camera", "Pixel Camera"];
+    return pool[randInt(0, pool.length - 1)];
+  }
+  if (make === "dji") {
+    const pool = ["DJI", `Shot on ${marketing || "DJI"}`, "Recorded with DJI"];
+    return pool[randInt(0, pool.length - 1)];
+  }
+  const pool = [
+    marketing ? `Recorded on ${marketing}` : "Mobile video",
+    "Camera",
+    make ? `${make} video` : "Video",
+  ];
+  return pool[randInt(0, pool.length - 1)];
 }
 
 function randomizeValues(filters, sourceInfo, profile = null) {
@@ -1020,7 +1066,7 @@ export function buildMetadataInstruction(metadataSettings) {
       if (gps) gps = { lat: gps.lat, lng: gps.lon ?? gps.lng, alt: gps.alt ?? 0 };
     }
     const creationTime = ts.toISOString().replace(/\.\d{3}Z$/, "Z");
-    const comment = EF_COMMENTS[randInt(0, EF_COMMENTS.length - 1)] || "Recorded on iPhone";
+    const comment = pickMetadataComment(profile);
     const encoder = profileEncoderString(profile);
     return { creationTime, comment, encoder, gps };
   } catch {

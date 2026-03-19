@@ -1,0 +1,259 @@
+make,model_exif_string,marketing_name,category,manufacturer,release_year,notes
+Apple,iPhone,iPhone (1st gen),Smartphone,Apple,2007,Original iPhone
+Apple,iPhone 3G,iPhone 3G,Smartphone,Apple,2008,
+Apple,iPhone 3GS,iPhone 3GS,Smartphone,Apple,2009,
+Apple,iPhone 4,iPhone 4,Smartphone,Apple,2010,
+Apple,iPhone 4S,iPhone 4S,Smartphone,Apple,2011,
+Apple,iPhone 5,iPhone 5,Smartphone,Apple,2012,
+Apple,iPhone 5c,iPhone 5c,Smartphone,Apple,2013,
+Apple,iPhone 5s,iPhone 5s,Smartphone,Apple,2013,
+Apple,iPhone 6,iPhone 6,Smartphone,Apple,2014,
+Apple,iPhone 6 Plus,iPhone 6 Plus,Smartphone,Apple,2014,
+Apple,iPhone 6s,iPhone 6s,Smartphone,Apple,2015,
+Apple,iPhone 6s Plus,iPhone 6s Plus,Smartphone,Apple,2015,
+Apple,iPhone SE,iPhone SE (1st gen),Smartphone,Apple,2016,
+Apple,iPhone 7,iPhone 7,Smartphone,Apple,2016,
+Apple,iPhone 7 Plus,iPhone 7 Plus,Smartphone,Apple,2016,
+Apple,iPhone 8,iPhone 8,Smartphone,Apple,2017,
+Apple,iPhone 8 Plus,iPhone 8 Plus,Smartphone,Apple,2017,
+Apple,iPhone X,iPhone X,Smartphone,Apple,2017,
+Apple,iPhone XS,iPhone XS,Smartphone,Apple,2018,
+Apple,iPhone XS Max,iPhone XS Max,Smartphone,Apple,2018,
+Apple,iPhone XR,iPhone XR,Smartphone,Apple,2018,
+Apple,iPhone 11,iPhone 11,Smartphone,Apple,2019,
+Apple,iPhone 11 Pro,iPhone 11 Pro,Smartphone,Apple,2019,
+Apple,iPhone 11 Pro Max,iPhone 11 Pro Max,Smartphone,Apple,2019,
+Apple,iPhone SE (2nd generation),iPhone SE (2nd gen),Smartphone,Apple,2020,
+Apple,iPhone 12,iPhone 12,Smartphone,Apple,2020,
+Apple,iPhone 12 mini,iPhone 12 mini,Smartphone,Apple,2020,
+Apple,iPhone 12 Pro,iPhone 12 Pro,Smartphone,Apple,2020,
+Apple,iPhone 12 Pro Max,iPhone 12 Pro Max,Smartphone,Apple,2020,
+Apple,iPhone 13,iPhone 13,Smartphone,Apple,2021,
+Apple,iPhone 13 mini,iPhone 13 mini,Smartphone,Apple,2021,
+Apple,iPhone 13 Pro,iPhone 13 Pro,Smartphone,Apple,2021,
+Apple,iPhone 13 Pro Max,iPhone 13 Pro Max,Smartphone,Apple,2021,
+Apple,iPhone SE (3rd generation),iPhone SE (3rd gen),Smartphone,Apple,2022,
+Apple,iPhone 14,iPhone 14,Smartphone,Apple,2022,
+Apple,iPhone 14 Plus,iPhone 14 Plus,Smartphone,Apple,2022,
+Apple,iPhone 14 Pro,iPhone 14 Pro,Smartphone,Apple,2022,
+Apple,iPhone 14 Pro Max,iPhone 14 Pro Max,Smartphone,Apple,2022,
+Apple,iPhone 15,iPhone 15,Smartphone,Apple,2023,
+Apple,iPhone 15 Plus,iPhone 15 Plus,Smartphone,Apple,2023,
+Apple,iPhone 15 Pro,iPhone 15 Pro,Smartphone,Apple,2023,
+Apple,iPhone 15 Pro Max,iPhone 15 Pro Max,Smartphone,Apple,2023,
+Apple,iPhone 16,iPhone 16,Smartphone,Apple,2024,
+Apple,iPhone 16 Plus,iPhone 16 Plus,Smartphone,Apple,2024,
+Apple,iPhone 16 Pro,iPhone 16 Pro,Smartphone,Apple,2024,
+Apple,iPhone 16 Pro Max,iPhone 16 Pro Max,Smartphone,Apple,2024,
+Apple,iPhone 17,iPhone 17,Smartphone,Apple,2025,
+Apple,iPhone 17 Plus,iPhone 17 Plus,Smartphone,Apple,2025,
+Apple,iPhone 17 Pro,iPhone 17 Pro,Smartphone,Apple,2025,
+Apple,iPhone 17 Pro Max,iPhone 17 Pro Max,Smartphone,Apple,2025,
+DJI,FC200,Phantom 2 Vision / Phantom 2 Vision+,Drone,DJI,2013,Phantom series
+DJI,FC300C,Phantom 3 Standard,Drone,DJI,2015,Phantom series
+DJI,FC300S,Phantom 3 Advanced,Drone,DJI,2015,Phantom series
+DJI,FC300X,Phantom 3 4K,Drone,DJI,2015,Phantom series
+DJI,FC300XW,Phantom 3 Advanced (wide),Drone,DJI,2015,Phantom series variant
+DJI,FC300SE,Phantom 3 Pro v2,Drone,DJI,2016,Phantom series v2
+DJI,FC330,Phantom 4,Drone,DJI,2016,Phantom series
+DJI,FC6310,Phantom 4 Pro,Drone,DJI,2016,Phantom series
+DJI,FC6310R,Phantom 4 Pro (refurbished/variant),Drone,DJI,2017,Phantom series variant
+DJI,FC6310S,Phantom 4 Pro V2.0,Drone,DJI,2018,Phantom series
+DJI,FC6510,Phantom 4 Advanced,Drone,DJI,2017,Phantom series
+DJI,FC6520,Phantom 4 Multispectral,Drone,DJI,2019,Phantom series / agricultural
+DJI,FC6540,Phantom 4 RTK,Drone,DJI,2018,Phantom series / mapping
+DJI,FC220,Mavic Pro / Mavic Pro Platinum,Drone,DJI,2016,Mavic series
+DJI,FC2103,Mavic Air (1st gen),Drone,DJI,2018,Mavic series
+DJI,FC2204,Mavic 2 Zoom,Drone,DJI,2018,Mavic series
+DJI,Hasselblad L1D-20c,Mavic 2 Pro,Drone,DJI,2018,Mavic series – Hasselblad camera
+DJI,FC3170,Mavic Air 2,Drone,DJI,2020,Mavic series
+DJI,FC7203,Mavic Mini (1st gen),Drone,DJI,2019,Mini series
+DJI,FC7303,Mavic Mini 2 / Mini SE,Drone,DJI,2020,Mini series
+DJI,FC3411,Mavic Air 2S,Drone,DJI,2021,Mavic series
+DJI,FC3582,Mini 3 Pro,Drone,DJI,2022,Mini series
+DJI,Hasselblad L2D-20c,Mavic 3 (standard),Drone,DJI,2021,Mavic series – Hasselblad camera
+DJI,FC3683,Mini 3,Drone,DJI,2022,Mini series
+DJI,FC4582,Mini 4 Pro,Drone,DJI,2023,Mini series
+DJI,FC1102,Spark,Drone,DJI,2017,Spark series
+DJI,FC350,Inspire 1 (Zenmuse X3),Drone,DJI,2014,Inspire series
+DJI,FC350Z,Inspire 1 (Zenmuse X3.5 / OSMO+),Drone,DJI,2015,Inspire/Osmo
+DJI,FC550,Inspire 1 Pro (Zenmuse X5),Drone,DJI,2015,Inspire series
+DJI,FC550RAW,Inspire 1 RAW (Zenmuse X5R),Drone,DJI,2015,Inspire series
+DJI,FC6310S,Inspire 2 (Zenmuse X7 variant),Drone,DJI,2016,Inspire series
+DJI,HG310,Osmo Pocket (1st gen),Handheld Camera,DJI,2018,Osmo series
+DJI,FC2403,Osmo Pocket 2,Handheld Camera,DJI,2020,Osmo series
+DJI,PP-101,Osmo Pocket 3,Handheld Camera,DJI,2023,Osmo series
+DJI,FC3170,Osmo Action (1st gen),Action Camera,DJI,2019,Osmo Action series
+DJI,ac203,Osmo Action 3,Action Camera,DJI,2022,Osmo Action series
+DJI,ac203,Osmo Action 4,Action Camera,DJI,2023,Osmo Action series
+DJI,ac204,Osmo Action 5 Pro,Action Camera,DJI,2024,Osmo Action series
+DJI,AVATA,Avata (1st gen),FPV Drone,DJI,2022,FPV series
+DJI,AVATA2,Avata 2,FPV Drone,DJI,2024,FPV series
+DJI,FPV,DJI FPV,FPV Drone,DJI,2021,FPV series
+DJI,pm320,Matrice 30,Enterprise Drone,DJI,2022,Enterprise series
+DJI,wa345e,Matrice 4E,Enterprise Drone,DJI,2024,Enterprise series
+DJI,wm265e,Mavic 3 Enterprise series,Enterprise Drone,DJI,2022,Enterprise variant of Mavic 3
+DJI,wm261,Mavic 3 Pro,Drone,DJI,2023,Mavic series
+DJI,Neo,DJI Neo,Drone,DJI,2024,Compact series
+DJI,Air3,Air 3,Drone,DJI,2023,Air series
+DJI,Air3s,Air 3S,Drone,DJI,2024,Air series
+DJI,oq101,Osmo 360,360 Camera,DJI,2024,Osmo series
+Samsung,SM-G920F,Galaxy S6,Smartphone,Samsung,2015,Galaxy S series
+Samsung,SM-G925F,Galaxy S6 Edge,Smartphone,Samsung,2015,Galaxy S series
+Samsung,SM-G928F,Galaxy S6 Edge+,Smartphone,Samsung,2015,Galaxy S series
+Samsung,SM-G930F,Galaxy S7,Smartphone,Samsung,2016,Galaxy S series
+Samsung,SM-G935F,Galaxy S7 Edge,Smartphone,Samsung,2016,Galaxy S series
+Samsung,SM-G950F,Galaxy S8,Smartphone,Samsung,2017,Galaxy S series
+Samsung,SM-G955F,Galaxy S8+,Smartphone,Samsung,2017,Galaxy S series
+Samsung,SM-G960F,Galaxy S9,Smartphone,Samsung,2018,Galaxy S series
+Samsung,SM-G965F,Galaxy S9+,Smartphone,Samsung,2018,Galaxy S series
+Samsung,SM-G970F,Galaxy S10e,Smartphone,Samsung,2019,Galaxy S series
+Samsung,SM-G973F,Galaxy S10,Smartphone,Samsung,2019,Galaxy S series
+Samsung,SM-G975F,Galaxy S10+,Smartphone,Samsung,2019,Galaxy S series
+Samsung,SM-G977B,Galaxy S10 5G,Smartphone,Samsung,2019,Galaxy S series
+Samsung,SM-G980F,Galaxy S20,Smartphone,Samsung,2020,Galaxy S series
+Samsung,SM-G985F,Galaxy S20+,Smartphone,Samsung,2020,Galaxy S series
+Samsung,SM-G988B,Galaxy S20 Ultra,Smartphone,Samsung,2020,Galaxy S series
+Samsung,SM-G991B,Galaxy S21,Smartphone,Samsung,2021,Galaxy S series
+Samsung,SM-G996B,Galaxy S21+,Smartphone,Samsung,2021,Galaxy S series
+Samsung,SM-G998B,Galaxy S21 Ultra,Smartphone,Samsung,2021,Galaxy S series
+Samsung,SM-S901B,Galaxy S22,Smartphone,Samsung,2022,Galaxy S series
+Samsung,SM-S906B,Galaxy S22+,Smartphone,Samsung,2022,Galaxy S series
+Samsung,SM-S908B,Galaxy S22 Ultra,Smartphone,Samsung,2022,Galaxy S series
+Samsung,SM-S911B,Galaxy S23,Smartphone,Samsung,2023,Galaxy S series
+Samsung,SM-S916B,Galaxy S23+,Smartphone,Samsung,2023,Galaxy S series
+Samsung,SM-S918B,Galaxy S23 Ultra,Smartphone,Samsung,2023,Galaxy S series
+Samsung,SM-S921B,Galaxy S24,Smartphone,Samsung,2024,Galaxy S series
+Samsung,SM-S926B,Galaxy S24+,Smartphone,Samsung,2024,Galaxy S series
+Samsung,SM-S928B,Galaxy S24 Ultra,Smartphone,Samsung,2024,Galaxy S series
+Samsung,SM-S931B,Galaxy S25,Smartphone,Samsung,2025,Galaxy S series
+Samsung,SM-S936B,Galaxy S25+,Smartphone,Samsung,2025,Galaxy S series
+Samsung,SM-S938B,Galaxy S25 Ultra,Smartphone,Samsung,2025,Galaxy S series
+Samsung,SM-N960F,Galaxy Note 9,Smartphone,Samsung,2018,Galaxy Note series
+Samsung,SM-N970F,Galaxy Note 10,Smartphone,Samsung,2019,Galaxy Note series
+Samsung,SM-N975F,Galaxy Note 10+,Smartphone,Samsung,2019,Galaxy Note series
+Samsung,SM-N980F,Galaxy Note 20,Smartphone,Samsung,2020,Galaxy Note series
+Samsung,SM-N986B,Galaxy Note 20 Ultra,Smartphone,Samsung,2020,Galaxy Note series
+Samsung,SM-F700F,Galaxy Z Flip,Smartphone,Samsung,2020,Galaxy Z Flip series
+Samsung,SM-F707B,Galaxy Z Flip 5G,Smartphone,Samsung,2020,Galaxy Z Flip series
+Samsung,SM-F711B,Galaxy Z Flip3,Smartphone,Samsung,2021,Galaxy Z Flip series
+Samsung,SM-F721B,Galaxy Z Flip4,Smartphone,Samsung,2022,Galaxy Z Flip series
+Samsung,SM-F731B,Galaxy Z Flip5,Smartphone,Samsung,2023,Galaxy Z Flip series
+Samsung,SM-F741B,Galaxy Z Flip6,Smartphone,Samsung,2024,Galaxy Z Flip series
+Samsung,SM-F900F,Galaxy Fold (1st gen),Smartphone,Samsung,2019,Galaxy Z Fold series
+Samsung,SM-F916B,Galaxy Z Fold2,Smartphone,Samsung,2020,Galaxy Z Fold series
+Samsung,SM-F926B,Galaxy Z Fold3,Smartphone,Samsung,2021,Galaxy Z Fold series
+Samsung,SM-F936B,Galaxy Z Fold4,Smartphone,Samsung,2022,Galaxy Z Fold series
+Samsung,SM-F946B,Galaxy Z Fold5,Smartphone,Samsung,2023,Galaxy Z Fold series
+Samsung,SM-F956B,Galaxy Z Fold6,Smartphone,Samsung,2024,Galaxy Z Fold series
+Samsung,SM-A515F,Galaxy A51,Smartphone,Samsung,2019,Galaxy A series
+Samsung,SM-A525F,Galaxy A52,Smartphone,Samsung,2021,Galaxy A series
+Samsung,SM-A526B,Galaxy A52 5G,Smartphone,Samsung,2021,Galaxy A series
+Samsung,SM-A528B,Galaxy A52s 5G,Smartphone,Samsung,2021,Galaxy A series
+Samsung,SM-A536B,Galaxy A53 5G,Smartphone,Samsung,2022,Galaxy A series
+Samsung,SM-A546B,Galaxy A54 5G,Smartphone,Samsung,2023,Galaxy A series
+Samsung,SM-A556B,Galaxy A55 5G,Smartphone,Samsung,2024,Galaxy A series
+Samsung,SM-A346B,Galaxy A34 5G,Smartphone,Samsung,2023,Galaxy A series
+Samsung,SM-A356B,Galaxy A35 5G,Smartphone,Samsung,2024,Galaxy A series
+Google,Pixel,Pixel (1st gen),Smartphone,Google,2016,Pixel series
+Google,Pixel XL,Pixel XL,Smartphone,Google,2016,Pixel series
+Google,Pixel 2,Pixel 2,Smartphone,Google,2017,Pixel series
+Google,Pixel 2 XL,Pixel 2 XL,Smartphone,Google,2017,Pixel series
+Google,Pixel 3,Pixel 3,Smartphone,Google,2018,Pixel series
+Google,Pixel 3 XL,Pixel 3 XL,Smartphone,Google,2018,Pixel series
+Google,Pixel 3a,Pixel 3a,Smartphone,Google,2019,Pixel series
+Google,Pixel 3a XL,Pixel 3a XL,Smartphone,Google,2019,Pixel series
+Google,Pixel 4,Pixel 4,Smartphone,Google,2019,Pixel series
+Google,Pixel 4 XL,Pixel 4 XL,Smartphone,Google,2019,Pixel series
+Google,Pixel 4a,Pixel 4a,Smartphone,Google,2020,Pixel series
+Google,Pixel 4a (5G),Pixel 4a (5G),Smartphone,Google,2020,Pixel series
+Google,Pixel 5,Pixel 5,Smartphone,Google,2020,Pixel series
+Google,Pixel 5a,Pixel 5a,Smartphone,Google,2021,Pixel series
+Google,Pixel 6,Pixel 6,Smartphone,Google,2021,Pixel series
+Google,Pixel 6 Pro,Pixel 6 Pro,Smartphone,Google,2021,Pixel series
+Google,Pixel 6a,Pixel 6a,Smartphone,Google,2022,Pixel series
+Google,Pixel 7,Pixel 7,Smartphone,Google,2022,Pixel series
+Google,Pixel 7 Pro,Pixel 7 Pro,Smartphone,Google,2022,Pixel series
+Google,Pixel 7a,Pixel 7a,Smartphone,Google,2023,Pixel series
+Google,Pixel 8,Pixel 8,Smartphone,Google,2023,Pixel series
+Google,Pixel 8 Pro,Pixel 8 Pro,Smartphone,Google,2023,Pixel series
+Google,Pixel 8a,Pixel 8a,Smartphone,Google,2024,Pixel series
+Google,Pixel 9,Pixel 9,Smartphone,Google,2024,Pixel series
+Google,Pixel 9 Pro,Pixel 9 Pro,Smartphone,Google,2024,Pixel series
+Google,Pixel 9 Pro XL,Pixel 9 Pro XL,Smartphone,Google,2024,Pixel series
+Google,Pixel 9 Pro Fold,Pixel 9 Pro Fold,Smartphone,Google,2024,Pixel series
+Huawei,ELE-L29,P30,Smartphone,Huawei,2019,P series
+Huawei,VOG-L29,P30 Pro,Smartphone,Huawei,2019,P series
+Huawei,ANA-NX9,P40,Smartphone,Huawei,2020,P series
+Huawei,ELS-NX9,P40 Pro,Smartphone,Huawei,2020,P series
+Huawei,NOP-AN00,P50,Smartphone,Huawei,2021,P series
+Huawei,BRA-AL00,P50 Pro,Smartphone,Huawei,2021,P series
+Huawei,KAN-AL00,P60 Pro,Smartphone,Huawei,2023,P series
+Huawei,STF-L09,Mate 10 Pro,Smartphone,Huawei,2017,Mate series
+Huawei,INE-LX1,Mate 20,Smartphone,Huawei,2018,Mate series
+Huawei,LYA-L29,Mate 20 Pro,Smartphone,Huawei,2018,Mate series
+Huawei,TAS-L29,Mate 30,Smartphone,Huawei,2019,Mate series
+Huawei,LIO-L29,Mate 30 Pro,Smartphone,Huawei,2019,Mate series
+Huawei,TET-AN00,Mate 40 Pro,Smartphone,Huawei,2020,Mate series
+Huawei,CLT-L09,Mate 20 X,Smartphone,Huawei,2018,Mate series
+Xiaomi,Mi 9,Xiaomi Mi 9,Smartphone,Xiaomi,2019,Mi series
+Xiaomi,Mi 10,Xiaomi Mi 10,Smartphone,Xiaomi,2020,Mi series
+Xiaomi,Mi 10 Pro,Xiaomi Mi 10 Pro,Smartphone,Xiaomi,2020,Mi series
+Xiaomi,Mi 11,Xiaomi Mi 11,Smartphone,Xiaomi,2021,Mi series
+Xiaomi,Mi 11 Ultra,Xiaomi Mi 11 Ultra,Smartphone,Xiaomi,2021,Mi series
+Xiaomi,2201123G,Xiaomi 12,Smartphone,Xiaomi,2022,Xiaomi 12 series
+Xiaomi,2203121C,Xiaomi 12 Pro,Smartphone,Xiaomi,2022,Xiaomi 12 series
+Xiaomi,2210132C,Xiaomi 13,Smartphone,Xiaomi,2023,Xiaomi 13 series
+Xiaomi,2210132G,Xiaomi 13 Pro,Smartphone,Xiaomi,2023,Xiaomi 13 series
+Xiaomi,23116PN5BC,Xiaomi 14,Smartphone,Xiaomi,2024,Xiaomi 14 series
+Xiaomi,24116PN5BC,Xiaomi 14 Ultra,Smartphone,Xiaomi,2024,Xiaomi 14 series
+Xiaomi,Redmi Note 11,Redmi Note 11,Smartphone,Xiaomi,2021,Redmi Note series
+Xiaomi,Redmi Note 12,Redmi Note 12,Smartphone,Xiaomi,2022,Redmi Note series
+Xiaomi,23021RAAEG,Redmi Note 12 Pro+,Smartphone,Xiaomi,2023,Redmi Note series
+Xiaomi,2309BNY44G,POCO X6 Pro,Smartphone,Xiaomi,2024,POCO series
+OnePlus,IN2010,OnePlus 8,Smartphone,OnePlus,2020,OnePlus 8 series
+OnePlus,IN2013,OnePlus 8 Pro,Smartphone,OnePlus,2020,OnePlus 8 series
+OnePlus,LE2101,OnePlus 9,Smartphone,OnePlus,2021,OnePlus 9 series
+OnePlus,LE2121,OnePlus 9 Pro,Smartphone,OnePlus,2021,OnePlus 9 series
+OnePlus,CPH2399,OnePlus 10 Pro,Smartphone,OnePlus,2022,OnePlus 10 series
+OnePlus,CPH2449,OnePlus 11,Smartphone,OnePlus,2023,OnePlus 11 series
+OnePlus,CPH2573,OnePlus 12,Smartphone,OnePlus,2024,OnePlus 12 series
+OnePlus,CPH2581,OnePlus 12R,Smartphone,OnePlus,2024,OnePlus 12 series
+Sony,SO-03J,Xperia XZ Premium,Smartphone,Sony,2017,Xperia XZ series
+Sony,G8342,Xperia XZ1,Smartphone,Sony,2017,Xperia XZ series
+Sony,H8296,Xperia XZ2,Smartphone,Sony,2018,Xperia XZ series
+Sony,H9493,Xperia XZ3,Smartphone,Sony,2018,Xperia XZ series
+Sony,J9210,Xperia 5,Smartphone,Sony,2019,Xperia 5 series
+Sony,XQ-AT51,Xperia 1 II,Smartphone,Sony,2020,Xperia 1 series
+Sony,XQ-BC72,Xperia 1 III,Smartphone,Sony,2021,Xperia 1 series
+Sony,XQ-BC52,Xperia 5 III,Smartphone,Sony,2021,Xperia 5 series
+Sony,XQ-CT54,Xperia 1 IV,Smartphone,Sony,2022,Xperia 1 series
+Sony,XQ-CQ54,Xperia 5 IV,Smartphone,Sony,2022,Xperia 5 series
+Sony,XQ-DQ54,Xperia 1 V,Smartphone,Sony,2023,Xperia 1 series
+Sony,XQ-EC54,Xperia 1 VI,Smartphone,Sony,2024,Xperia 1 series
+LG,LM-G820,LG G8 ThinQ,Smartphone,LG,2019,G series
+LG,LM-G900,LG G9 / Velvet,Smartphone,LG,2020,Velvet series
+LG,LM-V500,LG V50 ThinQ,Smartphone,LG,2019,V series
+LG,LM-V600,LG V60 ThinQ,Smartphone,LG,2020,V series
+LG,LM-Q630,LG Q51,Smartphone,LG,2020,Q series
+Motorola,XT1900-2,Moto Z2 Force,Smartphone,Motorola,2017,Moto Z series
+Motorola,XT2011-1,Moto G8 Power,Smartphone,Motorola,2020,Moto G series
+Motorola,XT2125-4,Moto G100,Smartphone,Motorola,2021,Moto G series
+Motorola,XT2201-1,Moto G200 5G,Smartphone,Motorola,2021,Moto G series
+Motorola,XT2301-4,Moto G84 5G,Smartphone,Motorola,2023,Moto G series
+Motorola,XT2401-5,Motorola Edge 50 Ultra,Smartphone,Motorola,2024,Edge series
+Motorola,motorola edge 40 pro,Motorola Edge 40 Pro,Smartphone,Motorola,2023,Edge series
+OPPO,CPH2145,OPPO Find X3 Pro,Smartphone,OPPO,2021,Find X series
+OPPO,CPH2251,OPPO Find X5,Smartphone,OPPO,2022,Find X series
+OPPO,CPH2305,OPPO Find X5 Pro,Smartphone,OPPO,2022,Find X series
+OPPO,CPH2469,OPPO Find X6 Pro,Smartphone,OPPO,2023,Find X series
+OPPO,PHZ110,OPPO Find X7 Ultra,Smartphone,OPPO,2024,Find X series
+vivo,V2145,vivo X70 Pro+,Smartphone,vivo,2021,X series
+vivo,V2185A,vivo X80 Pro,Smartphone,vivo,2022,X series
+vivo,V2242A,vivo X90 Pro+,Smartphone,vivo,2023,X series
+vivo,V2347A,vivo X100 Pro,Smartphone,vivo,2024,X series
+Nothing,A063,Nothing Phone (1),Smartphone,Nothing,2022,Nothing Phone series
+Nothing,A065,Nothing Phone (2),Smartphone,Nothing,2023,Nothing Phone series
+Nothing,A059,Nothing Phone (2a),Smartphone,Nothing,2024,Nothing Phone series
+Motorola,moto g06,Motorola Moto G06,Smartphone,Motorola,2025,"Moto G series; internal model PB9800xxSE; Motorola devices often write marketing name to EXIF Model field"
+Xiaomi,25028RN03L,Xiaomi Redmi A5,Smartphone,Xiaomi,2025,"Redmi A series; model variant 25028RN03A (Global) / 25028RN03I (India) / 25028RN03L (US)"

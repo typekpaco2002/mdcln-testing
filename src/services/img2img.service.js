@@ -15,6 +15,7 @@
 
 import { isR2Configured, uploadBufferToR2 } from "../utils/r2.js";
 import { sanitizeLoraDownloadUrl } from "../utils/loraUrl.js";
+import { buildNsfwLoraStackEntries, applyCompactLoraStackToNode250 } from "./fal.service.js";
 
 // dynamicPoll removed — inline polling used directly
 
@@ -185,15 +186,13 @@ const NSFW_TXT2IMG_WORKFLOW = {
   "248": { inputs: { clip_name: "qwen_3_4b.safetensors", type: "qwen_image", device: "default" }, class_type: "CLIPLoader" },
   "250": {
     inputs: {
-      toggle: true, mode: "advanced", num_loras: 8,
-      lora_1_url: "__LORA_URL__", lora_1_strength: "__LORA_STRENGTH__", lora_1_model_strength: "__LORA_STRENGTH__", lora_1_clip_strength: "__LORA_STRENGTH__",
-      lora_2_url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw Doggystyle facing the camera.safetensors", lora_2_strength: 0, lora_2_model_strength: 0, lora_2_clip_strength: 0,
-      lora_3_url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Missionnary.safetensors", lora_3_strength: 0, lora_3_model_strength: 0, lora_3_clip_strength: 0,
-      lora_4_url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw Cowgirl.safetensors", lora_4_strength: 0, lora_4_model_strength: 0, lora_4_clip_strength: 0,
-      lora_5_url: "https://huggingface.co/bigckck/ndmstr/resolve/main/tits job.safetensors", lora_5_strength: 0, lora_5_model_strength: 0, lora_5_clip_strength: 0,
-      lora_6_url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw_Handjob.safetensors", lora_6_strength: 0, lora_6_model_strength: 0, lora_6_clip_strength: 0,
-      lora_7_url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw_POV_Missionary_Anal.safetensors", lora_7_strength: 0, lora_7_model_strength: 0, lora_7_clip_strength: 0,
-      lora_8_url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw_Running_makeup.safetensors", lora_8_strength: 0, lora_8_model_strength: 0, lora_8_clip_strength: 0,
+      toggle: true,
+      mode: "simple",
+      num_loras: 1,
+      lora_1_url: "__LORA_URL__",
+      lora_1_strength: "__LORA_STRENGTH__",
+      lora_1_model_strength: "__LORA_STRENGTH__",
+      lora_1_clip_strength: "__LORA_STRENGTH__",
     },
     class_type: "LoadLoraFromUrlOrPath"
   },
@@ -700,24 +699,15 @@ export async function generateNsfwTxt2Img({
   workflow["8"].inputs.text = negativePrompt;
   workflow["57"].inputs.seed = resolvedSeed;
 
-  workflow["250"].inputs.lora_1_url = sanitizeLoraDownloadUrl(loraUrl);
-  workflow["250"].inputs.lora_1_strength = numericLoraStrength;
-  workflow["250"].inputs.lora_1_model_strength = numericLoraStrength;
-  workflow["250"].inputs.lora_1_clip_strength = numericLoraStrength;
-
-  const poseSlotMap = {
-    "290": 2, "291": 3, "292": 4, "293": 5, "294": 6, "295": 7,
-  };
-  for (const [nodeId, slot] of Object.entries(poseSlotMap)) {
-    const str = poseStrengths[nodeId] || 0;
-    workflow["250"].inputs[`lora_${slot}_strength`] = str;
-    workflow["250"].inputs[`lora_${slot}_model_strength`] = str;
-    workflow["250"].inputs[`lora_${slot}_clip_strength`] = str;
-  }
-
-  workflow["250"].inputs.lora_8_strength = makeupStrength;
-  workflow["250"].inputs.lora_8_model_strength = makeupStrength;
-  workflow["250"].inputs.lora_8_clip_strength = makeupStrength;
+  const stack = buildNsfwLoraStackEntries({
+    loraUrl,
+    girlLoraStrength: numericLoraStrength,
+    poseStrengths,
+    makeupStrength,
+    enhancementStrengths: {},
+  });
+  applyCompactLoraStackToNode250(workflow["250"], stack);
+  console.log(`   LoRA stack: ${stack.length} weight(s) (num_loras=${workflow["250"].inputs.num_loras})`);
 
   const payload = {
     prompt: workflow,

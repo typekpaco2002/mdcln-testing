@@ -49,14 +49,90 @@ export function generateTriggerWord(modelName) {
 }
 
 /**
+ * Map saved model gender (e.g. aiGenerationParams.gender) to the caption class word after the trigger.
+ * @returns {"woman"|"girl"|"man"|"boy"|"person"|null} null = infer from image in captions
+ */
+export function normalizeCaptionSubjectClass(genderRaw) {
+  const g = String(genderRaw ?? "").trim().toLowerCase();
+  if (!g) return null;
+  if (/\btrans\s*woman\b/.test(g)) return "woman";
+  if (/\btrans\s*man\b/.test(g)) return "man";
+  if (/\b(boy|young boy|teen boy)\b/.test(g) || g === "boy") return "boy";
+  if (/\b(girl|young girl|teen girl)\b/.test(g) || g === "girl") return "girl";
+  if (/\b(man|male|guy|masculine|he\s*\/\s*him|masc)\b/.test(g) || g === "m" || g === "men") return "man";
+  if (/\b(woman|female|lady|feminine|she\s*\/\s*her|femme)\b/.test(g) || g === "f" || g === "women") return "woman";
+  if (/\b(non-?binary|nonbinary|enby|\bnb\b|genderfluid|agender|neutral|other)\b/.test(g)) return "person";
+  return null;
+}
+
+/** @param {string} textAfterClass - phrase after "class, " */
+function captionExampleLine(triggerWord, lockedClass, fallbackClass, textAfterClass) {
+  const cls = lockedClass || fallbackClass;
+  return `${triggerWord} ${cls}, ${textAfterClass}`;
+}
+
+function buildCaptionSystemPrompt(triggerWord, captionSubjectClass) {
+  const genderLock = captionSubjectClass
+    ? `MODEL SUBJECT CLASS (required — do not override from the image): This LoRA is configured for "${captionSubjectClass}". EVERY caption MUST begin with exactly "${triggerWord} ${captionSubjectClass}" (trigger, one space, then only that class word — no adjectives between). Never use woman/girl for a male-configured model or man/boy for a female-configured model. If a photo looks ambiguous, still use "${captionSubjectClass}" for dataset consistency.\n\n`
+    : "";
+
+  const rule1 = captionSubjectClass
+    ? `1. Start EVERY caption with exactly "${triggerWord} ${captionSubjectClass}" — the subject class is fixed by model settings (see MODEL SUBJECT CLASS above). Do NOT add adjectives before "${captionSubjectClass}".`
+    : `1. Start EVERY caption with exactly "${triggerWord}" (the unique token) followed immediately by a simple class word like woman, girl, person, man, character, or subject — choose the most accurate neutral class for the image. Do NOT add adjectives before the class word (no "beautiful woman", "young Asian woman", etc. — identity must bind to the trigger only). Example: "${triggerWord} woman" or "${triggerWord} person".`;
+
+  const lc = captionSubjectClass;
+  const examples = [
+    captionExampleLine(triggerWord, lc, "woman", "long wavy blonde hair, smiling warmly, wearing a blue summer dress, standing in a crowded city street, sunny daylight, natural candid photography, high quality."),
+    captionExampleLine(triggerWord, lc, "person", "sitting on floor with knees up, casual hoodie and shorts, thoughtful expression looking at camera, messy apartment background, soft window light, realistic smartphone snapshot."),
+    captionExampleLine(triggerWord, lc, "girl", "lying on bed propped on elbows, playful smirk, nude under sheet covering chest, bedroom at night with phone flash, raw amateur photo style."),
+    captionExampleLine(triggerWord, lc, "woman", "sitting cross-legged on bed, wearing oversized t-shirt, playful smile, messy bedroom background, warm indoor lighting, candid photo."),
+    captionExampleLine(triggerWord, lc, "person", "standing side profile, arms crossed, casual jeans and hoodie, urban street at dusk, natural light."),
+    captionExampleLine(triggerWord, lc, "girl", "lying on couch, relaxed expression, blanket over legs, cozy living room."),
+  ].join("\n");
+
+  return `You are an expert image captioner for Z-Image Turbo LoRA training datasets.
+
+${genderLock}RULES:
+${rule1}
+2. Describe EVERYTHING visible EXCEPT permanent identity features the LoRA should learn from the trigger alone: overall face shape, specific nose shape/size, eye shape (e.g. almond, round), eye color if it is a core fixed trait, bone structure, jawline, cheekbones, ethnicity indicators when they are fixed for this character. If hair color/style is consistent across the whole dataset, describe it sparingly or omit so it does not dilute trigger strength.
+3. DO describe (priority order): pose and body position; camera angle and framing (close-up, half-body, full-body, etc.); clothing and accessories; hair style and color when it varies across images; expression, mood, and emotion; background and environment; lighting type and quality; realistic style/quality only when visible or appropriate — e.g. smartphone photo, natural lighting, soft shadows, 35mm film style, high quality, detailed skin texture. Avoid empty boosters like "masterpiece", "8k", "ultra detailed" unless they clearly match the image aesthetic.
+4. Use natural language in 1–2 concise sentences OR a compact comma-separated phrase list (both work for Z-Image Turbo). Aim for 15–40 words total — short and punchy beats verbose. Prefer readable flow; tags are fine if you keep style consistent. No bullet points, no line breaks, no JSON or extra formatting.
+5. Be strictly accurate — describe ONLY what is visible. Do not invent or assume.
+6. Prioritize VARIATIONS in the dataset: emphasize changing poses, outfits, angles, lighting, backgrounds. Do NOT repeat the same constant details in every caption (e.g. if every image has long black hair, mention rarely or omit after early images) so captions teach what stays promptable.
+7. Keep terminology and structure consistent across ALL captions in the dataset (similar phrasing for similar poses/lighting; same general order: pose → clothing → expression → background → style) for training stability.
+8. Stay punchy — no redundancy or fluff.
+
+EXAMPLE OUTPUTS:
+${examples}`;
+}
+
+/**
+ * If the model has a fixed subject class, normalize "trigger wrongClass, ..." to "trigger subjectClass, ...".
+ */
+function enforceCaptionSubjectClass(caption, triggerWord, subjectClass) {
+  if (!subjectClass || !caption?.trim()) return caption;
+  const t = triggerWord.trim();
+  let s = caption.trim();
+  if (!s.toLowerCase().startsWith(t.toLowerCase())) {
+    s = `${t} ${s}`;
+  }
+  let after = s.slice(t.length).trim();
+  const classRe = /^(woman|girl|man|boy|person|character|subject)\s*,?\s*/i;
+  after = after.replace(classRe, "").trim();
+  const out = `${t} ${subjectClass}, ${after}`.trim();
+  return out.replace(/,\s*$/, "");
+}
+
+/**
  * Caption a single training image using Grok vision (xAI API).
  * Follows Z-Image LoRA training captioning best practices:
  * - Starts with trigger word
  * - Describes everything EXCEPT the core subject identity
  * - Labels backgrounds, lighting, clothing, camera angles, pose
  * - Uses natural language (1-2 sentences)
+ * @param {string|null} [captionSubjectClass] - from model gender; locks woman/man/girl/boy/person after trigger
  */
-async function captionSingleImage(imageUrl, triggerWord, index) {
+async function captionSingleImage(imageUrl, triggerWord, index, captionSubjectClass = null) {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   if (!OPENROUTER_API_KEY) {
     console.warn(`⚠️ OPENROUTER_API_KEY not set — skipping caption for image ${index + 1}`);
@@ -83,18 +159,7 @@ async function captionSingleImage(imageUrl, triggerWord, index) {
       messages: [
         {
           role: "system",
-          content: `You are an expert image captioner for Z-Image Turbo LoRA training datasets.
-
-RULES:
-1. Start the caption with the trigger word "${triggerWord}" followed by a class word (e.g. "a woman", "a man", "a person").
-2. Describe EVERYTHING visible EXCEPT the subject's permanent identity features (face shape, nose, eye shape, bone structure). These must NOT be described so the LoRA can learn them from the trigger word.
-3. DO describe: pose, body position, camera angle, framing (close-up/half-body/full-body), clothing, accessories, hair style & color, background, lighting, mood, image quality, art style.
-4. Use natural language — 1-2 concise sentences. No bullet points, no line breaks.
-5. Be accurate — only describe what is actually visible in the image.
-6. Keep it consistent in tone and structure with other captions in the dataset.
-
-EXAMPLE OUTPUT:
-${triggerWord} woman, long wavy blonde hair, smiling, wearing a blue dress, standing in a crowded blurry city street, sunny day, 35mm photography, high quality.`
+          content: buildCaptionSystemPrompt(triggerWord, captionSubjectClass),
         },
         {
           role: "user",
@@ -109,7 +174,10 @@ ${triggerWord} woman, long wavy blonde hair, smiling, wearing a blue dress, stan
     const caption = (completion.choices?.[0]?.message?.content || "").trim();
     if (!caption) return null;
 
-    const finalCaption = caption.startsWith(triggerWord) ? caption : `${triggerWord} ${caption}`;
+    let finalCaption = caption.startsWith(triggerWord) ? caption : `${triggerWord} ${caption}`;
+    if (captionSubjectClass) {
+      finalCaption = enforceCaptionSubjectClass(finalCaption, triggerWord, captionSubjectClass);
+    }
     console.log(`  📝 Caption ${index + 1}: ${finalCaption.substring(0, 80)}...`);
     return finalCaption;
   } catch (error) {
@@ -122,10 +190,13 @@ ${triggerWord} woman, long wavy blonde hair, smiling, wearing a blue dress, stan
  * Caption all training images in parallel batches.
  * Returns array of caption strings (or null for failed captions), same length as imageUrls.
  */
-async function captionAllTrainingImages(imageUrls, triggerWord) {
+async function captionAllTrainingImages(imageUrls, triggerWord, captionSubjectClass = null) {
   console.log(`\n📝 ============================================`);
   console.log(`📝 CAPTIONING ${imageUrls.length} TRAINING IMAGES`);
   console.log(`📝 Trigger word: ${triggerWord}`);
+  if (captionSubjectClass) {
+    console.log(`📝 Locked subject class (from model gender): ${captionSubjectClass}`);
+  }
   console.log(`📝 ============================================`);
 
   const BATCH_SIZE = 5;
@@ -134,7 +205,7 @@ async function captionAllTrainingImages(imageUrls, triggerWord) {
   for (let batch = 0; batch < imageUrls.length; batch += BATCH_SIZE) {
     const slice = imageUrls.slice(batch, batch + BATCH_SIZE);
     const batchPromises = slice.map((url, i) =>
-      captionSingleImage(url, triggerWord, batch + i)
+      captionSingleImage(url, triggerWord, batch + i, captionSubjectClass)
     );
     const batchResults = await Promise.all(batchPromises);
     batchResults.forEach((caption, i) => {
@@ -531,18 +602,24 @@ export async function waitForTrainingCompletion(
  * @param {string[]} imageUrls - Array of training image URLs (15 images recommended)
  * @param {string} triggerWord - Trigger word for the LoRA
  * @param {object} options - Training options
+ * @param {string|null} [options.captionSubjectClass] - woman | man | girl | boy | person — from model gender; locks caption class after trigger
  * @returns {Promise<{success: boolean, requestId?: string, error?: string}>}
  */
 export async function startLoraTraining(imageUrls, triggerWord, options = {}) {
   try {
+    const { captionSubjectClass = null } = options;
+
     console.log("\n🎓 ============================================");
     console.log("🎓 STARTING LORA TRAINING WORKFLOW");
     console.log("🎓 ============================================");
     console.log(`📸 Images: ${imageUrls.length}`);
     console.log(`🔑 Trigger Word: ${triggerWord}`);
+    if (captionSubjectClass) {
+      console.log(`👤 Caption subject class: ${captionSubjectClass}`);
+    }
 
     // Step 1: Caption all images using Grok vision
-    const captions = await captionAllTrainingImages(imageUrls, triggerWord);
+    const captions = await captionAllTrainingImages(imageUrls, triggerWord, captionSubjectClass);
 
     // Step 2: Create ZIP from images + captions
     const zipBuffer = await createTrainingZip(imageUrls, captions);
@@ -658,8 +735,7 @@ const RUNNING_MAKEUP_NODE = "296";
 const CUM_NODE = "303";
 const RUNNING_MAKEUP_KEYWORDS = ["running makeup", "smeared makeup", "mascara running", "ruined makeup", "crying makeup", "makeup running", "smeared mascara"];
 
-/** Pose slot index in LoadLoraFromUrlOrPath (250): lora_1 = girl, lora_2 = 290 doggy, lora_3 = 291 missionary, lora_4 = 292 cowgirl, lora_5 = 293 anal, lora_6 = 294 handjob, lora_7 = 295 missionary_anal, lora_8 = 296 running makeup */
-const POSE_NODE_TO_SLOT = { "290": 2, "291": 3, "292": 4, "293": 5, "294": 6, "295": 7 };
+/** Pose LoRA files (node ids 290–295); applied in POSE_LORAS order, compacted after identity in node 250. */
 /** Literal spaces in path — avoid %20 here or encodeURI turns % into %25 → broken %2520 */
 const POSE_SLOT_URLS = {
   "290": "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw Doggystyle facing the camera.safetensors",
@@ -860,9 +936,9 @@ RULES FOR POSE SELECTION:
 - ONLY select a pose if the scene EXPLICITLY shows that EXACT sex position being performed
 - "bent over" alone is NOT doggystyle - it must explicitly describe doggy style sex
 - "from behind" alone is NOT anal - there must be explicit anal penetration
-- "kneeling" is NOT any pose - it's just a body position
+- "kneeling" is NOT any pose - it's just a body position (kneeling + blowjob = pose "none", deepthroat enhancement ON)
 - "lying in bed" is NOT missionary - there must be explicit missionary sex
-- If the prompt describes oral sex (blowjob, deepthroat), select "none" for pose - use the deepthroat enhancement LoRA instead
+- If the prompt describes oral sex (blowjob, deepthroat, mouth on penis, penis in mouth), select "none" for pose ALWAYS — even if it also says "hands gripping shaft" (normal for POV blowjob). NEVER select "handjob" for those scenes — handjob pose + oral text causes duplicate penis mutations.
 - If unsure, select "none" - it's better to have no pose LoRA than the wrong one
 
 ENHANCEMENT LORAS (each can be independently activated with a strength from 0.35-0.50):
@@ -874,6 +950,7 @@ ENHANCEMENT LORAS (each can be independently activated with a strength from 0.35
 RULES FOR ENHANCEMENT LORAS:
 - Multiple CAN be active simultaneously (e.g. amateur_nudes + masturbation for casual gf masturbating)
 - amateur_nudes stacks well with masturbation or dildo for the casual/gf aesthetic
+- For ANY blowjob/oral/deepthroat scene: set deepthroat to 0.40-0.50 and pose to "none"
 - deepthroat should NOT combine with masturbation or dildo (incompatible acts)
 - Look at the FULL context: if chips say "on knees" + prompt mentions "mouth" or "oral" = activate deepthroat
 - Look at outfit chips: if outfit is "nude"/"naked"/"topless" + casual scene = consider amateur_nudes
@@ -974,14 +1051,57 @@ OUTPUT: Return ONLY valid JSON on one line, no explanation:
 
 function getPoseDescription(poseId) {
   const descriptions = {
-    doggystyle_facing: "Doggystyle / from behind position - girl on all fours, bent over, or face down ass up. Covers ALL rear-view positions including doggy, prone bone, bent over, from behind, on all fours, etc.",
+    doggystyle_facing:
+      "Penetrative doggystyle / from-behind intercourse only: girl on all fours or bent over with visible rear-entry penetration. NOT kneeling blowjob, NOT standing solo, NOT 'kneeling on floor' without rear sex — those are NOT this LoRA.",
     missionary: "Missionary sex position - girl lying on her back with legs spread during vaginal sex",
     cowgirl: "Cowgirl / riding position - girl sitting on top, straddling, riding. Covers cowgirl, reverse cowgirl, girl-on-top positions.",
     titjob: "Titjob / titfuck / boobjob - penis between breasts, girl pressing boobs together around cock",
-    handjob: "Girl giving a handjob - hand stroking/jerking a penis",
+    handjob:
+      "Handjob ONLY — stroking/jerking penis with hand(s) as the main act, no mouth on penis. If the mouth is on the penis (blowjob), this is WRONG — use pose 'none' + deepthroat enhancement instead.",
     missionary_anal: "Anal sex in missionary position - girl on her back during anal penetration",
   };
   return descriptions[poseId] || poseId;
+}
+
+/**
+ * Blowjob/oral prompts often mention "hands gripping shaft" — the AI wrongly picks handjob pose LoRA,
+ * which stacks a second phallus/handjob prior with oral. Oral scenes must use pose none + deepthroat LoRA only.
+ */
+function isOralBlowjobScenePrompt(promptText) {
+  const t = (promptText || "").toLowerCase();
+  if (
+    /\b(blowjob|deepthroat|oral sex)\b/.test(t) ||
+    /mouth wrapped around|mouth on penis|penis in (her )?mouth|cock in mouth|sucking (cock|penis|dick)|giving head/.test(t)
+  ) {
+    return true;
+  }
+  // POV oral: mouth + penis in same description (even if "hands gripping shaft" is also present)
+  if (/erect penis/.test(t) && /\b(mouth|lips|sucking|wrapped around)\b/.test(t)) return true;
+  if (/\bgripping shaft\b/.test(t) && /\b(mouth wrapped|mouth on|penis in|sucking)\b/.test(t)) return true;
+  return false;
+}
+
+/**
+ * Server-side guard after Grok: never stack pose LoRAs on oral; ensure deepthroat enhancement is on; strip incompatible enhancers.
+ */
+function applyOralBlowjobLoraPolicy(aiSelection, fullPromptText) {
+  if (!isOralBlowjobScenePrompt(fullPromptText)) return;
+
+  if (aiSelection.pose) {
+    console.warn(
+      `🛡️ Oral/blowjob scene — cleared pose LoRA "${aiSelection.pose.id}" (prevents handjob/doggy + oral double-penis artifacts; use deepthroat slot only).`
+    );
+    aiSelection.pose = null;
+  }
+
+  aiSelection.enhancementStrengths = { ...(aiSelection.enhancementStrengths || {}) };
+  const cur = Number(aiSelection.enhancementStrengths.deepthroat) || 0;
+  if (cur < 0.35) {
+    aiSelection.enhancementStrengths.deepthroat = 0.45;
+    console.log("🛡️ Oral scene: enabling deepthroat enhancement LoRA (min 0.45).");
+  }
+  aiSelection.enhancementStrengths.masturbation = 0;
+  aiSelection.enhancementStrengths.dildo = 0;
 }
 
 /**
@@ -992,6 +1112,86 @@ const QUALITY_SUFFIX =
 
 // Additive LoRAs (pose, makeup, effects) must never overpower identity LoRA.
 const MAX_ADDITIVE_LORA_STRENGTH = 0.5;
+
+/** Max enhancement LoRAs (deepthroat/amateur/etc.) applied at once — matches AI selector design. */
+const MAX_SIMULTANEOUS_ENHANCEMENT_LORAS = 2;
+
+/**
+ * Build ordered LoRA stack entries (identity → optional pose → optional makeup → up to 2 enhancements).
+ * Only includes weights that are actually used — no placeholder URLs at strength 0.
+ */
+export function buildNsfwLoraStackEntries({
+  loraUrl,
+  girlLoraStrength,
+  poseStrengths = {},
+  makeupStrength = 0,
+  enhancementStrengths = {},
+}) {
+  const entries = [];
+  const gUrl = loraUrl ? String(loraUrl).trim() : "";
+  const gStr = Math.min(1, Math.max(0, Number(girlLoraStrength) || 0.6));
+  if (gUrl) {
+    entries.push({ url: sanitizeLoraDownloadUrl(gUrl), strength: gStr });
+  }
+
+  for (const p of POSE_LORAS) {
+    const str = poseStrengths[p.node] || 0;
+    const s = Math.min(MAX_ADDITIVE_LORA_STRENGTH, Math.max(0, Number(str)));
+    if (s > 0 && POSE_SLOT_URLS[p.node]) {
+      entries.push({ url: sanitizeLoraDownloadUrl(POSE_SLOT_URLS[p.node]), strength: s });
+      break;
+    }
+  }
+
+  const mk = Math.min(MAX_ADDITIVE_LORA_STRENGTH, Math.max(0, Number(makeupStrength) || 0));
+  if (mk > 0) {
+    entries.push({ url: sanitizeLoraDownloadUrl(LORA_8_RUNNING_MAKEUP_URL), strength: mk });
+  }
+
+  const enhOrder = ["deepthroat", "amateur_nudes", "masturbation", "dildo"];
+  let enhAdded = 0;
+  for (const key of enhOrder) {
+    if (entries.length >= 10 || enhAdded >= MAX_SIMULTANEOUS_ENHANCEMENT_LORAS) break;
+    const raw = Number(enhancementStrengths[key]) || 0;
+    if (raw <= 0) continue;
+    const meta = ENHANCEMENT_LORAS[key];
+    if (!meta?.url) continue;
+    const s = Math.min(MAX_ADDITIVE_LORA_STRENGTH, Math.max(0.35, raw));
+    entries.push({ url: sanitizeLoraDownloadUrl(meta.url), strength: s });
+    enhAdded += 1;
+  }
+
+  return entries.slice(0, 10);
+}
+
+/**
+ * Pack stack into LoadLoraFromUrlOrPath node: lora_1..lora_N contiguous, rest empty, num_loras = N.
+ * Avoids loading unused Hugging Face weights (URLs cleared, not left at strength 0).
+ */
+export function applyCompactLoraStackToNode250(node250, entries) {
+  if (!node250?.inputs) return;
+  const n = entries.length;
+  for (let i = 0; i < 10; i++) {
+    const idx = i + 1;
+    const e = entries[i];
+    const p = `lora_${idx}_`;
+    if (e?.url) {
+      node250.inputs[p + "url"] = e.url;
+      node250.inputs[p + "strength"] = e.strength;
+      node250.inputs[p + "model_strength"] = e.strength;
+      node250.inputs[p + "clip_strength"] = e.strength;
+    } else {
+      node250.inputs[p + "url"] = "";
+      node250.inputs[p + "strength"] = 0;
+      node250.inputs[p + "model_strength"] = 0;
+      node250.inputs[p + "clip_strength"] = 0;
+    }
+  }
+  node250.inputs.num_loras = Math.min(10, Math.max(0, n));
+  if ("mode" in node250.inputs) {
+    node250.inputs.mode = n <= 1 ? "simple" : "advanced";
+  }
+}
 
 /**
  * Build a professional NSFW prompt
@@ -1046,38 +1246,16 @@ function buildComfyWorkflow(params) {
 
     const node250 = workflow["250"];
     if (node250?.inputs) {
-      node250.inputs.lora_1_url = sanitizeLoraDownloadUrl(loraUrl);
       const girlStr = Math.min(1, Math.max(0, Number(girlLoraStrength) || 0.6));
-      node250.inputs.lora_1_strength = girlStr;
-      node250.inputs.lora_1_model_strength = girlStr;
-      node250.inputs.lora_1_clip_strength = girlStr;
-
-      // Additive LoRAs are AI-selected and always capped to avoid overpowering identity.
-      for (const [nodeId, slot] of Object.entries(POSE_NODE_TO_SLOT)) {
-        const str = poseStrengths[nodeId] || 0;
-        const s = Math.min(MAX_ADDITIVE_LORA_STRENGTH, Math.max(0, Number(str)));
-        const url = s > 0 ? sanitizeLoraDownloadUrl(POSE_SLOT_URLS[nodeId] || "") : "";
-        node250.inputs[`lora_${slot}_url`] = url;
-        node250.inputs[`lora_${slot}_strength`] = s;
-        node250.inputs[`lora_${slot}_model_strength`] = s;
-        node250.inputs[`lora_${slot}_clip_strength`] = s;
-      }
-
-      const makeupStr = Math.min(MAX_ADDITIVE_LORA_STRENGTH, Math.max(0, Number(makeupStrength) || 0));
-      node250.inputs.lora_8_url = makeupStr > 0 ? sanitizeLoraDownloadUrl(LORA_8_RUNNING_MAKEUP_URL) : "";
-      node250.inputs.lora_8_strength = makeupStr;
-      node250.inputs.lora_8_model_strength = makeupStr;
-      node250.inputs.lora_8_clip_strength = makeupStr;
-
-      // Keep slots 9/10 empty in current workflow template.
-      node250.inputs.lora_9_url = "";
-      node250.inputs.lora_9_strength = 0;
-      node250.inputs.lora_9_model_strength = 0;
-      node250.inputs.lora_9_clip_strength = 0;
-      node250.inputs.lora_10_url = "";
-      node250.inputs.lora_10_strength = 0;
-      node250.inputs.lora_10_model_strength = 0;
-      node250.inputs.lora_10_clip_strength = 0;
+      const stack = buildNsfwLoraStackEntries({
+        loraUrl,
+        girlLoraStrength: girlStr,
+        poseStrengths,
+        makeupStrength,
+        enhancementStrengths,
+      });
+      applyCompactLoraStackToNode250(node250, stack);
+      console.log(`📚 LoRA stack (compact): ${stack.length} weight file(s), num_loras=${node250.inputs.num_loras}, mode=${node250.inputs.mode || "n/a"}`);
     }
 
     // KSampler 276 (base) and 45 (refiner): set steps/cfg/sampler/scheduler/denoise explicitly to avoid widget-order mismatch
@@ -1123,25 +1301,24 @@ function buildComfyWorkflow(params) {
 }
 
 function buildComfyWorkflowLegacy(params) {
-  const { prompt, loraUrl, girlLoraStrength, poseStrengths, makeupStrength, postProcessing = {}, seed } = params;
+  const {
+    prompt,
+    loraUrl,
+    girlLoraStrength,
+    poseStrengths,
+    makeupStrength,
+    enhancementStrengths = {},
+    postProcessing = {},
+    seed,
+  } = params;
   const negativePrompt = "blurry, low resolution, deformed, bad anatomy, extra limbs, mutated hands, poorly drawn face, bad proportions, watermark, text, signature, cartoon, anime, overexposed, underexposed, plastic skin, doll-like";
-  const poseLoraMap = {
-    "290": { url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw Doggystyle facing the camera.safetensors", name: "Doggystyle" },
-    "291": { url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Missionnary.safetensors", name: "Missionary" },
-    "292": { url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw Cowgirl.safetensors", name: "Cowgirl" },
-    "293": { url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw Anal Doggystyle.safetensors", name: "Anal Doggy" },
-    "294": { url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw_Handjob.safetensors", name: "Handjob" },
-    "295": { url: "https://huggingface.co/bigckck/ndmstr/resolve/main/Nsfw_POV_Missionary_Anal.safetensors", name: "POV Missionary Anal" },
-  };
-  const loraEntries = [{ url: sanitizeLoraDownloadUrl(loraUrl), strength: girlLoraStrength, name: "Girl LoRA" }];
-  for (const [nodeId, info] of Object.entries(poseLoraMap)) {
-    const strength = Math.min(MAX_ADDITIVE_LORA_STRENGTH, Math.max(0, Number(poseStrengths?.[nodeId] || 0)));
-    if (strength > 0) loraEntries.push({ url: sanitizeLoraDownloadUrl(info.url), strength, name: info.name });
-  }
-  const safeMakeupStrength = Math.min(MAX_ADDITIVE_LORA_STRENGTH, Math.max(0, Number(makeupStrength) || 0));
-  if (safeMakeupStrength > 0) {
-    loraEntries.push({ url: sanitizeLoraDownloadUrl(LORA_8_RUNNING_MAKEUP_URL), strength: safeMakeupStrength, name: "Running Makeup" });
-  }
+  const loraEntries = buildNsfwLoraStackEntries({
+    loraUrl,
+    girlLoraStrength,
+    poseStrengths,
+    makeupStrength,
+    enhancementStrengths,
+  });
   let loraNodeId = 250;
   const loraNodes = {};
   let prevModelRef = ["247", 0];
@@ -1257,6 +1434,8 @@ export async function submitNsfwGeneration(params) {
     chipSelections,
     userLoraStrength: validatedOverride,
   });
+  applyOralBlowjobLoraPolicy(aiSelection, prompt);
+
   const detectedPose = aiSelection.pose;
   const hasRunningMakeup = aiSelection.runningMakeup;
   const hasCumEffect = aiSelection.cumEffect;
@@ -1277,7 +1456,7 @@ export async function submitNsfwGeneration(params) {
     .filter(([, v]) => v > 0)
     .map(([k, v]) => `${k}=${v}`)
     .join(", ");
-  console.log(`🎭 Enhancement LoRAs: ${activeEnhLog || "none"} (template currently applies pose + makeup slots)`);
+  console.log(`🎭 Enhancement LoRAs: ${activeEnhLog || "none"} → wired to node 250 lora_9/lora_10 when template loads`);
 
   const poseStrengths = {};
   POSE_LORAS.forEach(p => { poseStrengths[p.node] = 0; });

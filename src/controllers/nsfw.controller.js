@@ -16,6 +16,7 @@
 import prisma from "../lib/prisma.js";
 import {
   generateTriggerWord,
+  normalizeCaptionSubjectClass,
   startLoraTraining,
   checkTrainingStatus,
   getTrainingResult,
@@ -2004,9 +2005,21 @@ export async function trainLora(req, res) {
       imageUrls = imgs.map((i) => i.imageUrl);
     }
 
+    let aiParams = {};
+    try {
+      aiParams =
+        typeof model.aiGenerationParams === "string"
+          ? JSON.parse(model.aiGenerationParams)
+          : model.aiGenerationParams || {};
+    } catch {
+      aiParams = {};
+    }
+    const captionSubjectClass = normalizeCaptionSubjectClass(aiParams.gender);
+
     const trainingResult = await startLoraTraining(imageUrls, triggerWord, {
       steps: isProTraining ? 9000 : 4500,
       loraRank: isProTraining ? 32 : 16,
+      captionSubjectClass,
     });
 
     if (!trainingResult.success) {
@@ -2886,6 +2899,7 @@ export async function generateNsfwPrompt(req, res) {
 Z-Image Turbo uses natural language processing — it understands full descriptive sentences, relationships between objects, and spatial placement. Follow these principles:
 
 1. NATURAL LANGUAGE OVER KEYWORDS: Write rich, descriptive phrases — NOT keyword tag dumps. Describe as if telling someone what the photo looks like. Example: "lying on rumpled white sheets with phone charger on the nightstand, dim overhead ceiling light, phone flash washing out her skin slightly" is better than "bed, sheets, lamp, charger".
+   • Prefer CONNECTED SENTENCES over comma lists. Z-Image Turbo's text encoder (Qwen lineage) rewards full sentences with spatial relationships and causality. Example: "She lies on her side on an unmade bed, one leg bent and raised, phone flash catching the curve of her hip and the faint stretch marks on her thigh." This beats tag-dumps every time.
 
 2. PROMPT PRIORITY ORDER (most important elements FIRST):
    a) Subject identity (trigger word + physical traits)
@@ -2897,7 +2911,7 @@ Z-Image Turbo uses natural language processing — it understands full descripti
    g) Camera device and angle
    h) Realism anchors (skin texture, compression, smartphone artifacts)
 
-3. PROMPT LENGTH: Aim for 40-80 words of coherent descriptive phrases. Too short = vague output. Too long = diffused focus. Every word should serve the scene.
+3. PROMPT LENGTH: Aim for 50–100 words of flowing descriptive sentences and short phrases. Turbo-class models now reward richer scene narration over ultra-short prompts. Avoid exceeding 130 words — focus diffuses. Too short = vague; every word should serve the scene.
 
 4. IN-PROMPT CONSTRAINTS (Z-Image has no negative prompt — encode constraints positively):
    Instead of saying what NOT to include, describe what IS there. For example: "natural skin texture with visible pores and slight blemishes" inherently prevents airbrushed/smooth skin. Add "no extra limbs, no distorted hands" ONLY when mutation risk is high (complex poses, multiple body parts).
@@ -2911,7 +2925,7 @@ Key amateur markers to ALWAYS include:
 - Phone flash harsh wash-out on skin (for dim/night scenes) OR flat overhead ceiling light (for indoor scenes) OR natural window daylight (for daytime)
 - Slight overexposure from flash, uneven lighting, visible shadows
 - Minor lens distortion from wide-angle phone camera
-- Background clutter: unmade bed, clothes on floor, phone charger, water bottle, shoes, random personal items
+- Background clutter (always weave in 2–4 small mundane items): crumpled blanket corner, half-empty water bottle on nightstand, charging cable snaking across sheets, discarded hoodie on floor, phone case nearby, unmade bed, clothes on floor — never clean/minimal studio sets
 - Natural untouched skin: visible pores, slight blemishes, skin folds, natural body texture — NOT smooth, NOT plastic, NOT airbrushed
 - Casual, unstaged feeling — the pose should feel natural, not like a model posing for a photoshoot
 
@@ -2924,9 +2938,14 @@ The #1 failure mode is generating images that look like STUDIO SHOTS or PROFESSI
 - The composition should feel ACCIDENTAL, not composed. Slightly off-center, maybe slightly tilted, imperfect framing
 - Background should be MESSY and MUNDANE — not aesthetically arranged
 
+=== DEFAULT LIGHTING (PHONE FLASH — HAMMER THIS) ===
+Unless the user EXPLICITLY requests daytime or natural window light, treat harsh direct smartphone flash as the DEFAULT for dim/indoor/private-gallery feel. It should read as the ONLY dominant light source. Prefer phrasing like: "harsh frontal phone flash washing out skin highlights, creating sharp shadows behind her" or "strong on-camera flash bloom with slight lens flare." Recent strong results treat flash as almost mandatory indoors — do not default to soft or cinematic room glow.
+
 === ANTI-MUTATION RULES (CRITICAL) ===
 - For any pose involving hands: specify exactly what EACH hand is doing and where it is.
 - For complex body poses: describe the body position from top to bottom (head → torso → hips → legs → feet).
+- For any full-body or 3/4 body shot: chain head-to-toe in one flow, e.g. "head tilted slightly, shoulders relaxed, torso twisted gently, hips angled, knees bent, feet pointed naturally."
+- When hands are visible or the pose is complex, add "proportional limbs, five fingers per hand, correct hand placement" (keeps Turbo from limb drift).
 - Always include "one person only" to prevent ghost limbs/second person artifacts.
 - NEVER mention "boyfriend", "someone else", "another person", "partner" — this causes phantom person artifacts.
 - For close-ups: specify what body parts are IN FRAME and what is NOT visible.
@@ -2934,25 +2953,26 @@ The #1 failure mode is generating images that look like STUDIO SHOTS or PROFESSI
 - For face focus: add "detailed face, natural facial features, symmetrical eyes".
 
 === PROMPT STYLE (CRITICAL — this determines quality) ===
-- Keep prompts SHORT and DIRECT. 30-60 words is the sweet spot. The best-performing generations used simple, punchy prompts.
-- Do NOT over-describe. Each word should ADD something — cut anything redundant.
-- Focus on: POSE + BODY POSITION + EXPRESSION + 1-2 KEY DETAILS. That's it.
+- Prefer 50–100 words of flowing sentences + light phrasing (see PRINCIPLE 3). Stay direct — no filler adjectives — but narration beats ultra-short tag lines for Turbo variants.
+- Do NOT bloat past ~130 words. Each sentence should ADD scene, pose, light, or spatial clarity.
+- Focus on: POSE + BODY (chain when needed) + EXPRESSION + 2–4 clutter/prop details + dominant light.
 - The QUALITY_SUFFIX already adds all the amateur/phone/skin texture markers — do NOT repeat those in the scene prompt.
-- BAD (too long): "beautiful young woman lying on bed with messy sheets in a bedroom with warm lighting, soft expression, natural skin, casual amateur look, phone photo, candid"
-- GOOD (direct): "lying on bed, legs spread, one hand on breast, biting lower lip, messy sheets, phone flash"
+- BAD (cinematic + redundant): "beautiful young woman lying on bed with messy sheets in a bedroom with warm lighting, soft expression, natural skin, casual amateur look, phone photo, candid"
+- GOOD (narrative + flash): "She lies back on rumpled grey sheets, legs spread, one hand on her breast and biting her lower lip; harsh phone flash blows out her chest and leaves the headboard in deep shadow, charger cable tangled near her hip."
 
 === REALISM ANCHORS (included automatically via QUALITY_SUFFIX — do NOT repeat) ===
 The QUALITY_SUFFIX already handles: smartphone camera, skin texture, auto-exposure, jpeg artifacts, phone flash, motion blur, grainy low light, solo girl, anatomically correct. 
 Your prompt only needs to add:
-- The SCENE and POSE specifics
-- 1-2 environment clutter items (phone charger, water bottle, crumpled tissues)
+- The SCENE and POSE specifics (with sentence flow where helpful)
+- 2–4 mundane clutter items (charger, bottle, clothes, blanket corner, case on nightstand — see AMATEUR PHOTO IDENTITY)
 - Do NOT repeat phone flash, skin texture, or camera type — QUALITY_SUFFIX already covers these
 - NEVER say "taken by boyfriend" or "taken by someone" — this generates phantom people
 
 === BANNED TERMS (these destroy the amateur look — NEVER use any of these) ===
-"ultra detailed", "8k", "masterpiece", "best quality", "professional photography", "RAW photo", "DSLR", "studio lighting", "color grading", "bokeh", "cinematic", "editorial", "magazine quality", "sharp focus", "high resolution", "dramatic lighting", "rim light", "backlit", "warm lamp light", "golden glow", "artistic", "styled", "posed professionally", "photoshoot", "backstage", "behind the scenes", "taken by boyfriend", "taken by partner", "warm ambient light"
+"ultra detailed", "8k", "masterpiece", "best quality", "professional photography", "RAW photo", "DSLR", "studio lighting", "color grading", "bokeh", "cinematic", "editorial", "magazine quality", "sharp focus", "high resolution", "dramatic lighting", "rim light", "backlit", "warm lamp light", "golden glow", "artistic", "styled", "posed professionally", "photoshoot", "backstage", "behind the scenes", "taken by boyfriend", "taken by partner", "warm ambient light", "volumetric", "god rays", "rim glow", "catchlight", "specular highlight" (unless clearly flash-caused), "film grain emulation", "hyperrealistic"
 
 === LIGHTING RULES (STRICT) ===
+- DEFAULT: Unless user asked for daytime/window light, use harsh direct phone flash as the ONLY dominant source (see DEFAULT LIGHTING above). Describe wash-out, sharp shadow falloff, optional slight flare — not soft box or lamp glow.
 - PHONE FLASH is the DEFAULT for indoor/dim/night scenes. It creates harsh, flat, frontal white light that slightly washes out skin. This is the #1 amateur lighting signature.
 - Overhead ceiling light: flat, unflattering, slightly yellow — the other common indoor light
 - Window daylight: flat, even, slightly blue-white — for daytime scenes
@@ -2969,12 +2989,17 @@ Your prompt only needs to add:
 
 === SELFIE RULES ===
 - Mirror selfie: include "taking a selfie with iPhone". Mirror is part of the pose — do NOT also mention "mirror" in background. Phone SHOULD be visible in mirror reflection.
-- Bed selfie / casual nude: Do NOT show phone in her hand. Frame as "overhead angle looking down at her body" or natural relaxed pose. No phone visible. No second person mentioned.
-- Overhead selfie: "overhead angle looking down at body" — DO NOT mention phone, selfie stick, boyfriend, partner, or any second person.
+- Front-camera selfies (non-mirror): "close-up front camera selfie, arm extended slightly out of frame, slight wide-angle distortion on cheeks and forehead."
+- Overhead / top-down body shots: "high overhead angle looking straight down at her body on the bed, foreshortened legs closer to camera, natural phone perspective" — no phone visible in frame.
+- Bed selfie / casual nude: Do NOT show phone in her hand. Frame as overhead/top-down or natural relaxed pose. No phone visible. No second person mentioned.
+- Overhead selfie: "overhead angle looking down at body" — DO NOT mention phone, boyfriend, partner, or any second person.
+- NEVER say "selfie stick", "tripod", or "timer photo visible" — keep the capture device invisible except in mirror reflections.
 - General rule: Only mirror selfies should show a phone. All other non-mirror photos use "overhead angle" or "rear camera angle" with NO mention of who holds it.
 
 === POV SEX & BLOWJOB RULES (CRITICAL — explicit content with anatomical accuracy) ===
 Sex position photos should show REALISTIC amateur sex content. Include appropriate male anatomy (penis, erection) when the pose implies penetration or oral sex — this is critical for realism. However, NEVER show a full second person/body — only the relevant body part (penis) entering the frame. The girl is always the focus.
+- POV or penetration shots: describe anatomy and position ONLY from what the camera sees — e.g. "close-up view between spread thighs, vulva glistening, phone flash illuminating inner labia and wetness" — NEVER imply a holder, partner, boyfriend, or second person. No "his hands", no "he"; only her body + the single visible male part if needed.
+- Reinforce: NEVER "boyfriend", "partner", "someone else" — that spawns phantom people.
 
 BLOWJOB / DEEPTHROAT POV:
 - Frame: Close-up or mid-shot from above, looking down at girl
@@ -3019,8 +3044,8 @@ SELFIE PHOTOS — NO PHONE IN HAND:
 - Exception: mirror selfies specifically should show phone reflection in mirror
 - NEVER mention boyfriend, partner, or any second person in any prompt
 
-=== PROVEN WINNING PATTERNS (use these SHORT, DIRECT structures — they produce the most realistic amateur results) ===
-These prompts produced the BEST quality when tested. They are SHORT and DIRECT. The QUALITY_SUFFIX handles all the amateur/phone/skin markers automatically — do NOT repeat them here.
+=== PROVEN WINNING PATTERNS (use these structures — expand with sentence flow to ~50–100 words when needed) ===
+These patterns are structural scaffolds. Flesh them out with connected sentences, 2–4 clutter items, and dominant phone flash (unless user chose daylight). The QUALITY_SUFFIX handles amateur/phone/skin markers automatically — do NOT repeat them here.
 
 PATTERN A — Mirror selfie:
 "[trigger], mirror selfie in bathroom, iPhone visible in reflection, [hair], [outfit/nudity], [expression], phone flash, messy [room]"
@@ -3045,7 +3070,7 @@ PATTERN E — Bent over (PROVEN BEST — pic 13 was "veeery real"):
 PATTERN F — Missionary POV:
 "[trigger], missionary position, lying on back, legs spread wide, penis penetrating pussy visible between thighs, one hand squeezing breast, biting lip, messy hair on pillow, flushed cheeks, POV from above"
 
-KEY INSIGHT: The winning prompts were SHORT (30-50 words), DIRECT (no flowery descriptions), and focused on BODY POSITION + KEY DETAILS. Do NOT add extra descriptors like "beautiful young woman" — the LoRA handles the face. Do NOT repeat quality markers — the QUALITY_SUFFIX handles those.
+KEY INSIGHT: Strong Turbo prompts are 50–100 words, sentence-driven, spatially clear, flash-forward indoors, with mundane clutter. No flowery portrait clichés — the LoRA handles the face. Do NOT repeat QUALITY_SUFFIX content.
 
 When user selections map to any of these scenarios, STRONGLY prefer these proven structures. Adapt to user's chip selections but keep the structural flow intact.
 

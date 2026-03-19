@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   Upload,
   Download,
@@ -51,10 +51,12 @@ import {
   Sparkles,
   Layers,
   ScanSearch,
+  ChevronDown,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuthStore } from "../store";
+import { REPURPOSE_DEVICE_OPTIONS } from "../data/repurposeDeviceOptions";
 import { hasPremiumAccess } from "../utils/premiumAccess";
 
 function isFfmpegWasmSupported() {
@@ -165,39 +167,6 @@ const AUDIO_ONLY_FILTER_KEYS = new Set([
   "audio_highpass", "audio_lowpass", "audio_noise", "audio_bitrate",
 ]);
 
-const IPHONE_MODEL_OPTIONS = [
-  { value: "iphone-se", label: "iPhone SE" },
-  { value: "iphone-se-2", label: "iPhone SE (2nd gen)" },
-  { value: "iphone-se-3", label: "iPhone SE (3rd gen)" },
-  { value: "iphone-11", label: "iPhone 11" },
-  { value: "iphone-11-pro", label: "iPhone 11 Pro" },
-  { value: "iphone-11-pro-max", label: "iPhone 11 Pro Max" },
-  { value: "iphone-12-mini", label: "iPhone 12 mini" },
-  { value: "iphone-12", label: "iPhone 12" },
-  { value: "iphone-12-pro", label: "iPhone 12 Pro" },
-  { value: "iphone-12-pro-max", label: "iPhone 12 Pro Max" },
-  { value: "iphone-13-mini", label: "iPhone 13 mini" },
-  { value: "iphone-13", label: "iPhone 13" },
-  { value: "iphone-13-pro", label: "iPhone 13 Pro" },
-  { value: "iphone-13-pro-max", label: "iPhone 13 Pro Max" },
-  { value: "iphone-14", label: "iPhone 14" },
-  { value: "iphone-14-plus", label: "iPhone 14 Plus" },
-  { value: "iphone-14-pro", label: "iPhone 14 Pro" },
-  { value: "iphone-14-pro-max", label: "iPhone 14 Pro Max" },
-  { value: "iphone-15", label: "iPhone 15" },
-  { value: "iphone-15-plus", label: "iPhone 15 Plus" },
-  { value: "iphone-15-pro", label: "iPhone 15 Pro" },
-  { value: "iphone-15-pro-max", label: "iPhone 15 Pro Max" },
-  { value: "iphone-16", label: "iPhone 16" },
-  { value: "iphone-16-plus", label: "iPhone 16 Plus" },
-  { value: "iphone-16-pro", label: "iPhone 16 Pro" },
-  { value: "iphone-16-pro-max", label: "iPhone 16 Pro Max" },
-  { value: "iphone-17", label: "iPhone 17" },
-  { value: "iphone-17-plus", label: "iPhone 17 Plus" },
-  { value: "iphone-17-pro", label: "iPhone 17 Pro" },
-  { value: "iphone-17-pro-max", label: "iPhone 17 Pro Max" },
-];
-
 function MapClickHandler({ onPick }) {
   useMapEvents({
     click(e) {
@@ -229,7 +198,14 @@ function defaultDateTimeLocal() {
 function initMetaState() {
   const selected = defaultDateTimeLocal();
   return {
-    device_metadata: { enabled: true, platform: "iphone", modelKey: "", uniqueDevicePerCopy: false },
+    device_metadata: {
+      enabled: true,
+      platform: "multi",
+      modelKey: "",
+      uniqueDevicePerCopy: false,
+      deviceMode: "single",
+      modelKeys: ["", "", "", "", ""],
+    },
     timestamps: { enabled: true, date_taken: selected },
     gps_location: { enabled: true, mode: "pinpoint", country: "US", lat: 39.8, lng: -98.5 },
     recording_app: { enabled: true },
@@ -994,7 +970,7 @@ function VideoComparer() {
 }
 
 export default function VideoRepurposerPage({ embedded }) {
-  const { user } = useAuthStore();
+  const { user, refreshUserCredits } = useAuthStore();
   const hasSubscription = hasPremiumAccess(user);
   const [activeTab, setActiveTab] = useState("repurpose");
   const [videoFile, setVideoFile] = useState(null);
@@ -1012,7 +988,10 @@ export default function VideoRepurposerPage({ embedded }) {
   const [outputs, setOutputs] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [queuePosition, setQueuePosition] = useState(0);
-  const [showMetadata, setShowMetadata] = useState(true);
+  const [showMetadata, setShowMetadata] = useState(false);
+  /** When false, server applies smart filter pack (+10 credits). When true, manual filters (no AI credit). */
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [deviceSearch, setDeviceSearch] = useState("");
   const [showGallery, setShowGallery] = useState(false);
   const [customPresets, setCustomPresets] = useState(() => {
     try { return JSON.parse(localStorage.getItem("repurposer_custom_presets") || "[]"); } catch { return []; }
@@ -1065,15 +1044,30 @@ export default function VideoRepurposerPage({ embedded }) {
     draftRestoredRef.current = true;
     const d = draft.data;
     if (d.filters) setFilters(d.filters);
-    if (d.metadata) setMetadata(d.metadata);
+    if (d.metadata) {
+      const m = { ...d.metadata };
+      const dm = { ...initMetaState().device_metadata, ...(m.device_metadata || {}) };
+      if (!dm.deviceMode) dm.deviceMode = dm.uniqueDevicePerCopy ? "random_unique" : "single";
+      if (!Array.isArray(dm.modelKeys)) dm.modelKeys = ["", "", "", "", ""];
+      else dm.modelKeys = [...dm.modelKeys, "", "", "", "", ""].slice(0, 5);
+      m.device_metadata = dm;
+      setMetadata(m);
+    }
     if (typeof d.copies === "number") setCopies(Math.max(1, Math.min(5, d.copies)));
+    if (typeof d.advancedOpen === "boolean") setAdvancedOpen(d.advancedOpen);
     setTimeout(() => { initialLoadDoneRef.current = true; }, 0);
   }, [draft, draftLoading]);
 
   useEffect(() => {
     if (!initialLoadDoneRef.current) return;
-    saveDraft({ filters, metadata, copies });
-  }, [filters, metadata, copies, saveDraft]);
+    saveDraft({ filters, metadata, copies, advancedOpen });
+  }, [filters, metadata, copies, advancedOpen, saveDraft]);
+
+  const filteredDeviceOptions = useMemo(() => {
+    const q = deviceSearch.trim().toLowerCase();
+    if (!q) return REPURPOSE_DEVICE_OPTIONS;
+    return REPURPOSE_DEVICE_OPTIONS.filter((o) => o.searchText.includes(q) || o.label.toLowerCase().includes(q));
+  }, [deviceSearch]);
 
   const MAX_VIDEO_DURATION = 60;
 
@@ -1383,12 +1377,40 @@ export default function VideoRepurposerPage({ embedded }) {
 
     try {
       const isImage = (videoFile.type || "").startsWith("image/");
-      const settings = { copies, filters, metadata };
+      const useAiOptimization = !advancedOpen;
+      const dm = metadata.device_metadata || {};
+      const syncedMeta = {
+        ...metadata,
+        device_metadata: {
+          ...dm,
+          uniqueDevicePerCopy: dm.deviceMode === "random_unique",
+        },
+      };
+      const settings = { copies, filters, metadata: syncedMeta, useAiOptimization };
 
-      const prepRes = await api.post("/video-repurpose/prepare-browser", {
-        settings,
-        isImage,
-      });
+      let sourceInfo = { width: 1920, height: 1080, duration: 10, hasAudio: inputHasAudio };
+      if (!isImage) {
+        sourceInfo = await getVideoSourceInfo(videoFile);
+      } else {
+        sourceInfo = await getImageSourceInfo(videoFile);
+        sourceInfo = { ...sourceInfo, hasAudio: false };
+      }
+
+      let prepRes;
+      try {
+        prepRes = await api.post("/video-repurpose/prepare-browser", {
+          settings,
+          isImage,
+          sourceInfo,
+        });
+      } catch (prepErr) {
+        const st = prepErr.response?.status;
+        const errMsg = prepErr.response?.data?.error || prepErr.message || "Failed to prepare job";
+        if (st === 402) toast.error(errMsg);
+        else toast.error(errMsg);
+        setIsGenerating(false);
+        return;
+      }
       const prep = prepRes.data;
       if (!prep?.ok || !prep.jobId || !Array.isArray(prep.outputs) || prep.outputs.length === 0) {
         toast.error(prep?.error || "Failed to prepare repurpose job");
@@ -1410,13 +1432,13 @@ export default function VideoRepurposerPage({ embedded }) {
         ? prep.metadataInstructions
         : Array.from({ length: prep.outputs.length }, () => fallbackInstruction);
 
-      let sourceInfo = null;
-      if (!isImage) {
-        setStatusMsg("Reading video info...");
-        sourceInfo = await getVideoSourceInfo(videoFile);
-      } else {
-        sourceInfo = await getImageSourceInfo(videoFile);
+      if (prep.creditsCharged) {
+        try {
+          await refreshUserCredits?.();
+        } catch {}
       }
+
+      const effectiveFilters = prep.filters != null ? prep.filters : filters;
 
       const { runRepurposeInBrowser } = await import("../utils/repurposeFfmpegWasm");
       setStatusMsg("Processing in browser...");
@@ -1429,7 +1451,7 @@ export default function VideoRepurposerPage({ embedded }) {
           setProgress((prev) => (percent != null ? percent : prev));
           if (message) setStatusMsg(message);
         },
-        { filters, sourceInfo },
+        { filters: effectiveFilters, sourceInfo },
       );
 
       setStatusMsg("Uploading results...");
@@ -1473,7 +1495,7 @@ export default function VideoRepurposerPage({ embedded }) {
       setStatusMsg("");
       setProgress(0);
     }
-  }, [videoFile, copies, filters, metadata, stopPolling, fetchHistory, clearDraft]);
+  }, [videoFile, copies, filters, metadata, advancedOpen, inputHasAudio, stopPolling, fetchHistory, clearDraft, refreshUserCredits]);
 
   const handleDownload = useCallback(async (url, fileName) => {
     try {
@@ -1819,38 +1841,127 @@ export default function VideoRepurposerPage({ embedded }) {
               />
             </div>
 
-            {/* Watermark */}
+            {/* Location */}
             <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-white" />
-                Watermark (Optional)
+              <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-emerald-400" />
+                Location
               </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => wmInputRef.current?.click()}
-                  className="flex-1 text-xs text-slate-400 py-2 rounded-lg border border-white/10 hover:border-white/30 transition-colors text-center"
-                  data-testid="button-upload-watermark"
+              <p className="text-[10px] text-slate-500 mb-2">Click the map to set GPS metadata for your outputs.</p>
+              <div className="rounded-lg overflow-hidden border border-white/10" style={{ height: 200 }}>
+                <MapContainer
+                  center={[metadata.gps_location.lat ?? 39.8, metadata.gps_location.lng ?? -98.5]}
+                  zoom={metadata.gps_location.lat != null ? 10 : 3}
+                  style={{ height: "100%", width: "100%" }}
+                  attributionControl={false}
                 >
-                  {watermarkFile ? watermarkFile.name : "Select image..."}
-                </button>
-                {watermarkFile && (
-                  <button
-                    onClick={() => { setWatermarkFile(null); if (wmInputRef.current) wmInputRef.current.value = ""; }}
-                    className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/20 transition-colors"
-                    data-testid="button-remove-watermark"
-                  >
-                    <X className="w-3 h-3 text-slate-400" />
-                  </button>
-                )}
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  {metadata.gps_location.lat != null && (
+                    <Marker position={[metadata.gps_location.lat, metadata.gps_location.lng]} />
+                  )}
+                  <MapClickHandler
+                    onPick={(lat, lng) =>
+                      updateMeta("gps_location", { ...metadata.gps_location, enabled: true, mode: "pinpoint", lat, lng })
+                    }
+                  />
+                </MapContainer>
               </div>
-              <input
-                ref={wmInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleWatermarkSelect}
-                className="hidden"
-                data-testid="input-watermark-file"
-              />
+              {metadata.gps_location.lat != null ? (
+                <p className="text-[10px] text-slate-400 text-center mt-2">
+                  {Math.abs(metadata.gps_location.lat).toFixed(4)}°{metadata.gps_location.lat >= 0 ? "N" : "S"},{" "}
+                  {Math.abs(metadata.gps_location.lng).toFixed(4)}°{metadata.gps_location.lng >= 0 ? "E" : "W"}
+                </p>
+              ) : (
+                <p className="text-[10px] text-slate-500 text-center mt-2">Click the map to place a pin</p>
+              )}
+            </div>
+
+            {/* Device */}
+            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-violet-400" />
+                Device fingerprint
+              </h3>
+              <div className="space-y-2 mb-2">
+                {[
+                  { mode: "single", label: "Same device for all copies" },
+                  { mode: "per_copy", label: "Pick device per copy" },
+                  { mode: "random_unique", label: "Random unique device per copy" },
+                ].map(({ mode, label }) => (
+                  <label key={mode} className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300">
+                    <input
+                      type="radio"
+                      name="deviceMode"
+                      checked={(metadata.device_metadata.deviceMode || "single") === mode}
+                      onChange={() =>
+                        updateMeta("device_metadata", {
+                          ...metadata.device_metadata,
+                          deviceMode: mode,
+                          uniqueDevicePerCopy: mode === "random_unique",
+                        })
+                      }
+                      className="accent-white"
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              {(metadata.device_metadata.deviceMode || "single") !== "per_copy" && (metadata.device_metadata.deviceMode || "single") !== "random_unique" && (
+                <>
+                  <input
+                    type="text"
+                    value={deviceSearch}
+                    onChange={(e) => setDeviceSearch(e.target.value)}
+                    placeholder="Search devices…"
+                    className="w-full mb-2 px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-white placeholder:text-slate-600 focus:outline-none focus:border-white/40"
+                    data-testid="input-device-search"
+                  />
+                  <label className="text-[10px] text-slate-500 block mb-1">Device</label>
+                  <select
+                    value={metadata.device_metadata.modelKey || ""}
+                    onChange={(e) =>
+                      updateMeta("device_metadata", {
+                        ...metadata.device_metadata,
+                        modelKey: e.target.value,
+                      })
+                    }
+                    className="w-full text-[11px] bg-white/5 border border-white/10 rounded-md px-2 py-2 text-slate-200 focus:outline-none focus:border-white/40 max-h-40"
+                    data-testid="select-device-model"
+                  >
+                    <option value="" className="bg-gray-900">Auto (random device)</option>
+                    {filteredDeviceOptions.map((o) => (
+                      <option key={o.id} value={o.id} className="bg-gray-900">
+                        {o.label} · {o.category}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+              {(metadata.device_metadata.deviceMode || "single") === "per_copy" && (
+                <div className="space-y-2 mt-1">
+                  {Array.from({ length: copies }, (_, i) => (
+                    <div key={i}>
+                      <label className="text-[10px] text-slate-500 block mb-0.5">Copy {i + 1}</label>
+                      <select
+                        value={metadata.device_metadata.modelKeys?.[i] || ""}
+                        onChange={(e) => {
+                          const next = [...(metadata.device_metadata.modelKeys || ["", "", "", "", ""])];
+                          next[i] = e.target.value;
+                          updateMeta("device_metadata", { ...metadata.device_metadata, modelKeys: next });
+                        }}
+                        className="w-full text-[11px] bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-slate-200"
+                      >
+                        <option value="" className="bg-gray-900">Auto</option>
+                        {REPURPOSE_DEVICE_OPTIONS.map((o) => (
+                          <option key={`${i}-${o.id}`} value={o.id} className="bg-gray-900">
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Generate */}
@@ -1878,9 +1989,17 @@ export default function VideoRepurposerPage({ embedded }) {
                   data-testid="input-copies"
                 />
               </div>
-              <p className="text-xs text-slate-500 mb-3">
-                Each copy gets unique metadata + visual tweaks. Device profile stays consistent unless you select a specific device.
+              <p className="text-xs text-slate-500 mb-2">
+                {!advancedOpen
+                  ? "Smart optimization applies invisible fingerprint tweaks automatically (+10 credits per run). Open Advanced for full manual control at no extra credit cost."
+                  : "Advanced mode: your filter sliders are used as-is (no smart optimization charge)."}
               </p>
+              {!advancedOpen && (
+                <p className="text-[11px] text-amber-200/90 mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <span>Includes +10 credit smart optimization</span>
+                </p>
+              )}
 
               <button
                 onClick={handleGenerate}
@@ -1986,6 +2105,66 @@ export default function VideoRepurposerPage({ embedded }) {
 
           {/* Right Column - Filters + Metadata */}
           <div className="lg:col-span-2 space-y-4">
+            {!advancedOpen && (
+              <div
+                className="rounded-xl p-4 bg-gradient-to-br from-cyan-500/10 to-violet-500/10 border border-white/10"
+                data-testid="simple-mode-banner"
+              >
+                <p className="text-sm text-white font-medium mb-1">Simple mode</p>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Set <strong className="text-slate-300">location</strong> and <strong className="text-slate-300">device</strong> in the left column.
+                  Smart optimization picks invisible filter tweaks for best results (+10 credits when you generate). Open Advanced below to use your own sliders at no extra credit cost.
+                </p>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((v) => !v)}
+              className="w-full flex items-center justify-between rounded-xl px-4 py-3 bg-white/[0.06] border border-white/10 hover:bg-white/[0.09] transition-colors text-left"
+              data-testid="toggle-advanced-repurposer"
+            >
+              <span className="text-sm font-semibold text-white flex items-center gap-2">
+                <Settings className="w-4 h-4 text-cyan-400" />
+                Advanced filters &amp; metadata
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform shrink-0 ${advancedOpen ? "rotate-180" : ""}`} />
+            </button>
+            {advancedOpen && (
+            <>
+            <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-white" />
+                Watermark (Optional)
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => wmInputRef.current?.click()}
+                  className="flex-1 text-xs text-slate-400 py-2 rounded-lg border border-white/10 hover:border-white/30 transition-colors text-center"
+                  data-testid="button-upload-watermark"
+                >
+                  {watermarkFile ? watermarkFile.name : "Select image..."}
+                </button>
+                {watermarkFile && (
+                  <button
+                    type="button"
+                    onClick={() => { setWatermarkFile(null); if (wmInputRef.current) wmInputRef.current.value = ""; }}
+                    className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                    data-testid="button-remove-watermark"
+                  >
+                    <X className="w-3 h-3 text-slate-400" />
+                  </button>
+                )}
+              </div>
+              <input
+                ref={wmInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleWatermarkSelect}
+                className="hidden"
+                data-testid="input-watermark-file"
+              />
+            </div>
             {/* Filter Controls Header */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -2211,71 +2390,28 @@ export default function VideoRepurposerPage({ embedded }) {
 
               {showMetadata && (
                 <div className="mt-4 space-y-3">
-                  {/* Device Metadata */}
+                  <p className="text-[11px] text-slate-500 px-1">
+                    Device and GPS are configured in the left column. Here you can toggle extra metadata fields.
+                  </p>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                     <div className="flex items-center gap-2">
                       <Smartphone className={`w-3.5 h-3.5 ${metadata.device_metadata.enabled ? "text-white" : "text-slate-500"}`} />
-                      <span className="text-xs text-slate-300">Device Profile</span>
+                      <span className="text-xs text-slate-300">Device metadata</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] px-2 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300">
-                        iPhone only
-                      </span>
-                      <button
-                        onClick={() => updateMeta("device_metadata", { ...metadata.device_metadata, enabled: !metadata.device_metadata.enabled })}
-                        className={`w-8 h-[18px] p-0 rounded-full transition-all duration-200 flex items-center ${
-                          metadata.device_metadata.enabled ? "bg-white/90" : "bg-white/15"
-                        }`}
-                        data-testid="toggle-device-metadata"
-                      >
-                        <div className={`w-3.5 h-3.5 rounded-full shadow-sm transition-transform duration-200 ${
-                          metadata.device_metadata.enabled ? "bg-black" : "bg-white"
-                        } ${
-                          metadata.device_metadata.enabled ? "translate-x-[16px]" : "translate-x-0.5"
-                        }`} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                    <label className="text-[10px] text-slate-500 block mb-1">iPhone model</label>
-                    <select
-                      value={metadata.device_metadata.modelKey || ""}
-                      onChange={(e) => updateMeta("device_metadata", {
-                        ...metadata.device_metadata,
-                        modelKey: e.target.value,
-                      })}
-                      className="w-full text-[10px] bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-slate-300 focus:outline-none focus:border-white/40"
-                      data-testid="select-iphone-model"
+                    <button
+                      type="button"
+                      onClick={() => updateMeta("device_metadata", { ...metadata.device_metadata, enabled: !metadata.device_metadata.enabled })}
+                      className={`w-8 h-[18px] p-0 rounded-full transition-all duration-200 flex items-center ${
+                        metadata.device_metadata.enabled ? "bg-white/90" : "bg-white/15"
+                      }`}
+                      data-testid="toggle-device-metadata"
                     >
-                      <option value="" className="bg-gray-900">Any iPhone model</option>
-                      {IPHONE_MODEL_OPTIONS.map((model) => (
-                        <option key={model.value} value={model.value} className="bg-gray-900">
-                          {model.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400">Unique device per copy</span>
-                      <button
-                        onClick={() => updateMeta("device_metadata", {
-                          ...metadata.device_metadata,
-                          uniqueDevicePerCopy: !metadata.device_metadata.uniqueDevicePerCopy,
-                        })}
-                        className={`w-8 h-[18px] p-0 rounded-full transition-all duration-200 flex items-center ${
-                          metadata.device_metadata.uniqueDevicePerCopy ? "bg-white/90" : "bg-white/15"
-                        }`}
-                        data-testid="toggle-unique-device-per-copy"
-                      >
-                        <div className={`w-3.5 h-3.5 rounded-full shadow-sm transition-transform duration-200 ${
-                          metadata.device_metadata.uniqueDevicePerCopy ? "bg-black" : "bg-white"
-                        } ${
-                          metadata.device_metadata.uniqueDevicePerCopy ? "translate-x-[16px]" : "translate-x-0.5"
-                        }`} />
-                      </button>
-                    </div>
-                    <p className="mt-1 text-[10px] text-slate-500">
-                      When enabled, each copy uses a different iPhone profile.
-                    </p>
+                      <div className={`w-3.5 h-3.5 rounded-full shadow-sm transition-transform duration-200 ${
+                        metadata.device_metadata.enabled ? "bg-black" : "bg-white"
+                      } ${
+                        metadata.device_metadata.enabled ? "translate-x-[16px]" : "translate-x-0.5"
+                      }`} />
+                    </button>
                   </div>
 
                   {/* Timestamps */}
@@ -2315,60 +2451,6 @@ export default function VideoRepurposerPage({ embedded }) {
                     )}
                   </div>
 
-                  {/* GPS Location */}
-                  <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MapPin className={`w-3.5 h-3.5 ${metadata.gps_location.enabled ? "text-white" : "text-slate-500"}`} />
-                        <span className="text-xs text-slate-300">GPS Location</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => updateMeta("gps_location", { ...metadata.gps_location, enabled: !metadata.gps_location.enabled })}
-                          className={`w-8 h-[18px] p-0 rounded-full transition-all duration-200 flex items-center ${
-                            metadata.gps_location.enabled ? "bg-white/90" : "bg-white/15"
-                          }`}
-                          data-testid="toggle-gps"
-                        >
-                          <div className={`w-3.5 h-3.5 rounded-full shadow-sm transition-transform duration-200 ${
-                            metadata.gps_location.enabled ? "bg-black" : "bg-white"
-                          } ${
-                            metadata.gps_location.enabled ? "translate-x-[16px]" : "translate-x-0.5"
-                          }`} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <div className="rounded-lg overflow-hidden border border-white/10" style={{ height: 200 }}>
-                        <MapContainer
-                          center={[metadata.gps_location.lat ?? 39.8, metadata.gps_location.lng ?? -98.5]}
-                          zoom={metadata.gps_location.lat != null ? 10 : 3}
-                          style={{ height: "100%", width: "100%" }}
-                          attributionControl={false}
-                        >
-                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                          {metadata.gps_location.lat != null && (
-                            <Marker position={[metadata.gps_location.lat, metadata.gps_location.lng]} />
-                          )}
-                          <MapClickHandler
-                            onPick={(lat, lng) =>
-                              updateMeta("gps_location", { ...metadata.gps_location, mode: "pinpoint", lat, lng })
-                            }
-                          />
-                        </MapContainer>
-                      </div>
-                      {metadata.gps_location.lat != null ? (
-                        <p className="text-[10px] text-slate-400 text-center">
-                          {Math.abs(metadata.gps_location.lat).toFixed(4)}°{metadata.gps_location.lat >= 0 ? "N" : "S"},{" "}
-                          {Math.abs(metadata.gps_location.lng).toFixed(4)}°{metadata.gps_location.lng >= 0 ? "E" : "W"}
-                        </p>
-                      ) : (
-                        <p className="text-[10px] text-slate-500 text-center">Click the map to place a pin</p>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Recording App + Audio Device + Color Profile toggles */}
                   {[
                     { key: "recording_app", label: "Recording App", icon: Film },
@@ -2398,6 +2480,8 @@ export default function VideoRepurposerPage({ embedded }) {
                 </div>
               )}
             </div>
+            </>
+            )}
           </div>
         </div>}
 
