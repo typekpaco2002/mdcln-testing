@@ -44,6 +44,10 @@ function formatPerCredit(value) {
   return value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '');
 }
 
+/** Must match server `src/constants/creditPurchaseLimits.js` */
+const MIN_ONE_TIME_CREDITS = 2000;
+const MAX_ONE_TIME_CREDITS = 100_000;
+
 const PricingCard = memo(function PricingCard({ tier, billingCycle, onPurchase, isLoading }) {
   const displayPrice = billingCycle === 'annual' ? tier.annualPrice : tier.price;
   
@@ -292,16 +296,25 @@ export default function AddCreditsModal({ isOpen, onClose, sidebarCollapsed = fa
                     <Coins className="w-6 h-6 text-yellow-400" />
                     <input
                       type="number"
-                      min="2000"
-                      max="10000"
+                      min={MIN_ONE_TIME_CREDITS}
+                      max={MAX_ONE_TIME_CREDITS}
                       step="50"
                       value={creditAmount}
                       onChange={(e) => {
                         const val = parseInt(e.target.value);
-                        if (!isNaN(val)) setCreditAmount(Math.min(10000, Math.max(2000, val)));
+                        if (!isNaN(val)) {
+                          setCreditAmount(
+                            Math.min(MAX_ONE_TIME_CREDITS, Math.max(MIN_ONE_TIME_CREDITS, val))
+                          );
+                        }
                       }}
                       onBlur={() => {
-                        setCreditAmount(prev => Math.min(10000, Math.max(2000, Math.round(prev / 50) * 50)));
+                        setCreditAmount((prev) =>
+                          Math.min(
+                            MAX_ONE_TIME_CREDITS,
+                            Math.max(MIN_ONE_TIME_CREDITS, Math.round(prev / 50) * 50)
+                          )
+                        );
                       }}
                       className="text-4xl font-bold text-white bg-transparent border-b-2 border-white/20 focus:border-white/60 outline-none text-center w-36 appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                       data-testid="input-credits"
@@ -311,8 +324,8 @@ export default function AddCreditsModal({ isOpen, onClose, sidebarCollapsed = fa
                   <div className="mb-4 px-1">
                     <input
                       type="range"
-                      min="2000"
-                      max="10000"
+                      min={MIN_ONE_TIME_CREDITS}
+                      max={MAX_ONE_TIME_CREDITS}
                       step="50"
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(parseInt(e.target.value))}
@@ -327,8 +340,8 @@ export default function AddCreditsModal({ isOpen, onClose, sidebarCollapsed = fa
                       data-testid="slider-credits"
                     />
                     <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-                      <span>2000</span>
-                      <span>10000</span>
+                      <span>{MIN_ONE_TIME_CREDITS.toLocaleString()}</span>
+                      <span>{MAX_ONE_TIME_CREDITS.toLocaleString()}</span>
                     </div>
                   </div>
 

@@ -1,6 +1,11 @@
 import express from 'express';
 import prisma from "../lib/prisma.js";
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import {
+  MIN_PURCHASABLE_CREDITS,
+  MAX_PURCHASABLE_CREDITS,
+} from '../constants/creditPurchaseLimits.js';
+
 const router = express.Router();
 
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
@@ -44,8 +49,14 @@ router.post('/create-payment', authMiddleware, async (req, res) => {
       creditAmount = SPECIAL_OFFER.credits;
       orderDescription = 'ModelClone Special Offer - AI Model + 250 Credits';
     } else {
-      if (!credits || credits < 2000 || credits > 10000) {
-        return res.status(400).json({ error: 'Credit amount must be between 2000 and 10000' });
+      if (
+        !credits ||
+        credits < MIN_PURCHASABLE_CREDITS ||
+        credits > MAX_PURCHASABLE_CREDITS
+      ) {
+        return res.status(400).json({
+          error: `Credit amount must be between ${MIN_PURCHASABLE_CREDITS} and ${MAX_PURCHASABLE_CREDITS}`,
+        });
       }
       priceUsd = Math.round(credits * PRICE_PER_CREDIT * 100) / 100;
       creditAmount = credits;

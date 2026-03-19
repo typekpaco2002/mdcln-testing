@@ -5,6 +5,10 @@ import { authMiddleware } from '../middleware/auth.middleware.js';
 import { generateTwoPosesFromReference } from '../services/wavespeed.service.js';
 import { recordReferralCommissionFromPayment, validateReferralCodeForCheckout, linkReferrerOnFirstPurchase } from "../services/referral.service.js";
 import { sendSpecialOfferConfirmationEmail } from "../services/email.service.js";
+import {
+  MIN_PURCHASABLE_CREDITS,
+  MAX_PURCHASABLE_CREDITS,
+} from "../constants/creditPurchaseLimits.js";
 
 // DEPRECATED - keeping for reference but not used
 async function generatePosesAsyncDEPRECATED(modelId, referenceUrl, aiConfig) {
@@ -485,8 +489,14 @@ router.post('/create-onetime-checkout', authMiddleware, async (req, res) => {
     const safeReferralId = sanitizeReferralId(referralId);
     const userId = req.user.userId;
     
-    if (!creditAmount || creditAmount < 2000 || creditAmount > 10000) {
-      return res.status(400).json({ error: 'Credit amount must be between 2000 and 10000' });
+    if (
+      !creditAmount ||
+      creditAmount < MIN_PURCHASABLE_CREDITS ||
+      creditAmount > MAX_PURCHASABLE_CREDITS
+    ) {
+      return res.status(400).json({
+        error: `Credit amount must be between ${MIN_PURCHASABLE_CREDITS} and ${MAX_PURCHASABLE_CREDITS}`,
+      });
     }
     
     const user = await prisma.user.findUnique({
@@ -590,8 +600,14 @@ router.post('/create-payment-intent', authMiddleware, async (req, res) => {
     const safeReferralId = sanitizeReferralId(referralId);
     const userId = req.user.userId;
     
-    if (!creditAmount || creditAmount < 2000 || creditAmount > 10000) {
-      return res.status(400).json({ error: 'Credit amount must be between 2000 and 10000' });
+    if (
+      !creditAmount ||
+      creditAmount < MIN_PURCHASABLE_CREDITS ||
+      creditAmount > MAX_PURCHASABLE_CREDITS
+    ) {
+      return res.status(400).json({
+        error: `Credit amount must be between ${MIN_PURCHASABLE_CREDITS} and ${MAX_PURCHASABLE_CREDITS}`,
+      });
     }
     
     const user = await prisma.user.findUnique({
