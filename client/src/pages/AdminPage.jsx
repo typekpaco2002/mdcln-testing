@@ -1418,9 +1418,15 @@ export default function AdminPage() {
             <h1 className="text-lg font-semibold tracking-tight">Admin</h1>
             <p className="text-xs text-gray-500 mt-0.5">Platform management</p>
           </div>
-          <GhostBtn onClick={() => navigate('/dashboard')}>
-            <ArrowLeft className="w-3.5 h-3.5" /> Dashboard
-          </GhostBtn>
+          <div className="flex items-center gap-2">
+            <GhostBtn onClick={() => navigate('/designer-studio')}>
+              <Palette className="w-3.5 h-3.5" />
+              Designer Studio
+            </GhostBtn>
+            <GhostBtn onClick={() => navigate('/dashboard')}>
+              <ArrowLeft className="w-3.5 h-3.5" /> Dashboard
+            </GhostBtn>
+          </div>
         </div>
 
         {/* ── Platform Performance ─────────────────────────────────────────── */}

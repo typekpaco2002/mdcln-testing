@@ -179,6 +179,7 @@ import {
 import stripeRoutes from "./stripe.routes.js";
 import nowpaymentsRoutes from "./nowpayments.routes.js";
 import adminRoutes from "./admin.routes.js";
+import designerStudioRoutes from "./designer-studio.routes.js";
 import referralRoutes from "./referral.routes.js";
 import draftRoutes from "./draft.routes.js";
 import reformatterRoutes from "./reformatter.routes.js";
@@ -1899,6 +1900,11 @@ router.use("/reformatter", reformatterRoutes);
 // ADMIN ROUTES (Backup, Stats, User Management)
 // ============================================
 router.use("/admin", adminRoutes);
+
+// ============================================
+// DESIGNER STUDIO (Admin only — Nano Banana Pro, Kling I2V, Kling Motion)
+// ============================================
+router.use("/designer-studio", authMiddleware, adminMiddleware, designerStudioRoutes);
 
 // ============================================
 // TEST REPLICATE API (Admin only, hidden)

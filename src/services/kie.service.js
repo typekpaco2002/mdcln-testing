@@ -153,6 +153,32 @@ async function kieCreateTask(requestBody, label = "task") {
 }
 
 /**
+ * Fetch current KIE task status once (no polling). For designer-studio / admin polling.
+ * @returns {{ state, outputUrl?, failMsg?, resultJson? }}
+ */
+export async function getKieTaskStatus(taskId) {
+  if (!KIE_API_KEY) throw new Error("KIE_API_KEY not set");
+  const res = await fetch(`${KIE_API_URL}/jobs/recordInfo?taskId=${taskId}`, {
+    headers: { Authorization: `Bearer ${KIE_API_KEY}` },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`KIE status HTTP ${res.status}`);
+  const json = await res.json();
+  const data = json.data ?? json;
+  const state = String(data.state ?? "").toLowerCase();
+  let outputUrl = null;
+  if (state === "success" && data.resultJson) {
+    try {
+      const resultJson = typeof data.resultJson === "string" ? JSON.parse(data.resultJson) : data.resultJson;
+      const urls = resultJson?.resultUrls ?? resultJson?.result_urls ?? resultJson?.output_urls ?? resultJson?.urls;
+      if (Array.isArray(urls) && urls[0]) outputUrl = typeof urls[0] === "string" ? urls[0] : urls[0]?.url ?? urls[0]?.href;
+      if (!outputUrl) outputUrl = resultJson?.url ?? resultJson?.outputUrl ?? resultJson?.output_url ?? resultJson?.video_url ?? resultJson?.result_video_url ?? resultJson?.result_image_url;
+    } catch {}
+  }
+  return { state, outputUrl: outputUrl || data.resultUrl || data.outputUrl, failMsg: data.failMsg || data.failCode, resultJson: data.resultJson };
+}
+
+/**
  * Poll a KIE task until done. Returns the output URL.
  * Throws on hard failure or timeout.
  */
@@ -577,18 +603,20 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
 }
 
 /**
- * Kling 3.0 image-to-video (standard).
+ * Kling image-to-video (2.6 or 3.0).
  * @param {string} imageUrl - starting image
  * @param {string} prompt
- * @param {object} options - { duration, mode, aspectRatio, sound, onTaskSubmitted }
+ * @param {object} options - { duration, useKling3, sound, onTaskCreated, forcePolling }
  */
 async function generateVideoWithKling26KieInternal(imageUrl, prompt, options = {}) {
   const duration = String(options.duration || 5);
-  console.log(`[KIE/kling-i2v] image="${imageUrl.slice(0, 80)}", duration=${duration}s, prompt="${prompt.slice(0, 80)}"`);
+  const useKling3 = options.useKling3 === true;
+  const model = useKling3 ? "kling-3.0/image-to-video" : "kling-2.6/image-to-video";
+  console.log(`[KIE/kling-i2v] model=${model}, image="${imageUrl.slice(0, 80)}", duration=${duration}s`);
 
   const result = await kieRun(
     {
-      model: "kling-2.6/image-to-video",
+      model,
       input: {
         image_urls: [imageUrl],
         prompt,
@@ -596,9 +624,9 @@ async function generateVideoWithKling26KieInternal(imageUrl, prompt, options = {
         sound: options.sound === true,
       },
     },
-    "kling-i2v",
+    useKling3 ? "kling-i2v-3" : "kling-i2v",
     KIE_POLL_TIMEOUT_VIDEO_MS,
-    { onTaskCreated: options.onTaskCreated },
+    { onTaskCreated: options.onTaskCreated, forcePolling: options.forcePolling },
   );
   return result;
 }
