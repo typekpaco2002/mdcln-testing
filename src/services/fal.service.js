@@ -687,8 +687,9 @@ const POSE_LORAS = [
     node: "292",
     keywords: [],
   },
+  /** Matches workflow slot 293 + HF file "Nsfw Anal Doggystyle" (rear anal / doggy anal — NOT titfuck). */
   {
-    id: "titjob",
+    id: "anal_doggystyle",
     node: "293",
     keywords: [],
     strength: 0.50,
@@ -960,12 +961,15 @@ AVAILABLE POSE LORAS (pick EXACTLY ONE or "none"):
 ${poseList}
 
 RULES FOR POSE SELECTION:
+- CRITICAL: If the prompt contains "missionary sex" OR ("missionary" AND ("penis" OR "penetrating" OR "pussy" OR "labia" OR "shaft" OR "intercourse")) you MUST set pose to "missionary" (vaginal missionary), NOT "none".
+- If the prompt describes anal sex in doggy / rear entry (anal + doggy / from behind), use pose "anal_doggystyle" (NOT "titjob" — that id was removed).
 - ONLY select a pose if the scene EXPLICITLY shows that EXACT sex position being performed
 - "bent over" alone is NOT doggystyle - it must explicitly describe doggy style sex
 - "from behind" alone is NOT anal - there must be explicit anal penetration
 - "kneeling" is NOT any pose - it's just a body position (kneeling + blowjob = pose "none", deepthroat enhancement ON)
-- "lying in bed" is NOT missionary - there must be explicit missionary sex
+- "lying in bed" is NOT missionary - there must be explicit missionary sex OR missionary + penetration words
 - If the prompt describes oral sex (blowjob, deepthroat, mouth on penis, penis in mouth), select "none" for pose ALWAYS — even if it says one hand on shaft (normal for POV blowjob). NEVER select "handjob" for those scenes — handjob pose + oral text causes duplicate penis mutations.
+- Mirror selfie / casual girlfriend nude (no partnered sex act): set amateur_nudes to 0.40-0.50 even if pose is "none".
 - If unsure, select "none" - it's better to have no pose LoRA than the wrong one
 
 ENHANCEMENT LORAS (each can be independently activated with a strength from 0.35-0.50):
@@ -1086,7 +1090,8 @@ function getPoseDescription(poseId) {
       "Penetrative doggystyle / from-behind intercourse only: girl on all fours or bent over with visible rear-entry penetration. NOT kneeling blowjob, NOT standing solo, NOT 'kneeling on floor' without rear sex — those are NOT this LoRA.",
     missionary: "Missionary sex position - girl lying on her back with legs spread during vaginal sex",
     cowgirl: "Cowgirl / riding position - girl sitting on top, straddling, riding. Covers cowgirl, reverse cowgirl, girl-on-top positions.",
-    titjob: "Titjob / titfuck / boobjob - penis between breasts, girl pressing boobs together around cock",
+    anal_doggystyle:
+      "Anal sex in doggy / rear-entry position — girl on all fours or bent over with rear anal penetration visible. Matches workflow LoRA slot (not titfuck).",
     handjob:
       "Handjob ONLY — stroking/jerking penis with hand(s) as the main act, no mouth on penis. If the mouth is on the penis (blowjob), this is WRONG — use pose 'none' + deepthroat enhancement instead.",
     missionary_anal: "Anal sex in missionary position - girl on her back during anal penetration",
@@ -1136,10 +1141,100 @@ function applyOralBlowjobLoraPolicy(aiSelection, fullPromptText) {
 }
 
 /**
- * Quality enhancement suffix for prompts
+ * True when the prompt describes partnered explicit sex / POV genitals / penetration.
+ * Appending "solo girl" in that case fights the model and yields wrong poses/layouts.
  */
-const QUALITY_SUFFIX =
-  "one person only, solo girl, anatomically correct, natural body proportions, realistic adult genital scale, average penis size proportional to body, not oversized, believable POV scale, shot on iPhone 15 Pro main camera, smartphone photo, slight wide-angle lens distortion, natural skin texture with visible pores and imperfections and skin folds, unedited raw photo, auto-exposure, auto white balance, slight noise in shadows, jpeg compression artifacts, phone flash harsh frontal light washing out skin slightly overexposed, slight motion blur on edges, slightly out of focus background, no color grading, no retouching, no extra limbs, no distorted hands, candid amateur nude, unedited raw smartphone photo, grainy low light photo";
+function isPartneredExplicitPrompt(text) {
+  const t = String(text || "").toLowerCase();
+  const explicitPartner = [
+    /\bpenis\b/,
+    /\berect\b.*\b(penis|cock|dick|shaft)\b/,
+    /\bpenetrating\b/,
+    /\b(pussy|vulva|labia)\b.*\b(shaft|penis|cock)\b/,
+    /\b(blowjob|deepthroat|oral sex)\b/,
+    /\bmissionary sex\b/,
+    /\bmissionary position\b.*\b(penis|penetrating|sex)\b/,
+    /\b(doggy style|doggy style sex)\b/,
+    /\b(cowgirl|reverse cowgirl|riding)\b.*\b(penis|sex|straddl)\b/,
+    /\b(prone bone|anal sex)\b/,
+    /\b(two adults|consensual couple)\b/,
+    /\bcreampie\b/,
+    /\bcum on\b/,
+    /\bintercourse\b/,
+    /\bstraddl/,
+  ].some((re) => re.test(t));
+  if (!explicitPartner) return false;
+  const clearlySolo = /\b(only one woman|solo masturbat|fingering herself|no partner|dildo only)\b/i.test(t);
+  return !clearlySolo;
+}
+
+/**
+ * After Grok: force pose / amateur_nudes when keywords are unambiguous (reduces "no LoRA" failures).
+ */
+function applyExplicitPoseHeuristic(aiSelection, fullPromptText) {
+  const t = String(fullPromptText || "").toLowerCase();
+  const enh = { ...(aiSelection.enhancementStrengths || {}) };
+
+  if (isOralBlowjobScenePrompt(fullPromptText)) {
+    return;
+  }
+
+  const setPose = (id) => {
+    const p = POSE_LORAS.find((x) => x.id === id);
+    if (p) {
+      aiSelection.pose = p;
+      console.log(`🎯 Heuristic: pose LoRA "${id}" (keyword match)`);
+    }
+  };
+
+  if (
+    /\bmissionary\b/.test(t) &&
+    /\b(penis|penetrating|pussy|vaginal|labia|shaft|intercourse)\b/.test(t) &&
+    !/\b(anal sex|anal penetration)\b/.test(t)
+  ) {
+    setPose("missionary");
+  } else if (/\b(missionary anal|anal sex in missionary)\b/.test(t)) {
+    setPose("missionary_anal");
+  } else if (/\b(anal sex|anal penetration)\b/.test(t) && /\b(doggy|from behind|rear)\b/.test(t)) {
+    setPose("anal_doggystyle");
+  } else if (
+    /\b(doggy style|from behind)\b/.test(t) &&
+    /\b(penis|penetrating|shaft)\b/.test(t) &&
+    !/\b(anal sex|anal penetration)\b/.test(t)
+  ) {
+    setPose("doggystyle_facing");
+  } else if (/\bcowgirl\b/.test(t) && /\b(straddl|riding|on top)\b/.test(t)) {
+    setPose("cowgirl");
+  }
+
+  if (
+    (/\bmirror selfie\b/.test(t) || (/\bmirror\b/.test(t) && /\biphone\b/.test(t))) &&
+    (!enh.amateur_nudes || Number(enh.amateur_nudes) < 0.35)
+  ) {
+    enh.amateur_nudes = 0.45;
+    aiSelection.enhancementStrengths = enh;
+    console.log("🎯 Heuristic: amateur_nudes 0.45 (mirror selfie)");
+  }
+}
+
+/** Camera / skin / artifact tail shared by solo and partnered prompts (no "solo girl" here). */
+const QUALITY_TECHNICAL_TAIL =
+  "shot on iPhone 15 Pro main camera, smartphone photo, slight wide-angle lens distortion, natural skin texture with visible pores and imperfections and skin folds, unedited raw photo, auto-exposure, auto white balance, slight noise in shadows, jpeg compression artifacts, phone flash harsh frontal light washing out skin slightly overexposed, slight motion blur on edges, slightly out of focus background, no color grading, no retouching, no extra limbs, no distorted hands, candid amateur nude, unedited raw smartphone photo, grainy low light photo";
+
+/** Solo nudes only — NEVER append this when the scene describes partnered sex / visible penis / penetration (conflicts with model). */
+const QUALITY_SUFFIX_SOLO =
+  "one person only, solo girl, anatomically correct, natural body proportions, realistic adult genital scale, average penis size proportional to body, not oversized, believable POV scale, " +
+  QUALITY_TECHNICAL_TAIL;
+
+/**
+ * Explicit partnered / POV sex — no "solo girl" (that caused wrong layouts and ignored penetration).
+ */
+const QUALITY_SUFFIX_PARTNERED =
+  "consensual explicit adult scene, primary female subject in frame, only one woman's face visible, partial male genitals or POV anatomy only as described, anatomically correct, natural body proportions, realistic adult genital scale, average penis size proportional to body, not oversized, believable POV scale, " +
+  QUALITY_TECHNICAL_TAIL;
+
+/** @deprecated use QUALITY_SUFFIX_SOLO — kept for callers that only need solo */
+const QUALITY_SUFFIX = QUALITY_SUFFIX_SOLO;
 
 /** Nudes pack: short tail only — looks come from LoRA + chipSelections for the AI selector, not pasted into CLIP. */
 const NUDES_PACK_TAIL_SOLO =
@@ -1450,7 +1545,7 @@ function buildComfyWorkflowLegacy(params) {
  * - LoRA 1 (node 298): User's girl LoRA (dynamic strength 0.65-0.90)
  * - LoRA 2 (node 290): Doggystyle facing pose
  * - LoRA 3 (node 291): Missionary pose
- * - LoRA 5 (node 293): Titjob pose
+ * - LoRA 5 (node 293): Anal doggy / rear anal (HF: Nsfw Anal Doggystyle)
  * - LoRA 6 (node 294): Handjob pose
  * - LoRA 7 (node 295): Missionary anal pose
  * - LoRA 8 (node 296): Running makeup effect
@@ -1513,18 +1608,29 @@ export async function submitNsfwGeneration(params) {
         ? `${triggerWord}, ${basePrompt}`
         : `${triggerWord}, same person, same face, same identity, ${basePrompt}`;
 
+  const partneredScene = isPartneredExplicitPrompt(identityAnchoredPrompt);
+
   let prompt;
   if (nudesPack) {
     const isCouple = /\b(two adults|consensual couple)\b/i.test(basePrompt);
     const tail = isCouple ? NUDES_PACK_TAIL_COUPLE : NUDES_PACK_TAIL_SOLO;
     prompt = `${identityAnchoredPrompt}, ${tail}`;
+  } else if (partneredScene) {
+    if (
+      identityAnchoredPrompt.includes("primary female subject") &&
+      identityAnchoredPrompt.includes("anatomically correct")
+    ) {
+      prompt = identityAnchoredPrompt;
+    } else {
+      prompt = `${identityAnchoredPrompt}, ${QUALITY_SUFFIX_PARTNERED}`;
+    }
   } else if (
     identityAnchoredPrompt.includes("one person only") &&
     identityAnchoredPrompt.includes("anatomically correct")
   ) {
     prompt = identityAnchoredPrompt;
   } else {
-    prompt = `${identityAnchoredPrompt}, ${QUALITY_SUFFIX}`;
+    prompt = `${identityAnchoredPrompt}, ${QUALITY_SUFFIX_SOLO}`;
   }
 
   // AI decides additive LoRAs from full prompt/context (pose + makeup + effects). Quick flow: girl max 0.65, additive max 0.5.
@@ -1537,6 +1643,7 @@ export async function submitNsfwGeneration(params) {
     quickFlow,
   });
   applyOralBlowjobLoraPolicy(aiSelection, prompt);
+  applyExplicitPoseHeuristic(aiSelection, prompt);
 
   const detectedPose = aiSelection.pose;
   const hasRunningMakeup = aiSelection.runningMakeup;
@@ -1609,6 +1716,18 @@ export async function submitNsfwGeneration(params) {
   console.log(JSON.stringify({ input: { prompt: workflow } }, null, 2));
   console.log("📋 ============================================\n");
 
+  const runpodWebhook = process.env.RUNPOD_WEBHOOK_URL?.trim();
+  const runPayload = {
+    input: {
+      prompt: workflow,
+      output_node_id: "289",
+    },
+  };
+  if (runpodWebhook) {
+    runPayload.webhook = runpodWebhook;
+    console.log(`📣 RunPod webhook: ${runpodWebhook.slice(0, 80)}${runpodWebhook.length > 80 ? "…" : ""}`);
+  }
+
   try {
     const response = await fetch(`${RUNPOD_BASE_URL}/run`, {
       method: "POST",
@@ -1616,12 +1735,7 @@ export async function submitNsfwGeneration(params) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${RUNPOD_API_KEY}`,
       },
-      body: JSON.stringify({
-        input: {
-          prompt: workflow,
-          output_node_id: "289",
-        },
-      }),
+      body: JSON.stringify(runPayload),
     });
 
     if (!response.ok) {

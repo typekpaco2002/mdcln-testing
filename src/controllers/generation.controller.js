@@ -2552,12 +2552,18 @@ export async function cleanupStuckGenerations(req, res) {
   try {
     const IMAGE_TIMEOUT_MINUTES = 15;
     const VIDEO_TIMEOUT_MINUTES = 45;
+    /** RunPod NSFW + nudes packs can run 30–90+ min behind queue; do NOT use the 15m image cutoff. */
+    const NSFW_CLEANUP_TIMEOUT_MINUTES = Math.max(
+      45,
+      Math.min(300, Number(process.env.NSFW_STUCK_CLEANUP_MINUTES) || 120),
+    );
     const nowMs = Date.now();
     const imageCutoffMs = nowMs - IMAGE_TIMEOUT_MINUTES * 60 * 1000;
     const videoCutoffMs = nowMs - VIDEO_TIMEOUT_MINUTES * 60 * 1000;
+    const nsfwCutoffMs = nowMs - NSFW_CLEANUP_TIMEOUT_MINUTES * 60 * 1000;
 
     console.log(
-      `\n🔍 Checking for stuck generations (image>${IMAGE_TIMEOUT_MINUTES}m, video>${VIDEO_TIMEOUT_MINUTES}m)...`,
+      `\n🔍 Checking for stuck generations (image>${IMAGE_TIMEOUT_MINUTES}m, video>${VIDEO_TIMEOUT_MINUTES}m, nsfw>${NSFW_CLEANUP_TIMEOUT_MINUTES}m)...`,
     );
 
     // Find all generations stuck in processing or pending
@@ -2572,8 +2578,11 @@ export async function cleanupStuckGenerations(req, res) {
     const videoLikeTypes = new Set(["video", "prompt-video", "talking-head-video", "complete-recreation-video"]);
     const stuckGenerations = processingGenerations.filter((gen) => {
       const createdMs = new Date(gen.createdAt).getTime();
-      const isVideoLike = videoLikeTypes.has(String(gen.type || ""));
-      return isVideoLike ? createdMs < videoCutoffMs : createdMs < imageCutoffMs;
+      const t = String(gen.type || "");
+      const isVideoLike = videoLikeTypes.has(t);
+      if (isVideoLike) return createdMs < videoCutoffMs;
+      if (t === "nsfw") return createdMs < nsfwCutoffMs;
+      return createdMs < imageCutoffMs;
     });
 
     if (stuckGenerations.length === 0) {
@@ -2607,13 +2616,20 @@ export async function cleanupStuckGenerations(req, res) {
         }
       }
 
+      const gt = String(gen.type || "");
+      const timeoutMinutes = videoLikeTypes.has(gt)
+        ? VIDEO_TIMEOUT_MINUTES
+        : gt === "nsfw"
+          ? NSFW_CLEANUP_TIMEOUT_MINUTES
+          : IMAGE_TIMEOUT_MINUTES;
+
       // Mark as failed
       await prisma.generation.update({
         where: { id: gen.id },
         data: {
           status: "failed",
           errorMessage: getErrorMessageForDb(
-            `Generation timed out (>${videoLikeTypes.has(String(gen.type || "")) ? VIDEO_TIMEOUT_MINUTES : IMAGE_TIMEOUT_MINUTES} minutes for ${gen.type || "unknown"})`
+            `Generation timed out (>${timeoutMinutes} minutes for ${gen.type || "unknown"})`
           ),
           completedAt: new Date(),
         },

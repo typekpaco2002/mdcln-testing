@@ -3547,6 +3547,7 @@ MODEL ATTRIBUTES:
 - Write as coherent descriptive phrases with natural flow, not random comma-separated tags.
 - NEVER mention another person, boyfriend, partner, or photographer in the prompt.
 - The photo must look like a REAL private nude from a smartphone — raw, imperfect, spontaneous.
+- If the scene is explicit partnered sex / POV penetration / oral on a penis, describe anatomy and position clearly; do NOT write "solo girl" or "one person only" in your JSON prompt — the server appends the correct solo vs partnered quality tail automatically. Contradicting solo + sex in the same prompt breaks the image.
 
 OUTPUT: Return ONLY a JSON array with one prompt: ["prompt text here"]. No markdown fences, no explanation.
 If the user request combined with locked attributes implies an unresolvable logical contradiction (cannot be one coherent photo even after dropping minor elements), return exactly: ["[Error: Irresolvable logical conflict in request — please clarify]"].`;
@@ -4775,6 +4776,11 @@ export default {
 let nsfwPollerInterval = null;
 let nsfwPollerRunning = false;
 
+const NSFW_RECOVERY_POLL_CONCURRENCY = Math.max(
+  1,
+  Math.min(20, Number(process.env.NSFW_RECOVERY_POLL_CONCURRENCY) || 8),
+);
+
 async function pollProcessingNsfwGenerations() {
   if (nsfwPollerRunning) return;
   nsfwPollerRunning = true;
@@ -4794,10 +4800,13 @@ async function pollProcessingNsfwGenerations() {
       return;
     }
 
-    console.log(`\n🔄 [NSFW Poller] Checking ${processingGens.length} processing generation(s)`);
+    console.log(
+      `\n🔄 [NSFW Poller] Checking ${processingGens.length} processing generation(s) (concurrency=${NSFW_RECOVERY_POLL_CONCURRENCY})`,
+    );
 
-    for (const gen of processingGens) {
-      await pollSingleNsfwGeneration(gen);
+    for (let i = 0; i < processingGens.length; i += NSFW_RECOVERY_POLL_CONCURRENCY) {
+      const chunk = processingGens.slice(i, i + NSFW_RECOVERY_POLL_CONCURRENCY);
+      await Promise.all(chunk.map((gen) => pollSingleNsfwGeneration(gen)));
     }
   } catch (error) {
     console.error('❌ [NSFW Poller] Error:', error.message);
@@ -4904,7 +4913,9 @@ async function pollSingleNsfwGeneration(gen) {
 
 function startNsfwPoller() {
   if (nsfwPollerInterval) return;
-  console.log('🚀 Starting continuous NSFW generation poller (every 30s, one at a time)...');
+  console.log(
+    `🚀 Starting continuous NSFW generation poller (every 30s, up to ${NSFW_RECOVERY_POLL_CONCURRENCY} jobs in parallel)...`,
+  );
   pollProcessingNsfwGenerations();
   nsfwPollerInterval = setInterval(pollProcessingNsfwGenerations, 30000);
 }
