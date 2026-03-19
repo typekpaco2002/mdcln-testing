@@ -302,7 +302,7 @@ CRITICAL RULES:
 12. NEVER mention boyfriend, partner, or any second person — this causes phantom person artifacts.`;
 
 export const QUALITY_SUFFIX =
-  "one person only, solo girl, anatomically correct, natural body proportions, shot on iPhone 15 Pro main camera, smartphone photo, slight wide-angle lens distortion, natural skin texture with visible pores and imperfections and skin folds, unedited raw photo, auto-exposure, auto white balance, slight noise in shadows, jpeg compression artifacts, phone flash harsh frontal light washing out skin slightly overexposed, slight motion blur on edges, slightly out of focus background, no color grading, no retouching, no extra limbs, no distorted hands, candid amateur nude, unedited raw smartphone photo, grainy low light photo";
+  "one person only, solo girl, anatomically correct, natural body proportions, realistic adult genital scale, average penis size proportional to body, not oversized, believable POV scale, shot on iPhone 15 Pro main camera, smartphone photo, slight wide-angle lens distortion, natural skin texture with visible pores and imperfections and skin folds, unedited raw photo, auto-exposure, auto white balance, slight noise in shadows, jpeg compression artifacts, phone flash harsh frontal light washing out skin slightly overexposed, slight motion blur on edges, slightly out of focus background, no color grading, no retouching, no extra limbs, no distorted hands, candid amateur nude, unedited raw smartphone photo, grainy low light photo";
 
 export const selectorCategories = categories;
 
@@ -320,7 +320,7 @@ export const SCENE_PRESETS = [
   {
     id: "doggy",
     label: "Doggy Style",
-    description: "doggy style on all fours on bed, arched back, looking over shoulder at camera, erect penis entering from behind, visible anus and pussy, one hand gripping sheets, slightly damp skin, messy hair, white sheets",
+    description: "doggy style on all fours on bed, arched back, looking over shoulder at camera, average-sized erect penis entering from behind with visible penetration, visible anus and pussy, one hand gripping sheets, slightly damp skin, messy hair, white sheets",
   },
   {
     id: "bent_over",
@@ -335,7 +335,7 @@ export const SCENE_PRESETS = [
   {
     id: "blowjob_pov",
     label: "Blowjob POV",
-    description: "POV blowjob, girl on knees looking up at camera, mouth around erect penis, hands gripping shaft, messy hair falling forward, bedroom floor, slightly damp skin, eye contact with camera",
+    description: "POV blowjob, girl on knees looking up at camera, mouth around average-sized erect penis, one hand on shaft other hand on thigh, messy hair falling forward, bedroom floor, eye contact with camera",
   },
   {
     id: "face_down",
@@ -355,7 +355,7 @@ export const SCENE_PRESETS = [
   {
     id: "missionary",
     label: "Missionary",
-    description: "missionary position, lying on back, legs spread wide, penis penetrating pussy visible between thighs, one hand squeezing breast, biting lip, messy hair on pillow, flushed cheeks, POV from above",
+    description: "missionary on bed, lying on back legs spread, average-sized penis penetrating pussy with visible contact at entrance, labia around shaft, one hand squeezing breast, biting lip, messy hair on pillow, flushed cheeks, POV from above",
   },
   {
     id: "selfie_bed",
@@ -365,22 +365,22 @@ export const SCENE_PRESETS = [
   {
     id: "deepthroat",
     label: "Deepthroat POV",
-    description: "kneeling deepthroat, erect penis deep in mouth, gagging drool dripping down chin, watery eyes looking up, hand on shaft, flushed cheeks, POV from above",
+    description: "kneeling deepthroat, average-sized erect penis deep in mouth, gagging drool dripping down chin, watery eyes looking up, one hand on base of shaft other on thigh, flushed cheeks, POV from above",
   },
   {
     id: "reverse_cowgirl",
     label: "Reverse Cowgirl",
-    description: "reverse cowgirl, ass facing camera, penis visible entering from below, one hand squeezing breast, looking back over shoulder, slightly damp skin, messy bedroom",
+    description: "reverse cowgirl, ass facing camera, average-sized penis visible entering from below with clear connection, one hand squeezing breast, looking back over shoulder, slightly damp skin, messy bedroom",
   },
   {
     id: "prone_bone",
     label: "Prone Bone",
-    description: "prone bone face down on bed, penis entering from behind, visible anus, arched back, one hand gripping sheets, slightly damp skin, messy hair",
+    description: "prone bone face down on bed, average-sized penis entering from behind with visible penetration, visible anus, arched back, one hand gripping sheets, slightly damp skin, messy hair",
   },
   {
     id: "titfuck",
     label: "Titfuck POV",
-    description: "pushing breasts together around erect penis, looking up at camera, playful expression, slightly damp skin, POV from above",
+    description: "pushing breasts together around average-sized erect penis, looking up at camera, playful expression, slightly damp skin, POV from above",
   },
 ];
 

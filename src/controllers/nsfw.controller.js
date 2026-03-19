@@ -2978,6 +2978,7 @@ Unless the user EXPLICITLY requests daytime or natural window light, treat harsh
 - NEVER mention "boyfriend", "someone else", "another person", "partner" — this causes phantom person artifacts.
 - For close-ups: specify what body parts are IN FRAME and what is NOT visible.
 - Include "anatomically correct, natural body proportions" for full/mid body shots.
+- For POV oral or penetrative sex: anchor realistic scale ("average-sized penis", "proportional to her hand") and default to exactly ONE hand on shaft for blowjobs; vary left vs right between generations. Two hands on shaft only if the user explicitly asked for huge/large.
 - For face focus: add "detailed face, natural facial features, symmetrical eyes".
 
 === PROMPT STYLE (CRITICAL — this determines quality) ===
@@ -3026,6 +3027,7 @@ Your prompt only needs to add:
 
 === POV SEX & BLOWJOB RULES (CRITICAL — explicit content with anatomical accuracy) ===
 Sex position photos should show REALISTIC amateur sex content. Include appropriate male anatomy (penis, erection) when the pose implies penetration or oral sex — this is critical for realism. However, NEVER show a full second person/body — only the relevant body part (penis) entering the frame. The girl is always the focus.
+- GENITAL SCALE (CRITICAL): Penis must look like a normal adult size in POV — proportional to her hands and face, not filling the entire frame. Prefer phrases like "average-sized erect penis", "realistic scale penis", "penis proportional to her hand". NEVER imply porn-star exaggeration unless the user explicitly asks for huge/large.
 - POV or penetration shots: describe anatomy and position ONLY from what the camera sees — e.g. "close-up view between spread thighs, vulva glistening, phone flash illuminating inner labia and wetness" — NEVER imply a holder, partner, boyfriend, or second person. No "his hands", no "he"; only her body + the single visible male part if needed.
 - Reinforce: NEVER "boyfriend", "partner", "someone else" — that spawns phantom people.
 
@@ -3033,15 +3035,16 @@ BLOWJOB / DEEPTHROAT POV:
 - Frame: Close-up or mid-shot from above, looking down at girl
 - Camera angle: "POV first person angle looking down"
 - Girl is kneeling, face looking UP at camera
-- Mouth: "mouth wrapped around erect penis, looking up at camera with [expression]"
-- Hands: "one hand gripping shaft, other hand on thigh" or "both hands wrapped around penis"
-- Include: "saliva on lips, drool on chin, wet messy mouth" for realism
-- Include: "erect penis in her mouth" or "penis visible entering her mouth from above"
-- Key phrase: "kneeling giving blowjob, mouth on penis, looking up at camera, POV from above"
+- Mouth: "mouth wrapped around tip and upper shaft, looking up at camera with [expression]" — describe contact so it reads as oral sex happening, not hovering
+- HANDS (CRITICAL — DEFAULT ONE HAND): Use EXACTLY ONE hand on the penis unless the user explicitly asked for "huge cock", "massive", "two hands", or similar. Each generation, pick EITHER left OR right hand for the shaft grip (vary across outputs). The other hand must NOT grip the shaft — place it on her own thigh, knee, floor for balance, or tucked hair — never stacked both hands on shaft by default.
+- Do NOT use "both hands gripping shaft" or "two hands wrapped around shaft" unless the user explicitly wanted oversized anatomy.
+- Include: subtle "saliva at lips, slight wetness on chin" when appropriate — avoid extreme drool unless deepthroat/gagging is requested
+- Include: "erect penis in her mouth" or "penis entering mouth from above" with realistic scale
+- Key phrase: "kneeling blowjob, mouth on penis, one hand on shaft, looking up at camera, POV from above"
 
 HANDJOB POV:
 - Frame: Mid-shot from partner's perspective looking down
-- Girl's hand(s) gripping erect penis, "hand wrapped around erect shaft"
+- Girl's hand(s) gripping average-scale erect penis — "hand wrapped around shaft" (one or two hands OK here since the act is handjob, not oral)
 - Expression: eye contact, playful or focused
 - Show penis in her hand(s) for realism
 
@@ -3052,7 +3055,7 @@ TITFUCK POV:
 - POV from above angle
 
 MISSIONARY / SEX POSITIONS:
-- Missionary: girl lying on back, legs spread, penis penetrating her pussy visible between legs, one hand squeezing her own breast, looking up at camera from above, natural pleasure expression (NOT extreme moaning or ahegao), "lying on bed legs spread, penis inside her, one hand on her breast, subtle pleasure expression, POV from above"
+- Missionary (must read as ACTUAL intercourse): girl lying on back, legs spread or wrapped; describe CLEAR CONTACT — labia parted around shaft, visible insertion depth, bodies aligned, not a disconnected floating penis. Use average-scale penis language. One hand squeezing her own breast or gripping sheet, looking up at camera, natural pleasure expression (NOT extreme moaning or ahegao). Example shape: "missionary on bed, legs spread, average-sized penis penetrating pussy, connection visible at entrance, one hand on breast, biting lip, POV from above"
 - Doggy: CRITICAL — shot from MAN'S POV behind her. Girl on all fours, penis entering from behind visible, visible anus and pussy, looking back over shoulder at camera BEHIND her, "doggy style on all fours, penis entering from behind, arched back, visible anus and pussy, looking back over shoulder at camera behind her, POV from behind"
 - For ALL sex positions: show anatomically correct genitals and penetration. Only the penis is visible — no male torso/legs/face.
 - For ALL sex positions: girl must be ACTIVELY engaged — holding/squeezing her own breasts, gripping sheets, or touching herself. NEVER just lying still.
@@ -3081,22 +3084,23 @@ PATTERN A — Mirror selfie:
 PATTERN B — Bed nude (overhead, NO phone visible):
 "[trigger], lying on bed [nude/outfit], overhead angle looking down at body, [expression], hair spread on pillow, messy [color] sheets, dim room phone flash"
 
-PATTERN C — Blowjob POV (PROVEN BEST — pic 3 & 8 were "insanely good real as fuck"):
-"[trigger], POV blowjob, girl on knees looking up at camera, mouth around erect penis, hands gripping shaft, messy hair falling forward, bedroom floor, slightly damp skin, eye contact with camera"
-BLOWJOB VARIATIONS (randomize for variety):
-- Tip sucking: "lips wrapped around penis tip, tongue licking the head, looking up at camera"
-- Two-handed: "both hands wrapped around shaft, mouth on tip, eager expression"
-- Deepthroat: "penis deep in mouth, watery eyes looking up, hand on base of shaft, drool on chin"
-- Side licking: "tongue out licking along shaft from side, playful expression"
+PATTERN C — Blowjob POV (default ONE hand on shaft; vary left vs right between generations):
+"[trigger], POV blowjob, girl on knees looking up at camera, mouth around average-sized erect penis, right hand gripping lower shaft, left hand braced on her thigh, messy hair falling forward, bedroom floor, eye contact with camera"
+BLOWJOB VARIATIONS (randomize; prefer single-hand unless user asked for huge):
+- Tip sucking: "lips around glans, tongue on frenulum, one hand loosely at base, other hand on knee, looking up"
+- Alternate hand: swap to "left hand on shaft, right hand on floor for balance"
+- Two-handed (ONLY if user asked for large/huge): "both hands stacked on shaft, mouth on tip"
+- Deepthroat: "penis deep in mouth, watery eyes, ONE hand at base of shaft, other hand on thigh, slight drool"
+- Side licking: "tongue along side of shaft, one hand guiding lightly, playful expression"
 
 PATTERN D — Doggy style (PROVEN BEST — pic 10 was "very good, very real"):
-"[trigger], doggy style on all fours on bed, arched back, looking over shoulder at camera, erect penis entering from behind, visible anus and pussy, slightly damp skin, messy hair, white sheets"
+"[trigger], doggy style on all fours on bed, arched back, looking over shoulder at camera, average-sized erect penis entering from behind with visible penetration, visible anus and pussy, slightly damp skin, messy hair, white sheets"
 
 PATTERN E — Bent over (PROVEN BEST — pic 13 was "veeery real"):
 "[trigger], bent over showing ass, hands pulling panties down, looking back over shoulder at camera, visible pussy from behind, standing in bedroom, playful smirk"
 
-PATTERN F — Missionary POV:
-"[trigger], missionary position, lying on back, legs spread wide, penis penetrating pussy visible between thighs, one hand squeezing breast, biting lip, messy hair on pillow, flushed cheeks, POV from above"
+PATTERN F — Missionary POV (penetration must look connected and proportional):
+"[trigger], missionary on bed, lying on back legs spread, average-sized penis penetrating pussy with visible contact at entrance, labia stretched around shaft, one hand squeezing breast, biting lip, messy hair on pillow, flushed cheeks, POV from above"
 
 KEY INSIGHT: Strong Turbo prompts are 50–100 words, sentence-driven, spatially clear, flash-forward indoors, with mundane clutter. No flowery portrait clichés — the LoRA handles the face. Do NOT repeat QUALITY_SUFFIX content.
 

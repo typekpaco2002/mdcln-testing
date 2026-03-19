@@ -954,7 +954,7 @@ RULES FOR POSE SELECTION:
 - "from behind" alone is NOT anal - there must be explicit anal penetration
 - "kneeling" is NOT any pose - it's just a body position (kneeling + blowjob = pose "none", deepthroat enhancement ON)
 - "lying in bed" is NOT missionary - there must be explicit missionary sex
-- If the prompt describes oral sex (blowjob, deepthroat, mouth on penis, penis in mouth), select "none" for pose ALWAYS — even if it also says "hands gripping shaft" (normal for POV blowjob). NEVER select "handjob" for those scenes — handjob pose + oral text causes duplicate penis mutations.
+- If the prompt describes oral sex (blowjob, deepthroat, mouth on penis, penis in mouth), select "none" for pose ALWAYS — even if it says one hand on shaft (normal for POV blowjob). NEVER select "handjob" for those scenes — handjob pose + oral text causes duplicate penis mutations.
 - If unsure, select "none" - it's better to have no pose LoRA than the wrong one
 
 ENHANCEMENT LORAS (each can be independently activated with a strength from 0.35-0.50):
@@ -1080,7 +1080,7 @@ function getPoseDescription(poseId) {
 }
 
 /**
- * Blowjob/oral prompts often mention "hands gripping shaft" — the AI wrongly picks handjob pose LoRA,
+ * Blowjob/oral prompts often mention a hand on shaft — the AI wrongly picks handjob pose LoRA,
  * which stacks a second phallus/handjob prior with oral. Oral scenes must use pose none + deepthroat LoRA only.
  */
 function isOralBlowjobScenePrompt(promptText) {
@@ -1124,7 +1124,7 @@ function applyOralBlowjobLoraPolicy(aiSelection, fullPromptText) {
  * Quality enhancement suffix for prompts
  */
 const QUALITY_SUFFIX =
-  "one person only, solo girl, anatomically correct, natural body proportions, shot on iPhone 15 Pro main camera, smartphone photo, slight wide-angle lens distortion, natural skin texture with visible pores and imperfections and skin folds, unedited raw photo, auto-exposure, auto white balance, slight noise in shadows, jpeg compression artifacts, phone flash harsh frontal light washing out skin slightly overexposed, slight motion blur on edges, slightly out of focus background, no color grading, no retouching, no extra limbs, no distorted hands, candid amateur nude, unedited raw smartphone photo, grainy low light photo";
+  "one person only, solo girl, anatomically correct, natural body proportions, realistic adult genital scale, average penis size proportional to body, not oversized, believable POV scale, shot on iPhone 15 Pro main camera, smartphone photo, slight wide-angle lens distortion, natural skin texture with visible pores and imperfections and skin folds, unedited raw photo, auto-exposure, auto white balance, slight noise in shadows, jpeg compression artifacts, phone flash harsh frontal light washing out skin slightly overexposed, slight motion blur on edges, slightly out of focus background, no color grading, no retouching, no extra limbs, no distorted hands, candid amateur nude, unedited raw smartphone photo, grainy low light photo";
 
 // Additive LoRAs (pose, makeup, effects) must never overpower identity LoRA.
 const MAX_ADDITIVE_LORA_STRENGTH = 0.5;
@@ -1250,7 +1250,8 @@ function buildComfyWorkflow(params) {
     scheduler = "beta",
   } = params;
 
-  const negativePrompt = "blurry, low resolution, deformed, bad anatomy, extra limbs, mutated hands, poorly drawn face, bad proportions, watermark, text, signature, cartoon, anime, overexposed, underexposed, plastic skin, doll-like";
+  const negativePrompt =
+    "blurry, low resolution, deformed, bad anatomy, extra limbs, mutated hands, poorly drawn face, bad proportions, gigantic penis, huge penis, oversized penis, unrealistically large penis, hyperbolic genitals, watermark, text, signature, cartoon, anime, overexposed, underexposed, plastic skin, doll-like";
 
   const template = loadNsfwCoreWorkflowApi();
   if (template) {
@@ -1329,7 +1330,8 @@ function buildComfyWorkflowLegacy(params) {
     steps = 50,
     cfg = 3,
   } = params;
-  const negativePrompt = "blurry, low resolution, deformed, bad anatomy, extra limbs, mutated hands, poorly drawn face, bad proportions, watermark, text, signature, cartoon, anime, overexposed, underexposed, plastic skin, doll-like";
+  const negativePrompt =
+    "blurry, low resolution, deformed, bad anatomy, extra limbs, mutated hands, poorly drawn face, bad proportions, gigantic penis, huge penis, oversized penis, unrealistically large penis, hyperbolic genitals, watermark, text, signature, cartoon, anime, overexposed, underexposed, plastic skin, doll-like";
   const loraEntries = buildNsfwLoraStackEntries({
     loraUrl,
     girlLoraStrength,
