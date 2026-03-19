@@ -2367,10 +2367,36 @@ export async function getLoraTrainingStatus(req, res) {
   }
 }
 
+/**
+ * Admin-only: optional base KSampler (Comfy node 276) steps/cfg for NSFW RunPod gen.
+ * Non-admins cannot use this — body fields are ignored unless role === admin.
+ */
+function getAdminNsfwSamplerOptions(req, options) {
+  if (req.user?.role !== "admin") {
+    return { adminBaseSamplerSteps: null, adminBaseSamplerCfg: null };
+  }
+  const o = options?.adminNsfwOverrides;
+  if (!o || typeof o !== "object") {
+    return { adminBaseSamplerSteps: null, adminBaseSamplerCfg: null };
+  }
+  let adminBaseSamplerSteps = null;
+  let adminBaseSamplerCfg = null;
+  if (o.steps != null && String(o.steps).trim() !== "") {
+    const s = parseInt(String(o.steps), 10);
+    if (Number.isFinite(s)) adminBaseSamplerSteps = Math.min(150, Math.max(1, s));
+  }
+  if (o.cfg != null && String(o.cfg).trim() !== "") {
+    const c = Number(o.cfg);
+    if (Number.isFinite(c)) adminBaseSamplerCfg = Math.min(8, Math.max(1, c));
+  }
+  return { adminBaseSamplerSteps, adminBaseSamplerCfg };
+}
+
 // ============================================
 // MODIFIED ENDPOINT: Generate NSFW image
 // POST /api/nsfw/generate
 // Body: { modelId, prompt, attributes?, options?, skipFaceSwap?, faceSwapImageUrl? }
+// options.adminNsfwOverrides?: { steps?: number, cfg?: number } — admin only
 // ============================================
 export async function generateNsfwImage(req, res) {
   let creditsDeducted = 0;
@@ -2511,6 +2537,7 @@ export async function generateNsfwImage(req, res) {
     console.log(`💳 Deducted ${creditsNeeded} credits for ${imageQuantity} NSFW image(s) (base: ${baseCredits}, face swap: ${!skipFaceSwap})`);
 
     const userOverrideStrength = options.loraStrength || null;
+    const adminSamplerOpts = getAdminNsfwSamplerOptions(req, options);
     const postProcessing = {
       blur: {
         enabled: options?.postProcessing?.blur?.enabled !== false,
@@ -2556,6 +2583,7 @@ export async function generateNsfwImage(req, res) {
         options: {
           loraStrength: userOverrideStrength,
           postProcessing,
+          ...adminSamplerOpts,
         },
       });
 

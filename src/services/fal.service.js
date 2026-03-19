@@ -1310,6 +1310,8 @@ function buildComfyWorkflowLegacy(params) {
     enhancementStrengths = {},
     postProcessing = {},
     seed,
+    steps = 50,
+    cfg = 3,
   } = params;
   const negativePrompt = "blurry, low resolution, deformed, bad anatomy, extra limbs, mutated hands, poorly drawn face, bad proportions, watermark, text, signature, cartoon, anime, overexposed, underexposed, plastic skin, doll-like";
   const loraEntries = buildNsfwLoraStackEntries({
@@ -1350,7 +1352,21 @@ function buildComfyWorkflowLegacy(params) {
     "247": { inputs: { unet_name: "zImageTurboNSFW_43BF16AIO.safetensors", weight_dtype: "default" }, class_type: "UNETLoader" },
     "248": { inputs: { clip_name: "qwen_3_4b.safetensors", type: "qwen_image", device: "default" }, class_type: "CLIPLoader" },
     ...loraNodes,
-    "276": { inputs: { seed: ["57", 0], steps: 50, cfg: 3, sampler_name: "dpmpp_2m", scheduler: "beta", denoise: 1, model: prevModelRef, positive: ["2", 0], negative: ["1", 0], latent_image: ["50", 4] }, class_type: "KSampler" },
+    "276": {
+      inputs: {
+        seed: ["57", 0],
+        steps: Math.min(10000, Math.max(1, Number(steps) || 50)),
+        cfg: Number(cfg) || 3,
+        sampler_name: "dpmpp_2m",
+        scheduler: "beta",
+        denoise: 1,
+        model: prevModelRef,
+        positive: ["2", 0],
+        negative: ["1", 0],
+        latent_image: ["50", 4],
+      },
+      class_type: "KSampler",
+    },
     "284": { inputs: { density: 0.06, intensity: 0.1, highlights: 1, supersample_factor: 1, image: ["28", 0] }, class_type: "Image Film Grain" },
     "286": { inputs: { blur_radius: 2, sigma: 0.3, image: ["284", 0] }, class_type: "ImageBlur" },
     "289": { inputs: { filename_prefix: "modelclone", images: ["286", 0] }, class_type: "SaveImage" },
@@ -1390,6 +1406,8 @@ export async function submitNsfwGeneration(params) {
   const {
     loraStrength = null,
     postProcessing = {},
+    adminBaseSamplerSteps = null,
+    adminBaseSamplerCfg = null,
   } = options;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const normalizeStrength = (value, fallback) => {
@@ -1470,6 +1488,18 @@ export async function submitNsfwGeneration(params) {
   const makeupStrength = hasRunningMakeup ? MAX_ADDITIVE_LORA_STRENGTH : 0;
   const cumStrength = hasCumEffect ? MAX_ADDITIVE_LORA_STRENGTH : 0;
 
+  const baseSteps =
+    adminBaseSamplerSteps != null && Number.isFinite(Number(adminBaseSamplerSteps))
+      ? Math.min(150, Math.max(1, Math.round(Number(adminBaseSamplerSteps))))
+      : 50;
+  const baseCfg =
+    adminBaseSamplerCfg != null && Number.isFinite(Number(adminBaseSamplerCfg))
+      ? Math.min(8, Math.max(1, Number(adminBaseSamplerCfg)))
+      : 3;
+  if (adminBaseSamplerSteps != null || adminBaseSamplerCfg != null) {
+    console.log(`🧪 Admin NSFW sampler override: steps=${baseSteps}, cfg=${baseCfg}`);
+  }
+
   const workflow = buildComfyWorkflow({
     prompt,
     loraUrl,
@@ -1480,6 +1510,8 @@ export async function submitNsfwGeneration(params) {
     enhancementStrengths,
     postProcessing: normalizedPostProcessing,
     seed,
+    steps: baseSteps,
+    cfg: baseCfg,
   });
 
   console.log("\n📋 ============================================");
@@ -1533,8 +1565,8 @@ export async function submitNsfwGeneration(params) {
         cumEffect: hasCumEffect,
         cumStrength: cumStrength,
         seed: seed,
-        steps: 50,
-        cfg: 3,
+        steps: baseSteps,
+        cfg: baseCfg,
         width: 1344,
         height: 768,
         sampler: "dpmpp_2m",

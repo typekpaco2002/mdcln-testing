@@ -3395,6 +3395,12 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
   };
 
   const [genConfig, setGenConfig] = useState(loadSavedConfig);
+  /** Admin-only: test RunPod base KSampler steps/CFG (honored server-side only for role admin) */
+  const [adminSamplerTest, setAdminSamplerTest] = useState({
+    enabled: false,
+    steps: 50,
+    cfg: 3,
+  });
   const [showGenSettings, setShowGenSettings] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
   const POST_PROCESSING_PRESETS = [
@@ -3468,6 +3474,9 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     if (d.skipFaceSwap !== undefined) setSkipFaceSwap(d.skipFaceSwap);
     if (d.faceSwapImage) setFaceSwapImage(d.faceSwapImage);
     if (d.genConfig && typeof d.genConfig === "object") setGenConfig(prev => ({ ...prev, ...d.genConfig }));
+    if (d.adminSamplerTest && typeof d.adminSamplerTest === "object") {
+      setAdminSamplerTest((prev) => ({ ...prev, ...d.adminSamplerTest }));
+    }
     if (d.activePhase) setActivePhase(d.activePhase);
     if (d.currentLoraId) setCurrentLoraId(d.currentLoraId);
     if (Array.isArray(d.trainingSelections) && d.trainingSelections.length > 0) {
@@ -3487,13 +3496,14 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
       skipFaceSwap,
       faceSwapImage,
       genConfig,
+      adminSamplerTest,
       activePhase,
       currentLoraId,
       trainingSelections: trainingSelections.map(s => ({ id: s.id, outputUrl: s.outputUrl, _custom: s._custom || false })),
     };
     const imageUrls = [faceSwapImage?.url].filter(Boolean);
     saveNsfwDraft(data, imageUrls);
-  }, [selectedModel, sceneDescription, chipSelections, selectedPreset, selectedAspectRatio, skipFaceSwap, faceSwapImage, genConfig, activePhase, currentLoraId, trainingSelections]);
+  }, [selectedModel, sceneDescription, chipSelections, selectedPreset, selectedAspectRatio, skipFaceSwap, faceSwapImage, genConfig, adminSamplerTest, activePhase, currentLoraId, trainingSelections]);
 
   // Ref to track if component is mounted
   const isMountedRef = useRef(true);
@@ -4012,6 +4022,14 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
               strength: Number(genConfig.grainStrength ?? 0.06),
             },
           },
+          ...(user?.role === "admin" && adminSamplerTest.enabled
+            ? {
+                adminNsfwOverrides: {
+                  steps: Math.min(150, Math.max(1, Math.round(Number(adminSamplerTest.steps)) || 50)),
+                  cfg: Math.min(8, Math.max(1, Number(adminSamplerTest.cfg) || 3)),
+                },
+              }
+            : {}),
         },
       });
 
@@ -4833,7 +4851,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     <div className="flex items-center gap-2">
                       <Settings className="w-4 h-4 text-white" />
                       <span className="text-sm font-medium text-white">Advanced Settings</span>
-                      {JSON.stringify(genConfig) !== JSON.stringify(DEFAULT_CONFIG) && (
+                      {(JSON.stringify(genConfig) !== JSON.stringify(DEFAULT_CONFIG) ||
+                        (user?.role === "admin" && adminSamplerTest.enabled)) && (
                         <span className="px-1.5 py-0.5 rounded-full bg-white/90 text-black text-[10px]">Modified</span>
                       )}
                     </div>
@@ -4972,6 +4991,82 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                           data-testid="slider-post-grain-strength"
                         />
                       </div>
+
+                      {user?.role === "admin" && (
+                        <div className="rounded-lg border border-amber-500/35 p-3 bg-amber-500/[0.06]">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <label className="text-xs font-medium text-amber-100">Admin — sampler test</label>
+                              <p className="text-[10px] text-slate-500 mt-0.5">
+                                Base KSampler steps / CFG (server ignores unless you are admin)
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setAdminSamplerTest((prev) => ({ ...prev, enabled: !prev.enabled }))
+                              }
+                              className={`relative w-10 h-5 shrink-0 rounded-full transition-colors ${
+                                adminSamplerTest.enabled ? "bg-amber-500" : "bg-slate-600"
+                              }`}
+                              data-testid="toggle-admin-sampler-test"
+                            >
+                              <span
+                                className={`absolute top-0.5 w-4 h-4 rounded-full transition-transform ${
+                                  adminSamplerTest.enabled
+                                    ? "bg-white translate-x-5"
+                                    : "bg-white translate-x-0.5"
+                                }`}
+                              />
+                            </button>
+                          </div>
+                          {adminSamplerTest.enabled && (
+                            <div className="grid grid-cols-2 gap-3 pt-1">
+                              <div>
+                                <label className="text-[11px] text-slate-400 block mb-1">Steps (1–150)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={150}
+                                  value={adminSamplerTest.steps}
+                                  onChange={(e) => {
+                                    const n = parseInt(e.target.value, 10);
+                                    setAdminSamplerTest((prev) => ({
+                                      ...prev,
+                                      steps: Number.isFinite(n)
+                                        ? Math.min(150, Math.max(1, n))
+                                        : prev.steps,
+                                    }));
+                                  }}
+                                  className="w-full px-2 py-1.5 rounded-lg bg-black/40 border border-white/15 text-white text-xs font-mono"
+                                  data-testid="input-admin-nsfw-steps"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[11px] text-slate-400 block mb-1">CFG (1–8)</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={8}
+                                  step={0.1}
+                                  value={adminSamplerTest.cfg}
+                                  onChange={(e) => {
+                                    const n = parseFloat(e.target.value);
+                                    setAdminSamplerTest((prev) => ({
+                                      ...prev,
+                                      cfg: Number.isFinite(n)
+                                        ? Math.min(8, Math.max(1, n))
+                                        : prev.cfg,
+                                    }));
+                                  }}
+                                  className="w-full px-2 py-1.5 rounded-lg bg-black/40 border border-white/15 text-white text-xs font-mono"
+                                  data-testid="input-admin-nsfw-cfg"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Save / Reset Buttons */}
                       <div className="flex gap-2 pt-2">
