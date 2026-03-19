@@ -59,6 +59,7 @@ const ENDPOINT_HEALTH_CATALOG = [
   { method: "POST",   path: "/api/nsfw/extend-video" },
   { method: "POST",   path: "/api/nsfw/generate-advanced" },
   { method: "POST",   path: "/api/nsfw/generate-prompt" },
+  { method: "POST",   path: "/api/nsfw/plan-generation" },
   { method: "POST",   path: "/api/nsfw/auto-select" },
   // NSFW LoRA management
   { method: "POST",   path: "/api/nsfw/lora/create" },

@@ -74,6 +74,7 @@ import AppSidebar from "../components/AppSidebar";
 import LazyVideo from "../components/LazyVideo";
 import CourseTipBanner from "../components/CourseTipBanner";
 import { selectorCategories, buildSelectionsString, buildSelectionsSummary, applyChipConstraints, getBlockedChips, SCENE_PRESETS } from "../data/nsfwSelectors";
+import { NSFW_RESOLUTION_OPTIONS } from "../constants/nsfwResolutions";
 
 const RED_CORNER_GLOW_STYLE = {
   background:
@@ -3257,7 +3258,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
   const [isGeneratingAiPrompt, setIsGeneratingAiPrompt] = useState(false);
 
   // Aspect Ratio state
-  const [selectedAspectRatio, setSelectedAspectRatio] = useState("1024x1024");
+  const [selectedAspectRatio, setSelectedAspectRatio] = useState("1344x768");
+  /** simple = preset/text → one-shot plan → resolution + generate; advanced = full chip + prompt flow */
+  const [nsfwGenerateMode, setNsfwGenerateMode] = useState("simple");
+  const [simplePlanReady, setSimplePlanReady] = useState(false);
+  const [isPlanning, setIsPlanning] = useState(false);
 
   // Chip selector state
   const [chipSelections, setChipSelections] = useState({});
@@ -3471,6 +3476,9 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     if (d.chipSelections && typeof d.chipSelections === "object") setChipSelections(d.chipSelections);
     if (d.selectedPreset) setSelectedPreset(d.selectedPreset);
     if (d.selectedAspectRatio) setSelectedAspectRatio(d.selectedAspectRatio);
+    if (d.nsfwGenerateMode === "simple" || d.nsfwGenerateMode === "advanced") setNsfwGenerateMode(d.nsfwGenerateMode);
+    if (d.simplePlanReady !== undefined) setSimplePlanReady(!!d.simplePlanReady);
+    if (d.generatedPrompt !== undefined) setGeneratedPrompt(d.generatedPrompt);
     if (d.skipFaceSwap !== undefined) setSkipFaceSwap(d.skipFaceSwap);
     if (d.faceSwapImage) setFaceSwapImage(d.faceSwapImage);
     if (d.genConfig && typeof d.genConfig === "object") setGenConfig(prev => ({ ...prev, ...d.genConfig }));
@@ -3493,6 +3501,9 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
       chipSelections,
       selectedPreset,
       selectedAspectRatio,
+      nsfwGenerateMode,
+      simplePlanReady,
+      generatedPrompt,
       skipFaceSwap,
       faceSwapImage,
       genConfig,
@@ -3503,7 +3514,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     };
     const imageUrls = [faceSwapImage?.url].filter(Boolean);
     saveNsfwDraft(data, imageUrls);
-  }, [selectedModel, sceneDescription, chipSelections, selectedPreset, selectedAspectRatio, skipFaceSwap, faceSwapImage, genConfig, adminSamplerTest, activePhase, currentLoraId, trainingSelections]);
+  }, [selectedModel, sceneDescription, chipSelections, selectedPreset, selectedAspectRatio, nsfwGenerateMode, simplePlanReady, generatedPrompt, skipFaceSwap, faceSwapImage, genConfig, adminSamplerTest, activePhase, currentLoraId, trainingSelections]);
 
   // Ref to track if component is mounted
   const isMountedRef = useRef(true);
@@ -3888,6 +3899,39 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     }
   };
 
+  /** Simple flow: one API call → AI chips + prompt, then user picks resolution only */
+  const handleConfirmSimplePlan = async () => {
+    const desc = sceneDescription.trim();
+    if (!desc) {
+      toast.error("Describe what you want or pick a preset first");
+      return;
+    }
+    if (!selectedModel) {
+      toast.error("Select a model first");
+      return;
+    }
+    setIsPlanning(true);
+    try {
+      const response = await api.post("/nsfw/plan-generation", {
+        modelId: selectedModel,
+        userRequest: desc,
+      });
+      if (response.data.success && response.data.prompt) {
+        setChipSelections(applyChipConstraints(response.data.selections || {}, lockedAppearance));
+        setGeneratedPrompt(response.data.prompt);
+        setSimplePlanReady(true);
+        toast.success("Scene ready — choose resolution and generate");
+      } else {
+        toast.error(response.data.message || "Plan failed");
+      }
+    } catch (error) {
+      console.error("Plan generation error:", error);
+      toast.error(error.response?.data?.message || "Plan failed");
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
   // Generate prompt with AI (Grok) from selections + scene description
   const handleGeneratePrompt = async () => {
     if (!selectedModel) return;
@@ -3974,6 +4018,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     setSelectedPreset(preset.id);
     setSceneDescription(preset.description);
     setGeneratedPrompt("");
+    setSimplePlanReady(false);
     const baseSelections = { ...modelLooksLockedRef.current };
     for (const [key, value] of Object.entries(lockedAppearance || {})) {
       if (value) baseSelections[key] = value;
@@ -3998,13 +4043,13 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     setIsGeneratingNsfw(true);
 
     try {
-      const [width, height] = selectedAspectRatio.split("x").map(Number);
       const attributesString = buildSelectionsString(chipSelections);
 
       const response = await api.post("/nsfw/generate", {
         modelId: selectedModel,
         prompt: promptToUse,
         quantity: imageQuantity,
+        resolution: selectedAspectRatio,
         attributes: attributesString,
         attributesDetail: chipSelections,
         sceneDescription: sceneDescription.trim(),
@@ -4050,6 +4095,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
           if (v) keep[k] = v;
         }
         setChipSelections(applyChipConstraints(keep, lockedAppearance));
+        setSimplePlanReady(false);
 
         const generations = response.data.generations || [];
         if (generations.length > 0) {
@@ -4561,6 +4607,131 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                   );
                 })()}
 
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-1 rounded-xl border border-white/[0.1] bg-white/[0.03] mb-2">
+                  <span className="text-[11px] uppercase tracking-wider text-slate-500 px-2 shrink-0">Flow</span>
+                  <div className="flex rounded-lg overflow-hidden border border-white/10 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setNsfwGenerateMode("simple")}
+                      className={`flex-1 px-3 py-2 text-xs font-semibold transition-colors ${
+                        nsfwGenerateMode === "simple"
+                          ? "bg-white text-black"
+                          : "bg-transparent text-slate-400 hover:text-white"
+                      }`}
+                      data-testid="button-nsfw-flow-simple"
+                    >
+                      Quick
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNsfwGenerateMode("advanced")}
+                      className={`flex-1 px-3 py-2 text-xs font-semibold transition-colors border-l border-white/10 ${
+                        nsfwGenerateMode === "advanced"
+                          ? "bg-white text-black"
+                          : "bg-transparent text-slate-400 hover:text-white"
+                      }`}
+                      data-testid="button-nsfw-flow-advanced"
+                    >
+                      Advanced
+                    </button>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-4">
+                  {nsfwGenerateMode === "simple"
+                    ? "Describe or pick a preset, then confirm — AI picks detail chips and writes the prompt. You only choose resolution and hit generate."
+                    : "Full control: auto-select chips, edit selectors, write or regenerate the prompt yourself, then generate."}
+                </p>
+
+                {nsfwGenerateMode === "simple" && !simplePlanReady && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">What do you want?</label>
+                      <textarea
+                        value={sceneDescription}
+                        onChange={(e) => {
+                          setSceneDescription(e.target.value);
+                          setGeneratedPrompt("");
+                          setSelectedPreset(null);
+                          setSimplePlanReady(false);
+                        }}
+                        placeholder="Describe the scene, or pick a preset below…"
+                        className="w-full h-24 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-white/40 resize-none"
+                        data-testid="textarea-nsfw-simple-scene"
+                      />
+                    </div>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-white mb-2">Or pick a preset</label>
+                      <div className="flex flex-wrap gap-2">
+                        {SCENE_PRESETS.map((preset) => {
+                          const isActive = selectedPreset === preset.id;
+                          return (
+                            <button
+                              key={preset.id}
+                              type="button"
+                              onClick={() => handlePresetSelect(preset)}
+                              data-testid={`button-preset-${preset.id}`}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                isActive
+                                  ? "bg-rose-500/15 border border-rose-400/40 text-rose-100"
+                                  : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleConfirmSimplePlan}
+                      disabled={isPlanning || !sceneDescription.trim() || !selectedModel}
+                      className="w-full mt-5 py-3.5 rounded-xl font-semibold text-black transition-all flex items-center justify-center gap-2 bg-white border border-white/35 hover:bg-white/90 disabled:opacity-45 disabled:cursor-not-allowed"
+                      data-testid="button-nsfw-confirm-plan"
+                    >
+                      {isPlanning ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Planning scene…
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4" />
+                          Confirm — auto-pick chips &amp; prompt
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+
+                {nsfwGenerateMode === "simple" && simplePlanReady && (
+                  <div className="mb-4 p-4 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] space-y-3">
+                    <div className="flex items-center gap-2 text-emerald-200 text-sm font-medium">
+                      <CheckCircle2 className="w-4 h-4" />
+                      Ready to generate
+                    </div>
+                    <p className="text-[11px] text-slate-400 line-clamp-2">{sceneDescription}</p>
+                    {generatedPrompt && (
+                      <p className="text-[10px] text-slate-500 font-mono max-h-20 overflow-y-auto leading-relaxed">
+                        {generatedPrompt.slice(0, 400)}
+                        {generatedPrompt.length > 400 ? "…" : ""}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSimplePlanReady(false);
+                        setGeneratedPrompt("");
+                      }}
+                      className="text-xs text-rose-300 hover:text-rose-200 underline-offset-2 hover:underline"
+                    >
+                      Change scene (re-plan)
+                    </button>
+                  </div>
+                )}
+
+                {nsfwGenerateMode === "advanced" && (
+                <>
                 {/* Scene Description */}
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
@@ -4788,54 +4959,37 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     <p className="text-xs text-slate-300 leading-relaxed font-mono">{generatedPrompt}</p>
                   </div>
                 )}
+                </>
+                )}
 
-                {/* Aspect Ratio Selector */}
+                {((nsfwGenerateMode === "simple" && simplePlanReady) || nsfwGenerateMode === "advanced") && (
+                <>
+                {/* Aspect Ratio Selector — passed to ComfyUI / RunPod */}
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
                     Image Resolution
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                    {[
-                      { id: "512x512", label: "Square", size: "512x512" },
-                      {
-                        id: "1024x1024",
-                        label: "Square HD",
-                        size: "1024x1024",
-                      },
-                      {
-                        id: "1024x576",
-                        label: "Landscape",
-                        size: "1024x576",
-                      },
-                      {
-                        id: "576x1024",
-                        label: "Selfie",
-                        size: "576x1024",
-                      },
-                      {
-                        id: "1024x768",
-                        label: "Landscape Classic",
-                        size: "1024x768",
-                      },
-                      {
-                        id: "768x1024",
-                        label: "Portrait Classic",
-                        size: "768x1024",
-                      },
-                    ].map((ratio) => (
+                  <p className="text-[10px] text-slate-500 mb-2">
+                    This size is sent to the generation workflow (empty latent / aspect node).
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {NSFW_RESOLUTION_OPTIONS.map((ratio) => (
                       <button
                         key={ratio.id}
+                        type="button"
                         onClick={() => setSelectedAspectRatio(ratio.id)}
-                        className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-1 ${
+                        data-testid={`button-resolution-${ratio.id}`}
+                        className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors flex flex-col items-center gap-0.5 ${
                           selectedAspectRatio === ratio.id
                             ? "bg-white text-black border border-white/35"
                             : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
                         }`}
                       >
                         <span>{ratio.label}</span>
-                        <span className="text-[10px] opacity-70">
-                          {ratio.size}
-                        </span>
+                        <span className="text-[10px] opacity-70">{ratio.size}</span>
+                        {ratio.hint && (
+                          <span className="text-[9px] text-slate-600 leading-tight text-center">{ratio.hint}</span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -5213,6 +5367,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     </>
                   )}
                 </button>
+                </>
+                )}
 
                 {/* Full NSFW Gallery - All Generated Images */}
                 <div className="mt-6">

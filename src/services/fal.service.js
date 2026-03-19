@@ -14,6 +14,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { isR2Configured, uploadBufferToR2, uploadToR2 } from "../utils/r2.js";
 import { sanitizeLoraDownloadUrl } from "../utils/loraUrl.js";
+import { resolveNsfwResolution } from "../utils/nsfwResolution.js";
 // dynamicPoll removed — inline polling used directly
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1248,6 +1249,9 @@ function buildComfyWorkflow(params) {
     cfg = 3,
     sampler = "dpmpp_2m",
     scheduler = "beta",
+    width = 1344,
+    height = 768,
+    aspectRatio = "16:9 landscape 1344x768",
   } = params;
 
   const negativePrompt =
@@ -1310,6 +1314,12 @@ function buildComfyWorkflow(params) {
       workflow["284"].inputs.intensity = Math.max(0.01, intensity);
     }
 
+    if (workflow["50"]?.inputs) {
+      workflow["50"].inputs.width = width;
+      workflow["50"].inputs.height = height;
+      workflow["50"].inputs.aspect_ratio = aspectRatio;
+    }
+
     stripUnsupportedNodesAndInjectValues(workflow, { prompt, negativePrompt, loraUrl: sanitizeLoraDownloadUrl(loraUrl) });
     return workflow;
   }
@@ -1329,6 +1339,9 @@ function buildComfyWorkflowLegacy(params) {
     seed,
     steps = 50,
     cfg = 3,
+    width = 1344,
+    height = 768,
+    aspectRatio = "16:9 landscape 1344x768",
   } = params;
   const negativePrompt =
     "blurry, low resolution, deformed, bad anatomy, extra limbs, mutated hands, poorly drawn face, bad proportions, gigantic penis, huge penis, oversized penis, unrealistically large penis, hyperbolic genitals, watermark, text, signature, cartoon, anime, overexposed, underexposed, plastic skin, doll-like";
@@ -1364,7 +1377,17 @@ function buildComfyWorkflowLegacy(params) {
     "36": { inputs: { images: ["286", 0] }, class_type: "PreviewImage" },
     "42": { inputs: { text: prompt, clip: ["304", 1] }, class_type: "CLIPTextEncode" },
     "45": { inputs: { seed: ["57", 0], steps: 8, cfg: 0, sampler_name: "dpmpp_2m", scheduler: "karras", denoise: 0.09, model: ["304", 0], positive: ["42", 0], negative: ["7", 0], latent_image: ["21", 0] }, class_type: "KSampler" },
-    "50": { inputs: { width: 1024, height: 1024, aspect_ratio: "16:9 landscape 1344x768", swap_dimensions: "On", upscale_factor: 1, batch_size: 1 }, class_type: "CR SDXL Aspect Ratio" },
+    "50": {
+      inputs: {
+        width,
+        height,
+        aspect_ratio: aspectRatio,
+        swap_dimensions: "On",
+        upscale_factor: 1,
+        batch_size: 1,
+      },
+      class_type: "CR SDXL Aspect Ratio",
+    },
     "57": { inputs: { seed }, class_type: "Seed (rgthree)" },
     "246": { inputs: { vae_name: "ae.safetensors" }, class_type: "VAELoader" },
     "247": { inputs: { unet_name: "zImageTurboNSFW_43BF16AIO.safetensors", weight_dtype: "default" }, class_type: "UNETLoader" },
@@ -1506,6 +1529,8 @@ export async function submitNsfwGeneration(params) {
   const makeupStrength = hasRunningMakeup ? MAX_ADDITIVE_LORA_STRENGTH : 0;
   const cumStrength = hasCumEffect ? MAX_ADDITIVE_LORA_STRENGTH : 0;
 
+  const resSpec = resolveNsfwResolution(options.resolution);
+
   const baseSteps =
     adminBaseSamplerSteps != null && Number.isFinite(Number(adminBaseSamplerSteps))
       ? Math.min(150, Math.max(1, Math.round(Number(adminBaseSamplerSteps))))
@@ -1530,6 +1555,9 @@ export async function submitNsfwGeneration(params) {
     seed,
     steps: baseSteps,
     cfg: baseCfg,
+    width: resSpec.width,
+    height: resSpec.height,
+    aspectRatio: resSpec.aspect_ratio,
   });
 
   console.log("\n📋 ============================================");
@@ -1585,8 +1613,9 @@ export async function submitNsfwGeneration(params) {
         seed: seed,
         steps: baseSteps,
         cfg: baseCfg,
-        width: 1344,
-        height: 768,
+        width: resSpec.width,
+        height: resSpec.height,
+        resolutionPreset: resSpec.presetId,
         sampler: "dpmpp_2m",
         scheduler: "beta",
         refinerSteps: 8,

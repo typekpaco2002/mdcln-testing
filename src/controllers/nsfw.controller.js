@@ -45,6 +45,7 @@ import { isR2Configured, mirrorToR2, reMirrorToR2, deleteFromR2 } from "../utils
 import { mirrorToBlob, isVercelBlobConfigured } from "../utils/kieUpload.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
 import { cleanupOldGenerations } from "./generation.controller.js";
+import { resolveNsfwResolution } from "../utils/nsfwResolution.js";
 
 // Models with age < 18 cannot use NSFW or LoRA (policy)
 function isMinorModel(model) {
@@ -2538,6 +2539,11 @@ export async function generateNsfwImage(req, res) {
 
     const userOverrideStrength = options.loraStrength || null;
     const adminSamplerOpts = getAdminNsfwSamplerOptions(req, options);
+    const resolutionPreset =
+      options?.resolution ||
+      req.body.resolution ||
+      (req.body.width && req.body.height ? `${req.body.width}x${req.body.height}` : undefined);
+    const resSpec = resolveNsfwResolution(resolutionPreset);
     const postProcessing = {
       blur: {
         enabled: options?.postProcessing?.blur?.enabled !== false,
@@ -2583,6 +2589,7 @@ export async function generateNsfwImage(req, res) {
         options: {
           loraStrength: userOverrideStrength,
           postProcessing,
+          resolution: resSpec.presetId,
           ...adminSamplerOpts,
         },
       });
@@ -2624,8 +2631,9 @@ export async function generateNsfwImage(req, res) {
             seed: rp.seed ?? null,
             steps: rp.steps ?? 50,
             cfg: rp.cfg ?? 3,
-            width: rp.width ?? 1344,
-            height: rp.height ?? 768,
+            width: rp.width ?? resSpec.width,
+            height: rp.height ?? resSpec.height,
+            resolutionPreset: rp.resolutionPreset ?? resSpec.presetId,
             sampler: rp.sampler ?? "dpmpp_2m",
             scheduler: rp.scheduler ?? "beta",
             builtPrompt: rp.prompt || null,
@@ -2846,29 +2854,10 @@ function buildTrainingPrompts(imageType, aiParams) {
 // POST /api/nsfw/generate-prompt
 // Body: { modelId, userRequest }
 // ============================================
-export async function generateNsfwPrompt(req, res) {
-  try {
-    const userId = req.user.userId;
-    const { modelId, userRequest } = req.body;
-    const clientAttributes = req.body.attributes || "";
-    const clientDetail = req.body.attributesDetail || {};
 
-    if (!modelId || !userRequest) {
-      return res.status(400).json({
-        success: false,
-        message: "Model ID and user request (scene) are required",
-      });
-    }
-
-    const model = await prisma.savedModel.findFirst({
-      where: { id: modelId, userId },
-    });
-
-    if (!model) {
-      return res.status(404).json({ success: false, message: "Model not found" });
-    }
-
-    let triggerWord = model.loraTriggerWord || "lora_" + model.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
+/** Shared Grok prompt builder (also used by plan-generation). */
+async function runNsfwPromptGenerationForModel(model, userRequest, clientDetail = {}, clientAttributes = "") {
+  let triggerWord = model.loraTriggerWord || "lora_" + model.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
     let lockedAppearance = {};
 
     if (model.activeLoraId) {
@@ -3143,7 +3132,7 @@ OUTPUT: Return ONLY a JSON array with one prompt: ["prompt text here"]. No extra
 
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     if (!OPENROUTER_API_KEY) {
-      return res.status(500).json({ success: false, message: "AI service not configured" });
+      throw new Error("AI service not configured");
     }
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -3162,7 +3151,7 @@ OUTPUT: Return ONLY a JSON array with one prompt: ["prompt text here"]. No extra
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Grok API error:", errorText);
-      return res.status(500).json({ success: false, message: "Failed to generate prompt" });
+      throw new Error("Failed to generate prompt");
     }
 
     const result = await response.json();
@@ -3180,12 +3169,47 @@ OUTPUT: Return ONLY a JSON array with one prompt: ["prompt text here"]. No extra
       generatedPrompt = content.trim();
     }
 
+    return generatedPrompt;
+}
+
+export async function generateNsfwPrompt(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { modelId, userRequest } = req.body;
+    const clientAttributes = req.body.attributes || "";
+    const clientDetail = req.body.attributesDetail || {};
+
+    if (!modelId || !userRequest) {
+      return res.status(400).json({
+        success: false,
+        message: "Model ID and user request (scene) are required",
+      });
+    }
+
+    const model = await prisma.savedModel.findFirst({
+      where: { id: modelId, userId },
+    });
+
+    if (!model) {
+      return res.status(404).json({ success: false, message: "Model not found" });
+    }
+
+    const generatedPrompt = await runNsfwPromptGenerationForModel(
+      model,
+      userRequest,
+      clientDetail,
+      clientAttributes,
+    );
     res.json({ success: true, prompt: generatedPrompt });
   } catch (error) {
     console.error("Generate prompt error:", error);
+    const msg = error?.message || "";
+    if (msg === "AI service not configured") {
+      return res.status(500).json({ success: false, message: msg });
+    }
     res.status(500).json({
       success: false,
-      message: "Failed to generate prompt",
+      message: msg || "Failed to generate prompt",
     });
   }
 }
@@ -3534,43 +3558,31 @@ const CANONICAL_OPTIONS = {
 // POST /api/nsfw/auto-select
 // Body: { description, modelId }
 // ============================================
-export async function autoSelectChips(req, res) {
-  try {
-    const { description, modelId } = req.body;
-    const userId = req.user.userId;
+async function runNsfwAutoSelectSelections(userId, modelId, description) {
+  const model = await prisma.savedModel.findFirst({ where: { id: modelId, userId } });
+  if (!model) {
+    throw new Error("Model not found");
+  }
 
-    if (!description || typeof description !== "string" || description.length > 500) {
-      return res.status(400).json({ success: false, message: "Description is required (max 500 chars)" });
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("AI not configured");
+  }
+
+  let lockedList = [];
+  if (model.activeLoraId) {
+    const activeLora = await prisma.trainedLora.findUnique({ where: { id: model.activeLoraId } });
+    if (activeLora?.defaultAppearance) {
+      lockedList = Object.keys(activeLora.defaultAppearance).filter(k => activeLora.defaultAppearance[k]);
     }
+  }
 
-    if (!modelId) {
-      return res.status(400).json({ success: false, message: "Model ID is required" });
-    }
+  const optionsDescription = Object.entries(CANONICAL_OPTIONS)
+    .filter(([key]) => !lockedList.includes(key))
+    .map(([key, values]) => `"${key}": [${values.map(v => `"${v}"`).join(", ")}]`)
+    .join("\n");
 
-    const model = await prisma.savedModel.findFirst({ where: { id: modelId, userId } });
-    if (!model) {
-      return res.status(404).json({ success: false, message: "Model not found" });
-    }
-
-    const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-    if (!OPENROUTER_API_KEY) {
-      return res.status(500).json({ success: false, message: "AI not configured" });
-    }
-
-    let lockedList = [];
-    if (model.activeLoraId) {
-      const activeLora = await prisma.trainedLora.findUnique({ where: { id: model.activeLoraId } });
-      if (activeLora?.defaultAppearance) {
-        lockedList = Object.keys(activeLora.defaultAppearance).filter(k => activeLora.defaultAppearance[k]);
-      }
-    }
-
-    const optionsDescription = Object.entries(CANONICAL_OPTIONS)
-      .filter(([key]) => !lockedList.includes(key))
-      .map(([key, values]) => `"${key}": [${values.map(v => `"${v}"`).join(", ")}]`)
-      .join("\n");
-
-    const systemPrompt = `You are a smart assistant that reads a user's scene description and picks the BEST matching options from predefined selector lists.
+  const systemPrompt = `You are a smart assistant that reads a user's scene description and picks the BEST matching options from predefined selector lists.
 
 SCENE DESCRIPTION: "${description}"
 
@@ -3590,60 +3602,130 @@ RULES:
 7. Do NOT auto-add "sweaty glistening skin", "wet smeared mascara running down cheeks", or running makeup for blowjob/oral scenes unless the user EXPLICITLY asks for it. Blowjobs should default to clean, natural skin.
 8. Return ONLY valid JSON. No explanation, no markdown, no extra text.`;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "x-ai/grok-4.1-fast",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: systemPrompt }],
-      }),
-    });
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "x-ai/grok-4.1-fast",
+      max_tokens: 1024,
+      messages: [{ role: "user", content: systemPrompt }],
+    }),
+  });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Grok auto-select error:", errorText);
-      return res.status(500).json({ success: false, message: "AI auto-select failed" });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Grok auto-select error:", errorText);
+    throw new Error("AI auto-select failed");
+  }
+
+  const result = await response.json();
+  const rawContent = result.choices?.[0]?.message?.content || "{}";
+  const content = rawContent.includes("<think>")
+    ? rawContent.replace(/<think>[\s\S]*?<\/think>/g, "").trim()
+    : rawContent;
+
+  let selections = {};
+  try {
+    const cleaned = content.replace(/```json\s*|```\s*/g, "").trim();
+    selections = JSON.parse(cleaned);
+  } catch (e) {
+    console.error("Failed to parse auto-select response:", content);
+    throw new Error("AI returned invalid response");
+  }
+
+  const validated = {};
+  for (const [key, value] of Object.entries(selections)) {
+    if (lockedList.includes(key)) continue;
+    if (CANONICAL_OPTIONS[key] && CANONICAL_OPTIONS[key].includes(value)) {
+      validated[key] = value;
+    }
+  }
+
+  const constrained = applyConstraints(validated);
+  for (const key of Object.keys(constrained)) {
+    if (lockedList.includes(key)) delete constrained[key];
+    if (!constrained[key]) delete constrained[key];
+  }
+
+  console.log(`✅ Auto-select: "${description.substring(0, 50)}..." → ${Object.keys(constrained).length} chips selected (constraints applied)`);
+
+  return constrained;
+}
+
+export async function autoSelectChips(req, res) {
+  try {
+    const { description, modelId } = req.body;
+    const userId = req.user.userId;
+
+    if (!description || typeof description !== "string" || description.length > 500) {
+      return res.status(400).json({ success: false, message: "Description is required (max 500 chars)" });
     }
 
-    const result = await response.json();
-    const rawContent = result.choices?.[0]?.message?.content || "{}";
-    const content = rawContent.includes("<think>")
-      ? rawContent.replace(/<think>[\s\S]*?<\/think>/g, "").trim()
-      : rawContent;
-
-    let selections = {};
-    try {
-      const cleaned = content.replace(/```json\s*|```\s*/g, "").trim();
-      selections = JSON.parse(cleaned);
-    } catch (e) {
-      console.error("Failed to parse auto-select response:", content);
-      return res.status(500).json({ success: false, message: "AI returned invalid response" });
+    if (!modelId) {
+      return res.status(400).json({ success: false, message: "Model ID is required" });
     }
 
-    const validated = {};
-    for (const [key, value] of Object.entries(selections)) {
-      if (lockedList.includes(key)) continue;
-      if (CANONICAL_OPTIONS[key] && CANONICAL_OPTIONS[key].includes(value)) {
-        validated[key] = value;
-      }
-    }
-
-    const constrained = applyConstraints(validated);
-    for (const key of Object.keys(constrained)) {
-      if (lockedList.includes(key)) delete constrained[key];
-      if (!constrained[key]) delete constrained[key];
-    }
-
-    console.log(`✅ Auto-select: "${description.substring(0, 50)}..." → ${Object.keys(constrained).length} chips selected (constraints applied)`);
-
+    const constrained = await runNsfwAutoSelectSelections(userId, modelId, description);
     res.json({ success: true, selections: constrained });
   } catch (error) {
     console.error("Auto-select error:", error);
-    res.status(500).json({ success: false, message: "Failed to auto-select" });
+    const msg = error?.message || "Failed to auto-select";
+    if (msg === "Model not found") {
+      return res.status(404).json({ success: false, message: msg });
+    }
+    if (msg === "AI not configured") {
+      return res.status(500).json({ success: false, message: msg });
+    }
+    res.status(500).json({ success: false, message: msg });
+  }
+}
+
+// ============================================
+// PLAN: auto-select chips + generate prompt in one step (simple flow)
+// POST /api/nsfw/plan-generation
+// Body: { modelId, userRequest }
+// ============================================
+export async function planNsfwGeneration(req, res) {
+  try {
+    const userId = req.user.userId;
+    const { modelId, userRequest } = req.body;
+
+    if (!modelId || !userRequest || typeof userRequest !== "string" || !userRequest.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Model ID and scene description are required",
+      });
+    }
+
+    const desc = userRequest.trim().slice(0, 500);
+
+    const model = await prisma.savedModel.findFirst({
+      where: { id: modelId, userId },
+    });
+    if (!model) {
+      return res.status(404).json({ success: false, message: "Model not found" });
+    }
+
+    const selections = await runNsfwAutoSelectSelections(userId, modelId, desc);
+    const attrsStr = Object.values(selections).filter(Boolean).join(", ");
+    const prompt = await runNsfwPromptGenerationForModel(model, desc, selections, attrsStr);
+
+    res.json({
+      success: true,
+      selections,
+      prompt,
+      sceneDescription: desc,
+    });
+  } catch (error) {
+    console.error("planNsfwGeneration error:", error);
+    const msg = error?.message || "Failed to plan generation";
+    if (msg === "Model not found") {
+      return res.status(404).json({ success: false, message: msg });
+    }
+    res.status(500).json({ success: false, message: msg });
   }
 }
 
@@ -4243,6 +4325,7 @@ export default {
   getLoraTrainingStatus,
   generateNsfwImage,
   generateNsfwPrompt,
+  planNsfwGeneration,
   generateAdvancedNsfw,
   testFaceRefGeneration,
   testFaceRefStatus,

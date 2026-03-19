@@ -75,6 +75,7 @@ import {
   assignTrainingImages,
   generateNsfwImage,
   generateNsfwPrompt,
+  planNsfwGeneration,
   autoSelectChips,
   generateAdvancedNsfw,
   testFaceRefGeneration,
@@ -483,6 +484,7 @@ router.post("/nsfw/train-lora", authMiddleware, generationLimiter, trainLora);
 router.get("/nsfw/training-status/:modelId", authMiddleware, getLoraTrainingStatus);
 router.post("/nsfw/generate", authMiddleware, generationLimiter, generateNsfwImage);
 router.post("/nsfw/generate-prompt", authMiddleware, generationLimiter, generateNsfwPrompt);
+router.post("/nsfw/plan-generation", authMiddleware, generationLimiter, planNsfwGeneration);
 router.post("/nsfw/auto-select", authMiddleware, generationLimiter, autoSelectChips);
 router.post("/nsfw/generate-advanced", authMiddleware, generationLimiter, generateAdvancedNsfw);
 router.post("/nsfw/test-face-ref", authMiddleware, generationLimiter, testFaceRefGeneration);
