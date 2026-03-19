@@ -95,13 +95,13 @@ function buildCaptionSystemPrompt(triggerWord, captionSubjectClass) {
 
 ${genderLock}RULES:
 ${rule1}
-2. Describe EVERYTHING visible EXCEPT permanent identity features the LoRA should learn from the trigger alone: overall face shape, specific nose shape/size, eye shape (e.g. almond, round), eye color if it is a core fixed trait, bone structure, jawline, cheekbones, ethnicity indicators when they are fixed for this character. If hair color/style is consistent across the whole dataset, describe it sparingly or omit so it does not dilute trigger strength.
-3. DO describe (priority order): pose and body position; camera angle and framing (close-up, half-body, full-body, etc.); clothing and accessories; hair style and color when it varies across images; expression, mood, and emotion; background and environment; lighting type and quality; realistic style/quality only when visible or appropriate — e.g. smartphone photo, natural lighting, soft shadows, 35mm film style, high quality, detailed skin texture. Avoid empty boosters like "masterpiece", "8k", "ultra detailed" unless they clearly match the image aesthetic.
-4. Use natural language in 1–2 concise sentences OR a compact comma-separated phrase list (both work for Z-Image Turbo). Aim for 15–40 words total — short and punchy beats verbose. Prefer readable flow; tags are fine if you keep style consistent. No bullet points, no line breaks, no JSON or extra formatting.
-5. Be strictly accurate — describe ONLY what is visible. Do not invent or assume.
-6. Prioritize VARIATIONS in the dataset: emphasize changing poses, outfits, angles, lighting, backgrounds. Do NOT repeat the same constant details in every caption (e.g. if every image has long black hair, mention rarely or omit after early images) so captions teach what stays promptable.
-7. Keep terminology and structure consistent across ALL captions in the dataset (similar phrasing for similar poses/lighting; same general order: pose → clothing → expression → background → style) for training stability.
-8. Stay punchy — no redundancy or fluff.
+2. Describe EVERYTHING visible EXCEPT the subject's permanent identity features the LoRA must learn from the trigger word alone. Do NOT describe: overall face shape, specific nose shape/size, eye shape (e.g. almond, round), eye color if it is a core trained trait, bone structure, jawline, cheekbones, ethnicity indicators when fixed for this character (unless variability is intended). If hair color/style is identical across the dataset, describe sparingly or omit after early captions so the trigger stays strong.
+3. DO describe, in order of importance: pose and body position; camera angle and framing (close-up, half-body, full-body, etc.); clothing and accessories; hair style and color when it varies across images; expression, mood, and emotion; background and environment details; lighting type and quality; overall image style or quality when visible (e.g. candid photo, smartphone snapshot, natural lighting, soft shadows, 35mm film look). Be selective with quality tags — avoid "masterpiece", "8k", "ultra detailed", "hyperrealistic" unless they clearly match the image; Turbo already handles realism.
+4. Use natural language in 1–2 concise sentences OR a compact comma-separated phrase list (both work; consistency across the dataset matters more than style). Aim for 15–40 words total. No bullet points, no line breaks, no JSON.
+5. Be strictly accurate — describe ONLY what is actually visible. Do not invent or assume.
+6. Prioritize dataset VARIATIONS: describe changing elements (poses, outfits, angles, lighting) more than constants. Do not repeat the same fixed details in every caption.
+7. Maintain consistent terminology, phrasing, and structure across ALL captions (same order when possible: pose → clothing → expression → background → style) for training stability.
+8. Keep captions punchy and focused — avoid redundancy or verbosity.
 
 EXAMPLE OUTPUTS:
 ${examples}`;

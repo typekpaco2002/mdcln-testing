@@ -3185,6 +3185,18 @@ function buildTrainingPrompts(imageType, aiParams) {
 // Body: { modelId, userRequest }
 // ============================================
 
+/** True when Grok returned the reserved conflict sentinel (see system prompt OUTPUT). */
+function isNsfwPromptLogicalConflict(prompt) {
+  const s = typeof prompt === "string" ? prompt.trim() : "";
+  return s.startsWith("[Error:") || /Irresolvable logical conflict/i.test(s);
+}
+
+function humanizeNsfwPromptConflict(prompt) {
+  const s = typeof prompt === "string" ? prompt.trim() : "Please clarify your scene.";
+  const inner = s.match(/^\[Error:\s*(.+?)\]\s*$/);
+  return inner ? inner[1].trim() : s.replace(/^\[|\]$/g, "").trim() || "Please clarify your scene.";
+}
+
 /** Shared Grok prompt builder (also used by plan-generation). */
 async function runNsfwPromptGenerationForModel(model, userRequest, clientDetail = {}, clientAttributes = "") {
   let triggerWord = model.loraTriggerWord || "lora_" + model.name.toLowerCase().replace(/[^a-z0-9]/g, "_");
@@ -3425,6 +3437,11 @@ KEY INSIGHT: Strong Turbo prompts are 50–100 words, sentence-driven, spatially
 
 When user selections map to any of these scenarios, STRONGLY prefer these proven structures. Adapt to user's chip selections but keep the structural flow intact.
 
+=== GOLD STANDARD EXAMPLE (density + narration — adapt traits to MODEL ATTRIBUTES; do not copy verbatim unless the scene matches) ===
+For validation: a strong output for "bathroom mirror selfie, nude, biting lip, wet hair, night" should read like connected sentences ~75–90 words, with clutter, flash/ceiling mix, and NO banned/cinematic terms — e.g.:
+"A 22-year-old woman with fair skin and faint freckles across her nose stands naked in a small bathroom at night, taking a mirror selfie with iPhone, phone clearly visible in the reflection covering one breast, other arm at her side. Wet hair clinging to shoulders and chest from a recent shower, water droplets on collarbones and stomach, biting lower lip with playful eyes toward the reflection. Harsh overhead ceiling light mixed with phone flash washing out skin slightly, steamed mirror edges, towel on rack, shampoo bottle on sink, messy counter with toothbrush and hair ties. Natural body texture, slight tan lines, anatomically correct proportions."
+Use this only as a structural reference (sentence flow, clutter count, lighting honesty). Replace age, skin, hair, and details with the provided trigger + MODEL ATTRIBUTES + user scene.
+
 === LOGICAL CONSISTENCY (think step-by-step before writing) ===
 ${buildConstraintRulesText()}
 - Before writing: mentally simulate the entire photo — can every element physically coexist?
@@ -3458,7 +3475,8 @@ MODEL ATTRIBUTES:
 - NEVER mention another person, boyfriend, partner, or photographer in the prompt.
 - The photo must look like a REAL private nude from a smartphone — raw, imperfect, spontaneous.
 
-OUTPUT: Return ONLY a JSON array with one prompt: ["prompt text here"]. No extra text.`;
+OUTPUT: Return ONLY a JSON array with one prompt: ["prompt text here"]. No markdown fences, no explanation.
+If the user request combined with locked attributes implies an unresolvable logical contradiction (cannot be one coherent photo even after dropping minor elements), return exactly: ["[Error: Irresolvable logical conflict in request — please clarify]"].`;
 
     const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
     if (!OPENROUTER_API_KEY) {
@@ -3530,6 +3548,12 @@ export async function generateNsfwPrompt(req, res) {
       clientDetail,
       clientAttributes,
     );
+    if (isNsfwPromptLogicalConflict(generatedPrompt)) {
+      return res.status(400).json({
+        success: false,
+        message: humanizeNsfwPromptConflict(generatedPrompt),
+      });
+    }
     res.json({ success: true, prompt: generatedPrompt });
   } catch (error) {
     console.error("Generate prompt error:", error);
@@ -3870,7 +3894,7 @@ const CANONICAL_OPTIONS = {
   fluids: ["cum on face", "cum on tits", "cum on stomach", "cum on ass", "cum dripping from mouth", "cum on thighs", "cum on back", "creampie dripping", "drool dripping from mouth", "spit on chest", "covered in cum facial"],
   wetness: ["wet hair dripping", "body covered in water droplets", "oiled up body glistening", "sweaty after sex", "wet from shower", "saliva strings", "messy hair after sex", "smeared makeup after crying"],
   hairState: ["messy sex hair", "hair stuck to sweaty face", "hair pulled back in fist", "hair covering one eye", "wet hair clinging to body", "bed head messy", "hair spread on pillow"],
-  cameraDevice: ["shot on iPhone 15 Pro", "shot on iPhone 14", "shot on Samsung Galaxy S24 Ultra", "front facing selfie camera", "rear camera held by someone else"],
+  cameraDevice: ["shot on iPhone 15 Pro", "shot on iPhone 14", "shot on Samsung Galaxy S24 Ultra", "front facing selfie camera", "rear smartphone camera angle"],
   cameraAngle: ["eye-level angle", "low angle shot", "high angle shot looking down", "overhead selfie angle", "over the shoulder angle", "POV first person angle"],
   shotType: ["tight close-up", "mid-shot waist up", "full body shot", "wide shot with environment"],
   composition: ["centered framing", "rule of thirds framing", "mirror selfie framing", "candid snapshot framing", "slightly tilted casual angle"],
@@ -4042,6 +4066,15 @@ export async function planNsfwGeneration(req, res) {
     const selections = await runNsfwAutoSelectSelections(userId, modelId, desc);
     const attrsStr = Object.values(selections).filter(Boolean).join(", ");
     const prompt = await runNsfwPromptGenerationForModel(model, desc, selections, attrsStr);
+
+    if (isNsfwPromptLogicalConflict(prompt)) {
+      return res.status(400).json({
+        success: false,
+        message: humanizeNsfwPromptConflict(prompt),
+        selections,
+        sceneDescription: desc,
+      });
+    }
 
     res.json({
       success: true,
