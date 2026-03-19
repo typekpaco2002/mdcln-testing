@@ -68,7 +68,9 @@ async function ensureKieUrl(url) {
 import { validateImageUrl, validateImageUrls } from "../utils/fileValidation.js";
 import { getSafeErrorMessage } from "../utils/safe-error.js";
 import {
-  NUDES_PACK_CREDITS_PER_IMAGE,
+  getNudesPackCreditsPerImage,
+  getNudesPackTotalCredits,
+  getNudesPackCreditsSplit,
   validateNudesPackPoseIds,
   getNudesPackPoseById,
 } from "../../shared/nudesPackPoses.js";
@@ -2703,11 +2705,13 @@ export async function generateNsfwImage(req, res) {
 }
 
 // ============================================
-// POST /api/nsfw/nudes-pack — batch 15 cr/image (looks + trigger injected server-side)
+// POST /api/nsfw/nudes-pack — dynamic cr/image: 15 @ 30 poses → 30 @ 1 pose (linear); looks + trigger server-side
 // Body: { modelId, poseIds: string[], attributes?, attributesDetail?, sceneDescription?, skipFaceSwap?, faceSwapImageUrl?, options?, resolution? }
 // ============================================
 export async function generateNudesPack(req, res) {
   let creditsDeducted = 0;
+  /** @type {number[]} */
+  let creditsSplitForPack = [];
   const userId = req.user?.userId;
   const generationIds = [];
   const queuedGenerationIds = [];
@@ -2814,13 +2818,14 @@ export async function generateNudesPack(req, res) {
       }
     }
 
-    const creditsNeeded = poseIds.length * NUDES_PACK_CREDITS_PER_IMAGE;
+    creditsSplitForPack = getNudesPackCreditsSplit(poseIds.length);
+    const creditsNeeded = getNudesPackTotalCredits(poseIds.length);
     const user = await checkAndExpireCredits(userId);
     const totalCredits = getTotalCredits(user);
     if (totalCredits < creditsNeeded) {
       return res.status(403).json({
         success: false,
-        message: `Need ${creditsNeeded} credits for this nudes pack (${poseIds.length} × ${NUDES_PACK_CREDITS_PER_IMAGE}). You have ${totalCredits} credits.`,
+        message: `Need ${creditsNeeded} credits for this nudes pack (~${getNudesPackCreditsPerImage(poseIds.length)} cr/image avg for ${poseIds.length} poses). You have ${totalCredits} credits.`,
       });
     }
 
@@ -2846,13 +2851,16 @@ export async function generateNudesPack(req, res) {
     };
 
     let queuedCount = 0;
+    let creditsUsedSuccess = 0;
 
     for (let idx = 0; idx < poseIds.length; idx++) {
+      const thisCreditCost =
+        creditsSplitForPack[idx] ?? getNudesPackCreditsPerImage(poseIds.length);
       const poseId = poseIds[idx];
       const pose = getNudesPackPoseById(poseId);
       if (!pose) {
         failures.push({ poseId, error: "Unknown pose" });
-        await refundCredits(userId, NUDES_PACK_CREDITS_PER_IMAGE);
+        await refundCredits(userId, thisCreditCost);
         continue;
       }
 
@@ -2869,7 +2877,7 @@ export async function generateNudesPack(req, res) {
           type: "nsfw",
           prompt: `[${pose.id}] ${userPrompt}`,
           status: "processing",
-          creditsCost: NUDES_PACK_CREDITS_PER_IMAGE,
+          creditsCost: thisCreditCost,
           replicateModel: "comfyui-nsfw",
           isNsfw: true,
         },
@@ -2942,12 +2950,13 @@ export async function generateNudesPack(req, res) {
         generation.id,
         submission.requestId,
         userId,
-        NUDES_PACK_CREDITS_PER_IMAGE,
+        thisCreditCost,
         faceReferenceUrl,
       ).catch((error) => {
         console.error("❌ Nudes pack background error:", error);
       });
       queuedCount += 1;
+      creditsUsedSuccess += thisCreditCost;
       queuedGenerationIds.push(generation.id);
     }
 
@@ -2961,7 +2970,8 @@ export async function generateNudesPack(req, res) {
           : `Nudes pack partially queued: ${queuedCount} ok, ${failures.length} failed (credits refunded for failures).`,
       generations: queuedGenerationIds.map((id) => ({ id, status: "processing" })),
       failures,
-      creditsUsed: queuedCount * NUDES_PACK_CREDITS_PER_IMAGE,
+      creditsPerImage: getNudesPackCreditsPerImage(poseIds.length),
+      creditsUsed: creditsUsedSuccess,
       creditsRemaining: getTotalCredits(updatedUser),
       poseCount: poseIds.length,
     });
@@ -2975,7 +2985,9 @@ export async function generateNudesPack(req, res) {
           console.error("Nudes pack refund gen:", e.message);
         }
       }
-      const fromRows = generationIds.length * NUDES_PACK_CREDITS_PER_IMAGE;
+      const fromRows = creditsSplitForPack
+        .slice(0, generationIds.length)
+        .reduce((a, b) => a + b, 0);
       const remainder = creditsDeducted - fromRows;
       if (remainder > 0) {
         try {
@@ -2990,72 +3002,97 @@ export async function generateNudesPack(req, res) {
 }
 
 // ============================================
-// Background processor for NSFW generation
+// Background processor for NSFW generation (RunPod)
+// Parallel poll workers — match RunPod concurrency so jobs aren't stuck behind each other.
+// Env: NSFW_POLL_CONCURRENCY (default 5), NSFW_MAX_RUNNING_MS (45m), NSFW_MAX_WALL_MS (90m)
 // ============================================
 const nsfwPollQueue = [];
-let nsfwPollRunning = false;
-const NSFW_POLL_INTERVAL = 10000;
-const NSFW_MAX_POLL_TIME = 20 * 60 * 1000;
+let nsfwActivePollWorkers = 0;
+const NSFW_POLL_CONCURRENCY = Math.max(
+  1,
+  Math.min(20, Number(process.env.NSFW_POLL_CONCURRENCY) || 5),
+);
+const NSFW_MAX_RUNNING_MS = Number(process.env.NSFW_MAX_RUNNING_MS) || 45 * 60 * 1000;
+const NSFW_MAX_WALL_MS = Number(process.env.NSFW_MAX_WALL_MS) || 90 * 60 * 1000;
+
+console.log(
+  `🔥 NSFW RunPod poll: ${NSFW_POLL_CONCURRENCY} concurrent workers · running timeout ${Math.round(NSFW_MAX_RUNNING_MS / 60000)}m · wall ${Math.round(NSFW_MAX_WALL_MS / 60000)}m`,
+);
 
 function enqueueNsfwPoll(generationId, requestId, userId, creditsNeeded, faceReferenceUrl) {
   nsfwPollQueue.push({ generationId, requestId, userId, creditsNeeded, faceReferenceUrl, enqueuedAt: Date.now() });
-  console.log(`📥 [Q] Queued NSFW poll for ${generationId} (queue size: ${nsfwPollQueue.length})`);
-  if (!nsfwPollRunning) {
-    nsfwPollRunning = true;
-    runNsfwPollQueue();
+  console.log(
+    `📥 [Q] Queued NSFW poll for ${generationId} (pending ${nsfwPollQueue.length}, active ${nsfwActivePollWorkers}/${NSFW_POLL_CONCURRENCY})`,
+  );
+  pumpNsfwPollWorkers();
+}
+
+function pumpNsfwPollWorkers() {
+  while (nsfwActivePollWorkers < NSFW_POLL_CONCURRENCY && nsfwPollQueue.length > 0) {
+    const job = nsfwPollQueue.shift();
+    nsfwActivePollWorkers++;
+    runOneNsfwPollJob(job)
+      .catch((e) => console.error("[NSFW poll worker] unexpected:", e?.message || e))
+      .finally(() => {
+        nsfwActivePollWorkers--;
+        if (nsfwPollQueue.length > 0) {
+          pumpNsfwPollWorkers();
+        } else if (nsfwActivePollWorkers === 0) {
+          console.log(`📭 [Q] NSFW poll queue empty`);
+        }
+      });
   }
 }
 
-async function runNsfwPollQueue() {
-  while (nsfwPollQueue.length > 0) {
-    const job = nsfwPollQueue[0];
-    const { generationId, requestId, faceReferenceUrl } = job;
-    console.log(`\n🔥 [Q] Polling ${generationId} (${nsfwPollQueue.length} in queue)`);
+async function runOneNsfwPollJob(job) {
+  const { generationId, requestId, faceReferenceUrl } = job;
+  console.log(`\n🔥 [Q] Polling ${generationId.slice(0, 8)}…`);
 
-    try {
-      const pollResult = await pollNsfwJob(requestId, NSFW_MAX_POLL_TIME);
-      const result = await getNsfwGenerationResult(requestId, pollResult._runpodOutput);
-
-      if (result.outputUrls && result.outputUrls.length > 0) {
-        let permanentUrls = result.outputUrls;
-
-        if (faceReferenceUrl) {
-          console.log(`🔄 [Q] Face-swapping ${permanentUrls.length} images...`);
-          const swappedUrls = [];
-          for (let i = 0; i < permanentUrls.length; i++) {
-            try {
-              const swapResult = await faceSwapWithFal(permanentUrls[i], faceReferenceUrl);
-              swappedUrls.push(swapResult.success && swapResult.outputUrl ? swapResult.outputUrl : permanentUrls[i]);
-            } catch {
-              swappedUrls.push(permanentUrls[i]);
-            }
-          }
-          permanentUrls = swappedUrls;
-        }
-
-        const outputUrlValue = permanentUrls.length === 1 ? permanentUrls[0] : JSON.stringify(permanentUrls);
-        await prisma.generation.update({
-          where: { id: generationId },
-          data: { status: "completed", outputUrl: outputUrlValue, completedAt: new Date() },
-        });
-        console.log(`✅ [Q] ${generationId.slice(0, 8)} completed (${permanentUrls.length} imgs)`);
-      } else {
-        throw new Error("No output URLs in result");
-      }
-    } catch (error) {
-      console.error(`❌ [Q] ${generationId.slice(0, 8)} error: ${error.message}`);
-      await refundGeneration(generationId);
-      await prisma.generation.update({
-        where: { id: generationId },
-        data: { status: "failed", errorMessage: getErrorMessageForDb(error.message || "Generation failed") },
-      }).catch(() => {});
+  try {
+    const pollResult = await pollNsfwJob(requestId, NSFW_MAX_RUNNING_MS, NSFW_MAX_WALL_MS);
+    if (pollResult.error) {
+      throw new Error(pollResult.error);
     }
 
-    nsfwPollQueue.shift();
-  }
+    const cached = pollResult.result?._runpodOutput;
+    const result = await getNsfwGenerationResult(requestId, cached);
 
-  nsfwPollRunning = false;
-  console.log(`📭 [Q] NSFW poll queue empty`);
+    if (result.outputUrls && result.outputUrls.length > 0) {
+      let permanentUrls = result.outputUrls;
+
+      if (faceReferenceUrl) {
+        console.log(`🔄 [Q] Face-swapping ${permanentUrls.length} images...`);
+        const swappedUrls = [];
+        for (let i = 0; i < permanentUrls.length; i++) {
+          try {
+            const swapResult = await faceSwapWithFal(permanentUrls[i], faceReferenceUrl);
+            swappedUrls.push(swapResult.success && swapResult.outputUrl ? swapResult.outputUrl : permanentUrls[i]);
+          } catch {
+            swappedUrls.push(permanentUrls[i]);
+          }
+        }
+        permanentUrls = swappedUrls;
+      }
+
+      const outputUrlValue = permanentUrls.length === 1 ? permanentUrls[0] : JSON.stringify(permanentUrls);
+      await prisma.generation.update({
+        where: { id: generationId },
+        data: { status: "completed", outputUrl: outputUrlValue, completedAt: new Date() },
+      });
+      console.log(`✅ [Q] ${generationId.slice(0, 8)} completed (${permanentUrls.length} imgs)`);
+    } else {
+      throw new Error("No output URLs in result");
+    }
+  } catch (error) {
+    console.error(`❌ [Q] ${generationId.slice(0, 8)} error: ${error.message}`);
+    await refundGeneration(generationId);
+    await prisma.generation
+      .update({
+        where: { id: generationId },
+        data: { status: "failed", errorMessage: getErrorMessageForDb(error.message || "Generation failed") },
+      })
+      .catch(() => {});
+  }
 }
 
 async function processNsfwGenerationInBackground(
@@ -4740,7 +4777,8 @@ async function pollSingleNsfwGeneration(gen) {
     } else {
       const age = Math.round((Date.now() - new Date(gen.createdAt).getTime()) / 1000);
       console.log(`  ⏳ ${gen.id.substring(0,8)} still ${status.status} (${age}s old)`);
-      if (age > 30 * 60) {
+      const stuckMaxSec = Number(process.env.NSFW_STUCK_MAX_AGE_SEC) || 100 * 60;
+      if (age > stuckMaxSec) {
         try {
           await refundGeneration(gen.id);
         } catch (e) {
@@ -4748,7 +4786,7 @@ async function pollSingleNsfwGeneration(gen) {
         }
         await prisma.generation.update({
           where: { id: gen.id },
-          data: { status: 'failed', errorMessage: getErrorMessageForDb('Generation timed out (30 min)'), completedAt: new Date() },
+          data: { status: 'failed', errorMessage: getErrorMessageForDb(`Generation timed out (${Math.round(stuckMaxSec / 60)} min)`), completedAt: new Date() },
         }).catch(() => {});
         console.log(`  ⏰ ${gen.id.substring(0,8)} TIMED OUT after ${age}s, credits refunded`);
       }

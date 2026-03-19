@@ -14,6 +14,17 @@ In **Vercel Dashboard** → your project → **Settings** → **Environment Vari
 
 Plus any others your app uses (Stripe, APIs, etc.). Without `DATABASE_URL` and `JWT_SECRET`, the server will exit on startup.
 
+### Optional: NSFW RunPod polling (long-running Node only)
+
+If NSFW image generation uses the in-process RunPod poller, tune concurrency and timeouts to match your RunPod worker count:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NSFW_POLL_CONCURRENCY` | `5` | How many RunPod jobs we poll in parallel (align with max concurrent workers on RunPod). |
+| `NSFW_MAX_RUNNING_MS` | `2700000` (45 min) | Max time in `IN_PROGRESS` (queue time excluded). |
+| `NSFW_MAX_WALL_MS` | `5400000` (90 min) | Absolute max wall time per job (includes `IN_QUEUE`). |
+| `NSFW_STUCK_MAX_AGE_SEC` | `6000` (100 min) | Recovery poller fails stuck `processing` rows older than this. |
+
 ## Note on this stack
 
 This app is a **long-running Node server** (Express + Vite dev or built frontend). Vercel is **serverless**. For a standard Vercel deployment:

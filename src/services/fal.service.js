@@ -1824,19 +1824,24 @@ export async function checkNsfwGenerationStatus(jobId) {
 }
 
 /**
- * Poll a RunPod NSFW job with dynamic polling — timeout only counts while IN_PROGRESS,
- * not while IN_QUEUE.
+ * Poll a RunPod NSFW job — **queue time does not count** toward running timeout (RunPod can sit IN_QUEUE a long time).
  * @param {string} jobId
- * @param {number} runningTimeoutMs  Max ms to wait once IN_PROGRESS (default 20 min)
- * @returns {Promise<{outputUrls: string[]}>}
+ * @param {number} runningTimeoutMs  Max ms in IN_PROGRESS / running (default 45 min)
+ * @param {number} maxWallMs  Absolute max since poll start, including queue (default 90 min)
+ * @returns {Promise<{ phase: string, result?: object, error?: string }>}
  */
-export async function pollNsfwJob(jobId, runningTimeoutMs = 20 * 60 * 1000) {
-  const deadline = Date.now() + runningTimeoutMs;
+export async function pollNsfwJob(
+  jobId,
+  runningTimeoutMs = 45 * 60 * 1000,
+  maxWallMs = 90 * 60 * 1000,
+) {
+  const wallStart = Date.now();
+  let runningStart = null;
   let attempt = 0;
 
-  while (Date.now() < deadline) {
+  while (Date.now() - wallStart < maxWallMs) {
     attempt++;
-    await new Promise(r => setTimeout(r, attempt === 1 ? 3_000 : 5_000));
+    await new Promise((r) => setTimeout(r, attempt === 1 ? 3_000 : 5_000));
 
     let status;
     try {
@@ -1846,12 +1851,30 @@ export async function pollNsfwJob(jobId, runningTimeoutMs = 20 * 60 * 1000) {
       continue;
     }
 
-    if (status.status === "COMPLETED") return { phase: "done", result: { _runpodOutput: status._runpodOutput } };
-    if (status.status === "FAILED")    return { phase: "done", error: status.error || "Generation failed on ComfyUI" };
-    // IN_QUEUE or IN_PROGRESS — keep polling
+    if (status.status === "COMPLETED") {
+      return { phase: "done", result: { _runpodOutput: status._runpodOutput } };
+    }
+    if (status.status === "FAILED") {
+      return { phase: "done", error: status.error || "Generation failed on ComfyUI" };
+    }
+
+    if (status.status === "IN_QUEUE") {
+      runningStart = null;
+      continue;
+    }
+
+    // IN_PROGRESS (or unknown treat as running)
+    if (runningStart === null) runningStart = Date.now();
+    if (Date.now() - runningStart > runningTimeoutMs) {
+      throw new Error(
+        `NSFW job ${jobId} timed out after ${Math.round(runningTimeoutMs / 60000)} min in progress`,
+      );
+    }
   }
 
-  throw new Error(`NSFW job ${jobId} timed out after ${Math.round(runningTimeoutMs / 60000)} minutes`);
+  throw new Error(
+    `NSFW job ${jobId} exceeded wall time (${Math.round(maxWallMs / 60000)} min) — still queued or running`,
+  );
 }
 
 /**

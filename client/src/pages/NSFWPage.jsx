@@ -74,6 +74,12 @@ import AppSidebar from "../components/AppSidebar";
 import LazyVideo from "../components/LazyVideo";
 import CourseTipBanner from "../components/CourseTipBanner";
 import NudesPackModal from "../components/NudesPackModal";
+import {
+  getNudesPackTotalCredits,
+  NUDES_PACK_MAX_POSES,
+  NUDES_PACK_CREDITS_MIN,
+  NUDES_PACK_CREDITS_MAX,
+} from "@shared/nudesPackPoses.js";
 import { selectorCategories, buildSelectionsString, buildSelectionsSummary, applyChipConstraints, getBlockedChips, SCENE_PRESETS } from "../data/nsfwSelectors";
 import { NSFW_RESOLUTION_OPTIONS } from "../constants/nsfwResolutions";
 
@@ -4197,10 +4203,10 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     }
   };
 
-  // Poll for NSFW generation completion
+  // Poll for NSFW generation completion (keep in sync with server RunPod wall ~90m; server completes in background anyway)
   const pollNsfwGeneration = async (generationId) => {
-    const maxAttempts = 60; // 5 minutes max (5 sec intervals)
-    const pollInterval = 5000; // 5 seconds
+    const pollInterval = 5000;
+    const maxAttempts = Math.ceil((55 * 60 * 1000) / pollInterval); // ~55 min — then user can refresh History
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
@@ -4252,7 +4258,10 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
       }
     }
 
-    toast.error("Generation timed out. Check history for results.");
+    toast.error(
+      "No update yet from this tab — long NSFW runs can take 30–60+ min. Open History or refresh; your job may still finish in the background.",
+      { duration: 8000 },
+    );
   };
 
   // Calculate completed training images (from backend)
@@ -4735,7 +4744,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     <p className="text-[11px] text-slate-500 mt-0.5 max-w-xl">
                       30 curated poses (amateur-style nudes + explicit couple shots). Open the list, toggle poses off if you
                       want, then approve — each image gets a unique prompt with your LoRA trigger and current looks.{" "}
-                      <span className="text-slate-400">15 credits per image · 450 for full pack.</span>
+                      <span className="text-slate-400">
+                        Price scales: {NUDES_PACK_CREDITS_MIN}–{NUDES_PACK_CREDITS_MAX} credits per image (fewer poses =
+                        higher per image). Full {NUDES_PACK_MAX_POSES} = {getNudesPackTotalCredits(NUDES_PACK_MAX_POSES)}{" "}
+                        total.
+                      </span>
                     </p>
                   </div>
                   <button
@@ -4748,7 +4761,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     <Grid3X3 className="w-4 h-4" />
                     Plan &amp; approve
                     <span className="inline-flex items-center gap-0.5 text-amber-800 font-bold">
-                      450 <Coins className="w-3.5 h-3.5 text-amber-600" />
+                      {getNudesPackTotalCredits(NUDES_PACK_MAX_POSES)}{" "}
+                      <Coins className="w-3.5 h-3.5 text-amber-600" />
                     </span>
                   </button>
                 </div>

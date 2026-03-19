@@ -1,9 +1,51 @@
 /**
  * Nudes Pack — 30 curated poses for batch NSFW generation.
  * promptFragment: merged with model looks (attributes) + LoRA trigger on the server.
+ *
+ * Pricing: total scales linearly from 30 cr (1 pose) to 450 cr (30 poses) — same endpoints as 15–30 cr/image
+ * at the extremes, but total never exceeds “full pack” when you select fewer than 30 (monotonic).
  */
-export const NUDES_PACK_CREDITS_PER_IMAGE = 15;
+export const NUDES_PACK_CREDITS_MIN = 15;
+export const NUDES_PACK_CREDITS_MAX = 30;
+/** @deprecated use NUDES_PACK_CREDITS_MIN — kept for older imports */
+export const NUDES_PACK_CREDITS_PER_IMAGE = NUDES_PACK_CREDITS_MIN;
 export const NUDES_PACK_MAX_POSES = 30;
+
+/**
+ * Total credits: linear from (n=1 → 30) to (n=30 → 450).
+ * @param {number} selectedCount
+ * @returns {number}
+ */
+export function getNudesPackTotalCredits(selectedCount) {
+  const n = Math.min(NUDES_PACK_MAX_POSES, Math.max(1, Math.round(Number(selectedCount)) || 1));
+  if (n >= NUDES_PACK_MAX_POSES) return NUDES_PACK_CREDITS_MIN * NUDES_PACK_MAX_POSES;
+  if (n <= 1) return NUDES_PACK_CREDITS_MAX;
+  return Math.round(30 + (420 * (n - 1)) / (NUDES_PACK_MAX_POSES - 1));
+}
+
+/**
+ * Average credits per image (rounded) for UI — actual per-image split may vary by 1 so rows sum to total.
+ * @param {number} selectedCount
+ * @returns {number}
+ */
+export function getNudesPackCreditsPerImage(selectedCount) {
+  const n = Math.min(NUDES_PACK_MAX_POSES, Math.max(1, Math.round(Number(selectedCount)) || 1));
+  const total = getNudesPackTotalCredits(n);
+  return Math.max(1, Math.round(total / n));
+}
+
+/**
+ * Integer credits per generation (length n), summing exactly to getNudesPackTotalCredits(n).
+ * @param {number} selectedCount
+ * @returns {number[]}
+ */
+export function getNudesPackCreditsSplit(selectedCount) {
+  const n = Math.min(NUDES_PACK_MAX_POSES, Math.max(1, Math.round(Number(selectedCount)) || 1));
+  const total = getNudesPackTotalCredits(n);
+  const base = Math.floor(total / n);
+  const rem = total - base * n;
+  return Array.from({ length: n }, (_, i) => base + (i < rem ? 1 : 0));
+}
 
 /** @typedef {{ id: string, title: string, summary: string, category: string, promptFragment: string }} NudesPackPose */
 

@@ -2,7 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { X, Loader2, CheckSquare, Square, Layers, Coins } from "lucide-react";
 import {
   NUDES_PACK_POSES,
-  NUDES_PACK_CREDITS_PER_IMAGE,
+  NUDES_PACK_CREDITS_MIN,
+  NUDES_PACK_CREDITS_MAX,
+  getNudesPackCreditsPerImage,
+  getNudesPackTotalCredits,
 } from "@shared/nudesPackPoses.js";
 
 const ALL_IDS = NUDES_PACK_POSES.map((p) => p.id);
@@ -45,7 +48,8 @@ export default function NudesPackModal({
   const selectNone = () => setSelected(new Set());
 
   const count = selected.size;
-  const totalCredits = count * NUDES_PACK_CREDITS_PER_IMAGE;
+  const perImage = getNudesPackCreditsPerImage(count);
+  const totalCredits = getNudesPackTotalCredits(count);
   const canSubmit = count > 0 && !submitting;
 
   const handleApprove = () => {
@@ -145,11 +149,18 @@ export default function NudesPackModal({
         <div className="p-4 sm:p-5 border-t border-white/10 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between shrink-0 bg-black/20">
           <div className="text-[11px] text-slate-400">
             <span className="text-slate-300 font-medium">{count}</span> poses ·{" "}
+            <span className="inline-flex items-center gap-0.5 text-slate-300">
+              {perImage} <Coins className="w-3 h-3 text-yellow-400" />
+            </span>
+            <span className="text-slate-500"> each · total </span>
             <span className="inline-flex items-center gap-0.5 text-yellow-400 font-semibold">
               {totalCredits} <Coins className="w-3.5 h-3.5" />
             </span>
-            {count === 30 && (
-              <span className="text-slate-500 ml-2">(full pack — 30 × {NUDES_PACK_CREDITS_PER_IMAGE} = 450)</span>
+            {count === NUDES_PACK_POSES.length && (
+              <span className="text-slate-500 ml-2">
+                (best rate — {NUDES_PACK_CREDITS_MIN} × {NUDES_PACK_POSES.length} ={" "}
+                {getNudesPackTotalCredits(NUDES_PACK_POSES.length)})
+              </span>
             )}
           </div>
           <div className="flex gap-2">
