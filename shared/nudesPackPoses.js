@@ -88,6 +88,62 @@ export const NUDES_PACK_POSES = [
 
 const byId = new Map(NUDES_PACK_POSES.map((p) => [p.id, p]));
 
+/**
+ * Maps each pack pose to additive RunPod LoRAs (pose slot + amateur_nudes / deepthroat / …).
+ * Batch prompts are often rewritten by Grok into vague prose, so the AI LoRA picker misses keywords —
+ * these hints align pack rows with classic NSFW (explicit terms + chips).
+ *
+ * poseId must match `POSE_LORAS[].id` in server `fal.service.js`.
+ *
+ * @typedef {{ poseId?: string, amateurNudes?: number, deepthroat?: number, masturbation?: number, dildo?: number, oralScene?: boolean }} NudesPackAdditiveLoraHint
+ */
+
+/** @type {Record<string, NudesPackAdditiveLoraHint>} */
+export const NUDES_PACK_ADDITIVE_LORA_HINTS = {
+  // Solo — girlfriend / amateur aesthetic
+  "np-01": { amateurNudes: 0.4 },
+  "np-02": { amateurNudes: 0.48 },
+  "np-03": { amateurNudes: 0.38 },
+  "np-04": { amateurNudes: 0.38 },
+  "np-05": { amateurNudes: 0.38 },
+  "np-06": { amateurNudes: 0.36 },
+  "np-07": { amateurNudes: 0.38 },
+  "np-08": { amateurNudes: 0.4 },
+  "np-09": { amateurNudes: 0.38 },
+  "np-10": { amateurNudes: 0.36 },
+  "np-11": { amateurNudes: 0.42 },
+  "np-12": { amateurNudes: 0.4 },
+  "np-13": { amateurNudes: 0.42 },
+  // Sex — pose LoRAs (match workflow slots)
+  "np-14": { poseId: "missionary" },
+  "np-15": { poseId: "missionary" },
+  "np-16": { poseId: "doggystyle_facing" },
+  "np-17": { poseId: "doggystyle_facing" },
+  "np-18": { poseId: "cowgirl" },
+  "np-19": { poseId: "cowgirl" },
+  "np-20": { poseId: "doggystyle_facing" },
+  // Oral — pose none + deepthroat enhancement (same policy as classic)
+  "np-21": { oralScene: true, deepthroat: 0.48 },
+  "np-22": { oralScene: true, deepthroat: 0.46 },
+  "np-23": { oralScene: true, deepthroat: 0.46 },
+  "np-24": { oralScene: true, deepthroat: 0.45 },
+  "np-25": { poseId: "missionary" },
+  "np-26": { amateurNudes: 0.38 },
+  "np-27": { poseId: "anal_doggystyle" },
+  "np-28": { poseId: "missionary_anal" },
+  "np-29": { poseId: "missionary" },
+  "np-30": { poseId: "cowgirl" },
+};
+
+/**
+ * @param {string} poseId
+ * @returns {NudesPackAdditiveLoraHint | null}
+ */
+export function getNudesPackAdditiveLoraHint(poseId) {
+  if (!poseId || typeof poseId !== "string") return null;
+  return NUDES_PACK_ADDITIVE_LORA_HINTS[poseId] || null;
+}
+
 export function getNudesPackPoseById(id) {
   return byId.get(id) || null;
 }

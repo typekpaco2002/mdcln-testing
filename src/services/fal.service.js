@@ -1217,6 +1217,72 @@ function applyExplicitPoseHeuristic(aiSelection, fullPromptText) {
   }
 }
 
+/**
+ * Nudes pack: Grok often rewrites per-pose prompts into vague prose, so `detectLorasWithAI` + heuristics
+ * miss pose / amateur_nudes / deepthroat. Classic NSFW keeps explicit user wording + chips.
+ * Apply after AI + `applyOralBlowjobLoraPolicy` + `applyExplicitPoseHeuristic` so pack rows match classic additive stack.
+ *
+ * @param {import('../../shared/nudesPackPoses.js').NudesPackAdditiveLoraHint | null | undefined} hint
+ */
+function applyNudesPackAdditiveLoraHint(aiSelection, hint) {
+  if (!hint || typeof hint !== "object") return;
+
+  const enh = { ...(aiSelection.enhancementStrengths || {}) };
+
+  if (hint.oralScene === true || (hint.deepthroat != null && Number(hint.deepthroat) >= 0.35)) {
+    if (aiSelection.pose) {
+      console.warn(
+        `📦 Pack additive hint: cleared pose LoRA "${aiSelection.pose.id}" (oral / deepthroat pack row).`,
+      );
+    }
+    aiSelection.pose = null;
+    const dt = Number(hint.deepthroat);
+    enh.deepthroat = Number.isFinite(dt) && dt >= 0.35
+      ? Math.max(Number(enh.deepthroat) || 0, dt)
+      : Math.max(Number(enh.deepthroat) || 0, 0.45);
+    enh.masturbation = 0;
+    enh.dildo = 0;
+    aiSelection.enhancementStrengths = enh;
+    console.log(`📦 Pack additive hint: oral — deepthroat=${enh.deepthroat}`);
+    return;
+  }
+
+  // Solo / girlfriend rows: only amateur_nudes in hint — drop spurious pose LoRA from softened Grok text.
+  if (hint.amateurNudes != null && !hint.poseId && hint.oralScene !== true) {
+    if (aiSelection.pose) {
+      console.log(`📦 Pack additive hint: cleared pose (solo / amateur-only pack row)`);
+    }
+    aiSelection.pose = null;
+  }
+
+  if (hint.poseId) {
+    const p = POSE_LORAS.find((x) => x.id === hint.poseId);
+    if (p) {
+      aiSelection.pose = p;
+      console.log(`📦 Pack additive hint: pose "${hint.poseId}"`);
+    } else {
+      console.warn(`📦 Pack additive hint: unknown poseId "${hint.poseId}"`);
+    }
+  }
+
+  if (hint.amateurNudes != null) {
+    const a = Number(hint.amateurNudes);
+    if (Number.isFinite(a)) {
+      enh.amateur_nudes = Math.max(Number(enh.amateur_nudes) || 0, a);
+    }
+  }
+  if (hint.masturbation != null) {
+    const m = Number(hint.masturbation);
+    if (Number.isFinite(m)) enh.masturbation = Math.max(Number(enh.masturbation) || 0, m);
+  }
+  if (hint.dildo != null) {
+    const d = Number(hint.dildo);
+    if (Number.isFinite(d)) enh.dildo = Math.max(Number(enh.dildo) || 0, d);
+  }
+
+  aiSelection.enhancementStrengths = enh;
+}
+
 /** Camera / skin / artifact tail shared by solo and partnered prompts (no "solo girl" here). */
 const QUALITY_TECHNICAL_TAIL =
   "shot on iPhone 15 Pro main camera, smartphone photo, slight wide-angle lens distortion, natural skin texture with visible pores and imperfections and skin folds, unedited raw photo, auto-exposure, auto white balance, slight noise in shadows, jpeg compression artifacts, phone flash harsh frontal light washing out skin slightly overexposed, slight motion blur on edges, slightly out of focus background, no color grading, no retouching, no extra limbs, no distorted hands, candid amateur nude, unedited raw smartphone photo, grainy low light photo";
@@ -1574,6 +1640,8 @@ export async function submitNsfwGeneration(params) {
     adminBaseSamplerCfg = null,
     quickFlow = false,
     nudesPack = false,
+    /** @type {import('../../shared/nudesPackPoses.js').NudesPackAdditiveLoraHint | null | undefined} */
+    packAdditiveLoraHint = null,
   } = options;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const normalizeStrength = (value, fallback) => {
@@ -1644,6 +1712,7 @@ export async function submitNsfwGeneration(params) {
   });
   applyOralBlowjobLoraPolicy(aiSelection, prompt);
   applyExplicitPoseHeuristic(aiSelection, prompt);
+  applyNudesPackAdditiveLoraHint(aiSelection, packAdditiveLoraHint);
 
   const detectedPose = aiSelection.pose;
   const hasRunningMakeup = aiSelection.runningMakeup;

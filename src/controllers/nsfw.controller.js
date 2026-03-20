@@ -73,6 +73,7 @@ import {
   getNudesPackCreditsSplit,
   validateNudesPackPoseIds,
   getNudesPackPoseById,
+  getNudesPackAdditiveLoraHint,
 } from "../../shared/nudesPackPoses.js";
 
 async function cleanupTrainingDataset(loraId, modelId) {
@@ -2970,6 +2971,7 @@ export async function generateNudesPack(req, res) {
           loraStrength: userOverrideStrength,
           postProcessing,
           resolution: resSpec.presetId,
+          packAdditiveLoraHint: getNudesPackAdditiveLoraHint(pose.id),
           ...adminSamplerOpts,
         },
       });
