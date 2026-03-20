@@ -156,7 +156,20 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
     try {
       const response = await api.get("/models");
       if (response.data.success) {
-        setModels(response.data.models);
+        const list = response.data.models || [];
+        setModels((prev) => {
+          if (!editingModel?.id || list.length === 0) return list;
+          const idx = list.findIndex((m) => m.id === editingModel.id);
+          if (idx < 0) return list;
+          const merged = {
+            ...list[idx],
+            savedAppearance: editingModel.savedAppearance ?? list[idx].savedAppearance,
+            age: editingModel.age ?? list[idx].age,
+          };
+          const next = [...list];
+          next[idx] = merged;
+          return next;
+        });
       }
     } catch (error) {
       toast.error("Failed to load models");
@@ -256,6 +269,19 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
   const isPhotosLocked =
     (editingModel?.isAIGenerated === true || editingModel?.nsfwOverride === true || editingModel?.nsfwUnlocked === true) &&
     !editingModel?.looksUnlockedByAdmin;
+
+  const closeEditModal = () => {
+    if (editingModel?.id) {
+      setModels((prev) =>
+        prev.map((m) =>
+          m.id === editingModel.id
+            ? { ...m, savedAppearance: editingModel.savedAppearance ?? m.savedAppearance, age: editingModel.age ?? m.age }
+            : m
+        )
+      );
+    }
+    setEditingModel(null);
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -553,7 +579,7 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
       {editingModel && (
         <div
           className={`fixed top-0 right-0 bottom-0 z-[60] flex items-center justify-center p-3 sm:p-5 left-0 bg-black/80 backdrop-blur-sm ${sidebarCollapsed ? "md:left-[80px]" : "md:left-[260px]"}`}
-          onClick={() => setEditingModel(null)}
+          onClick={closeEditModal}
         >
           <div
             className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden flex flex-col glass-panel-strong"
@@ -561,7 +587,7 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => setEditingModel(null)}
+              onClick={closeEditModal}
               className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-500 hover:text-white transition-colors z-10"
               data-testid="button-close-edit"
             >
