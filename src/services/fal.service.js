@@ -792,15 +792,13 @@ function comfyUiGraphToApiPrompt(nodes, links, extra) {
     for (const inp of node.inputs || []) {
       const name = inp.name;
       if (inp.link != null && linkMap[inp.link]) {
-        // Input is linked - use the link, skip the corresponding widget value
         inputs[name] = linkMap[inp.link];
-        // widgets_values array includes values for ALL inputs in order, even linked ones
-        // So we must increment widgetIdx to stay in sync, but don't use the value
-        if (inp.widget != null && widgetIdx < wv.length) {
+        // Skip widget slot(s) for this linked input so next widget lines up.
+        // KSampler seed: we already skipped indices 0,1 via getKsamplerWidgetValuesStartIndex, so do NOT advance.
+        if (inp.widget != null && widgetIdx < wv.length && !(node.type === "KSampler" && inp.name === "seed")) {
           widgetIdx++;
         }
       } else if (inp.widget != null) {
-        // Input has a widget - use the widget value
         if (widgetIdx < wv.length) {
           inputs[name] = wv[widgetIdx++];
         }
