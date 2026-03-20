@@ -830,7 +830,9 @@ export const reformatterAPI = {
     return {
       success: true,
       jobId: start.data?.jobId,
-      message: start.data?.message || "Conversion completed via FFmpeg worker.",
+      message:
+        start.data?.message ||
+        "Conversion started. You can leave this page — check Conversion history for progress.",
     };
   },
   getJobStatus: async (jobId) => {

@@ -66,10 +66,10 @@ export default function ContentReformatterPage() {
     }
   }, [showHistory]);
 
-  // Poll periodically when history is open so processing jobs update (stable deps to avoid refresh loops)
+  // Poll periodically when history is open so processing jobs update (faster while user watches)
   useEffect(() => {
     if (!showHistory) return;
-    const t = setInterval(() => loadHistory(), 8000);
+    const t = setInterval(() => loadHistory(), 4000);
     return () => clearInterval(t);
   }, [showHistory]);
 
@@ -90,9 +90,11 @@ export default function ContentReformatterPage() {
     try {
       const data = await reformatterAPI.convertWithWorker(selectedFile, (p) => setUploadProgress(p ?? 0));
       setUploadProgress(100);
-      loadHistory();
       setShowHistory(true);
-      toast.success(data?.message || "Conversion completed via FFmpeg worker. See Conversion history.");
+      await loadHistory();
+      toast.success(
+        data?.message || "Conversion started. You can leave this page — progress appears in Conversion history.",
+      );
     } catch (err) {
       const message = err?.response?.data?.message || err?.message || "Failed to start conversion";
       setError(message);

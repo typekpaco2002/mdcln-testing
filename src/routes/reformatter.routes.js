@@ -159,51 +159,56 @@ router.post("/convert-with-worker", authMiddleware, express.json(), async (req, 
       },
     });
 
-    try {
-      const outputExt = isVideo ? "mp4" : "jpg";
-      const contentType = isVideo ? "video/mp4" : "image/jpeg";
-      const fileName = `converted.${outputExt}`;
-      const key = `conversions/${userId}/${job.id}/${fileName}`;
-      const { uploadUrl, publicUrl } = await getR2PresignedPutForKey(key, contentType, 3600);
+    // Respond immediately so the client can show "Processing" in history if the user leaves the tab.
+    // Worker runs in the background (same pattern as convert-background).
+    res.json({
+      success: true,
+      jobId: job.id,
+      message: "Conversion started. You can leave this page — check Conversion history for progress.",
+    });
 
-      const wr = await postRepurposeJobToWorker({
-        inputUrl: inputUrlRaw.trim(),
-        isImage,
-        settings: { copies: 1, filters: {}, metadata: {} },
-        outputPutUrls: [{ putUrl: uploadUrl, publicUrl, contentType }],
-        jobRef: { converterJobId: job.id, source: "reformatter-convert-with-worker" },
-      });
+    void (async () => {
+      try {
+        const outputExt = isVideo ? "mp4" : "jpg";
+        const contentType = isVideo ? "video/mp4" : "image/jpeg";
+        const fileName = `converted.${outputExt}`;
+        const key = `conversions/${userId}/${job.id}/${fileName}`;
+        const { uploadUrl, publicUrl } = await getR2PresignedPutForKey(key, contentType, 3600);
 
-      const outUrl = wr.outputUrls?.[0] || publicUrl;
-      const expiresAt = new Date(Date.now() + CONVERTER_JOB_RETENTION_DAYS * 24 * 60 * 60 * 1000);
-      await prisma.converterJob.update({
-        where: { id: job.id },
-        data: {
-          status: "completed",
-          outputUrl: outUrl,
-          outputExt,
-          completedAt: new Date(),
-          expiresAt,
-        },
-      });
-      return res.json({
-        success: true,
-        jobId: job.id,
-        message: "Conversion completed via FFmpeg worker.",
-      });
-    } catch (inner) {
-      const msg = (inner?.message || "Worker failed").slice(0, 500);
-      await prisma.converterJob.update({
-        where: { id: job.id },
-        data: { status: "failed", errorMessage: msg, completedAt: new Date() },
-      }).catch(() => {});
-      throw inner;
-    }
+        const wr = await postRepurposeJobToWorker({
+          inputUrl: inputUrlRaw.trim(),
+          isImage,
+          settings: { copies: 1, filters: {}, metadata: {} },
+          outputPutUrls: [{ putUrl: uploadUrl, publicUrl, contentType }],
+          jobRef: { converterJobId: job.id, source: "reformatter-convert-with-worker" },
+        });
+
+        const outUrl = wr.outputUrls?.[0] || publicUrl;
+        const expiresAt = new Date(Date.now() + CONVERTER_JOB_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+        await prisma.converterJob.update({
+          where: { id: job.id },
+          data: {
+            status: "completed",
+            outputUrl: outUrl,
+            outputExt,
+            completedAt: new Date(),
+            expiresAt,
+          },
+        });
+      } catch (inner) {
+        const msg = (inner?.message || "Worker failed").slice(0, 500);
+        console.error("Reformatter convert-with-worker async error:", inner?.message);
+        await prisma.converterJob.update({
+          where: { id: job.id },
+          data: { status: "failed", errorMessage: msg, completedAt: new Date() },
+        }).catch(() => {});
+      }
+    })();
   } catch (e) {
     console.error("Reformatter convert-with-worker error:", e?.message);
-    return res.status(502).json({
+    return res.status(500).json({
       success: false,
-      message: e?.message || "Worker conversion failed. Try browser conversion or server convert.",
+      message: e?.message || "Failed to start conversion.",
     });
   }
 });
