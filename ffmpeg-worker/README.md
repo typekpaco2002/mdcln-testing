@@ -2,9 +2,11 @@
 
 HTTP service that runs **video/image repurposer** jobs (`processVideoBatch` / `processImageBatch`) with system **FFmpeg** + **exiftool**.
 
-## Build (from repository root)
+**Standalone repo (minimal, Docker-only):** [`github.com/typekpaco2002/ffpmeg`](https://github.com/typekpaco2002/ffpmeg) — use that for Hetzner/Easypanel/Railway worker deploys.
 
-The `Dockerfile` expects the **repo root** (it copies `package.json` and `src/` used by `src/services/video-repurpose.service.js`).
+## Build (from this monorepo root)
+
+The `Dockerfile` expects the **full app repo root** (it copies `package.json` and `src/` used by `src/services/video-repurpose.service.js`).
 
 ```bash
 docker build -f ffmpeg-worker/Dockerfile -t ffmpeg-worker .
