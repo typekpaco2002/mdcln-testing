@@ -93,3 +93,7 @@ Run under systemd or PM2 for production.
 | Hetzner    | `FFMPEG_WORKER_API_KEY` | Same as Railway                    |
 
 If `FFMPEG_WORKER_URL` or R2 is not set, the app falls back to local ffmpeg (if available) or WASM.
+
+## Optional: worker callback (no polling)
+
+After each job, the worker can `POST` the same JSON to your app — see **`docs/FFMPEG_WORKER_CALLBACK.md`**. Redeploy the worker image after pulling changes that add `callbackUrl` / `jobRef` support.

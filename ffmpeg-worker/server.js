@@ -5,21 +5,23 @@
  *
  * Run from repo root: node ffmpeg-worker/server.js
  * Requires: FFMPEG_WORKER_API_KEY, PORT (default 3100)
+ *
+ * Optional: callbackUrl + callbackSecret — after the job finishes, POST same JSON as /job response
+ * (plus jobRef if sent) to callbackUrl so modelclone can update DB without polling.
  */
 import "dotenv/config";
 import express from "express";
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { fileURLToPath } from "url";
 import { processVideoBatch, processImageBatch, checkFfmpegAvailable } from "../src/services/video-repurpose.service.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = Number(process.env.PORT) || 3100;
 const API_KEY = process.env.FFMPEG_WORKER_API_KEY;
 
-app.use(express.json({ limit: "1mb" }));
+const JSON_LIMIT = process.env.FFMPEG_WORKER_JSON_LIMIT || "4mb";
+app.use(express.json({ limit: JSON_LIMIT }));
 
 function requireAuth(req, res, next) {
   const key = req.headers["x-api-key"] || req.query?.apiKey;
@@ -52,19 +54,69 @@ async function uploadToPutUrl(putUrl, filePath, contentType) {
   }
 }
 
+const CALLBACK_TIMEOUT_MS = Math.min(
+  300_000,
+  Math.max(5_000, Number(process.env.FFMPEG_WORKER_CALLBACK_TIMEOUT_MS) || 120_000),
+);
+
+/**
+ * Fire-and-forget: notify modelclone (or n8n) when job completes — same payload shape as HTTP response.
+ */
+async function fireCallback(callbackUrl, callbackSecret, payload) {
+  if (!callbackUrl || typeof callbackUrl !== "string") return;
+  const u = callbackUrl.trim();
+  if (!/^https?:\/\//i.test(u)) {
+    console.warn("[callback] skipped: invalid URL");
+    return;
+  }
+  try {
+    const headers = { "Content-Type": "application/json", "User-Agent": "ffpmeg-worker/1.0" };
+    if (callbackSecret != null && String(callbackSecret).length > 0) {
+      headers["X-Callback-Secret"] = String(callbackSecret);
+    }
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), CALLBACK_TIMEOUT_MS);
+    const r = await fetch(u, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+      signal: ac.signal,
+    });
+    clearTimeout(t);
+    if (!r.ok) {
+      const txt = await r.text();
+      console.warn(`[callback] ${u} → HTTP ${r.status}: ${txt.slice(0, 300)}`);
+    } else {
+      console.log(`[callback] ok → ${u.slice(0, 80)}…`);
+    }
+  } catch (err) {
+    console.warn("[callback] failed:", err?.message || err);
+  }
+}
+
 /**
  * POST /job
  * Body: {
- *   inputUrl: string,           // presigned GET URL for video/image
- *   watermarkUrl?: string,       // optional presigned GET for watermark
- *   inputStem?: string,         // basename without extension for output naming (e.g. "myvideo" -> myvideo_repurpose_001.mp4)
- *   settings: { copies, filters, metadata },
+ *   inputUrl, watermarkUrl?, inputStem?, settings: { copies, filters, metadata },
  *   isImage: boolean,
- *   outputPutUrls: [ { putUrl, publicUrl, contentType? }, ... ]  // one per copy, order matters
+ *   outputPutUrls: [ { putUrl, publicUrl, contentType? }, ... ],
+ *   callbackUrl?: string,      // POST result here after success/failure (non-blocking)
+ *   callbackSecret?: string,   // sent as X-Callback-Secret
+ *   jobRef?: string | object,  // echoed back for correlation (e.g. prisma job id)
  * }
  */
 app.post("/job", requireAuth, async (req, res) => {
-  const { inputUrl, watermarkUrl, inputStem, settings, isImage, outputPutUrls } = req.body || {};
+  const {
+    inputUrl,
+    watermarkUrl,
+    inputStem,
+    settings,
+    isImage,
+    outputPutUrls,
+    callbackUrl,
+    callbackSecret,
+    jobRef,
+  } = req.body || {};
   if (!inputUrl || !outputPutUrls?.length || !settings) {
     return res.status(400).json({ error: "Bad request", message: "inputUrl, outputPutUrls, and settings are required" });
   }
@@ -73,6 +125,7 @@ app.post("/job", requireAuth, async (req, res) => {
   fs.mkdirSync(tempDir, { recursive: true });
   let inputPath = null;
   let watermarkPath = null;
+  const safeJobRef = jobRef !== undefined ? jobRef : null;
 
   try {
     inputPath = await downloadToFile(inputUrl);
@@ -97,7 +150,7 @@ app.post("/job", requireAuth, async (req, res) => {
     const outputDir = path.join(tempDir, "out");
     fs.mkdirSync(outputDir, { recursive: true });
 
-    const progressCb = () => {}; // optional: could stream progress back later
+    const progressCb = () => {};
     const processFn = isImage ? processImageBatch : processVideoBatch;
     const outputs = await processFn(inputPath, watermarkPath || null, outputDir, settings, progressCb, { useWasm: false });
 
@@ -113,13 +166,26 @@ app.post("/job", requireAuth, async (req, res) => {
     }
 
     const publicUrls = outputs.map((o, i) => outputPutUrls[i].publicUrl);
-    return res.json({ ok: true, outputUrls: publicUrls, outputFileNames: outputs.map((o) => o.fileName) });
+    const result = {
+      ok: true,
+      outputUrls: publicUrls,
+      outputFileNames: outputs.map((o) => o.fileName),
+      jobRef: safeJobRef,
+    };
+    res.json(result);
+    void fireCallback(callbackUrl, callbackSecret, result);
   } catch (e) {
     console.error("FFmpeg worker job error:", e);
-    return res.status(500).json({
+    const errPayload = {
+      ok: false,
       error: "Job failed",
       message: e?.message || String(e),
-    });
+      jobRef: safeJobRef,
+    };
+    if (!res.headersSent) {
+      res.status(500).json(errPayload);
+    }
+    void fireCallback(callbackUrl, callbackSecret, errPayload);
   } finally {
     try {
       if (inputPath && fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
@@ -129,9 +195,6 @@ app.post("/job", requireAuth, async (req, res) => {
   }
 });
 
-/**
- * GET /health — checks ffmpeg/ffprobe are available
- */
 app.get("/health", async (_req, res) => {
   try {
     await checkFfmpegAvailable();
@@ -142,7 +205,13 @@ app.get("/health", async (_req, res) => {
 });
 
 app.get("/", (_req, res) => {
-  res.json({ service: "ffmpeg-worker", endpoints: ["GET /health", "POST /job (X-API-Key required)"] });
+  res.json({
+    service: "ffmpeg-worker",
+    endpoints: [
+      "GET /health",
+      "POST /job (X-API-Key required; optional callbackUrl, callbackSecret, jobRef)",
+    ],
+  });
 });
 
 app.listen(PORT, () => {

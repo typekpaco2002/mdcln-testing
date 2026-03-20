@@ -22,6 +22,13 @@ docker run -d --name ffmpeg-worker -p 3100:3100 \
 ```
 
 - `GET /health` — FFmpeg/ffprobe check  
-- `POST /job` — requires header `X-API-Key: <same as FFMPEG_WORKER_API_KEY>`
+- `POST /job` — requires header `X-API-Key: <same as FFMPEG_WORKER_API_KEY>`  
+- Optional: `callbackUrl`, `callbackSecret`, `jobRef` on `/job` — worker POSTs the same JSON as the HTTP response when the job finishes (see `docs/FFMPEG_WORKER_CALLBACK.md`).
+
+**Integration test (from dev machine):**
+
+```bash
+FFMPEG_WORKER_URL=https://your-worker.example.com FFMPEG_WORKER_API_KEY=secret node scripts/test-ffmpeg-worker.mjs
+```
 
 See `docs/DEPLOY_RAILWAY_HETZNER_FFMPEG.md` in this repo for Railway + Hetzner deployment.
