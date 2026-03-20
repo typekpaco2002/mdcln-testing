@@ -2918,19 +2918,9 @@ export async function generateNudesPack(req, res) {
 
     const updatedUser = await prisma.user.findUnique({ where: { id: userId } });
 
-    res.json({
-      success: true,
-      message: `Nudes pack queued: ${poseIds.length} image(s). You can leave this page — they will appear in your gallery when ready.`,
-      generations: generationIds.map((id) => ({ id, status: "queued" })),
-      failures,
-      creditsPerImage: getNudesPackCreditsPerImage(poseIds.length),
-      creditsUsed: creditsNeeded,
-      creditsRemaining: getTotalCredits(updatedUser),
-      poseCount: poseIds.length,
-      async: true,
-    });
-
-    void (async () => {
+    // Vercel/serverless: fire-and-forget async is killed when the response is sent — nothing reaches RunPod.
+    // waitUntil() keeps the function alive until prompts + RunPod submits finish (see vercel.json maxDuration).
+    const nudesPackBackgroundWork = (async () => {
       let queuedCount = 0;
       const bgFailures = [];
 
@@ -3003,7 +2993,7 @@ export async function generateNudesPack(req, res) {
             sceneDescription: userRequestForAi || sceneLine || finalUserPrompt,
             chipSelections: attributesDetail,
             options: {
-              nudesPack: false,
+              nudesPack: true,
               quickFlow: options.quickFlow === true,
               loraStrength: userOverrideStrength,
               postProcessing,
@@ -3097,6 +3087,30 @@ export async function generateNudesPack(req, res) {
         }
       }
     })();
+
+    if (process.env.VERCEL) {
+      try {
+        const { waitUntil } = await import("@vercel/functions");
+        waitUntil(nudesPackBackgroundWork);
+      } catch (e) {
+        console.warn("Nudes pack: waitUntil unavailable, background may not complete on serverless:", e?.message);
+        void nudesPackBackgroundWork;
+      }
+    } else {
+      void nudesPackBackgroundWork;
+    }
+
+    res.json({
+      success: true,
+      message: `Nudes pack queued: ${poseIds.length} image(s). You can leave this page — they will appear in your gallery when ready.`,
+      generations: generationIds.map((id) => ({ id, status: "queued" })),
+      failures,
+      creditsPerImage: getNudesPackCreditsPerImage(poseIds.length),
+      creditsUsed: creditsNeeded,
+      creditsRemaining: getTotalCredits(updatedUser),
+      poseCount: poseIds.length,
+      async: true,
+    });
   } catch (error) {
     console.error("❌ Nudes pack error:", error);
     if (creditsDeducted > 0 && userId) {

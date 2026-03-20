@@ -17,7 +17,10 @@
     "api/index.js": {
       "maxDuration": 300,
       "excludeFiles": "node_modules/{ffmpeg-static,ffprobe-static,@ffmpeg-installer}/**",
-      "includeFiles": "node_modules/proxy-agent/**"
+      "includeFiles": [
+        "node_modules/proxy-agent/**",
+        "attached_assets/nsfw_core_workflow.json"
+      ]
     }
   },
   "headers": [

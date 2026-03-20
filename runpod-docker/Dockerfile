@@ -69,6 +69,10 @@ RUN chmod +x /workspace/setup_custom_nodes.sh && /workspace/setup_custom_nodes.s
 # Verify chflame163/ComfyUI_LayerStyle_Advance cloned correctly (contains JoyCaption nodes)
 RUN test -d /workspace/ComfyUI/custom_nodes/ComfyUI_LayerStyle_Advance || \
     (echo "ERROR: chflame163/ComfyUI_LayerStyle_Advance failed to clone" && exit 1)
+RUN test -d /workspace/ComfyUI/custom_nodes/Derfuu_ComfyUI_ModdedNodes || \
+    (echo "ERROR: Derfuu/Derfuu_ComfyUI_ModdedNodes failed to clone" && exit 1)
+RUN test -d /workspace/ComfyUI/custom_nodes/ComfyUI-Crystools || \
+    (echo "ERROR: crystian/ComfyUI-Crystools failed to clone" && exit 1)
 
 # Install requirements for each custom node
 RUN for dir in /workspace/ComfyUI/custom_nodes/*/; do \

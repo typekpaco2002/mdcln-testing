@@ -111,7 +111,7 @@ model Generation {
   creditsRefunded Boolean     @default(false)
   isTrial         Boolean     @default(false)
   isNsfw          Boolean     @default(false)
-  pipelinePayload Json?       // when set, callback finds by imageTaskId and continues pipeline (e.g. image -> video)
+  pipelinePayload Json? // when set, callback finds by imageTaskId and continues pipeline (e.g. image -> video)
   model           SavedModel? @relation(fields: [modelId], references: [id])
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -123,20 +123,20 @@ model Generation {
 }
 
 model KieTask {
-  id          String   @id @default(cuid())
-  taskId      String   @unique
-  provider    String   @default("kie")
-  entityType  String
-  entityId    String
-  step        String?
-  status      String   @default("processing") // processing | completed | failed
-  outputUrl   String?
+  id           String    @id @default(cuid())
+  taskId       String    @unique
+  provider     String    @default("kie")
+  entityType   String
+  entityId     String
+  step         String?
+  status       String    @default("processing") // processing | completed | failed
+  outputUrl    String?
   errorMessage String?
-  payload     Json?
-  userId      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  completedAt DateTime?
+  payload      Json?
+  userId       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  completedAt  DateTime?
 
   @@index([entityType, entityId])
   @@index([status, createdAt])
@@ -144,45 +144,45 @@ model KieTask {
 }
 
 model SavedModel {
-  id                 String              @id @default(uuid())
-  userId             String
-  name               String
-  photo1Url          String
-  photo2Url          String
-  photo3Url          String
-  thumbnail          String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  status             String              @default("ready")
-  isAIGenerated      Boolean             @default(false)
-  aiGenerationParams Json?
-  loraStatus         String?
-  loraUrl            String?
-  loraTriggerWord    String?
-  loraTrainedAt      DateTime?
-  loraFalRequestId   String?
-  loraError          String?
-  nsfwUnlocked       Boolean             @default(false)
+  id                   String              @id @default(uuid())
+  userId               String
+  name                 String
+  photo1Url            String
+  photo2Url            String
+  photo3Url            String
+  thumbnail            String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  status               String              @default("ready")
+  isAIGenerated        Boolean             @default(false)
+  aiGenerationParams   Json?
+  loraStatus           String?
+  loraUrl              String?
+  loraTriggerWord      String?
+  loraTrainedAt        DateTime?
+  loraFalRequestId     String?
+  loraError            String?
+  nsfwUnlocked         Boolean             @default(false)
   /// When true, user can edit model photos/looks even if normally locked (admin unlock)
-  looksUnlockedByAdmin Boolean            @default(false)
-  faceReferenceUrl   String?
-  nsfwOverride       Boolean             @default(false)
-  loraSessionPaid    Boolean             @default(false)
-  activeLoraId       String?
-  age                Int?
-  savedAppearance    Json?
-  paymentIntentId    String?
+  looksUnlockedByAdmin Boolean             @default(false)
+  faceReferenceUrl     String?
+  nsfwOverride         Boolean             @default(false)
+  loraSessionPaid      Boolean             @default(false)
+  activeLoraId         String?
+  age                  Int?
+  savedAppearance      Json?
+  paymentIntentId      String?
   /// ElevenLabs voice id (IVC or voice design); deleted on model delete / recreate
-  elevenLabsVoiceId   String?
+  elevenLabsVoiceId    String?
   /// "clone" | "design"
-  elevenLabsVoiceType String?
-  elevenLabsVoiceName String?
+  elevenLabsVoiceType  String?
+  elevenLabsVoiceName  String?
   /// Cached preview MP3 on R2 for UI / talking-head picker
   modelVoicePreviewUrl String?
-  generations        Generation[]
-  trainingImages     LoraTrainingImage[]
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  trainedLoras       TrainedLora[]
+  generations          Generation[]
+  trainingImages       LoraTrainingImage[]
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainedLoras         TrainedLora[]
 
   @@index([userId])
   @@index([isAIGenerated])
@@ -253,15 +253,15 @@ model CryptoPayment {
 }
 
 model RepurposeJob {
-  id            String            @id @default(uuid())
-  userId        String
-  copies        Int               @default(1)
-  status        String            @default("completed")
-  progress      Int?              // 0-100 for serverless polling
-  message       String?          // status message for UI
-  errorMessage  String?          // when status is "failed"
-  createdAt     DateTime         @default(now())
-  outputs       RepurposeOutput[]
+  id           String            @id @default(uuid())
+  userId       String
+  copies       Int               @default(1)
+  status       String            @default("completed")
+  progress     Int? // 0-100 for serverless polling
+  message      String? // status message for UI
+  errorMessage String? // when status is "failed"
+  createdAt    DateTime          @default(now())
+  outputs      RepurposeOutput[]
 
   @@index([userId])
   @@index([userId, createdAt])
@@ -290,7 +290,7 @@ model ConverterJob {
   errorMessage     String?
   createdAt        DateTime  @default(now())
   completedAt      DateTime?
-  expiresAt        DateTime?  // output available until (e.g. completedAt + 30 days)
+  expiresAt        DateTime? // output available until (e.g. completedAt + 30 days)
 
   @@index([userId])
   @@index([userId, createdAt])
@@ -637,19 +637,19 @@ model WithdrawalRequest {
 }
 
 model DiscountCode {
-  id               String   @id @default(cuid())
-  code             String   @unique
-  discountType     String   @default("percentage")
-  discountValue    Float
-  appliesTo        String   @default("both")
-  validFrom        DateTime @default(now())
-  validUntil       DateTime
-  maxUses          Int?
-  currentUses      Int      @default(0)
-  isActive         Boolean  @default(true)
+  id                String   @id @default(cuid())
+  code              String   @unique
+  discountType      String   @default("percentage")
+  discountValue     Float
+  appliesTo         String   @default("both")
+  validFrom         DateTime @default(now())
+  validUntil        DateTime
+  maxUses           Int?
+  currentUses       Int      @default(0)
+  isActive          Boolean  @default(true)
   minPurchaseAmount Float?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([code])
   @@index([isActive])
