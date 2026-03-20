@@ -42,6 +42,9 @@ Wire **`/api/video-repurpose/worker-callback`** in a later PR (verify `X-Callbac
 
 | Variable | Description |
 |----------|-------------|
-| `FFMPEG_WORKER_URL` | Base URL, e.g. `https://automations-ffpmeg.nnp9hi.easypanel.host` |
+| `FFMPEG_WORKER_URL` | Primary worker base URL (no trailing slash). |
+| `FFMPEG_WORKER_FALLBACK_URL` | Optional backup (e.g. Easypanel ffpmeg) if primary is down — same API and usually same `FFMPEG_WORKER_API_KEY`. |
 | `FFMPEG_WORKER_API_KEY` | Shared secret (same as worker’s `FFMPEG_WORKER_API_KEY`) |
 | `FFMPEG_WORKER_CALLBACK_SECRET` | Optional; must match what you send as `callbackSecret` and validate in callback route |
+
+Use `getFfmpegWorkerBaseUrls()` from `src/lib/ffmpeg-worker-env.js` to get `[primary, …fallback]` for ordered retries.
