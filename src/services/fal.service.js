@@ -1651,6 +1651,18 @@ function buildComfyWorkflow(params) {
       delete apiWorkflow["56"];
     }
 
+    // Refiner KSampler 45: negative must NOT come from node 1 (Qwen CLIP after LoRA stack).
+    // The refiner model is SDXL (checkpoint 282); SDXL encode_adm needs clip_pooled. Qwen conditioning
+    // has no pooled embedding → AttributeError: NoneType.shape in model_base.py encode_adm.
+    // Node 8 encodes the same negative text with SDXL CLIP (Anything Everywhere from 282).
+    if (
+      apiWorkflow["45"]?.inputs?.negative &&
+      Array.isArray(apiWorkflow["45"].inputs.negative) &&
+      String(apiWorkflow["45"].inputs.negative[0]) === "1"
+    ) {
+      apiWorkflow["45"].inputs.negative = ["8", 0];
+    }
+
     // Optional: strip other custom nodes RunPod doesn't ship (Crystools, PrimitiveFloat) and inline values.
     // Default: off — pass the workflow through so ComfyUI on the worker matches your desktop export.
     if (process.env.NSFW_COMFY_STRIP_UNSUPPORTED === "1") {
