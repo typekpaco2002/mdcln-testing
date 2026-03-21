@@ -3816,3 +3816,209 @@ export async function getVoicePreview(req, res) {
     });
   }
 }
+
+// ---------------------------------------------------------------------------
+// CREATOR STUDIO — NanoBanana Pro generation with configurable aspect ratio
+// and resolution; uses the same KIE callback path as all other KIE tasks.
+// ---------------------------------------------------------------------------
+
+const CREATOR_STUDIO_ASPECT_RATIOS = ["1:1", "9:16", "16:9", "3:4", "4:3", "2:3", "3:2"];
+const CREATOR_STUDIO_RESOLUTIONS = ["1K", "2K", "4K"];
+const CREATOR_STUDIO_MODELS = ["nano-banana-pro", "nano-banana-2"];
+
+export async function generateCreatorStudio(req, res) {
+  let creditsDeducted = 0;
+  let generationId = null;
+  let userId = null;
+
+  try {
+    const {
+      modelId,
+      prompt = "",
+      referencePhotos = [],        // optional custom references (up to 8 URLs)
+      aspectRatio = "9:16",
+      resolution = "2K",
+      nanoBananaModel = "nano-banana-pro",
+      useCustomPrompt = false,
+    } = req.body;
+
+    userId = req.user.userId;
+
+    if (!modelId) {
+      return res.status(400).json({ success: false, message: "Model ID is required." });
+    }
+    if (!prompt || prompt.trim().length === 0) {
+      return res.status(400).json({ success: false, message: "A text prompt is required." });
+    }
+    if (!CREATOR_STUDIO_ASPECT_RATIOS.includes(aspectRatio)) {
+      return res.status(400).json({ success: false, message: `Invalid aspect ratio. Use one of: ${CREATOR_STUDIO_ASPECT_RATIOS.join(", ")}` });
+    }
+    if (!CREATOR_STUDIO_RESOLUTIONS.includes(resolution)) {
+      return res.status(400).json({ success: false, message: `Invalid resolution. Use one of: ${CREATOR_STUDIO_RESOLUTIONS.join(", ")}` });
+    }
+    const modelName = CREATOR_STUDIO_MODELS.includes(nanoBananaModel) ? nanoBananaModel : "nano-banana-pro";
+
+    const model = await prisma.savedModel.findUnique({ where: { id: modelId } });
+    if (!model) {
+      return res.status(404).json({ success: false, message: "Model not found." });
+    }
+    if (model.userId !== userId) {
+      return res.status(403).json({ success: false, message: "Not authorized to use this model." });
+    }
+
+    // Determine reference images: custom uploads first, fall back to model photos
+    const customRefs = Array.isArray(referencePhotos)
+      ? referencePhotos.filter((u) => typeof u === "string" && u.length > 0)
+      : [];
+    const modelPhotos = [model.photo1Url, model.photo2Url, model.photo3Url].filter(Boolean);
+    const identityImages = customRefs.length >= 2 ? customRefs.slice(0, 8) : modelPhotos.slice(0, 2);
+
+    if (identityImages.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "At least 2 reference photos are required (upload custom references or ensure your model has 2+ photos).",
+      });
+    }
+
+    const pricing = await getGenerationPricing();
+    const creditsNeeded = resolution === "4K" ? pricing.creatorStudio4K : pricing.creatorStudio1K2K;
+
+    const user = await checkAndExpireCredits(userId);
+    const totalCredits = getTotalCredits(user);
+    if (totalCredits < creditsNeeded) {
+      return res.status(403).json({
+        success: false,
+        message: `Insufficient credits. Need ${creditsNeeded}, have ${totalCredits}.`,
+      });
+    }
+
+    await deductCredits(userId, creditsNeeded);
+    creditsDeducted = creditsNeeded;
+
+    const appearancePrefix = buildAppearancePrefix({
+      savedAppearance: model.savedAppearance ?? undefined,
+      age: model.age ?? undefined,
+    });
+
+    const basePrompt = useCustomPrompt
+      ? `Using reference images 1 and 2 as identity reference for the person's face and features. Create a photo of this exact same person: ${prompt.trim()}. Keep the exact same face, facial features, hair color, eye color from the reference images. High quality, photorealistic.`
+      : buildGenerationPrompt(prompt, "professional", "pg13", identityImages.length >= 3 ? 3 : 2);
+    const finalPrompt = (appearancePrefix || "") + basePrompt;
+
+    const generation = await prisma.generation.create({
+      data: {
+        userId,
+        modelId,
+        type: "creator-studio",
+        prompt: prompt.trim(),
+        inputImageUrl: identityImages.join(","),
+        status: "processing",
+        creditsCost: creditsNeeded,
+        replicateModel: `kie-${modelName}`,
+        pipelinePayload: JSON.stringify({ aspectRatio, resolution, nanoBananaModel: modelName }),
+      },
+    });
+    generationId = generation.id;
+
+    processCreatorStudioInBackground(
+      generation.id,
+      identityImages,
+      finalPrompt,
+      userId,
+      creditsNeeded,
+      aspectRatio,
+      resolution,
+      modelName
+    ).catch((err) => console.error("❌ Creator Studio background error:", err));
+
+    return res.json({
+      success: true,
+      message: "Generating! Check Live Preview.",
+      generation: {
+        id: generation.id,
+        type: "creator-studio",
+        status: "processing",
+        createdAt: generation.createdAt,
+      },
+      creditsUsed: creditsNeeded,
+      creditsRemaining: totalCredits - creditsNeeded,
+    });
+  } catch (error) {
+    console.error("❌ Creator Studio generation error:", error);
+    if (creditsDeducted > 0 && userId) {
+      try {
+        if (generationId) {
+          await refundGeneration(generationId);
+        } else {
+          await refundCredits(userId, creditsDeducted);
+        }
+      } catch (refundErr) {
+        console.error("❌ Creator Studio refund failed:", refundErr);
+      }
+    }
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+}
+
+async function processCreatorStudioInBackground(
+  generationId,
+  identityImages,
+  customPrompt,
+  userId,
+  creditsNeeded,
+  aspectRatio,
+  resolution,
+  modelName
+) {
+  console.log(`\n🍌 [Creator Studio] Starting generation ${generationId} (${modelName}, ${aspectRatio}, ${resolution})`);
+
+  try {
+    const kieImages = await Promise.all(
+      identityImages.map((u, i) => ensureKieAccessibleUrl(u, `cs-ref-${i + 1}`))
+    ).catch(() => identityImages);
+
+    const result = await requestQueue.enqueue(async () => {
+      const onTaskCreated = async (taskId) => {
+        await prisma.generation.update({
+          where: { id: generationId },
+          data: { replicateModel: `kie-task:${taskId}` },
+        });
+        await registerKieTaskForGeneration(taskId, generationId, userId, "creator-studio");
+      };
+
+      return await generateImageWithNanoBananaKie(kieImages, customPrompt, {
+        aspectRatio,
+        resolution,
+        model: modelName,
+        onTaskCreated,
+      });
+    });
+
+    if (result.success && result.deferred && result.taskId) {
+      await prisma.generation.update({
+        where: { id: generationId },
+        data: { replicateModel: `kie-task:${result.taskId}` },
+      });
+      console.log(`✅ [Creator Studio] Submitted; waiting for callback (task ${result.taskId})`);
+    } else if (result.success && result.outputUrl) {
+      await prisma.generation.update({
+        where: { id: generationId },
+        data: { status: "completed", outputUrl: result.outputUrl, completedAt: new Date() },
+      });
+      console.log(`✅ [Creator Studio] Completed: ${result.outputUrl}`);
+    } else {
+      throw new Error(result.error || "Unknown KIE failure");
+    }
+  } catch (error) {
+    console.error(`❌ [Creator Studio] Background failed for ${generationId}:`, error.message);
+    try {
+      await prisma.generation.update({
+        where: { id: generationId },
+        data: { status: "failed", errorMessage: error.message },
+      });
+      await refundGeneration(generationId);
+    } catch (dbErr) {
+      console.error("❌ [Creator Studio] Failed to update/refund:", dbErr);
+    }
+  }
+}

@@ -42,6 +42,7 @@ import {
   generateTalkingHeadVideo,
   getVoices,
   getVoicePreview,
+  generateCreatorStudio,
 } from "../controllers/generation.controller.js";
 import {
   createModel,
@@ -1756,6 +1757,18 @@ router.post(
   generationLimiter,
   validateGeneration,
   generatePromptBasedImage,
+);
+
+/**
+ * CREATOR STUDIO — NanoBanana Pro with configurable aspect ratio & resolution
+ * POST /api/generate/creator-studio
+ */
+router.post(
+  "/generate/creator-studio",
+  authMiddleware,
+  generationLimiter,
+  validateGeneration,
+  generateCreatorStudio,
 );
 
 /**

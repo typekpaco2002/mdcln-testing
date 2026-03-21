@@ -31,6 +31,7 @@ import {
   BookOpen,
   Shuffle,
   TrendingUp,
+  Wand2,
 } from "lucide-react";
 import { SiTelegram, SiDiscord } from "react-icons/si";
 import toast from "react-hot-toast";
@@ -48,6 +49,7 @@ import VideoRepurposerPage from "./VideoRepurposerPage";
 import ReferralProgramPage from "./ReferralProgramPage";
 import ViralReelFinderPage from "./ViralReelFinderPage";
 import ContentReformatterPage from "./ContentReformatterPage";
+import CreatorStudioPage from "./CreatorStudioPage";
 import AddCreditsModal from "../components/AddCreditsModal";
 import PurchaseSuccessModal from "../components/PurchaseSuccessModal";
 import CreateModelModal from "../components/CreateModelModal";
@@ -104,7 +106,7 @@ export default function DashboardPage() {
       // Check for query params (tab navigation from other pages, openCredits from onboarding)
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get("tab");
-      if (tabParam && ["home", "models", "generate", "reformatter", "history", "settings", "nsfw", "course", "repurposer", "reelfinder", "referral"].includes(tabParam)) {
+      if (tabParam && ["home", "models", "generate", "creator-studio", "reformatter", "history", "settings", "nsfw", "course", "repurposer", "reelfinder", "referral"].includes(tabParam)) {
         if (premiumTabs.includes(tabParam)) {
           const hasAccess = hasPremiumAccess(freshUser);
           if (!hasAccess) {
@@ -220,6 +222,7 @@ export default function DashboardPage() {
     { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'models', label: 'Models', icon: Users },
     { id: 'generate', label: 'Generate', icon: Zap },
+    { id: 'creator-studio', label: 'Creator Studio', icon: Wand2 },
     { id: 'reformatter', label: 'Reformatter', icon: FileType2 },
     { id: 'history', label: 'History', icon: Clock },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
@@ -474,8 +477,9 @@ export default function DashboardPage() {
         <div className={`relative z-10 p-4 md:p-6 ${isSidebarCollapsed ? "mx-auto w-full max-w-[1600px]" : ""}`}>
           {activeTab === "home" && <HomePage setActiveTab={setActiveTab} setShowEarnModal={setShowEarnModal} setShowReferralModal={setShowReferralModal} onOpenCreateModel={() => { setUploadRealMode(false); setShowCreateModelModal(true); }} onOpenUploadReal={() => { setUploadRealMode(true); setShowCreateModelModal(true); }} onOpenCredits={() => setShowAddCredits(true)} />}
           {activeTab === "models" && <ModelsPage sidebarCollapsed={isSidebarCollapsed} />}
-          {activeTab === "generate" && <GeneratePage setActiveTab={setActiveTab} />}
-          {activeTab === "reformatter" && <ContentReformatterPage />}
+{activeTab === "generate" && <GeneratePage setActiveTab={setActiveTab} />}
+        {activeTab === "creator-studio" && <CreatorStudioPage />}
+        {activeTab === "reformatter" && <ContentReformatterPage />}
           {activeTab === "history" && <HistoryPage />}
           {activeTab === "settings" && <SettingsPage />}
           {activeTab === "nsfw" && <NSFWPage embedded sidebarCollapsed={isSidebarCollapsed} setDashboardTab={(tab, videoId) => { setActiveTab(tab); if (videoId) setCourseVideoId(videoId); }} />}

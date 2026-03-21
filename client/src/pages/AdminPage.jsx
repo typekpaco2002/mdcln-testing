@@ -119,6 +119,13 @@ const GENERATION_PRICING_GROUPS = [
     ],
   },
   {
+    title: 'Creator Studio (NanoBanana Pro)',
+    fields: [
+      { key: 'creatorStudio1K2K', label: 'Creator Studio — 1K / 2K image' },
+      { key: 'creatorStudio4K', label: 'Creator Studio — 4K image' },
+    ],
+  },
+  {
     title: 'Prompt tools',
     fields: [
       { key: 'enhancePromptDefault', label: 'Enhance prompt (default)' },

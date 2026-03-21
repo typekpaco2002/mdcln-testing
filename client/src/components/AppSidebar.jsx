@@ -25,6 +25,7 @@ import {
   ChevronDown,
   CreditCard,
   FileType2,
+  Wand2,
 } from "lucide-react";
 import { SiTelegram, SiDiscord, SiInstagram } from "react-icons/si";
 import { Link } from "react-router-dom";
@@ -56,6 +57,7 @@ export default function AppSidebar({
     { id: "home", label: "Dashboard", icon: Home },
     { id: "models", label: "My Models", icon: Users },
     { id: "generate", label: "Generate", icon: Zap },
+    { id: "creator-studio", label: "Creator Studio", icon: Wand2, isCreatorStudio: true },
     { id: "reformatter", label: "Reformatter", icon: FileType2 },
     { id: "history", label: "History", icon: Clock },
     { id: "settings", label: "Settings", icon: SettingsIcon },
@@ -290,13 +292,15 @@ export default function AppSidebar({
                 className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${
                   item.isNsfw
                     ? "text-rose-400"
-                    : item.id === "home"
-                      ? "text-white"
-                      : item.id === "generate"
-                        ? "text-yellow-400"
-                        : item.id === "settings"
-                          ? "text-slate-400"
-                          : (activeTab === item.id ? "text-white" : "group-hover:text-white/70")
+                    : item.isCreatorStudio
+                      ? "text-purple-400"
+                      : item.id === "home"
+                        ? "text-white"
+                        : item.id === "generate"
+                          ? "text-yellow-400"
+                          : item.id === "settings"
+                            ? "text-slate-400"
+                            : (activeTab === item.id ? "text-white" : "group-hover:text-white/70")
                 }`}
               />
               <AnimatePresence>

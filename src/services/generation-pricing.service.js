@@ -15,6 +15,10 @@ export const DEFAULT_GENERATION_PRICING = Object.freeze({
   enhancePromptDefault: 10,
   enhancePromptNsfw: 0,
 
+  // Creator Studio — NanoBanana Pro
+  creatorStudio1K2K: 20,
+  creatorStudio4K: 25,
+
   videoRecreateStdPerSec: 10,
   videoRecreateUltraPerSec: 25,
   videoPrompt5s: 60,
