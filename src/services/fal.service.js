@@ -1630,7 +1630,28 @@ function buildComfyWorkflow(params) {
     // Convert graph to API format
     const apiWorkflow = comfyUiGraphToApiPrompt(workflowGraph.nodes, workflowGraph.links, workflowGraph.extra);
 
-    // Optional: strip custom nodes RunPod doesn't ship (String Literal, Crystools, PrimitiveFloat) and inline values.
+    // ALWAYS strip String Literal nodes (41, 56) — RunPod doesn't have this custom node.
+    // Inject prompts directly into CLIPTextEncode nodes that reference them.
+    if (apiWorkflow["41"] || apiWorkflow["56"]) {
+      // Node 41 (negative) feeds into nodes 1, 8; node 56 (positive) feeds into nodes 2, 42
+      if (apiWorkflow["1"]?.inputs?.text && Array.isArray(apiWorkflow["1"].inputs.text) && apiWorkflow["1"].inputs.text[0] === "41") {
+        apiWorkflow["1"].inputs.text = negativePrompt;
+      }
+      if (apiWorkflow["8"]?.inputs?.text && Array.isArray(apiWorkflow["8"].inputs.text) && apiWorkflow["8"].inputs.text[0] === "41") {
+        apiWorkflow["8"].inputs.text = negativePrompt;
+      }
+      if (apiWorkflow["2"]?.inputs?.text && Array.isArray(apiWorkflow["2"].inputs.text) && apiWorkflow["2"].inputs.text[0] === "56") {
+        apiWorkflow["2"].inputs.text = prompt || "";
+      }
+      if (apiWorkflow["42"]?.inputs?.text && Array.isArray(apiWorkflow["42"].inputs.text) && apiWorkflow["42"].inputs.text[0] === "56") {
+        apiWorkflow["42"].inputs.text = prompt || "";
+      }
+      // Delete String Literal nodes
+      delete apiWorkflow["41"];
+      delete apiWorkflow["56"];
+    }
+
+    // Optional: strip other custom nodes RunPod doesn't ship (Crystools, PrimitiveFloat) and inline values.
     // Default: off — pass the workflow through so ComfyUI on the worker matches your desktop export.
     if (process.env.NSFW_COMFY_STRIP_UNSUPPORTED === "1") {
       stripUnsupportedNodesAndInjectValues(apiWorkflow, {
