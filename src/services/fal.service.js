@@ -1756,23 +1756,6 @@ function buildComfyWorkflow(params) {
       delete apiWorkflow["56"];
     }
 
-    // UltimateSDUpscale bypass: RunPod worker image does not have ssitu/ComfyUI_UltimateSDUpscale.
-    // Always remove node 323 (UltimateSDUpscale) and 329 (UpscaleModelLoader) and rewire any
-    // downstream nodes that took input from node 323 to take from node 25 (VAEDecode) instead.
-    if (apiWorkflow["323"]) {
-      const upscaleInput = apiWorkflow["323"]?.inputs?.image;
-      const fallbackImageRef = Array.isArray(upscaleInput) ? upscaleInput : ["25", 0];
-      for (const n of Object.values(apiWorkflow)) {
-        if (!n?.inputs) continue;
-        for (const [k, v] of Object.entries(n.inputs)) {
-          if (Array.isArray(v) && String(v[0]) === "323") {
-            n.inputs[k] = fallbackImageRef;
-          }
-        }
-      }
-      delete apiWorkflow["323"];
-      delete apiWorkflow["329"];
-    }
 
     // Optional: strip other custom nodes RunPod doesn't ship (Crystools, PrimitiveFloat) and inline values.
     // Default: off — pass the workflow through so ComfyUI on the worker matches your desktop export.
