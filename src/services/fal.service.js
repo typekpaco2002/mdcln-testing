@@ -1655,12 +1655,24 @@ function buildComfyWorkflow(params) {
     // The refiner model is SDXL (checkpoint 282); SDXL encode_adm needs clip_pooled. Qwen conditioning
     // has no pooled embedding → AttributeError: NoneType.shape in model_base.py encode_adm.
     // Node 8 encodes the same negative text with SDXL CLIP (Anything Everywhere from 282).
-    if (
-      apiWorkflow["45"]?.inputs?.negative &&
-      Array.isArray(apiWorkflow["45"].inputs.negative) &&
-      String(apiWorkflow["45"].inputs.negative[0]) === "1"
-    ) {
-      apiWorkflow["45"].inputs.negative = ["8", 0];
+    // Ensure node 8 exists and has SDXL CLIP connection (via ue_links to checkpoint 282).
+    if (apiWorkflow["45"]?.inputs?.negative) {
+      const currentNegative = apiWorkflow["45"].inputs.negative;
+      // If negative points to node 1 (Qwen), change to node 8 (SDXL)
+      if (Array.isArray(currentNegative) && String(currentNegative[0]) === "1") {
+        // Verify node 8 exists and has text set (from String Literal strip above)
+        if (apiWorkflow["8"] && typeof apiWorkflow["8"].inputs?.text === "string") {
+          // Ensure node 8's CLIP is connected to checkpoint 282 (SDXL) - ue_links should apply this,
+          // but explicitly set it if missing to guarantee SDXL CLIP is used
+          if (!apiWorkflow["8"].inputs.clip || (Array.isArray(apiWorkflow["8"].inputs.clip) && String(apiWorkflow["8"].inputs.clip[0]) !== "282")) {
+            apiWorkflow["8"].inputs.clip = ["282", 1];
+          }
+          apiWorkflow["45"].inputs.negative = ["8", 0];
+          console.log("[NSFW] Fixed refiner KSampler 45: negative changed from node 1 (Qwen) to node 8 (SDXL CLIP)");
+        } else {
+          console.warn("[NSFW] Node 8 missing or text not set, cannot fix refiner negative CLIP mismatch");
+        }
+      }
     }
 
     // Optional: strip other custom nodes RunPod doesn't ship (Crystools, PrimitiveFloat) and inline values.
