@@ -3156,6 +3156,68 @@ console.log(
   `🔥 NSFW RunPod poll: ${NSFW_POLL_CONCURRENCY} concurrent workers · running timeout ${Math.round(NSFW_MAX_RUNNING_MS / 60000)}m · wall ${Math.round(NSFW_MAX_WALL_MS / 60000)}m`,
 );
 
+/**
+ * R2 upload + optional face swap + DB complete. Idempotent via updateMany(status in processing|pending).
+ * Used by background poll and POST /api/runpod/callback.
+ */
+export async function finalizeNsfwRunpodGeneration(generationId, requestId, runpodOutput) {
+  const gen = await prisma.generation.findUnique({ where: { id: generationId } });
+  if (!gen) {
+    console.warn(`[NSFW finalize] generation ${generationId} not found`);
+    return { ok: false, reason: "not_found" };
+  }
+  if (gen.status !== "processing" && gen.status !== "pending") {
+    return { ok: true, skipped: true, reason: "already_finalized" };
+  }
+
+  let inputData = {};
+  try {
+    inputData = typeof gen.inputImageUrl === "string" ? JSON.parse(gen.inputImageUrl) : gen.inputImageUrl || {};
+  } catch {
+    inputData = {};
+  }
+  const faceReferenceUrl = inputData?.faceReferenceUrl || null;
+
+  const result = await getNsfwGenerationResult(requestId, runpodOutput);
+  if (!result.outputUrls?.length) {
+    throw new Error("No output URLs in result");
+  }
+
+  let permanentUrls = result.outputUrls;
+  if (faceReferenceUrl) {
+    console.log(`🔄 [finalize] Face-swapping ${permanentUrls.length} images...`);
+    const swappedUrls = [];
+    for (let i = 0; i < permanentUrls.length; i++) {
+      try {
+        const swapResult = await faceSwapWithFal(permanentUrls[i], faceReferenceUrl);
+        swappedUrls.push(swapResult.success && swapResult.outputUrl ? swapResult.outputUrl : permanentUrls[i]);
+      } catch {
+        swappedUrls.push(permanentUrls[i]);
+      }
+    }
+    permanentUrls = swappedUrls;
+  }
+
+  const outputUrlValue = permanentUrls.length === 1 ? permanentUrls[0] : JSON.stringify(permanentUrls);
+  const updated = await prisma.generation.updateMany({
+    where: { id: generationId, status: { in: ["processing", "pending"] } },
+    data: {
+      status: "completed",
+      outputUrl: outputUrlValue,
+      completedAt: new Date(),
+      errorMessage: null,
+    },
+  });
+  if (updated.count === 0) {
+    return { ok: true, skipped: true, reason: "race_lost" };
+  }
+  console.log(`✅ [finalize] ${generationId.slice(0, 8)} completed (${permanentUrls.length} imgs)`);
+  if (gen.userId && gen.modelId) {
+    cleanupOldGenerations(gen.userId, gen.modelId).catch(() => {});
+  }
+  return { ok: true };
+}
+
 function enqueueNsfwPoll(generationId, requestId, userId, creditsNeeded, faceReferenceUrl) {
   nsfwPollQueue.push({ generationId, requestId, userId, creditsNeeded, faceReferenceUrl, enqueuedAt: Date.now() });
   console.log(
@@ -3182,7 +3244,7 @@ function pumpNsfwPollWorkers() {
 }
 
 async function runOneNsfwPollJob(job) {
-  const { generationId, requestId, faceReferenceUrl } = job;
+  const { generationId, requestId } = job;
   console.log(`\n🔥 [Q] Polling ${generationId.slice(0, 8)}…`);
 
   try {
@@ -3192,34 +3254,7 @@ async function runOneNsfwPollJob(job) {
     }
 
     const cached = pollResult.result?._runpodOutput;
-    const result = await getNsfwGenerationResult(requestId, cached);
-
-    if (result.outputUrls && result.outputUrls.length > 0) {
-      let permanentUrls = result.outputUrls;
-
-      if (faceReferenceUrl) {
-        console.log(`🔄 [Q] Face-swapping ${permanentUrls.length} images...`);
-        const swappedUrls = [];
-        for (let i = 0; i < permanentUrls.length; i++) {
-          try {
-            const swapResult = await faceSwapWithFal(permanentUrls[i], faceReferenceUrl);
-            swappedUrls.push(swapResult.success && swapResult.outputUrl ? swapResult.outputUrl : permanentUrls[i]);
-          } catch {
-            swappedUrls.push(permanentUrls[i]);
-          }
-        }
-        permanentUrls = swappedUrls;
-      }
-
-      const outputUrlValue = permanentUrls.length === 1 ? permanentUrls[0] : JSON.stringify(permanentUrls);
-      await prisma.generation.update({
-        where: { id: generationId },
-        data: { status: "completed", outputUrl: outputUrlValue, completedAt: new Date() },
-      });
-      console.log(`✅ [Q] ${generationId.slice(0, 8)} completed (${permanentUrls.length} imgs)`);
-    } else {
-      throw new Error("No output URLs in result");
-    }
+    await finalizeNsfwRunpodGeneration(generationId, requestId, cached);
   } catch (error) {
     console.error(`❌ [Q] ${generationId.slice(0, 8)} error: ${error.message}`);
     await refundGeneration(generationId);
@@ -4794,34 +4829,13 @@ async function pollSingleNsfwGeneration(gen) {
     const status = await checkNsfwGenerationStatus(requestId);
 
     if (status.status === 'COMPLETED') {
-      const result = await getNsfwGenerationResult(requestId, status._runpodOutput);
-      if (result.outputUrls && result.outputUrls.length > 0) {
-        let permanentUrls = result.outputUrls;
-
-        const faceReferenceUrl = inputData?.faceReferenceUrl;
-        if (faceReferenceUrl) {
-          console.log(`  🔄 Face-swapping ${permanentUrls.length} images for ${gen.id.substring(0,8)}...`);
-          const swappedUrls = [];
-          for (const imgUrl of permanentUrls) {
-            try {
-              const swapResult = await faceSwapWithFal(imgUrl, faceReferenceUrl);
-              swappedUrls.push(swapResult.success && swapResult.outputUrl ? swapResult.outputUrl : imgUrl);
-            } catch {
-              swappedUrls.push(imgUrl);
-            }
-          }
-          permanentUrls = swappedUrls;
+      try {
+        const fin = await finalizeNsfwRunpodGeneration(gen.id, requestId, status._runpodOutput);
+        if (fin.ok && !fin.skipped) {
+          console.log(`  ✅ ${gen.id.substring(0, 8)} COMPLETED via recovery poller`);
         }
-
-        const outputUrlValue = permanentUrls.length === 1 ? permanentUrls[0] : JSON.stringify(permanentUrls);
-        await prisma.generation.update({
-          where: { id: gen.id },
-          data: { status: 'completed', outputUrl: outputUrlValue, completedAt: new Date() },
-        });
-        console.log(`  ✅ ${gen.id.substring(0,8)} COMPLETED - ${permanentUrls.length} image(s) archived to R2`);
-        if (gen.userId && gen.modelId) {
-          cleanupOldGenerations(gen.userId, gen.modelId).catch(() => {});
-        }
+      } catch (e) {
+        console.error(`  ❌ finalize error for ${gen.id.substring(0, 8)}:`, e.message);
       }
     } else if (status.status === 'FAILED') {
       try {

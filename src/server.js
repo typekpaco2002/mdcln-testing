@@ -150,6 +150,7 @@ import videoRepurposeRoutes from './routes/video-repurpose.routes.js';
 import img2imgRoutes from './routes/img2img.routes.js';
 import viralReelsRoutes from './routes/viral-reels.routes.js';
 import supportRoutes from './routes/support.routes.js';
+import runpodCallbackRoutes from './routes/runpod-callback.routes.js';
 app.use('/api/stripe/webhook', stripeWebhookRouter);
 app.use('/api/crypto/webhook', cryptoWebhookRouter);
 app.use('/api/kie/callback', kieCallbackRoutes);
@@ -171,6 +172,7 @@ app.use(telemetryMiddleware());
 // Skip rate limiting for admin routes (already protected by auth + admin role check)
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/admin')) return next();
+  if (req.path.startsWith('/runpod/callback')) return next();
   return apiLimiter(req, res, next);
 });
 
@@ -217,6 +219,7 @@ app.use('/api/viral-reels', viralReelsRoutes);
 app.use('/api/video-repurpose', videoRepurposeRoutes);
 app.use('/api/img2img', img2imgRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/runpod', runpodCallbackRoutes);
 app.use('/api', apiRoutes);
 
 // ── Public unsubscribe endpoint (no auth required — email links click here) ──

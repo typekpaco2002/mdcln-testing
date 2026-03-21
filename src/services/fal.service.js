@@ -2144,6 +2144,30 @@ export async function submitFaceReferenceGeneration(loraUrl, triggerWord) {
 }
 
 /**
+ * Normalize handler output from RunPod `/status` — may be stringified JSON, nested under `output`,
+ * or omit inner `status` while still including `images` (top-level job is already COMPLETED).
+ */
+export function normalizeRunpodNsfwOutput(raw) {
+  if (raw == null) return null;
+  let o = raw;
+  if (typeof o === "string") {
+    try {
+      o = JSON.parse(o);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof o !== "object" || o === null) return null;
+  if (!Array.isArray(o.images) || o.images.length === 0) {
+    const inner = o.output;
+    if (inner && typeof inner === "object" && Array.isArray(inner.images) && inner.images.length > 0) {
+      o = inner;
+    }
+  }
+  return o;
+}
+
+/**
  * Check status of NSFW generation on RunPod serverless
  * @param {string} jobId - RunPod job ID from submission
  * @returns {Promise<{status: string, error?: string, _runpodOutput?: object}>}
@@ -2175,17 +2199,22 @@ export async function checkNsfwGenerationStatus(jobId) {
     }
 
     if (runpodStatus === "COMPLETED") {
-      const output = result.output;
-      if (output?.error) {
-        console.error(`❌ RunPod job completed with error: ${output.error}`);
-        return { status: "FAILED", error: output.error };
+      const output = normalizeRunpodNsfwOutput(result.output);
+      if (!output) {
+        console.warn(`⚠️ RunPod job COMPLETED but output missing or unparsable`, String(result.output)?.slice(0, 200));
+        return { status: "FAILED", error: "No valid output from RunPod" };
       }
-      if (output?.status === "COMPLETED" && output?.images?.length > 0) {
+      if (output.error) {
+        console.error(`❌ RunPod job completed with error: ${output.error}`);
+        return { status: "FAILED", error: String(output.error) };
+      }
+      // Accept whenever we have images; inner `status` is optional (handler always sets it, API may strip it).
+      if (output.images?.length > 0) {
         console.log(`✅ RunPod job completed with ${output.images.length} image(s)`);
         return { status: "COMPLETED", _runpodOutput: output };
       }
-      console.warn(`⚠️ RunPod job completed but no images in output`);
-      return { status: "FAILED", error: output?.error || "No images in RunPod output" };
+      console.warn(`⚠️ RunPod job completed but no images in output`, JSON.stringify(output)?.slice(0, 400));
+      return { status: "FAILED", error: output.error || "No images in RunPod output" };
     }
 
     if (runpodStatus === "FAILED") {
@@ -2290,10 +2319,12 @@ export async function getNsfwGenerationResult(jobId, cachedOutput = null) {
       }
 
       const result = await response.json();
-      if (result.status !== "COMPLETED" || !result.output) {
+      if (result.status !== "COMPLETED" || result.output == null) {
         throw new Error(`Generation not completed: ${result.status}`);
       }
-      output = result.output;
+      output = normalizeRunpodNsfwOutput(result.output);
+    } else {
+      output = normalizeRunpodNsfwOutput(output);
     }
 
     if (!output?.images?.length) {
@@ -2304,16 +2335,25 @@ export async function getNsfwGenerationResult(jobId, cachedOutput = null) {
 
     const outputUrls = [];
     for (const img of output.images) {
-      const buffer = Buffer.from(img.base64, "base64");
+      const b64 = img.base64 ?? img.data ?? img.image;
+      if (!b64 || typeof b64 !== "string") {
+        console.warn(`⚠️ RunPod image entry missing base64`, Object.keys(img || {}));
+        continue;
+      }
+      const buffer = Buffer.from(b64, "base64");
       if (isR2Configured()) {
         const r2Url = await uploadBufferToR2(buffer, "nsfw-generations", "png", "image/png");
         outputUrls.push(r2Url);
         console.log(`✅ Image uploaded to R2: ${r2Url}`);
       } else {
-        const dataUrl = `data:image/png;base64,${img.base64}`;
+        const dataUrl = `data:image/png;base64,${b64}`;
         outputUrls.push(dataUrl);
         console.warn(`⚠️ R2 not configured, using data URL (temporary!)`);
       }
+    }
+
+    if (outputUrls.length === 0) {
+      throw new Error("Generation returned image entries but none had valid base64 data");
     }
 
     console.log(`✅ NSFW generation completed! ${outputUrls.length} image(s) stored`);
