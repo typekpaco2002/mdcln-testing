@@ -790,6 +790,19 @@ function getKsamplerWidgetValuesStartIndex(node, linkMap) {
  * If extra.ue_links is present (Anything Everywhere / cg-use-everywhere), applies those
  * so CLIP/VAE/MODEL get connected to downstream nodes.
  */
+/**
+ * Node class_types that are UI-only primitives with no Python backend on RunPod.
+ * Their single output value must be inlined into consuming nodes.
+ */
+const PRIMITIVE_CLASS_TYPES = new Set([
+  "PrimitiveFloat",
+  "PrimitiveInt",
+  "Primitive integer [Crystools]",
+  "Primitive int [Crystools]",
+  // DF_Integer from derfuu_comfyui_moddednodes — may not be installed on RunPod
+  "DF_Integer",
+]);
+
 function comfyUiGraphToApiPrompt(nodes, links, extra) {
   const linkMap = {};
   if (Array.isArray(links)) {
@@ -846,6 +859,44 @@ function comfyUiGraphToApiPrompt(nodes, links, extra) {
       }
     }
   }
+
+  // ── Inline primitive nodes ────────────────────────────────────────────────
+  // PrimitiveFloat, Crystools integer, DF_Integer, etc. are UI-only graph
+  // helpers with no Python class on RunPod.  Their single output value must
+  // be inlined directly into every input that references them; then the nodes
+  // are deleted from the API prompt.
+  const primitiveValues = {};
+  for (const [nodeId, node] of Object.entries(prompt)) {
+    if (!PRIMITIVE_CLASS_TYPES.has(node.class_type)) continue;
+    // Value is the first (and only) widget input — name varies by type.
+    const val = Object.values(node.inputs || {})[0];
+    if (val !== undefined && val !== null && !Array.isArray(val)) {
+      primitiveValues[nodeId] = val;
+    }
+  }
+  if (Object.keys(primitiveValues).length > 0) {
+    for (const node of Object.values(prompt)) {
+      if (!node.inputs || PRIMITIVE_CLASS_TYPES.has(node.class_type)) continue;
+      for (const [key, val] of Object.entries(node.inputs)) {
+        if (Array.isArray(val) && val.length >= 2 && primitiveValues[String(val[0])] !== undefined) {
+          node.inputs[key] = primitiveValues[String(val[0])];
+        }
+      }
+    }
+    for (const nodeId of Object.keys(primitiveValues)) {
+      delete prompt[nodeId];
+    }
+  }
+
+  // ── Remove distributor-only nodes (no outputs → no contribution to graph) ─
+  // "Anything Everywhere" (cg-use-everywhere) has already been applied via
+  // ue_links above; the node itself is not a real ComfyUI execution node.
+  for (const [nodeId, node] of Object.entries(prompt)) {
+    if (node.class_type === "Anything Everywhere") {
+      delete prompt[nodeId];
+    }
+  }
+
   return prompt;
 }
 
@@ -860,6 +911,11 @@ let nsfwCoreWorkflowCache = null;
 const UNSUPPORTED_NODE_IDS = [
   "257", "288", "41", "56", "61",
   "298", "290", "291", "292", "293", "294", "295", "296",
+  // Primitive wrappers (PrimitiveFloat / Crystools integer) inlined by comfyUiGraphToApiPrompt;
+  // listed here as a safety net for the NSFW_COMFY_STRIP_UNSUPPORTED path.
+  "305", "306", "311",
+  // DF_Integer aspect helpers (derfuu_comfyui_moddednodes) — inlined by converter
+  "302", "303",
 ];
 
 /**
@@ -1508,6 +1564,8 @@ function buildComfyWorkflow(params) {
     seed,
     width = 1344,
     height = 768,
+    /** Aspect-ratio preset string fed to CR SDXL Aspect Ratio node (e.g. "16:9 landscape 1344x768"). */
+    aspectRatio = "16:9 landscape 1344x768",
     /** Only applied when set (e.g. admin override) — otherwise template KSampler 276 steps/cfg stay 1:1 with JSON */
     steps,
     cfg,
@@ -1620,14 +1678,26 @@ function buildComfyWorkflow(params) {
       node306.widgets_values[0] = additive2Strength;
     }
     
-    const node302 = findNode(302); // aspect_width
+    const node302 = findNode(302); // aspect_width (DF_Integer — inlined by comfyUiGraphToApiPrompt)
     if (node302 && node302.widgets_values && node302.widgets_values.length > 0) {
       node302.widgets_values[0] = Number(width) || 1344;
     }
     
-    const node303 = findNode(303); // aspect_height
+    const node303 = findNode(303); // aspect_height (DF_Integer — inlined by comfyUiGraphToApiPrompt)
     if (node303 && node303.widgets_values && node303.widgets_values.length > 0) {
       node303.widgets_values[0] = Number(height) || 768;
+    }
+
+    // Node 50: CR SDXL Aspect Ratio
+    // widgets_values layout (after skipping linked width/height at indices 0,1):
+    //   [2] = aspect_ratio string, [3] = swap_dimensions, [4] = upscale_factor, [5] = batch_size
+    // CRITICAL: swap_dimensions MUST be "Off" — the template ships with "On" which rotates
+    // landscape 1344×768 to portrait 768×1344.  We always set the explicit aspect_ratio preset
+    // from the requested resolution so the CR node uses the correct latent dimensions.
+    const node50 = findNode(50);
+    if (node50 && node50.widgets_values && node50.widgets_values.length > 3) {
+      node50.widgets_values[2] = aspectRatio;
+      node50.widgets_values[3] = "Off";
     }
     
     // Blur/grain: optional — default keeps template nodes 284/286 (1:1 with desktop export)
