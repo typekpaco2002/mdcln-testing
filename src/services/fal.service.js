@@ -1456,7 +1456,7 @@ export function buildNsfwPrompt(triggerWord, userPrompt, attributes = "") {
  * Negative (41): only replaced when `negativePrompt` is explicitly non-empty.
  * Grain/blur (284/286): only when `useWorkflowPostProcessing` / `NSFW_COMFY_USE_WORKFLOW_POST` / `overrideGrainBlur`.
  * Base KSampler (276) steps/cfg: only when `steps`/`cfg` are passed (e.g. admin sampler override).
- * Refiner negative rewiring (45: 1→8): only when `NSFW_COMFY_REFINER_FIX_SDXL=1` (RunPod crash fix).
+ * Refiner negative rewiring (45: 1→8): **on by default** (RunPod needs SDXL pooled neg). Set `NSFW_COMFY_REFINER_FIX_SDXL=0` for strict desktop parity (may crash encode_adm).
  * String Literal nodes 41/56 are stripped for API; text is inlined into 1,8 / 2,42.
  * Falls back to legacy inline workflow if the JSON is missing.
  */
@@ -1667,10 +1667,12 @@ function buildComfyWorkflow(params) {
       delete apiWorkflow["56"];
     }
 
-    // Refiner KSampler 45: desktop graph uses negative from node 1 (Qwen) — 1:1 with export.
-    // On unpatched ComfyUI, SDXL refiner can crash (encode_adm / clip_pooled). Opt-in fix:
-    // NSFW_COMFY_REFINER_FIX_SDXL=1 rewires negative to node 8 (SDXL CLIP), same as before.
-    if (process.env.NSFW_COMFY_REFINER_FIX_SDXL === "1" && apiWorkflow["45"]?.inputs?.negative) {
+    // Refiner KSampler 45: template wires negative from node 1 (Qwen). SDXL refiner needs clip_pooled;
+    // Qwen conditioning has none → encode_adm crashes on RunPod (clip_pooled NoneType.shape).
+    // Default: rewire negative to node 8 (SDXL CLIP, same text as 41). Opt out for strict 1:1 desktop graph:
+    // NSFW_COMFY_REFINER_FIX_SDXL=0
+    const refinerFixOff = process.env.NSFW_COMFY_REFINER_FIX_SDXL === "0";
+    if (!refinerFixOff && apiWorkflow["45"]?.inputs?.negative) {
       const currentNegative = apiWorkflow["45"].inputs.negative;
       if (Array.isArray(currentNegative) && String(currentNegative[0]) === "1") {
         if (apiWorkflow["8"] && typeof apiWorkflow["8"].inputs?.text === "string") {
@@ -1678,7 +1680,7 @@ function buildComfyWorkflow(params) {
             apiWorkflow["8"].inputs.clip = ["282", 1];
           }
           apiWorkflow["45"].inputs.negative = ["8", 0];
-          console.log("[NSFW] Refiner fix: KSampler 45 negative node 1 → 8 (NSFW_COMFY_REFINER_FIX_SDXL=1)");
+          console.log("[NSFW] Refiner fix: KSampler 45 negative node 1 → 8 (SDXL CLIP; set NSFW_COMFY_REFINER_FIX_SDXL=0 to disable)");
         } else {
           console.warn("[NSFW] Node 8 missing or text not set, cannot apply refiner SDXL negative fix");
         }
