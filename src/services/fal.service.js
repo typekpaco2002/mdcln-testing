@@ -1697,26 +1697,20 @@ function buildComfyWorkflow(params) {
       node306.widgets_values[0] = additive2Strength;
     }
     
-    const node302 = findNode(302); // aspect_width (DF_Integer — inlined by comfyUiGraphToApiPrompt)
+    // Node 302 / 303: DF_Integer "aspect_width" / "aspect_height" — these are the connected inputs to
+    // CR SDXL Aspect Ratio (node 50).  The workflow has swap_dimensions="On" which swaps them, so:
+    //   final_width  = node303 value (height input, after swap becomes width)
+    //   final_height = node302 value (width input, after swap becomes height)
+    // We apply 2× scale (matching the v8 workflow's native resolution e.g. 1536×2688 for 9:16).
+    // Do NOT touch node50 aspect_ratio/swap_dimensions — they are locked in the workflow file.
+    const node302 = findNode(302); // provides "width input" → after swap = final HEIGHT
     if (node302 && node302.widgets_values && node302.widgets_values.length > 0) {
-      node302.widgets_values[0] = Number(width) || 1344;
-    }
-    
-    const node303 = findNode(303); // aspect_height (DF_Integer — inlined by comfyUiGraphToApiPrompt)
-    if (node303 && node303.widgets_values && node303.widgets_values.length > 0) {
-      node303.widgets_values[0] = Number(height) || 768;
+      node302.widgets_values[0] = (Number(height) || 768) * 2;
     }
 
-    // Node 50: CR SDXL Aspect Ratio
-    // widgets_values layout (after skipping linked width/height at indices 0,1):
-    //   [2] = aspect_ratio string, [3] = swap_dimensions, [4] = upscale_factor, [5] = batch_size
-    // CRITICAL: swap_dimensions MUST be "Off" — the template ships with "On" which rotates
-    // landscape 1344×768 to portrait 768×1344.  We always set the explicit aspect_ratio preset
-    // from the requested resolution so the CR node uses the correct latent dimensions.
-    const node50 = findNode(50);
-    if (node50 && node50.widgets_values && node50.widgets_values.length > 3) {
-      node50.widgets_values[2] = aspectRatio;
-      node50.widgets_values[3] = "Off";
+    const node303 = findNode(303); // provides "height input" → after swap = final WIDTH
+    if (node303 && node303.widgets_values && node303.widgets_values.length > 0) {
+      node303.widgets_values[0] = (Number(width) || 1344) * 2;
     }
     
     // Blur/grain: optional — default keeps template nodes 284/286 (1:1 with desktop export)
@@ -1984,44 +1978,15 @@ export async function submitNsfwGeneration(params) {
   const validatedOverride = loraStrength && loraStrength >= 0.65 && loraStrength <= 0.80
     ? loraStrength : null;
 
-  // Always anchor identity with triggerWord; without this, likeness can drift even with LoRA loaded.
-  // Keep prompt concise (no attribute tag-dump) to preserve output quality.
+  // Build prompt: anchor identity with triggerWord, then the AI-generated scene prose — nothing else.
+  // Z-Image Turbo is degraded by quality tag dumps ("anatomically correct", "solo girl", etc.).
+  // The AI system prompt already produces correctly styled, complete descriptions.
   const basePrompt = (userPrompt && userPrompt.trim()) || "";
   if (!basePrompt) {
     return { success: false, error: "Prompt is required. Generate a prompt first (Create Prompt)." };
   }
   const hasTriggerAnchor = basePrompt.toLowerCase().includes(String(triggerWord || "").toLowerCase());
-  const identityAnchoredPrompt =
-    hasTriggerAnchor
-      ? basePrompt
-      : nudesPack
-        ? `${triggerWord}, ${basePrompt}`
-        : `${triggerWord}, same person, same face, same identity, ${basePrompt}`;
-
-  const partneredScene = isPartneredExplicitPrompt(identityAnchoredPrompt);
-
-  let prompt;
-  if (nudesPack) {
-    const isCouple = /\b(two adults|consensual couple)\b/i.test(basePrompt);
-    const tail = isCouple ? NUDES_PACK_TAIL_COUPLE : NUDES_PACK_TAIL_SOLO;
-    prompt = `${identityAnchoredPrompt}, ${tail}`;
-  } else if (partneredScene) {
-    if (
-      identityAnchoredPrompt.includes("primary female subject") &&
-      identityAnchoredPrompt.includes("anatomically correct")
-    ) {
-      prompt = identityAnchoredPrompt;
-    } else {
-      prompt = `${identityAnchoredPrompt}, ${QUALITY_SUFFIX_PARTNERED}`;
-    }
-  } else if (
-    identityAnchoredPrompt.includes("one person only") &&
-    identityAnchoredPrompt.includes("anatomically correct")
-  ) {
-    prompt = identityAnchoredPrompt;
-  } else {
-    prompt = `${identityAnchoredPrompt}, ${QUALITY_SUFFIX_SOLO}`;
-  }
+  const prompt = hasTriggerAnchor ? basePrompt : `${triggerWord}, ${basePrompt}`;
 
   // AI decides additive LoRAs from full prompt/context (pose + makeup + effects). Quick flow: girl max 0.65; additive max 0.35.
   const aiSelection = await detectLorasWithAI({
