@@ -484,7 +484,7 @@ export async function getTrainingResult(requestId) {
     return {
       loraUrl,
       configUrl,
-      rawResult: payload,
+      rawResult: result,
     };
   } catch (error) {
     console.error("❌ Result fetch error:", error.message);
@@ -1786,6 +1786,26 @@ function buildComfyWorkflow(params) {
       }
       delete apiWorkflow["41"];
       delete apiWorkflow["56"];
+    }
+
+    // UltimateSDUpscale bypass: if the worker image doesn't have ssitu/ComfyUI_UltimateSDUpscale yet,
+    // remove node 323 (UltimateSDUpscale) and node 329 (UpscaleModelLoader) and rewire any downstream
+    // nodes that took input from node 323 to take from node 25 (VAEDecode) instead.
+    // Default: ON (bypass) until the new worker image with UltimateSDUpscale is deployed.
+    // Set NSFW_COMFY_UPSCALE=1 to pass UltimateSDUpscale through once the worker is rebuilt.
+    if (process.env.NSFW_COMFY_UPSCALE !== "1" && apiWorkflow["323"]) {
+      const upscaleInput = apiWorkflow["323"]?.inputs?.image;
+      const fallbackImageRef = Array.isArray(upscaleInput) ? upscaleInput : ["25", 0];
+      for (const n of Object.values(apiWorkflow)) {
+        if (!n?.inputs) continue;
+        for (const [k, v] of Object.entries(n.inputs)) {
+          if (Array.isArray(v) && String(v[0]) === "323") {
+            n.inputs[k] = fallbackImageRef;
+          }
+        }
+      }
+      delete apiWorkflow["323"];
+      delete apiWorkflow["329"];
     }
 
     // Optional: strip other custom nodes RunPod doesn't ship (Crystools, PrimitiveFloat) and inline values.

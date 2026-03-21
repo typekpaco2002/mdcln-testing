@@ -1359,10 +1359,11 @@ const ANALYZE_LOOKS_OPTIONS = {
  */
 router.post("/generate/analyze-looks", authMiddleware, async (req, res) => {
   let creditDeducted = false;
+  let ANALYZE_CREDIT_COST = 0;
 
   try {
     const pricing = await getGenerationPricing();
-    const ANALYZE_CREDIT_COST = pricing.analyzeLooks;
+    ANALYZE_CREDIT_COST = pricing.analyzeLooks;
     const { imageUrls, freeForOnboarding = false } = req.body;
 
     if (!Array.isArray(imageUrls) || imageUrls.length === 0) {
