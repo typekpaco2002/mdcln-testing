@@ -29,6 +29,27 @@ import {
 const router = express.Router();
 const KIE_API_KEY = process.env.KIE_API_KEY;
 const KIE_API_URL = "https://api.kie.ai/api/v1";
+const MARKETING_CAMPAIGN_ACTION = "marketing_campaign";
+
+function parseJsonSafe(value, fallback = null) {
+  if (typeof value !== "string") return fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+async function updateMarketingCampaignAudit(campaignId, updater) {
+  const row = await prisma.adminAuditLog.findFirst({
+    where: { action: MARKETING_CAMPAIGN_ACTION, targetId: campaignId },
+    select: { id: true, detailsJson: true },
+  });
+  if (!row) return null;
+  const prev = parseJsonSafe(row.detailsJson, {}) || {};
+  const next = await updater(prev);
+  await prisma.adminAuditLog.update({
+    where: { id: row.id },
+    data: { detailsJson: JSON.stringify(next) },
+  });
+  return next;
+}
 
 const uploadEmailVideo = multer({
   storage: multer.memoryStorage(),
@@ -628,6 +649,101 @@ router.post(
 );
 
 /**
+ * POST /api/admin/marketing-campaigns
+ * Create a campaign tracking record (stored in AdminAuditLog for persistence).
+ */
+router.post("/marketing-campaigns", async (req, res) => {
+  try {
+    const { subject, headline, audience } = req.body || {};
+    if (!subject || !headline) {
+      return res.status(400).json({ success: false, error: "subject and headline are required" });
+    }
+    const campaignId = randomUUID();
+    const now = new Date().toISOString();
+    const details = {
+      campaignId,
+      subject: String(subject).slice(0, 250),
+      headline: String(headline).slice(0, 250),
+      audience: audience && typeof audience === "object" ? audience : {},
+      status: "running",
+      cursor: 0,
+      totalUsers: 0,
+      excluded: 0,
+      sent: 0,
+      failed: 0,
+      errors: [],
+      startedAt: now,
+      updatedAt: now,
+      completedAt: null,
+      cancelledAt: null,
+    };
+    await prisma.adminAuditLog.create({
+      data: {
+        adminUserId: req.user.userId,
+        adminEmail: req.user.email || null,
+        action: MARKETING_CAMPAIGN_ACTION,
+        targetType: "marketing_campaign",
+        targetId: campaignId,
+        detailsJson: JSON.stringify(details),
+      },
+    });
+    return res.json({ success: true, campaignId, campaign: details });
+  } catch (error) {
+    console.error("Error creating marketing campaign:", error);
+    return res.status(500).json({ success: false, error: "Failed to create campaign" });
+  }
+});
+
+/**
+ * GET /api/admin/marketing-campaigns
+ * List recent campaign progress/history.
+ */
+router.get("/marketing-campaigns", async (req, res) => {
+  try {
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
+    const rows = await prisma.adminAuditLog.findMany({
+      where: { action: MARKETING_CAMPAIGN_ACTION },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: { targetId: true, detailsJson: true, createdAt: true, adminEmail: true },
+    });
+    const campaigns = rows.map((row) => {
+      const d = parseJsonSafe(row.detailsJson, {}) || {};
+      return {
+        campaignId: row.targetId,
+        createdAt: row.createdAt,
+        adminEmail: row.adminEmail,
+        ...d,
+      };
+    });
+    return res.json({ success: true, campaigns });
+  } catch (error) {
+    console.error("Error listing marketing campaigns:", error);
+    return res.status(500).json({ success: false, error: "Failed to load campaigns" });
+  }
+});
+
+/**
+ * POST /api/admin/marketing-campaigns/:campaignId/cancel
+ */
+router.post("/marketing-campaigns/:campaignId/cancel", async (req, res) => {
+  try {
+    const { campaignId } = req.params;
+    const updated = await updateMarketingCampaignAudit(campaignId, (prev) => ({
+      ...prev,
+      status: prev?.status === "completed" ? "completed" : "cancelled",
+      cancelledAt: prev?.status === "completed" ? prev?.cancelledAt || null : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+    if (!updated) return res.status(404).json({ success: false, error: "Campaign not found" });
+    return res.json({ success: true, campaign: updated });
+  } catch (error) {
+    console.error("Error cancelling marketing campaign:", error);
+    return res.status(500).json({ success: false, error: "Failed to cancel campaign" });
+  }
+});
+
+/**
  * POST /api/admin/send-marketing-email
  * Send a marketing email to users (excluding unsubscribes). Optional audience filters.
  * Body: { subject, heroImageUrl, imageUrls, videoUrl?, headline, bodyText, ctaText, ctaUrl, testEmail (optional),
@@ -635,7 +751,7 @@ router.post(
  */
 router.post("/send-marketing-email", async (req, res) => {
   try {
-    const { subject, heroImageUrl, imageUrls, videoUrl, headline, bodyText, ctaText, ctaUrl, testEmail, audience, cursor } = req.body;
+    const { subject, heroImageUrl, imageUrls, videoUrl, headline, bodyText, ctaText, ctaUrl, testEmail, audience, cursor, campaignId } = req.body;
 
     if (!subject || !headline || !bodyText) {
       return res.status(400).json({ error: "subject, headline, and bodyText are required" });
@@ -841,6 +957,17 @@ router.post("/send-marketing-email", async (req, res) => {
       .map((u) => ({ email: u.email, name: u.name }))
       .filter((u) => !unsubSet.has(u.email.toLowerCase()));
 
+    if (campaignId) {
+      const row = await prisma.adminAuditLog.findFirst({
+        where: { action: MARKETING_CAMPAIGN_ACTION, targetId: String(campaignId) },
+        select: { detailsJson: true },
+      });
+      const details = parseJsonSafe(row?.detailsJson, {}) || {};
+      if (details.status === "cancelled") {
+        return res.status(409).json({ success: false, error: "Campaign cancelled" });
+      }
+    }
+
     console.log(`Sending marketing email to ${users.length} users (${unsubSet.size} excluded as unsubscribed)...`);
 
     const startCursor = Math.max(0, parseInt(cursor, 10) || 0);
@@ -943,6 +1070,26 @@ router.post("/send-marketing-email", async (req, res) => {
       console.log(`Marketing email complete: ${sent} sent, ${failed} failed`);
     }
 
+    if (campaignId) {
+      await updateMarketingCampaignAudit(String(campaignId), (prev) => {
+        const prevErrors = Array.isArray(prev?.errors) ? prev.errors : [];
+        const mergedErrors = [...prevErrors, ...(errors || [])].slice(0, 300);
+        return {
+          ...prev,
+          campaignId: String(campaignId),
+          status: hasMore ? "running" : "completed",
+          cursor: nextCursor,
+          totalUsers: users.length,
+          excluded: unsubSet.size,
+          sent: Number(prev?.sent || 0) + sent,
+          failed: Number(prev?.failed || 0) + failed,
+          errors: mergedErrors,
+          updatedAt: new Date().toISOString(),
+          completedAt: hasMore ? null : new Date().toISOString(),
+        };
+      });
+    }
+
     res.json({
       success: true,
       totalUsers: users.length,
@@ -952,9 +1099,19 @@ router.post("/send-marketing-email", async (req, res) => {
       hasMore,
       sent,
       failed,
+      campaignId: campaignId || null,
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
+    const campaignId = req.body?.campaignId;
+    if (campaignId) {
+      await updateMarketingCampaignAudit(String(campaignId), (prev) => ({
+        ...prev,
+        status: "failed",
+        updatedAt: new Date().toISOString(),
+        errors: [...(Array.isArray(prev?.errors) ? prev.errors : []), error?.message || "Failed to send marketing email"].slice(0, 300),
+      })).catch(() => {});
+    }
     console.error("Error sending marketing email:", error?.message, error?.stack);
     res.status(500).json({ error: error?.message || "Failed to send marketing email" });
   }

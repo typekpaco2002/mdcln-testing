@@ -442,6 +442,9 @@ export default function AdminPage() {
   const [confirmResetGenPricing, setConfirmResetGenPricing] = useState(false);
   const [advancingReferralUserId, setAdvancingReferralUserId] = useState(null); // userId being toggled
   const [emailSendResult, setEmailSendResult] = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [activeCampaignId, setActiveCampaignId] = useState(null);
   const [showManagePurchases, setShowManagePurchases] = useState(false);
   const [userPurchases, setUserPurchases] = useState([]);
   const [loadingPurchases, setLoadingPurchases] = useState(false);
@@ -634,6 +637,7 @@ export default function AdminPage() {
     loadReelFinderAdmin();
     loadBranding();
     loadBackupHistory();
+    loadCampaigns();
   }, []);
 
   useEffect(() => {
@@ -1192,6 +1196,29 @@ export default function AdminPage() {
     }
   };
 
+  const loadCampaigns = async () => {
+    setCampaignsLoading(true);
+    try {
+      const r = await api.get('/admin/marketing-campaigns?limit=40');
+      if (r.data?.success) setCampaigns(r.data.campaigns || []);
+    } catch {
+      // no-op
+    } finally {
+      setCampaignsLoading(false);
+    }
+  };
+
+  const cancelCampaign = async (campaignId) => {
+    if (!campaignId) return;
+    try {
+      await api.post(`/admin/marketing-campaigns/${campaignId}/cancel`);
+      toast.success('Campaign cancelled');
+      loadCampaigns();
+    } catch (e) {
+      toast.error(e?.response?.data?.error || 'Failed to cancel campaign');
+    }
+  };
+
   const _doSendEmail = async (isTest = false) => {
     setConfirmSendAll(false);
       setSendingEmail(true);
@@ -1235,7 +1262,17 @@ export default function AdminPage() {
         return;
       }
 
-      // Production send: iterate cursor windows so we never hit Vercel 300s timeout.
+      // Production send: create a persisted campaign, then iterate cursor windows.
+      const campaignCreate = await api.post('/admin/marketing-campaigns', {
+        subject: basePayload.subject,
+        headline: basePayload.headline,
+        audience: basePayload.audience || {},
+      });
+      const campaignId = campaignCreate?.data?.campaignId;
+      if (!campaignId) throw new Error('Failed to create campaign record');
+      setActiveCampaignId(campaignId);
+      await loadCampaigns();
+
       let cursor = 0;
       let totalSent = 0;
       let totalFailed = 0;
@@ -1245,7 +1282,7 @@ export default function AdminPage() {
       const MAX_ERRORS = 200;
 
       for (let guard = 0; guard < 500; guard++) {
-        const r = await api.post('/admin/send-marketing-email', { ...basePayload, cursor });
+        const r = await api.post('/admin/send-marketing-email', { ...basePayload, cursor, campaignId });
         if (!r.data?.success) throw new Error('Send failed');
 
         totalSent += Number(r.data.sent || 0);
@@ -1260,6 +1297,7 @@ export default function AdminPage() {
 
         setEmailSendResult({
           success: true,
+          campaignId,
           totalUsers,
           excluded,
           sent: totalSent,
@@ -1268,17 +1306,24 @@ export default function AdminPage() {
           hasMore: Boolean(r.data.hasMore),
           nextCursor: Number(r.data.nextCursor || 0),
         });
+        await loadCampaigns();
 
         if (!r.data.hasMore) {
           toast.success(`Campaign complete: sent ${totalSent}/${totalUsers}`);
+          setActiveCampaignId(null);
           return;
         }
         cursor = Number(r.data.nextCursor || 0);
       }
 
       throw new Error('Campaign did not finish (guard limit reached)');
-    } catch (e) { toast.error(e?.response?.data?.error || 'Send failed'); }
-    finally { setSendingEmail(false); }
+    } catch (e) {
+      toast.error(e?.response?.data?.error || 'Send failed');
+    } finally {
+      setActiveCampaignId(null);
+      setSendingEmail(false);
+      loadCampaigns();
+    }
   };
 
   const handleUploadEmailImage = async (file, asHero = false) => {
@@ -3103,6 +3148,59 @@ export default function AdminPage() {
               <button onClick={() => setEmailSendResult(null)} className="mt-1 text-gray-600 hover:text-gray-400 transition">Dismiss</button>
               </div>
           )}
+          <div className="mb-4 p-3 rounded-lg border border-white/[0.08] bg-white/[0.02]">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-gray-300">Campaign Progress</p>
+              <button
+                onClick={loadCampaigns}
+                disabled={campaignsLoading}
+                className="px-2 py-1 rounded border border-white/[0.09] bg-white/[0.03] text-[11px] text-gray-300 hover:bg-white/[0.08] transition disabled:opacity-50"
+              >
+                {campaignsLoading ? 'Refreshing…' : 'Refresh'}
+              </button>
+            </div>
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+              {campaigns.map((c) => {
+                const total = Math.max(0, Number(c.totalUsers || 0));
+                const sent = Math.max(0, Number(c.sent || 0));
+                const failed = Math.max(0, Number(c.failed || 0));
+                const done = Math.min(total || sent + failed, sent + failed);
+                const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+                const status = c.status || 'running';
+                return (
+                  <div key={c.campaignId} className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] text-gray-200 truncate">{c.subject || 'Campaign'}</p>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        status === 'completed' ? 'bg-emerald-500/20 text-emerald-300' :
+                        status === 'failed' ? 'bg-red-500/20 text-red-300' :
+                        status === 'cancelled' ? 'bg-amber-500/20 text-amber-300' :
+                        'bg-violet-500/20 text-violet-300'
+                      }`}>{status}</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full rounded bg-white/[0.08] overflow-hidden">
+                      <div className="h-full bg-violet-400/80" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-[10px] text-gray-400">
+                      <span>{sent} sent · {failed} failed · {pct}%</span>
+                      <span>{c.updatedAt ? new Date(c.updatedAt).toLocaleString() : ''}</span>
+                    </div>
+                    {status === 'running' && (
+                      <div className="mt-1 flex justify-end">
+                        <button
+                          onClick={() => cancelCampaign(c.campaignId)}
+                          className="px-2 py-1 rounded border border-red-500/30 bg-red-500/10 text-[10px] text-red-300 hover:bg-red-500/20 transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {!campaigns.length && <p className="text-[11px] text-gray-500">No campaigns yet.</p>}
+            </div>
+          </div>
           <div className="grid lg:grid-cols-2 gap-4">
             <div className="space-y-2.5">
               {[{ k: 'subject', ph: 'Email subject' }, { k: 'headline', ph: 'Headline' }].map(({ k, ph }) => (
@@ -3257,7 +3355,7 @@ export default function AdminPage() {
                   <Send className="w-3 h-3" /> Test
                 </GhostBtn>
                 <PrimaryBtn onClick={() => handleSendEmail(false)} disabled={sendingEmail}>
-                  <Send className="w-3 h-3" /> Send All
+                  <Send className="w-3 h-3" /> {sendingEmail ? (activeCampaignId ? 'Sending…' : 'Starting…') : 'Send All'}
                 </PrimaryBtn>
               </div>
             </div>
