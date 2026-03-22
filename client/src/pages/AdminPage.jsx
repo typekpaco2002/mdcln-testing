@@ -456,7 +456,7 @@ export default function AdminPage() {
   const [showDailyTracking, setShowDailyTracking] = useState(false);
   const [showTrackedProfiles, setShowTrackedProfiles] = useState(false);
   const [showScrapeLogs, setShowScrapeLogs] = useState(false);
-  const [showBrandSettings, setShowBrandSettings] = useState(false);
+  const [showBrandSettings, setShowBrandSettings] = useState(true);
   const [showTelemetryDashboard, setShowTelemetryDashboard] = useState(false);
   const [showEdgeEvents, setShowEdgeEvents] = useState(false);
   const [showInfraMetrics, setShowInfraMetrics] = useState(false);
@@ -2914,13 +2914,36 @@ export default function AdminPage() {
               </div>
 
               {/* Tutorial Video */}
-              <div className="pt-3 border-t border-white/[0.06]">
-                <p className="text-[11px] text-gray-400 font-medium mb-2">Quick Tutorial Video</p>
+              <div className="pt-4 mt-2 border-t border-white/[0.06]">
+                <p className="text-xs font-semibold text-gray-300 mb-1">Quick Tutorial Video</p>
+                <p className="text-[11px] text-gray-500 mb-3">Shown on the dashboard for new users. Upload an MP4 to replace it.</p>
+
+                {/* Preview */}
                 {brandSettings.tutorialVideoUrl && (
-                  <p className="text-[10px] text-slate-500 truncate mb-2">{brandSettings.tutorialVideoUrl}</p>
+                  <div className="mb-3 rounded-xl overflow-hidden border border-white/[0.07] bg-black" style={{ maxHeight: 160 }}>
+                    <video
+                      key={brandSettings.tutorialVideoUrl}
+                      src={brandSettings.tutorialVideoUrl}
+                      controls
+                      className="w-full h-full object-contain"
+                      style={{ maxHeight: 160 }}
+                    />
+                  </div>
                 )}
-                <div className="flex items-center gap-2">
-                  <label className={`px-3 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] hover:bg-white/[0.08] text-xs text-gray-300 cursor-pointer transition ${tutorialVideoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+
+                {!brandSettings.tutorialVideoUrl && (
+                  <div className="mb-3 rounded-xl border border-dashed border-white/[0.08] bg-white/[0.02] flex items-center justify-center py-6">
+                    <p className="text-[11px] text-gray-600">No custom video — using default</p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-xs text-violet-300 cursor-pointer transition ${tutorialVideoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {tutorialVideoUploading ? (
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10"/></svg>
+                    ) : (
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    )}
                     {tutorialVideoUploading ? 'Uploading…' : (brandSettings.tutorialVideoUrl ? 'Replace Video' : 'Upload Video')}
                     <input type="file" accept="video/mp4,video/*" className="hidden" onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -2929,27 +2952,34 @@ export default function AdminPage() {
                       try {
                         const fd = new FormData(); fd.append('video', file);
                         const r = await api.post('/admin/tutorial-video', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
-                        if (r.data?.success) { setBrandSettings((p) => ({ ...p, tutorialVideoUrl: r.data.url })); toast.success('Tutorial video updated'); }
+                        if (r.data?.success) { setBrandSettings((p) => ({ ...p, tutorialVideoUrl: r.data.url })); toast.success('Tutorial video updated!'); }
                         else toast.error('Upload failed');
                       } catch (ex) { toast.error(ex?.response?.data?.error || 'Upload failed'); }
                       finally { setTutorialVideoUploading(false); e.target.value = ''; }
                     }} />
                   </label>
+
                   {brandSettings.tutorialVideoUrl && (
                     <button
-                      className="px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-xs text-red-400 transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/25 bg-red-500/8 hover:bg-red-500/18 text-xs text-red-400 transition"
                       onClick={async () => {
+                        if (!confirm('Reset tutorial video to default?')) return;
                         try {
                           await api.delete('/admin/tutorial-video');
                           setBrandSettings((p) => ({ ...p, tutorialVideoUrl: '' }));
                           toast.success('Tutorial video reset to default');
-                        } catch { toast.error('Failed to delete'); }
+                        } catch { toast.error('Failed to reset'); }
                       }}
                     >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                       Reset to Default
                     </button>
                   )}
                 </div>
+
+                {brandSettings.tutorialVideoUrl && (
+                  <p className="text-[10px] text-slate-600 mt-2 truncate">{brandSettings.tutorialVideoUrl}</p>
+                )}
               </div>
             </div>
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
