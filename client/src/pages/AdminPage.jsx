@@ -2729,10 +2729,10 @@ export default function AdminPage() {
                 Recreating a voice on the same model does not increase usage.
               </p>
               <p className="text-xs text-gray-400">
-                Currently using: <span className="text-white font-mono">{voicePlatformUsed}</span> models with a custom voice
+                Currently using: <span className="text-white font-mono">{voicePlatformUsed}</span> models with a saved model voice
               </p>
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] text-gray-500">Max custom voices (platform-wide)</span>
+                <span className="text-[11px] text-gray-500">Max saved model voices (platform-wide)</span>
                 <input
                   type="number"
                   min={1}

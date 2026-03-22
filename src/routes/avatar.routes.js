@@ -152,10 +152,10 @@ router.post("/", upload.single("photo"), async (req, res) => {
   });
   if (!model) return res.status(404).json({ error: "Model not found" });
 
-  // Voice is required — all avatars for a model share the model's voice
+  // A default model voice is required — all avatars use that selected voice
   if (!model.elevenLabsVoiceId) {
     return res.status(400).json({
-      error: "This model has no voice. Please create a custom voice for it first in Model Settings.",
+      error: "This model has no default voice. Please create and select one in Voice Studio first.",
       code: "NO_VOICE",
     });
   }

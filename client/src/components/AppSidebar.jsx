@@ -26,6 +26,7 @@ import {
   CreditCard,
   FileType2,
   Wand2,
+  Mic,
 } from "lucide-react";
 import { SiTelegram, SiDiscord, SiInstagram } from "react-icons/si";
 import { Link } from "react-router-dom";
@@ -58,6 +59,7 @@ export default function AppSidebar({
     { id: "models", label: "My Models", icon: Users },
     { id: "generate", label: "Generate", icon: Zap },
     { id: "creator-studio", label: "Creator Studio", icon: Wand2, isCreatorStudio: true },
+    { id: "voice-studio", label: "Voice Studio", icon: Mic, premium: true },
     { id: "reformatter", label: "Reformatter", icon: FileType2 },
     { id: "history", label: "History", icon: Clock },
     { id: "settings", label: "Settings", icon: SettingsIcon },

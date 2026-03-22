@@ -3660,35 +3660,82 @@ export async function getVoices(req, res) {
     if (modelId && userId) {
       const model = await prisma.savedModel.findFirst({
         where: { id: modelId, userId },
+        select: { name: true },
+      });
+      const modelVoices = await prisma.modelVoice.findMany({
+        where: { modelId, userId },
+        orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
         select: {
+          id: true,
           elevenLabsVoiceId: true,
-          elevenLabsVoiceType: true,
-          modelVoicePreviewUrl: true,
-          elevenLabsVoiceName: true,
+          type: true,
           name: true,
+          previewUrl: true,
+          isDefault: true,
         },
       });
-      if (model?.elevenLabsVoiceId) {
-        const previewUrl = model.modelVoicePreviewUrl || "";
-        const modelName = model.name || "My model";
-        const displayName = model.elevenLabsVoiceName || `${modelName}'s voice`;
-        const custom = {
-          id: model.elevenLabsVoiceId,
-          name: displayName,
-          modelName,
-          voiceType: model.elevenLabsVoiceType || "design",
-          category: "custom",
-          labels: { gender: "female", source: "model_custom" },
-          languages: ["en", "sk", "cs"],
-          originalPreviewUrl: previewUrl,
-          previewUrls: {
-            en: previewUrl,
-            sk: previewUrl,
-            cs: previewUrl,
+
+      if (modelVoices.length > 0) {
+        const modelName = model?.name || "My model";
+        const customVoices = modelVoices.map((voice) => {
+          const previewUrl = voice.previewUrl || "";
+          return {
+            id: voice.elevenLabsVoiceId,
+            name: voice.name || `${modelName}'s voice`,
+            modelName,
+            voiceType: voice.type || "design",
+            category: "custom",
+            labels: {
+              gender: "female",
+              source: "model_custom",
+              default: voice.isDefault ? "true" : "false",
+            },
+            languages: ["en", "sk", "cs"],
+            originalPreviewUrl: previewUrl,
+            previewUrls: {
+              en: previewUrl,
+              sk: previewUrl,
+              cs: previewUrl,
+            },
+            isModelCustom: true,
+            isDefaultModelVoice: Boolean(voice.isDefault),
+            modelVoiceRecordId: voice.id,
+          };
+        });
+        voices = [...customVoices, ...voices];
+      } else if (model) {
+        const legacyModel = await prisma.savedModel.findFirst({
+          where: { id: modelId, userId },
+          select: {
+            elevenLabsVoiceId: true,
+            elevenLabsVoiceType: true,
+            modelVoicePreviewUrl: true,
+            elevenLabsVoiceName: true,
+            name: true,
           },
-          isModelCustom: true,
-        };
-        voices = [custom, ...voices];
+        });
+        if (legacyModel?.elevenLabsVoiceId) {
+          const previewUrl = legacyModel.modelVoicePreviewUrl || "";
+          const modelName = legacyModel.name || "My model";
+          const displayName = legacyModel.elevenLabsVoiceName || `${modelName}'s voice`;
+          const custom = {
+            id: legacyModel.elevenLabsVoiceId,
+            name: displayName,
+            modelName,
+            voiceType: legacyModel.elevenLabsVoiceType || "design",
+            category: "custom",
+            labels: { gender: "female", source: "model_custom" },
+            languages: ["en", "sk", "cs"],
+            originalPreviewUrl: previewUrl,
+            previewUrls: {
+              en: previewUrl,
+              sk: previewUrl,
+              cs: previewUrl,
+            },
+            isModelCustom: true,
+          };
+          voices = [custom, ...voices];
+        }
       }
     }
 

@@ -435,13 +435,12 @@ import { GenerationHistory } from "../components/GenerationHistory";
 import TutorialButton from "../components/TutorialButton";
 import { TUTORIALS } from "../utils/tutorials";
 import AddCreditsModal from "../components/AddCreditsModal";
-import ModelVoiceStudioModal from "../components/ModelVoiceStudioModal";
 import { CreditCard } from "lucide-react";
 import LivePreviewPanel from "../components/LivePreviewPanel";
 import CourseTipBanner from "../components/CourseTipBanner";
 import { useDraft } from "../hooks/useDraft";
 
-export default function GeneratePage({ setActiveTab: setDashboardTab }) {
+export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceStudioForModel }) {
   const [activeTab, setActiveTab] = useState("image");
   const [isTabDrawerOpen, setIsTabDrawerOpen] = useState(false);
   const [hasSelectedTopTab, setHasSelectedTopTab] = useState(false);
@@ -1698,7 +1697,6 @@ function VideoGeneration() {
     (m) => m.status !== "processing"
   );
   const [selectedModel, setSelectedModel] = useState("");
-  const [voiceStudioOpen, setVoiceStudioOpen] = useState(false);
   // Method selection
   const [method, setMethod] = useState("2-step"); // 'quick' or '2-step'
 
@@ -1856,7 +1854,7 @@ function VideoGeneration() {
     return true;
   });
 
-  // Sort: model custom voice first, then favorites, then A–Z
+  // Sort: saved model voices first, then favorites, then A-Z
   const sortedVoices = [...filteredVoices].sort((a, b) => {
     if (a.isModelCustom && !b.isModelCustom) return -1;
     if (!a.isModelCustom && b.isModelCustom) return 1;
@@ -2833,13 +2831,13 @@ function VideoGeneration() {
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setVoiceStudioOpen(true)}
+                  onClick={() => openVoiceStudioForModel?.(selectedModel)}
                   className="text-[10px] px-2.5 py-1.5 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-200 hover:bg-violet-600/30 transition-colors"
                 >
-                  Custom voice for this model…
+                  Open Voice Studio…
                 </button>
                 {models.find((m) => m.id === selectedModel)?.elevenLabsVoiceId ? (
-                  <span className="text-[10px] text-emerald-400/90">Custom voice on file</span>
+                  <span className="text-[10px] text-emerald-400/90">Default model voice ready</span>
                 ) : null}
               </div>
             ) : null}
@@ -3048,16 +3046,6 @@ function VideoGeneration() {
       {/* Credits Modal */}
       <AddCreditsModal isOpen={showCreditsModal} onClose={() => setShowCreditsModal(false)} />
 
-      <ModelVoiceStudioModal
-        isOpen={voiceStudioOpen}
-        onClose={() => setVoiceStudioOpen(false)}
-        model={models.find((m) => m.id === selectedModel) || null}
-        onSuccess={() => {
-          invalidateModels?.();
-          loadVoices(selectedModel || undefined);
-          setVoiceStudioOpen(false);
-        }}
-      />
     </div>
   );
 }

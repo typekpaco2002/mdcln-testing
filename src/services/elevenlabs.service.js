@@ -133,7 +133,7 @@ export async function textToSpeech(text, voiceId, options = {}) {
     },
     body: JSON.stringify({
       text: text,
-      model_id: options.modelId || "eleven_multilingual_v2",
+      model_id: options.modelId || options.model_id || "eleven_multilingual_v2",
       voice_settings: {
         stability: options.stability || 0.5,
         similarity_boost: options.similarityBoost || 0.75,
@@ -488,6 +488,6 @@ export async function deleteElevenLabsVoiceStrict(voiceId) {
   if (response.status === 404) return;
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Could not remove previous custom voice (${response.status}): ${errText}`);
+    throw new Error(`Could not remove previous saved model voice (${response.status}): ${errText}`);
   }
 }

@@ -61,9 +61,16 @@ import {
 } from "../controllers/model.controller.js";
 import {
   getVoicePlatformStatus,
+  getModelVoiceStudio,
   postModelVoiceDesignPreviews,
   postModelVoiceDesignConfirm,
   postModelVoiceClone,
+  postModelVoicesDesignPreviews,
+  postModelVoicesDesignConfirm,
+  postModelVoicesClone,
+  postSelectModelVoice,
+  deleteModelVoice,
+  postGenerateModelVoiceAudio,
 } from "../controllers/model-voice.controller.js";
 import {
   initializeTrainingSession,
@@ -817,6 +824,49 @@ router.post(
   generationLimiter,
   voiceCloneUpload.single("audio"),
   postModelVoiceClone,
+);
+router.get(
+  "/models/:modelId/voices",
+  authMiddleware,
+  modelsLimiter,
+  getModelVoiceStudio,
+);
+router.post(
+  "/models/:modelId/voices/design-previews",
+  authMiddleware,
+  voiceDesignPreviewLimiter,
+  postModelVoicesDesignPreviews,
+);
+router.post(
+  "/models/:modelId/voices/design-confirm",
+  authMiddleware,
+  generationLimiter,
+  postModelVoicesDesignConfirm,
+);
+router.post(
+  "/models/:modelId/voices/clone",
+  authMiddleware,
+  generationLimiter,
+  voiceCloneUpload.single("audio"),
+  postModelVoicesClone,
+);
+router.post(
+  "/models/:modelId/voices/:voiceId/select",
+  authMiddleware,
+  generationLimiter,
+  postSelectModelVoice,
+);
+router.delete(
+  "/models/:modelId/voices/:voiceId",
+  authMiddleware,
+  generationLimiter,
+  deleteModelVoice,
+);
+router.post(
+  "/models/:modelId/voices/generate-audio",
+  authMiddleware,
+  generationLimiter,
+  postGenerateModelVoiceAudio,
 );
 
 router.get("/models/:id", authMiddleware, modelsLimiter, getModelById); // ✅ FIX: Added modelsLimiter

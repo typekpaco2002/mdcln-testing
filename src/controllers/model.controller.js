@@ -252,6 +252,20 @@ export async function getModelById(req, res) {
 
     const model = await prisma.savedModel.findFirst({
       where: { id, userId },
+      include: {
+        modelVoices: {
+          select: {
+            elevenLabsVoiceId: true,
+            previewUrl: true,
+            sampleAudioUrl: true,
+          },
+        },
+        generatedVoiceAudios: {
+          select: {
+            audioUrl: true,
+          },
+        },
+      },
     });
 
     if (!model) {
@@ -323,15 +337,31 @@ export async function deleteModel(req, res) {
       }
     }
 
-    if (model.elevenLabsVoiceId) {
-      await deleteElevenLabsVoice(model.elevenLabsVoiceId);
+    const voiceIdsToDelete = new Set(
+      [
+        model.elevenLabsVoiceId,
+        ...model.modelVoices.map((voice) => voice.elevenLabsVoiceId),
+      ].filter(Boolean),
+    );
+    for (const voiceId of voiceIdsToDelete) {
+      try {
+        await deleteElevenLabsVoice(voiceId);
+      } catch (e) { /* best-effort */ }
     }
-    if (model.modelVoicePreviewUrl) {
+
+    const r2UrlsToDelete = new Set(
+      [
+        model.modelVoicePreviewUrl,
+        ...model.modelVoices.flatMap((voice) => [voice.previewUrl, voice.sampleAudioUrl]),
+        ...model.generatedVoiceAudios.map((audio) => audio.audioUrl),
+      ].filter(Boolean),
+    );
+    for (const url of r2UrlsToDelete) {
       try {
         const { deleteFromR2 } = await import("../utils/r2.js");
         const pub = process.env.R2_PUBLIC_URL || "";
-        if (pub && model.modelVoicePreviewUrl.startsWith(pub)) {
-          await deleteFromR2(model.modelVoicePreviewUrl);
+        if (pub && url.startsWith(pub)) {
+          await deleteFromR2(url);
         }
       } catch (e) { /* best-effort */ }
     }

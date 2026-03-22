@@ -10,6 +10,7 @@ import {
 import { creatorStudioAPI, avatarAPI, modelAPI, uploadFile } from "../services/api";
 import { useAuthStore } from "../store";
 import { useActiveGeneration } from "../hooks/useActiveGeneration";
+import CreatorStudioVoiceTab from "../components/CreatorStudioVoiceTab";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -256,7 +257,7 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
   const handleSubmit = async () => {
     if (!name.trim())  return toast.error("Enter a name for the avatar");
     if (!photo)        return toast.error("Upload a photo");
-    if (!model?.elevenLabsVoiceId) return toast.error("This model has no voice. Create a voice in Model Settings first.");
+    if (!model?.elevenLabsVoiceId) return toast.error("This model has no default voice. Create one in Voice Studio first.");
 
     setSubmitting(true);
     try {
@@ -348,12 +349,12 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
             <Mic className={`w-4 h-4 mt-0.5 flex-shrink-0 ${hasVoice ? "text-green-400" : "text-amber-400"}`} />
             <div>
               <p className={`text-xs font-semibold ${hasVoice ? "text-green-300" : "text-amber-300"}`}>
-                {hasVoice ? `Voice: ${model.elevenLabsVoiceName || model.elevenLabsVoiceType || "Custom"}` : "No voice configured"}
+                {hasVoice ? `Default voice: ${model.elevenLabsVoiceName || model.elevenLabsVoiceType || "Saved voice"}` : "No default voice configured"}
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
                 {hasVoice
-                  ? "All avatars on this model share this voice."
-                  : "Go to Model Settings → Voice Studio to create a voice first."}
+                  ? "All avatars on this model use the current default voice."
+                  : "Open Voice Studio to create and select a default voice first."}
               </p>
             </div>
           </div>
@@ -744,7 +745,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
           <div>
             <p className="text-xs font-semibold text-amber-300">Voice required</p>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              All avatars share the model's voice. Go to <strong className="text-slate-400">Models → Voice Studio</strong> to create one.
+              All avatars use this model&apos;s default voice. Open <strong className="text-slate-400">Voice Studio</strong> to create or select one.
             </p>
           </div>
         </div>
@@ -858,11 +859,12 @@ function RealAvatarsTab({ sidebarCollapsed }) {
 // ---------------------------------------------------------------------------
 const TABS = [
   { id: "generate",    label: "Generate",     icon: Zap,  desc: "NanoBanana Pro · no model required" },
+  { id: "voices",      label: "Voice Studio", icon: Mic,  desc: "ElevenLabs audio" },
   { id: "avatars",     label: "Real Avatars",  icon: User, desc: "HeyGen Photo Avatar IV" },
 ];
 
-export default function CreatorStudioPage({ sidebarCollapsed = false }) {
-  const [activeTab, setActiveTab] = useState("generate");
+export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab = "generate", initialModelId = null }) {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const user        = useAuthStore((s) => s.user);
   const refreshUser = useAuthStore((s) => s.refreshUser);
   const isAdminUser = user?.role === "admin";
@@ -893,6 +895,10 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
       setActiveTab("generate");
     }
   }, [isAdminUser, activeTab]);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const handleAddRef = useCallback(async (file, slotIdx) => {
     setUploadingIdx(slotIdx);
@@ -1154,6 +1160,8 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
       {activeTab === "avatars" && (
         <RealAvatarsTab sidebarCollapsed={sidebarCollapsed} />
       )}
+
+      {activeTab === "voices" && <CreatorStudioVoiceTab initialModelId={initialModelId} />}
     </div>
   );
 }

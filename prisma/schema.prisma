@@ -68,6 +68,8 @@ model User {
   referralCommissions           ReferralCommission[]    @relation("ReferrerCommissions")
   referralPayoutRequests        ReferralPayoutRequest[]
   savedModels                   SavedModel[]
+  modelVoices                   ModelVoice[]
+  generatedVoiceAudios          GeneratedVoiceAudio[]
   avatars                       Avatar[]
   avatarVideos                  AvatarVideo[]
   referredBy                    User?                   @relation("UserReferrals", fields: [referredByUserId], references: [id])
@@ -182,6 +184,8 @@ model SavedModel {
   /// Cached preview MP3 on R2 for UI / talking-head picker
   modelVoicePreviewUrl String?
   generations          Generation[]
+  modelVoices          ModelVoice[]
+  generatedVoiceAudios GeneratedVoiceAudio[]
   trainingImages       LoraTrainingImage[]
   user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   trainedLoras         TrainedLora[]
@@ -190,6 +194,65 @@ model SavedModel {
   @@index([userId])
   @@index([isAIGenerated])
   @@index([loraStatus])
+}
+
+model ModelVoice {
+  id                String               @id @default(cuid())
+  userId            String
+  modelId           String
+  provider          String               @default("elevenlabs")
+  elevenLabsVoiceId String               @unique
+  type              String
+  name              String
+  description       String?              @db.Text
+  language          String?
+  previewUrl        String?
+  sampleAudioUrl    String?
+  isDefault         Boolean              @default(false)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model             SavedModel           @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  generatedAudios   GeneratedVoiceAudio[]
+
+  @@index([userId, createdAt])
+  @@index([modelId, createdAt])
+  @@index([modelId, isDefault])
+}
+
+model GeneratedVoiceAudio {
+  id                       String                @id @default(cuid())
+  userId                   String
+  modelId                  String
+  voiceId                  String?
+  script                   String                @db.Text
+  characterCount           Int
+  estimatedDurationSec     Int?
+  actualDurationSec        Float?
+  creditsCost              Int
+  isRegeneration           Boolean               @default(false)
+  sourceAudioId            String?
+  status                   String                @default("completed")
+  audioUrl                 String?
+  errorMessage             String?
+  voiceNameSnapshot        String?
+  voiceTypeSnapshot        String?
+  elevenLabsVoiceIdSnapshot String?
+  previewUrlSnapshot       String?
+  completedAt              DateTime?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+  user                     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model                    SavedModel            @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  voice                    ModelVoice?           @relation(fields: [voiceId], references: [id], onDelete: SetNull)
+  sourceAudio              GeneratedVoiceAudio?  @relation("GeneratedVoiceAudioRegeneration", fields: [sourceAudioId], references: [id], onDelete: SetNull)
+  regenerations            GeneratedVoiceAudio[] @relation("GeneratedVoiceAudioRegeneration")
+
+  @@index([userId, createdAt])
+  @@index([modelId, createdAt])
+  @@index([voiceId, createdAt])
+  @@index([sourceAudioId])
+  @@index([status, createdAt])
 }
 
 model TrainedLora {

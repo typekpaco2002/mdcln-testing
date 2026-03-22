@@ -829,6 +829,43 @@ export const modelAPI = {
     const response = await api.post("/models/generate-advanced", data);
     return response.data;
   },
+
+  getVoiceStudio: async (modelId) => {
+    const response = await api.get(`/models/${modelId}/voices`);
+    return response.data;
+  },
+
+  generateVoiceDesignPreviews: async (modelId, data) => {
+    const response = await api.post(`/models/${modelId}/voices/design-previews`, data);
+    return response.data;
+  },
+
+  confirmDesignedVoice: async (modelId, data) => {
+    const response = await api.post(`/models/${modelId}/voices/design-confirm`, data);
+    return response.data;
+  },
+
+  cloneVoice: async (modelId, formData) => {
+    const response = await api.post(`/models/${modelId}/voices/clone`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+
+  selectVoice: async (modelId, voiceId) => {
+    const response = await api.post(`/models/${modelId}/voices/${voiceId}/select`);
+    return response.data;
+  },
+
+  deleteVoice: async (modelId, voiceId) => {
+    const response = await api.delete(`/models/${modelId}/voices/${voiceId}`);
+    return response.data;
+  },
+
+  generateVoiceAudio: async (modelId, data) => {
+    const response = await api.post(`/models/${modelId}/voices/generate-audio`, data);
+    return response.data;
+  },
 };
 
 // System API

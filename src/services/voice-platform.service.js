@@ -4,6 +4,12 @@ export const VOICE_DESIGN_CREDITS_INITIAL = 1000;
 export const VOICE_DESIGN_CREDITS_RECREATE = 500;
 export const VOICE_CLONE_CREDITS_INITIAL = 2000;
 export const VOICE_CLONE_CREDITS_RECREATE = 1000;
+export const VOICE_AUDIO_CREDITS_PER_1K_CHARS = 36;
+export const VOICE_AUDIO_REGEN_CREDITS_PER_1K_CHARS = 18;
+export const VOICE_TTS_MODEL_ID = "eleven_v3";
+export const VOICE_MAX_SAVED_VOICES_PER_MODEL = 3;
+export const VOICE_MAX_CHARS = 5000;
+export const VOICE_MAX_DURATION_SEC = 300;
 
 /**
  * Singleton row id for VoicePlatformConfig
@@ -69,4 +75,22 @@ export function voiceCreditsForAction(type, isRecreate) {
     return isRecreate ? VOICE_CLONE_CREDITS_RECREATE : VOICE_CLONE_CREDITS_INITIAL;
   }
   throw new Error("Invalid voice type");
+}
+
+export function estimateVoiceAudioCredits(characterCount, isRegeneration = false) {
+  const chars = Math.max(0, parseInt(String(characterCount || 0), 10) || 0);
+  if (chars <= 0) return 0;
+  const rate = isRegeneration
+    ? VOICE_AUDIO_REGEN_CREDITS_PER_1K_CHARS
+    : VOICE_AUDIO_CREDITS_PER_1K_CHARS;
+  return Math.max(1, Math.ceil((chars / 1000) * rate));
+}
+
+export function assertWithinSavedVoiceLimit(existingCount) {
+  const count = parseInt(String(existingCount || 0), 10) || 0;
+  if (count >= VOICE_MAX_SAVED_VOICES_PER_MODEL) {
+    const err = new Error(`You can save up to ${VOICE_MAX_SAVED_VOICES_PER_MODEL} voices per model.`);
+    err.code = "VOICE_MODEL_LIMIT";
+    throw err;
+  }
 }

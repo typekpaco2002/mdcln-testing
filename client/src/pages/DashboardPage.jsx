@@ -33,6 +33,7 @@ import {
   Shuffle,
   TrendingUp,
   Wand2,
+  Mic,
 } from "lucide-react";
 import { SiTelegram, SiDiscord } from "react-icons/si";
 import toast from "react-hot-toast";
@@ -78,7 +79,7 @@ export default function DashboardPage() {
   const branding = useBranding();
   const navigate = useNavigate();
   const canAccessPremiumTabs = hasPremiumAccess(user);
-  const premiumTabs = ["course", "repurposer", "reelfinder"];
+  const premiumTabs = ["course", "repurposer", "reelfinder", "voice-studio"];
 
   const [activeTab, setActiveTab] = useState("home");
   const [showPremiumGate, setShowPremiumGate] = useState(false);
@@ -93,6 +94,7 @@ export default function DashboardPage() {
   const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [courseVideoId, setCourseVideoId] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [voiceStudioInitialModelId, setVoiceStudioInitialModelId] = useState(null);
 
   // What's New popup - version key for tracking updates
   const WHATS_NEW_VERSION = "nsfw-feb-2026";
@@ -107,7 +109,7 @@ export default function DashboardPage() {
       // Check for query params (tab navigation from other pages, openCredits from onboarding)
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get("tab");
-      if (tabParam && ["home", "models", "generate", "creator-studio", "reformatter", "history", "settings", "nsfw", "course", "repurposer", "reelfinder", "referral"].includes(tabParam)) {
+      if (tabParam && ["home", "models", "generate", "creator-studio", "voice-studio", "reformatter", "history", "settings", "nsfw", "course", "repurposer", "reelfinder", "referral"].includes(tabParam)) {
         if (premiumTabs.includes(tabParam)) {
           const hasAccess = hasPremiumAccess(freshUser);
           if (!hasAccess) {
@@ -219,11 +221,17 @@ export default function DashboardPage() {
     setActiveTab(tabId);
   };
 
+  const openVoiceStudioForModel = (modelId = null) => {
+    setVoiceStudioInitialModelId(modelId || null);
+    setActiveTab("voice-studio");
+  };
+
   const mobileMenuItems = [
     { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'models', label: 'Models', icon: Users },
     { id: 'generate', label: 'Generate', icon: Zap },
     { id: 'creator-studio', label: 'Creator Studio', icon: Wand2 },
+    { id: 'voice-studio', label: 'Voice Studio', icon: Mic, premium: true },
     { id: 'reformatter', label: 'Reformatter', icon: FileType2 },
     { id: 'history', label: 'History', icon: Clock },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
@@ -477,9 +485,10 @@ export default function DashboardPage() {
       <main className={`relative z-10 pt-16 md:pt-14 pb-12 min-h-screen transition-all duration-300 ${isSidebarCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"}`}>
         <div className={`relative z-10 p-4 md:p-6 ${isSidebarCollapsed ? "mx-auto w-full max-w-[1600px]" : ""}`}>
           {activeTab === "home" && <HomePage setActiveTab={setActiveTab} setShowEarnModal={setShowEarnModal} setShowReferralModal={setShowReferralModal} onOpenCreateModel={() => { setUploadRealMode(false); setShowCreateModelModal(true); }} onOpenUploadReal={() => { setUploadRealMode(true); setShowCreateModelModal(true); }} onOpenCredits={() => setShowAddCredits(true)} />}
-          {activeTab === "models" && <ModelsPage sidebarCollapsed={isSidebarCollapsed} />}
-{activeTab === "generate" && <GeneratePage setActiveTab={setActiveTab} />}
-        {activeTab === "creator-studio" && <CreatorStudioPage sidebarCollapsed={isSidebarCollapsed} />}
+          {activeTab === "models" && <ModelsPage sidebarCollapsed={isSidebarCollapsed} openVoiceStudioForModel={openVoiceStudioForModel} />}
+{activeTab === "generate" && <GeneratePage setActiveTab={setActiveTab} openVoiceStudioForModel={openVoiceStudioForModel} />}
+        {activeTab === "creator-studio" && <CreatorStudioPage sidebarCollapsed={isSidebarCollapsed} initialTab="generate" initialModelId={voiceStudioInitialModelId} />}
+        {activeTab === "voice-studio" && <CreatorStudioPage sidebarCollapsed={isSidebarCollapsed} initialTab="voices" initialModelId={voiceStudioInitialModelId} />}
         {activeTab === "reformatter" && <ContentReformatterPage />}
           {activeTab === "history" && <HistoryPage />}
           {activeTab === "settings" && <SettingsPage />}
