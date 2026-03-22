@@ -119,6 +119,13 @@ async function waitForRateSlot(label) {
 async function kieCreateTask(requestBody, label = "task") {
   await waitForRateSlot(label);
 
+  if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody)) {
+    throw new Error(`[KIE] Invalid request body for ${label}: expected object`);
+  }
+  if (!requestBody.input || typeof requestBody.input !== "object" || Array.isArray(requestBody.input)) {
+    throw new Error(`[KIE] Invalid request body for ${label}: input must be an object, not a JSON string`);
+  }
+
   console.log(`[KIE] Submitting ${label}:`, JSON.stringify(requestBody).slice(0, 300));
 
   const res = await fetch(`${KIE_API_URL}/jobs/createTask`, {
@@ -534,23 +541,18 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
 
   const prompt = options.videoPrompt || options.prompt || "No distortion, no blur, background matches with the image source, the character's movements are consistent with the video.";
 
-  // Model-specific mode candidates based on conflicting KIE docs/examples:
-  // - kling-2.6 docs show enum 720p/1080p
-  // - kling-3.0 text mentions std/pro, but examples still show 720p
-  // Try the documented candidates in a sensible order per model.
   const model = useUltraMotionControl ? "kling-3.0/motion-control" : "kling-2.6/motion-control";
-  const modeCandidates = useUltraMotionControl
-    ? ["720p", "1080p", "pro", "std"]
-    : ["1080p", "720p", "pro", "std"];
+  // Match the published KIE motion-control examples literally for both models.
+  const mode = "720p";
+  const characterOrientation = "image";
   const requestBody = {
     model,
     input: {
       prompt,
       input_urls: [imageUrl],
       video_urls: [videoUrl],
-      character_orientation: "video",
-      // set dynamically per candidate before submission
-      mode: modeCandidates[0],
+      character_orientation: characterOrientation,
+      mode,
       ...(useUltraMotionControl ? { background_source: "input_video" } : {}),
     },
   };
@@ -575,33 +577,11 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
 
     try {
       const motionLabel = useUltraMotionControl ? "kling-motion-ultra" : "kling-motion";
-      let taskId = null;
-      let lastModeErr = null;
-      for (const mode of modeCandidates) {
-        requestBody.input.mode = mode;
-        try {
-          console.log(
-            `[KIE/${motionLabel}] Submitting to KIE (${useUltraMotionControl ? "ultra/3.0" : "std/2.6"}) mode=${mode} attempt ${attempt}:`,
-            JSON.stringify(requestBody.input).slice(0, 220),
-          );
-          taskId = await kieCreateTask(requestBody, motionLabel);
-          break;
-        } catch (modeErr) {
-          const m = String(modeErr?.message || "").toLowerCase();
-          const isModeValidation =
-            m.includes("mode is not within the range of allowed options") ||
-            (m.includes("mode") && (m.includes("invalid") || m.includes("allowed")));
-          if (isModeValidation) {
-            lastModeErr = modeErr;
-            console.warn(`[KIE/${motionLabel}] mode=${mode} rejected by API, trying fallback mode`);
-            continue;
-          }
-          throw modeErr;
-        }
-      }
-      if (!taskId) {
-        throw lastModeErr || new Error("[KIE/kling-motion] all mode candidates were rejected");
-      }
+      console.log(
+        `[KIE/${motionLabel}] Submitting to KIE (${useUltraMotionControl ? "ultra/3.0" : "std/2.6"}) mode=${mode} attempt ${attempt}:`,
+        JSON.stringify(requestBody.input).slice(0, 220),
+      );
+      const taskId = await kieCreateTask(requestBody, motionLabel);
 
       // Fire callback after first successful task creation
       if (typeof options.onTaskSubmitted === "function") {
@@ -641,7 +621,7 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
 async function generateVideoWithKling26KieInternal(imageUrl, prompt, options = {}) {
   const duration = String(options.duration || 5);
   const useKling3 = options.useKling3 === true;
-  const model = useKling3 ? "kling-3.0/image-to-video" : "kling-2.6/image-to-video";
+  const model = useKling3 ? "kling-3.0/video" : "kling-2.6/image-to-video";
   console.log(`[KIE/kling-i2v] model=${model}, image="${imageUrl.slice(0, 80)}", duration=${duration}s`);
 
   const result = await kieRun(
@@ -652,6 +632,7 @@ async function generateVideoWithKling26KieInternal(imageUrl, prompt, options = {
         prompt,
         duration,
         sound: options.sound === true,
+        ...(useKling3 ? { mode: "pro", multi_shots: false } : {}),
       },
     },
     useKling3 ? "kling-i2v-3" : "kling-i2v",
