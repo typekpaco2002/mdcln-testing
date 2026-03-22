@@ -2,6 +2,8 @@ import express from "express";
 import Stripe from "stripe";
 import prisma from "../lib/prisma.js";
 import {
+  inferSubscriptionPlanFromAmount,
+  inferSubscriptionCreditsFromAmount,
   normalizeCreditUnits,
   resolveSubscriptionBillingCycle,
 } from "../utils/creditUnits.js";
@@ -932,6 +934,9 @@ router.post(
             break;
           }
 
+          const stripeCustomerId =
+            typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id || null;
+
           // Find user by subscription ID
           let user = await prisma.user.findFirst({
             where: { stripeSubscriptionId: subscriptionId },
@@ -1018,6 +1023,17 @@ router.post(
                   }
                 }
               }
+
+              if (!user && stripeCustomerId) {
+                user = await prisma.user.findFirst({
+                  where: { stripeCustomerId },
+                });
+                if (user) {
+                  console.log(
+                    `🔄 invoice.payment_succeeded: recovered user ${user.id} via stripeCustomerId for subscription ${subscriptionId}`,
+                  );
+                }
+              }
             } catch (subLookupErr) {
               console.warn("⚠️ Could not retrieve subscription for invoice fallback:", subLookupErr.message);
             }
@@ -1034,10 +1050,56 @@ router.post(
           // Get subscription details to find credits amount
           const subscription =
             await stripe.subscriptions.retrieve(subscriptionId);
+          const billingCycle = resolveSubscriptionBillingCycle(subscription);
+          const billedAmountCents =
+            invoice.subtotal_excluding_tax ||
+            invoice.subtotal ||
+            invoice.amount_paid ||
+            invoice.amount_due ||
+            0;
+          const inferredPlan = inferSubscriptionPlanFromAmount(
+            billedAmountCents,
+            billingCycle,
+          );
+          const resolvedTierId =
+            subscription.metadata?.tierId || user.subscriptionTier || inferredPlan?.tierId || null;
+
+          if (user.stripeSubscriptionId !== subscriptionId) {
+            try {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                  stripeSubscriptionId: subscriptionId,
+                  subscriptionTier: resolvedTierId,
+                  subscriptionBillingCycle: billingCycle,
+                  subscriptionStatus: "active",
+                },
+              });
+              user.stripeSubscriptionId = subscriptionId;
+              user.subscriptionTier = resolvedTierId;
+            } catch (repairErr) {
+              console.warn(`⚠️ Failed to repair stripeSubscriptionId for user ${user.id}:`, repairErr.message);
+            }
+          }
+
           let credits = subscription.metadata?.credits;
+          let parsedCredits = 0;
+
+          if (billingReason === "subscription_cycle") {
+            parsedCredits = inferSubscriptionCreditsFromAmount(
+              billedAmountCents,
+              billingCycle,
+            );
+            if (parsedCredits) {
+              credits = String(parsedCredits);
+              console.log(
+                `🔄 invoice.payment_succeeded: mapped ${billedAmountCents} cents (${billingCycle}) to ${parsedCredits} credits for sub ${subscriptionId}`,
+              );
+            }
+          }
 
           // Fallback: if metadata.credits missing (e.g. legacy subscription), use amount from first grant for this subscription
-          if (credits == null || credits === "") {
+          if ((credits == null || credits === "") && !parsedCredits) {
             const firstGrant = await prisma.creditTransaction.findFirst({
               where: { paymentSessionId: subscriptionId, amount: { gt: 0 } },
               orderBy: { createdAt: "asc" },
@@ -1070,9 +1132,13 @@ router.post(
             }
 
             // Match checkout.session.completed / confirm-subscription: same scale as normalizeCreditUnits
-            const parsedCredits = normalizeCreditUnits(credits);
             if (!parsedCredits) {
-              console.error(`⚠️ Invalid credits for invoice ${invoice.id}: "${credits}" (user ${user.id})`);
+              parsedCredits = normalizeCreditUnits(credits);
+            }
+            if (!parsedCredits) {
+              console.error(
+                `⚠️ Invalid credits for invoice ${invoice.id}: "${credits}" (user ${user.id}, billed=${billedAmountCents}, cycle=${billingCycle})`,
+              );
               break;
             }
 
@@ -1080,10 +1146,9 @@ router.post(
               console.log(`🔄 invoice.payment_succeeded: processing renewal for user ${user.id}, sub ${subscriptionId}, +${parsedCredits} credits`);
             }
 
-            const interval = subscription.items.data[0]?.plan?.interval;
             const now = new Date();
             const creditsExpireAt = new Date(now);
-            if (interval === "year") {
+            if (billingCycle === "annual") {
               creditsExpireAt.setFullYear(creditsExpireAt.getFullYear() + 1);
             } else {
               creditsExpireAt.setMonth(creditsExpireAt.getMonth() + 1);
@@ -1104,6 +1169,10 @@ router.post(
                 await tx.user.update({
                   where: { id: user.id },
                   data: {
+                    stripeSubscriptionId: subscriptionId,
+                    subscriptionTier: resolvedTierId,
+                    subscriptionStatus: "active",
+                    subscriptionBillingCycle: billingCycle,
                     subscriptionCredits: { increment: parsedCredits },
                     creditsExpireAt,
                   },
@@ -1111,7 +1180,7 @@ router.post(
               });
 
               console.log(
-                `✅ Subscription renewed for user ${user.id}: ${parsedCredits} credits (expire ${creditsExpireAt.toDateString()})`,
+                `✅ Subscription renewed for user ${user.id}: ${parsedCredits} credits (${resolvedTierId || "unknown-tier"}, expire ${creditsExpireAt.toDateString()})`,
               );
               const subReferrerId = subscription?.metadata?.referrerUserId || null;
               if (subReferrerId) await linkReferrerOnFirstPurchase(user.id, subReferrerId);
@@ -1130,7 +1199,7 @@ router.post(
             }
           } else {
             console.error(
-              `❌ invoice.payment_succeeded: no credits for subscription ${subscriptionId} (invoice ${invoice.id}, user ${user.id}, billing_reason=${billingReason}). Check subscription metadata or first grant.`,
+              `❌ invoice.payment_succeeded: no credits for subscription ${subscriptionId} (invoice ${invoice.id}, user ${user.id}, billing_reason=${billingReason}, billed=${billedAmountCents}, tier=${resolvedTierId || "unknown"}). Check subscription metadata or first grant.`,
             );
           }
           break;
@@ -1164,8 +1233,50 @@ router.post(
 
         case "customer.subscription.updated": {
           const subscription = event.data.object;
-
+          const billingCycle = resolveSubscriptionBillingCycle(subscription);
+          const stripeCustomerId =
+            typeof subscription.customer === "string"
+              ? subscription.customer
+              : subscription.customer?.id || null;
+          const activeStatuses = new Set(["active", "trialing", "past_due"]);
           const inactiveStatuses = new Set(["canceled", "unpaid", "incomplete_expired", "paused"]);
+
+          if (activeStatuses.has(subscription.status)) {
+            let user = await prisma.user.findFirst({
+              where: { stripeSubscriptionId: subscription.id },
+            });
+
+            if (!user) {
+              const metadataUserId = subscription.metadata?.userId || null;
+              if (metadataUserId) {
+                user = await prisma.user.findUnique({ where: { id: metadataUserId } });
+              }
+            }
+
+            if (!user && stripeCustomerId) {
+              user = await prisma.user.findFirst({
+                where: { stripeCustomerId },
+              });
+            }
+
+            if (user) {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                  stripeSubscriptionId: subscription.id,
+                  subscriptionTier: subscription.metadata?.tierId || user.subscriptionTier,
+                  subscriptionBillingCycle: billingCycle,
+                  subscriptionStatus: subscription.status === "past_due" ? "active" : subscription.status,
+                },
+              });
+
+              console.log(
+                `🔄 Subscription sync repaired for user ${user.id}: ${subscription.id} (${subscription.status})`,
+              );
+            }
+            break;
+          }
+
           if (!inactiveStatuses.has(subscription.status)) {
             break;
           }

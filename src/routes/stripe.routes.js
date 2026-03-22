@@ -10,6 +10,7 @@ import {
   MAX_PURCHASABLE_CREDITS,
 } from "../constants/creditPurchaseLimits.js";
 import {
+  getSubscriptionPricing,
   normalizeCreditUnits,
   resolveSubscriptionBillingCycle,
 } from "../utils/creditUnits.js";
@@ -181,6 +182,26 @@ async function validateAndApplyDiscountCode(discountCode, purchaseType, amountCe
     discountAmountCents,
     finalAmountCents,
   };
+}
+
+async function createSingleCycleDiscountCoupon({
+  amountOffCents,
+  customerId,
+  codeLabel,
+}) {
+  const amount = parseInt(String(amountOffCents ?? "0"), 10) || 0;
+  if (amount <= 0) return null;
+
+  return stripe.coupons.create({
+    amount_off: amount,
+    currency: "usd",
+    duration: "once",
+    name: codeLabel || "Subscription first-cycle discount",
+    metadata: {
+      customerId: customerId || "",
+      source: "modelclone-subscription-discount",
+    },
+  });
 }
 
 router.post('/validate-discount-code', authMiddleware, async (req, res) => {
@@ -380,41 +401,27 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
     // Annual: Stripe bills yearly (one invoice per year); each invoice grants the same `pricing.credits`
     // per period as the monthly tier (not 12× per year — see docs/STRIPE_WEBHOOK.md).
     // Credits on first payment + each renewal: checkout.session.completed / invoice.payment_succeeded.
-    const pricingTiers = {
-      starter: {
-        monthly: { price: 29, credits: 2900 },  // $0.01/credit
-        annual: { price: 289, credits: 2900 }   // Same monthly credits, 17% yearly discount
-      },
-      pro: {
-        monthly: { price: 79, credits: 8900 },  // $0.0089/credit
-        annual: { price: 787, credits: 8900 }   // Same monthly credits, 17% yearly discount
-      },
-      business: {
-        monthly: { price: 199, credits: 24900 }, // $0.0080/credit
-        annual: { price: 1982, credits: 24900 }  // Same monthly credits, 17% yearly discount
-      }
-    };
-
-    const tier = pricingTiers[tierId];
-    if (!tier) {
+    const knownTierIds = ["starter", "pro", "business"];
+    if (!knownTierIds.includes(tierId)) {
       return res.status(400).json({ error: 'Invalid tier ID' });
     }
 
-    const pricing = tier[billingCycle];
+    const pricing = getSubscriptionPricing(tierId, billingCycle);
     if (!pricing) {
       return res.status(400).json({ error: 'Invalid billing cycle' });
     }
 
-    let unitAmountCents = pricing.price * 100; // Convert to cents
+    const recurringUnitAmountCents = pricing.priceCents;
+    let firstInvoiceAmountCents = recurringUnitAmountCents;
     if (referrerUserId) {
-      unitAmountCents = Math.round(unitAmountCents * 0.95); // 5% discount
+      firstInvoiceAmountCents = Math.round(firstInvoiceAmountCents * 0.95);
     }
 
     let appliedDiscountCodeId = null;
     if (discountCode && !referrerUserId) {
-      const discountResult = await validateAndApplyDiscountCode(discountCode, 'subscription', unitAmountCents);
+      const discountResult = await validateAndApplyDiscountCode(discountCode, 'subscription', firstInvoiceAmountCents);
       if (discountResult.valid) {
-        unitAmountCents = discountResult.finalAmountCents;
+        firstInvoiceAmountCents = discountResult.finalAmountCents;
         appliedDiscountCodeId = discountResult.discountCodeId;
         console.log(`🏷️ Discount code ${discountResult.discountCode} applied: -$${(discountResult.discountAmountCents / 100).toFixed(2)}`);
       } else if (discountResult.error) {
@@ -441,7 +448,23 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
       });
     }
 
-    console.log('🔷 Creating Stripe session with:', { tierId, billingCycle, customerId, credits: pricing.credits });
+    const firstCycleDiscountCents = Math.max(recurringUnitAmountCents - firstInvoiceAmountCents, 0);
+    const firstCycleCoupon = firstCycleDiscountCents > 0
+      ? await createSingleCycleDiscountCoupon({
+          amountOffCents: firstCycleDiscountCents,
+          customerId,
+          codeLabel: referrerUserId ? 'Referral first-cycle discount' : 'Discount code first-cycle discount',
+        })
+      : null;
+
+    console.log('🔷 Creating Stripe session with:', {
+      tierId,
+      billingCycle,
+      customerId,
+      credits: pricing.credits,
+      recurringUnitAmountCents,
+      firstInvoiceAmountCents,
+    });
     
     const frontendUrl = getTrustedFrontendUrl(req);
     
@@ -460,7 +483,7 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
               name: `${tierId.charAt(0).toUpperCase() + tierId.slice(1)} Plan`,
               description: `${pricing.credits} credits per ${billingCycle === 'annual' ? 'year' : 'month'}`,
             },
-            unit_amount: unitAmountCents,
+            unit_amount: recurringUnitAmountCents,
             recurring: {
               interval: billingCycle === 'annual' ? 'year' : 'month',
             },
@@ -477,15 +500,20 @@ router.post('/create-checkout-session', authMiddleware, async (req, res) => {
           tierId,
           billingCycle,
           credits: pricing.credits.toString(),
+          recurringAmountCents: recurringUnitAmountCents.toString(),
+          firstInvoiceAmountCents: firstInvoiceAmountCents.toString(),
           ...(referrerUserId ? { referrerUserId } : {}),
           ...(appliedDiscountCodeId ? { discountCodeId: appliedDiscountCodeId } : {}),
         },
       },
+      ...(firstCycleCoupon ? { discounts: [{ coupon: firstCycleCoupon.id }] } : {}),
       metadata: {
         userId: user.id,
         tierId,
         billingCycle,
         credits: pricing.credits.toString(),
+        recurringAmountCents: recurringUnitAmountCents.toString(),
+        firstInvoiceAmountCents: firstInvoiceAmountCents.toString(),
         ...(referrerUserId ? { referrerUserId } : {}),
         ...(appliedDiscountCodeId ? { discountCodeId: appliedDiscountCodeId } : {}),
       },
@@ -738,35 +766,30 @@ router.post('/create-embedded-subscription', authMiddleware, async (req, res) =>
       }
     }
     
-    const pricingTiers = {
-      starter: { monthly: { price: 29, credits: 2900 }, annual: { price: 289, credits: 2900 } },
-      pro: { monthly: { price: 79, credits: 8900 }, annual: { price: 787, credits: 8900 } },
-      business: { monthly: { price: 199, credits: 24900 }, annual: { price: 1982, credits: 24900 } }
-    };
-
     if (!tierId || !billingCycle) {
       return res.status(400).json({ error: 'Tier and billing cycle are required.' });
     }
-    const tier = pricingTiers[tierId];
-    if (!tier) {
+    const knownTierIds = ["starter", "pro", "business"];
+    if (!knownTierIds.includes(tierId)) {
       return res.status(400).json({ error: 'Invalid plan. Choose Starter, Pro, or Business.' });
     }
 
-    const pricing = tier[billingCycle];
+    const pricing = getSubscriptionPricing(tierId, billingCycle);
     if (!pricing) {
       return res.status(400).json({ error: 'Invalid billing cycle. Use monthly or annual.' });
     }
 
-    let unitAmountCents = pricing.price * 100;
+    const recurringUnitAmountCents = pricing.priceCents;
+    let firstInvoiceAmountCents = recurringUnitAmountCents;
     if (referrerUserId) {
-      unitAmountCents = Math.round(unitAmountCents * 0.95);
+      firstInvoiceAmountCents = Math.round(firstInvoiceAmountCents * 0.95);
     }
 
     let appliedDiscountCodeId = null;
     if (discountCode && !referrerUserId) {
-      const discountResult = await validateAndApplyDiscountCode(discountCode, 'subscription', unitAmountCents);
+      const discountResult = await validateAndApplyDiscountCode(discountCode, 'subscription', firstInvoiceAmountCents);
       if (discountResult.valid) {
-        unitAmountCents = discountResult.finalAmountCents;
+        firstInvoiceAmountCents = discountResult.finalAmountCents;
         appliedDiscountCodeId = discountResult.discountCodeId;
         console.log(`🏷️ Discount code ${discountResult.discountCode} applied: -$${(discountResult.discountAmountCents / 100).toFixed(2)}`);
       } else if (discountResult.error) {
@@ -910,9 +933,18 @@ router.post('/create-embedded-subscription', authMiddleware, async (req, res) =>
       });
     }
     
+    const firstCycleDiscountCents = Math.max(recurringUnitAmountCents - firstInvoiceAmountCents, 0);
+    const firstCycleCoupon = firstCycleDiscountCents > 0
+      ? await createSingleCycleDiscountCoupon({
+          amountOffCents: firstCycleDiscountCents,
+          customerId,
+          codeLabel: referrerUserId ? 'Referral first-cycle discount' : 'Discount code first-cycle discount',
+        })
+      : null;
+
     // Create a Stripe Price on-the-fly for this subscription
     const price = await stripe.prices.create({
-      unit_amount: unitAmountCents,
+      unit_amount: recurringUnitAmountCents,
       currency: 'usd',
       recurring: {
         interval: billingCycle === 'annual' ? 'year' : 'month',
@@ -929,6 +961,8 @@ router.post('/create-embedded-subscription', authMiddleware, async (req, res) =>
       tierId,
       billingCycle,
       credits: pricing.credits.toString(),
+      recurringAmountCents: recurringUnitAmountCents.toString(),
+      firstInvoiceAmountCents: firstInvoiceAmountCents.toString(),
       type: 'subscription-embedded',
       referralId: safeReferralId || '',
       ...(referrerUserId ? { referrerUserId } : {}),
@@ -944,6 +978,7 @@ router.post('/create-embedded-subscription', authMiddleware, async (req, res) =>
         payment_method_types: ['card', 'link'],
       },
       metadata: subscriptionMetadata,
+      ...(firstCycleCoupon ? { discounts: [{ coupon: firstCycleCoupon.id }] } : {}),
       expand: ['latest_invoice.payment_intent'],
     });
 
@@ -974,7 +1009,7 @@ router.post('/create-embedded-subscription', authMiddleware, async (req, res) =>
     res.json({ 
       clientSecret: paymentIntent.client_secret,
       subscriptionId: subscription.id,
-      amount: pricing.price * 100,
+      amount: firstInvoiceAmountCents,
       credits: pricing.credits,
       tierId,
       billingCycle
