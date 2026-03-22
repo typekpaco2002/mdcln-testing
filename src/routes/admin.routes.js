@@ -846,7 +846,44 @@ router.post("/send-marketing-email", async (req, res) => {
     let sent = 0;
     let failed = 0;
     const errors = [];
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = 250;
+    const MAX_RECORDED_ERRORS = 200;
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const getErrorStatus = (err) =>
+      err?.code ||
+      err?.response?.statusCode ||
+      err?.response?.status ||
+      err?.statusCode ||
+      null;
+    const isRetriableSendgridError = (err) => {
+      const status = Number(getErrorStatus(err));
+      const msg = String(err?.message || "").toLowerCase();
+      if (status === 429 || status >= 500) return true;
+      return (
+        msg.includes("timeout") ||
+        msg.includes("timed out") ||
+        msg.includes("econnreset") ||
+        msg.includes("etimedout") ||
+        msg.includes("rate limit")
+      );
+    };
+    const pushError = (text) => {
+      if (!text) return;
+      if (errors.length < MAX_RECORDED_ERRORS) errors.push(text);
+    };
+    const sendBatchWithRetry = async (messages, maxRetries = 4) => {
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          await sgMail.send(messages);
+          return;
+        } catch (err) {
+          if (attempt === maxRetries || !isRetriableSendgridError(err)) throw err;
+          const backoffMs = Math.min(8000, 600 * (2 ** attempt)) + Math.floor(Math.random() * 350);
+          await sleep(backoffMs);
+        }
+      }
+    };
 
     for (let i = 0; i < users.length; i += BATCH_SIZE) {
       const batch = users.slice(i, i + BATCH_SIZE);
@@ -858,18 +895,34 @@ router.post("/send-marketing-email", async (req, res) => {
         trackingSettings: NO_TRACKING,
       }));
 
+      const batchNo = Math.floor(i / BATCH_SIZE) + 1;
       try {
-        await sgMail.send(messages);
+        await sendBatchWithRetry(messages);
         sent += messages.length;
-        console.log(`Batch ${Math.floor(i / BATCH_SIZE) + 1}: sent ${messages.length} emails (total: ${sent})`);
+        console.log(`Batch ${batchNo}: sent ${messages.length} emails (total: ${sent})`);
       } catch (error) {
-        failed += messages.length;
-        errors.push(error.message);
-        console.error(`Batch ${Math.floor(i / BATCH_SIZE) + 1} failed:`, error.message);
-      }
-
-      if (i + BATCH_SIZE < users.length) {
-        await new Promise((r) => setTimeout(r, 1000));
+        console.error(`Batch ${batchNo} failed as bulk, retrying per-recipient...`, error?.message || error);
+        pushError(`Batch ${batchNo} bulk failure: ${error?.message || "unknown error"}`);
+        const settled = await Promise.allSettled(
+          batch.map((user) =>
+            sendBatchWithRetry([{
+              to: user.email,
+              from: { email: fromEmail, name: BRAND.name },
+              subject,
+              html: buildEmailHtml(user.name ? user.name.split(" ")[0] : null, user.email),
+              trackingSettings: NO_TRACKING,
+            }], 2)
+          )
+        );
+        settled.forEach((r, idx) => {
+          if (r.status === "fulfilled") {
+            sent += 1;
+          } else {
+            failed += 1;
+            pushError(`${batch[idx].email}: ${r.reason?.message || "send failed"}`);
+          }
+        });
+        console.log(`Batch ${batchNo}: fallback complete (total sent: ${sent}, failed: ${failed})`);
       }
     }
 

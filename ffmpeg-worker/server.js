@@ -340,7 +340,7 @@ app.post("/transcode", requireAuth, async (req, res) => {
 
     // Build ffmpeg args
     const ffmpegBin = process.env.FFMPEG_PATH || "ffmpeg";
-    const args = ["-y", "-i", inputPath];
+    const args = ["-y", "-fflags", "+discardcorrupt", "-err_detect", "ignore_err", "-i", inputPath];
     if (vfFilter) args.push("-vf", vfFilter);
     if (Array.isArray(audioOptions)) args.push(...audioOptions);
     if (Array.isArray(extraOptions)) args.push(...extraOptions);

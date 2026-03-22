@@ -471,8 +471,8 @@ function atempoChain(speed) {
   return factors;
 }
 
-function buildFfmpegCommand(inputVideo, outputVideo, watermarkPath, filtersCfg, values, sourceInfo) {
-  const hasAudio = sourceInfo.hasAudio;
+function buildFfmpegCommand(inputVideo, outputVideo, watermarkPath, filtersCfg, values, sourceInfo, options = {}) {
+  const hasAudio = sourceInfo.hasAudio && options.disableAudio !== true;
   const duration = sourceInfo.duration;
 
   const cmd = [FFMPEG_BIN, "-y", "-fflags", "+discardcorrupt", "-err_detect", "ignore_err", "-i", inputVideo];
@@ -1124,6 +1124,18 @@ function runFfmpeg(args) {
   });
 }
 
+function isLikelyCorruptAudioFailure(msg) {
+  const text = String(msg || "").toLowerCase();
+  return (
+    text.includes("prediction is not allowed in aac-lc") ||
+    text.includes("reserved bit set") ||
+    text.includes("more samples than frame size") ||
+    text.includes("error submitting audio frame to the encoder") ||
+    text.includes("error while decoding stream #0:1") ||
+    (text.includes("aac") && text.includes("invalid data found when processing input"))
+  );
+}
+
 function runNightshade(inputPath, outputPath, strength = 8.0) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(
@@ -1167,13 +1179,26 @@ export async function processVideoBatch(inputVideo, watermarkPath, outputDir, se
     const outputPath = path.join(outputDir, outputName);
 
     const ffmpegCmd = buildFfmpegCommand(inputVideo, outputPath, watermarkPath, filtersCfg, values, sourceInfo);
+    let retriedWithoutAudio = false;
 
     try {
       if (useWasm) await runFfmpegWasm(ffmpegCmd);
       else await runFfmpeg(ffmpegCmd);
     } catch (e) {
-      try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch {}
-      throw new Error(`FFmpeg failed for copy #${i + 1}: ${e.message}`);
+      const shouldRetryMuted = sourceInfo.hasAudio && isLikelyCorruptAudioFailure(e?.message || "");
+      if (!shouldRetryMuted) {
+        try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch {}
+        throw new Error(`FFmpeg failed for copy #${i + 1}: ${e.message}`);
+      }
+      retriedWithoutAudio = true;
+      const muteCmd = buildFfmpegCommand(inputVideo, outputPath, watermarkPath, filtersCfg, values, sourceInfo, { disableAudio: true });
+      try {
+        if (useWasm) await runFfmpegWasm(muteCmd);
+        else await runFfmpeg(muteCmd);
+      } catch (e2) {
+        try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch {}
+        throw new Error(`FFmpeg failed for copy #${i + 1} (audio fallback also failed): ${e2.message}`);
+      }
     }
 
     if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 1000) {
@@ -1184,6 +1209,10 @@ export async function processVideoBatch(inputVideo, watermarkPath, outputDir, se
     progressCb(Math.round(((i + 0.65) / copies) * 100), `Spoofing metadata for copy ${i + 1}/${copies}...`);
 
     const metaResult = await applyMetadata(outputPath, metadataCfgForCopy);
+    if (retriedWithoutAudio) {
+      if (!Array.isArray(metaResult.warnings)) metaResult.warnings = [];
+      metaResult.warnings.push("Input audio stream was corrupt; output generated without audio track.");
+    }
 
     try {
       scrubEncoderSignaturesInFile(outputPath);
