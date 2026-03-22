@@ -28,7 +28,10 @@ async function postToWorker(endpoint, body) {
       if (res.ok && data.ok) return { ...data, _workerBase: base };
       lastErr = new Error(data.message || data.error || `Worker HTTP ${res.status}`);
     } catch (e) {
-      lastErr = e;
+      // Enrich the error with the URL so logs show exactly what was attempted
+      const enriched = new Error(`FFmpeg worker fetch failed [${base}/${endpoint}]: ${e.message}`);
+      enriched.cause = e;
+      lastErr = enriched;
     }
   }
   throw lastErr || new Error("FFmpeg worker unreachable");
