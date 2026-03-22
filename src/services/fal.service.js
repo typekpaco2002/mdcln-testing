@@ -166,51 +166,87 @@ async function captionSingleImage(imageUrl, triggerWord, index, captionSubjectCl
     return null;
   }
 
+  // Fetch the image once (outside the retry loop — the URL is stable)
+  let b64, contentType;
   try {
-    const imgResponse = await fetch(imageUrl);
-    if (!imgResponse.ok) throw new Error(`Fetch failed: ${imgResponse.status}`);
+    const imgResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(20_000) });
+    if (!imgResponse.ok) throw new Error(`Image fetch failed: ${imgResponse.status}`);
     const imgBuffer = Buffer.from(await imgResponse.arrayBuffer());
-    const contentType = imgResponse.headers.get("content-type") || "image/jpeg";
-    const b64 = imgBuffer.toString("base64");
-
-    const { default: OpenAI } = await import("openai");
-    const grok = new OpenAI({
-      apiKey: OPENROUTER_API_KEY,
-      baseURL: "https://openrouter.ai/api/v1",
-    });
-
-    const completion = await grok.chat.completions.create({
-      model: "x-ai/grok-4.1-fast",
-      temperature: 0.3,
-      max_tokens: 300,
-      messages: [
-        {
-          role: "system",
-          content: buildCaptionSystemPrompt(triggerWord, captionSubjectClass),
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: "Caption this training image following the rules exactly. Output ONLY the caption text, nothing else." },
-            { type: "image_url", image_url: { url: `data:${contentType};base64,${b64}` } },
-          ],
-        },
-      ],
-    });
-
-    const caption = (completion.choices?.[0]?.message?.content || "").trim();
-    if (!caption) return null;
-
-    let finalCaption = caption.startsWith(triggerWord) ? caption : `${triggerWord} ${caption}`;
-    if (captionSubjectClass) {
-      finalCaption = enforceCaptionSubjectClass(finalCaption, triggerWord, captionSubjectClass);
-    }
-    console.log(`  📝 Caption ${index + 1}: ${finalCaption.substring(0, 80)}...`);
-    return finalCaption;
-  } catch (error) {
-    console.error(`  ⚠️ Caption failed for image ${index + 1}:`, error.message);
+    contentType = imgResponse.headers.get("content-type") || "image/jpeg";
+    b64 = imgBuffer.toString("base64");
+  } catch (imgErr) {
+    console.error(`  ⚠️ Caption skipped for image ${index + 1} (could not fetch image): ${imgErr.message}`);
     return null;
   }
+
+  const { default: OpenAI } = await import("openai");
+  const grok = new OpenAI({
+    apiKey: OPENROUTER_API_KEY,
+    baseURL: "https://openrouter.ai/api/v1",
+  });
+
+  const MAX_ATTEMPTS = 4;
+  const BASE_DELAY_MS = 2_000;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const completion = await grok.chat.completions.create({
+        model: "x-ai/grok-4.1-fast",
+        temperature: 0.3,
+        max_tokens: 300,
+        messages: [
+          {
+            role: "system",
+            content: buildCaptionSystemPrompt(triggerWord, captionSubjectClass),
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Caption this training image following the rules exactly. Output ONLY the caption text, nothing else." },
+              { type: "image_url", image_url: { url: `data:${contentType};base64,${b64}` } },
+            ],
+          },
+        ],
+      });
+
+      const caption = (completion.choices?.[0]?.message?.content || "").trim();
+      if (!caption) return null;
+
+      let finalCaption = caption.startsWith(triggerWord) ? caption : `${triggerWord} ${caption}`;
+      if (captionSubjectClass) {
+        finalCaption = enforceCaptionSubjectClass(finalCaption, triggerWord, captionSubjectClass);
+      }
+      console.log(`  📝 Caption ${index + 1}: ${finalCaption.substring(0, 80)}...`);
+      return finalCaption;
+    } catch (error) {
+      const msg = error.message || "";
+      const status = error.status ?? error.response?.status ?? 0;
+
+      // Decide whether to retry: 5xx errors and "Provider returned error" (upstream blip) are transient
+      const isTransient =
+        status >= 500 ||
+        msg.includes("502") ||
+        msg.includes("503") ||
+        msg.includes("504") ||
+        msg.toLowerCase().includes("provider returned error") ||
+        msg.toLowerCase().includes("bad gateway") ||
+        msg.toLowerCase().includes("timeout") ||
+        msg.toLowerCase().includes("econnreset") ||
+        msg.toLowerCase().includes("econnrefused");
+
+      if (isTransient && attempt < MAX_ATTEMPTS) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1); // 2s, 4s, 8s
+        console.warn(`  ⚠️ Caption attempt ${attempt}/${MAX_ATTEMPTS} failed for image ${index + 1} (${msg.slice(0, 80)}). Retrying in ${delay / 1000}s…`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+
+      console.error(`  ⚠️ Caption failed for image ${index + 1} after ${attempt} attempt(s): ${msg.slice(0, 120)}`);
+      return null;
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -239,6 +275,11 @@ async function captionAllTrainingImages(imageUrls, triggerWord, captionSubjectCl
       results[batch + i] = caption;
     });
     console.log(`  ✅ Batch ${Math.floor(batch / BATCH_SIZE) + 1} done (${Math.min(batch + BATCH_SIZE, imageUrls.length)}/${imageUrls.length})`);
+
+    // Brief pause between batches to avoid rate-limit spikes on OpenRouter
+    if (batch + BATCH_SIZE < imageUrls.length) {
+      await new Promise(r => setTimeout(r, 800));
+    }
   }
 
   const captionedCount = results.filter(Boolean).length;
