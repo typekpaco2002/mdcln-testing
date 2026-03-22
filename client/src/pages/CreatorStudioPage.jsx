@@ -1005,19 +1005,33 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
             className="hidden md:flex justify-center fixed bottom-4 right-6 z-20 pointer-events-none transition-all duration-300"
             style={{ left: sidebarCollapsed ? "72px" : "260px" }}
           >
-            {/* Spinning-border wrapper */}
-            <div className="pointer-events-auto w-full max-w-2xl relative rounded-2xl overflow-hidden p-px">
-              {/* Rotating conic-gradient that forms the animated border */}
+            {/*
+              Spinning-border technique:
+              Outer wrapper clips the rotating gradient with overflow:hidden.
+              Inner card has solid opaque background + 2px margin to expose exactly the border strip.
+            */}
+            <div
+              className="pointer-events-auto w-full max-w-2xl relative"
+              style={{ borderRadius: "1rem", overflow: "hidden", padding: 0 }}
+            >
+              {/* Rotating gradient — behind inner content via z-index 0 */}
               <div style={{
                 position: "absolute",
-                inset: "-150%",
-                background: "conic-gradient(from 0deg, transparent 320deg, rgba(255,255,255,0.08) 345deg, rgba(255,255,255,0.55) 358deg, rgba(255,255,255,0.08) 360deg, transparent 360deg)",
+                zIndex: 0,
+                inset: "-200%",
+                background: "conic-gradient(from 0deg, transparent 300deg, rgba(255,255,255,0.06) 335deg, rgba(255,255,255,0.5) 357deg, rgba(255,255,255,0.06) 360deg)",
                 animation: "bar-spin 4s linear infinite",
                 pointerEvents: "none",
               }} />
+              {/* Inner card — solid opaque, 1.5px inset from edge to reveal border strip */}
             <div
-              className="relative w-full flex flex-col items-stretch justify-center p-3 rounded-[15px]"
-              style={{ background: "rgb(15,17,19)" }}
+              className="relative flex flex-col items-stretch justify-center p-3"
+              style={{
+                zIndex: 1,
+                margin: "1.5px",
+                borderRadius: "calc(1rem - 1.5px)",
+                background: "#0d0f11",
+              }}
             >
               <textarea
                 value={prompt} onChange={(e) => setPrompt(e.target.value)}
@@ -1080,9 +1094,9 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
                 </div>
               </div>
               <p className="text-[10px] text-slate-600 mt-1.5 text-right pr-1">{creditsLeft} credits available</p>
-            </div>
-            </div>{/* /spinning-border wrapper */}
-          </div>
+            </div>{/* /inner card */}
+            </div>{/* /spinning-border outer */}
+          </div>{/* /fixed positioner */}
 
           {/* Mobile bar */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 p-3" style={{ background: BAR_BG }}>
