@@ -857,8 +857,8 @@ function RealAvatarsTab({ sidebarCollapsed }) {
 // Main page — tab switcher wrapping both sections
 // ---------------------------------------------------------------------------
 const TABS = [
-  { id: "generate",    label: "Generate",     icon: Sparkles, desc: "NanoBanana Pro · no model required" },
-  { id: "avatars",     label: "Real Avatars",  icon: User,     desc: "HeyGen Photo Avatar IV" },
+  { id: "generate",    label: "Generate",     icon: Zap,  desc: "NanoBanana Pro · no model required" },
+  { id: "avatars",     label: "Real Avatars",  icon: User, desc: "HeyGen Photo Avatar IV" },
 ];
 
 export default function CreatorStudioPage({ sidebarCollapsed = false }) {
@@ -944,16 +944,25 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all relative"
               style={active ? {
-                background: "rgba(139,92,246,0.18)",
+                background: "rgba(139,92,246,0.10)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
                 color: "#e9d5ff",
-                border: "1px solid rgba(139,92,246,0.35)",
+                border: "1px solid rgba(139,92,246,0.18)",
+                boxShadow: "0 4px 18px -4px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
               } : {
                 color: "rgba(100,116,139,1)",
                 border: "1px solid transparent",
               }}
             >
+              {active && (
+                <span
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-[2px] rounded-full pointer-events-none"
+                  style={{ background: "linear-gradient(90deg, transparent, rgba(167,139,250,0.9), transparent)" }}
+                />
+              )}
               <Icon className="w-4 h-4" />
               {tab.label}
             </button>

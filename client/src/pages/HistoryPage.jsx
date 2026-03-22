@@ -34,7 +34,7 @@ const gradientCyan = 'linear-gradient(135deg, #22D3EE, #14B8A6)';
 const VIDEO_TYPES = ["video", "faceswap", "face-swap", "prompt-video", "talking-head", "recreate-video"];
 const PAGE_SIZE = 200;
 const REFRESH_PAGE_SIZE = 60;
-const CONTENT_TYPE_OPTIONS = ["all", "image", "prompt-based", "video", "face-swap", "talking-head", "recreate-video"];
+const CONTENT_TYPE_OPTIONS = ["all", "image", "prompt-based", "video", "face-swap", "talking-head", "recreate-video", "creator-studio"];
 const PURPLE_CORNER_GLOW_STYLE = {
   background:
     "radial-gradient(ellipse 100% 100% at 0% 0%, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.06) 45%, transparent 70%)",
@@ -136,6 +136,9 @@ function matchesType(genType, selectedType) {
   }
   if (selectedType === "recreate-video") {
     return genType === "recreate-video";
+  }
+  if (selectedType === "creator-studio") {
+    return genType === "creator-studio";
   }
 
   // Fallback: exact match

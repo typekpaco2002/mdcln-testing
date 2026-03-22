@@ -401,15 +401,15 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
           {filteredModels.map((model, index) => (
             <div
               key={model.id}
-              className="group rounded-lg p-2.5 transition-all hover:scale-[1.02]"
+              className="group rounded-lg p-2.5 transition-all hover:scale-[1.02] backdrop-blur-xl"
               style={{
-                background:
-                  "linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.05))",
-                border: "1px solid rgba(139,92,246,0.2)",
+                background: "rgba(139,92,246,0.05)",
+                border: "1px solid rgba(139,92,246,0.12)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
               }}
             >
               {/* Thumbnail - square aspect ratio */}
-              <div className="aspect-square rounded-md overflow-hidden mb-2 relative border border-white/5">
+              <div className="aspect-square rounded-2xl overflow-hidden mb-2 relative border border-white/5">
                 {model.status === "processing" ? (
                   <div className="w-full h-full bg-slate-800/80 flex flex-col items-center justify-center gap-1.5">
                     <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />

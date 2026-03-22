@@ -52,6 +52,7 @@ import {
   Layers,
   ScanSearch,
   ChevronDown,
+  Coins,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../services/api";
@@ -950,6 +951,9 @@ export default function VideoRepurposerPage({ embedded }) {
   /** When false, server applies smart filter pack (+10 credits). When true, manual filters (no AI credit). */
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [deviceSearch, setDeviceSearch] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationResults, setLocationResults] = useState([]);
+  const [locationSearching, setLocationSearching] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
   const [customPresets, setCustomPresets] = useState(() => {
     try { return JSON.parse(localStorage.getItem("repurposer_custom_presets") || "[]"); } catch { return []; }
@@ -1759,7 +1763,55 @@ export default function VideoRepurposerPage({ embedded }) {
                 <MapPin className="w-4 h-4 text-emerald-400" />
                 Location
               </h3>
-              <p className="text-[10px] text-slate-500 mb-2">Click the map to set GPS metadata for your outputs.</p>
+              {/* Address search */}
+              <div className="relative mb-2">
+                <input
+                  type="text"
+                  value={locationSearch}
+                  onChange={(e) => {
+                    setLocationSearch(e.target.value);
+                    setLocationResults([]);
+                  }}
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter" && locationSearch.trim()) {
+                      setLocationSearching(true);
+                      try {
+                        const res = await fetch(
+                          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationSearch.trim())}&format=json&limit=5`,
+                          { headers: { "Accept-Language": "en" } }
+                        );
+                        const data = await res.json();
+                        setLocationResults(data);
+                      } catch {}
+                      setLocationSearching(false);
+                    }
+                  }}
+                  placeholder="Search address… (press Enter)"
+                  className="w-full px-2 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] text-white placeholder:text-slate-600 focus:outline-none focus:border-white/40"
+                />
+                {locationSearching && <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 animate-spin text-slate-400" />}
+                {locationResults.length > 0 && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 rounded-lg border border-white/10 overflow-hidden" style={{ background: "#0d0f11" }}>
+                    {locationResults.map((r) => (
+                      <button
+                        key={r.place_id}
+                        type="button"
+                        className="w-full text-left px-2.5 py-1.5 text-[11px] text-slate-300 hover:bg-white/10 transition-colors"
+                        onClick={() => {
+                          const lat = parseFloat(r.lat);
+                          const lng = parseFloat(r.lon);
+                          updateMeta("gps_location", { ...metadata.gps_location, enabled: true, mode: "pinpoint", lat, lng });
+                          setLocationSearch(r.display_name);
+                          setLocationResults([]);
+                        }}
+                      >
+                        {r.display_name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-500 mb-2">Or click the map to pin a location.</p>
               <div className="rounded-lg overflow-hidden border border-white/10" style={{ height: 200 }}>
                 <MapContainer
                   center={[metadata.gps_location.lat ?? 39.8, metadata.gps_location.lng ?? -98.5]}
@@ -1767,7 +1819,9 @@ export default function VideoRepurposerPage({ embedded }) {
                   style={{ height: "100%", width: "100%" }}
                   attributionControl={false}
                 >
-                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <TileLayer
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                  />
                   {metadata.gps_location.lat != null && (
                     <Marker position={[metadata.gps_location.lat, metadata.gps_location.lng]} />
                   )}
@@ -1794,29 +1848,34 @@ export default function VideoRepurposerPage({ embedded }) {
                 <Smartphone className="w-4 h-4 text-violet-400" />
                 Device fingerprint
               </h3>
-              <div className="space-y-2 mb-2">
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {[
-                  { mode: "single", label: "Same device for all copies" },
-                  { mode: "per_copy", label: "Pick device per copy" },
-                  { mode: "random_unique", label: "Random unique device per copy" },
-                ].map(({ mode, label }) => (
-                  <label key={mode} className="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300">
-                    <input
-                      type="radio"
-                      name="deviceMode"
-                      checked={(metadata.device_metadata.deviceMode || "single") === mode}
-                      onChange={() =>
+                  { mode: "single", label: "Same device" },
+                  { mode: "per_copy", label: "Per copy" },
+                  { mode: "random_unique", label: "Random unique" },
+                ].map(({ mode, label }) => {
+                  const isActive = (metadata.device_metadata.deviceMode || "single") === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() =>
                         updateMeta("device_metadata", {
                           ...metadata.device_metadata,
                           deviceMode: mode,
                           uniqueDevicePerCopy: mode === "random_unique",
                         })
                       }
-                      className="accent-white"
-                    />
-                    {label}
-                  </label>
-                ))}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all border ${
+                        isActive
+                          ? "bg-violet-500/20 border-violet-500/40 text-violet-200"
+                          : "bg-white/5 border-white/10 text-slate-400 hover:text-white hover:bg-white/10"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
               {(metadata.device_metadata.deviceMode || "single") !== "per_copy" && (metadata.device_metadata.deviceMode || "single") !== "random_unique" && (
                 <>
@@ -1908,7 +1967,7 @@ export default function VideoRepurposerPage({ embedded }) {
               </p>
               {!advancedOpen && (
                 <p className="text-[11px] text-amber-200/90 mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <Coins className="w-3.5 h-3.5 shrink-0" />
                   <span>Includes +10 credit smart optimization</span>
                 </p>
               )}

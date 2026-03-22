@@ -1073,10 +1073,11 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
       {/* Getting Started Video - Dismissable */}
       {showTutorial && (
         <div 
-          className="rounded-xl p-4 mb-6"
+          className="rounded-xl p-4 mb-6 backdrop-blur-xl"
           style={{ 
-            background: 'linear-gradient(180deg, rgba(139,92,246,0.12) 0%, rgba(139,92,246,0.08) 25%, rgba(139,92,246,0.06) 50%, rgba(59,130,246,0.03) 100%)',
-            border: '1px solid rgba(139,92,246,0.1)'
+            background: 'rgba(139,92,246,0.04)',
+            border: '1px solid rgba(139,92,246,0.08)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
         >
           <div className="flex items-center justify-between mb-3">
