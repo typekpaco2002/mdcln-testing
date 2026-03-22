@@ -1230,7 +1230,7 @@ router.post(
       });
       const enrichedPrompt = appearancePrefix + prompt.trim();
 
-      const replicateModelLabel = engine === "seedream" ? "wavespeed-seedream-v4.5-edit" : "kie-nano-banana-pro";
+      const replicateModelLabel = engine === "seedream" ? "kie-seedream-4.5-edit" : "kie-nano-banana-pro";
       const generation = await prisma.generation.create({
         data: {
           userId,
@@ -1277,7 +1277,7 @@ router.post(
         opts.onTaskCreated = async (taskId) => {
           await prisma.generation.update({
             where: { id: generation.id },
-            data: { replicateModel: engine === "seedream" ? `wavespeed-seedream:${taskId}` : `kie-task:${taskId}` },
+            data: { replicateModel: `kie-task:${taskId}` },
           });
         };
         try {
@@ -1287,7 +1287,7 @@ router.post(
           if (result?.success && result?.deferred && result?.taskId) {
             await prisma.generation.update({
               where: { id: generation.id },
-              data: { replicateModel: engine === "seedream" ? `wavespeed-seedream:${result.taskId}` : `kie-task:${result.taskId}` },
+              data: { replicateModel: `kie-task:${result.taskId}` },
             });
             console.log(`🍌 [Advanced] KIE ${engine} submitted; result will arrive via callback (task ${result.taskId})`);
           } else if (result?.success && result?.outputUrl) {

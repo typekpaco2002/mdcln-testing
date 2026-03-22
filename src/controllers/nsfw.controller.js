@@ -1409,7 +1409,7 @@ export async function generateTrainingImages(req, res) {
 
         const result = await requestQueue.enqueue(async () => {
           return await generateImageWithNanoBananaKie(identityImages, prompts[i], {
-            resolution: "2k",
+            resolution: "2K",
             aspectRatio: imageType === "selfie" ? "1:1" : "9:16",
           });
         });
@@ -1597,7 +1597,7 @@ export async function startTrainingSession(req, res) {
 
         const result = await requestQueue.enqueue(async () => {
           return await generateImageWithNanoBananaKie(identityImages, prompt, {
-            resolution: "2k",
+            resolution: "2K",
             aspectRatio: imageType === "selfie" ? "1:1" : "9:16",
           });
         });
@@ -1765,7 +1765,7 @@ export async function regenerateTrainingImage(req, res) {
 
     const result = await requestQueue.enqueue(async () => {
       return await generateImageWithNanoBananaKie(identityImages, prompt, {
-        resolution: "2k",
+        resolution: "2K",
         aspectRatio: trainingImage.imageType === "selfie" ? "1:1" : "9:16",
       });
     });
@@ -4415,13 +4415,13 @@ export async function generateAdvancedNsfw(req, res) {
     const kieAspectRatio = aspectRatio === "1024x1024" ? "1:1" : aspectRatio;
 
     if (model === "seedream") {
-      console.log("Using Seedream V4.5 Edit via WaveSpeed");
+      console.log("Using Seedream 4.5 Edit via KIE");
       result = await generateImageWithSeedreamWaveSpeed(identityImages, prompt, {
         aspectRatio: kieAspectRatio,
         onTaskCreated: async (taskId) => {
           await prisma.generation.update({
             where: { id: generationId },
-            data: { replicateModel: `wavespeed-seedream:${taskId}` },
+            data: { replicateModel: `kie-task:${taskId}` },
           });
         },
       });
@@ -4429,7 +4429,7 @@ export async function generateAdvancedNsfw(req, res) {
       console.log("Using Nano Banana Pro via kie.ai");
       result = await generateImageWithNanoBananaKie(identityImages, prompt, {
         aspectRatio: kieAspectRatio,
-        resolution: "2k",
+        resolution: "2K",
         onTaskCreated: async (taskId) => {
           await prisma.generation.update({
             where: { id: generationId },
@@ -4466,7 +4466,7 @@ export async function generateAdvancedNsfw(req, res) {
     if (result?.success && result?.deferred && result?.taskId) {
       await prisma.generation.update({
         where: { id: generationId },
-        data: { replicateModel: model === "seedream" ? `wavespeed-seedream:${result.taskId}` : `kie-task:${result.taskId}` },
+        data: { replicateModel: `kie-task:${result.taskId}` },
       });
       if (model !== "seedream") {
         await prisma.kieTask.upsert({

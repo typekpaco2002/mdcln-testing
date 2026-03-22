@@ -470,10 +470,7 @@ async function generateImageWithNanoBananaKieInternal(images, prompt, options = 
   console.log(`[KIE/nano-banana] image URLs:`, images.map(u => u.slice(0, 80)));
   console.log(`[KIE/nano-banana] prompt="${prompt.slice(0, 80)}"`);
 
-  // model: "nano-banana-2" for model-pose generation (cheaper, Gemini 3.1 Flash)
-  //        "nano-banana-pro" for casual/advanced generation (higher quality)
-  // Both use image_input for reference images (up to 8 / 14 respectively)
-  const modelName = options.model || "nano-banana-pro";
+  const modelName = "nano-banana-pro";
   const result = await kieRun(
     {
       model: modelName,
@@ -495,7 +492,7 @@ async function generateImageWithNanoBananaKieInternal(images, prompt, options = 
  * Nano Banana Pro — text-to-image (no identity images). Uses Pro model for best quality.
  */
 async function generateTextToImageNanoBananaKieInternal(prompt, options = {}) {
-  const modelName = options.model || "nano-banana-pro";
+  const modelName = "nano-banana-pro";
   console.log(`[KIE/${modelName}] text-to-image prompt="${prompt.slice(0, 80)}"`);
   const result = await kieRun(
     {
@@ -622,6 +619,7 @@ async function generateVideoWithKling26KieInternal(imageUrl, prompt, options = {
   const duration = String(options.duration || 5);
   const useKling3 = options.useKling3 === true;
   const model = useKling3 ? "kling-3.0/video" : "kling-2.6/image-to-video";
+  const aspectRatio = options.aspectRatio || "16:9";
   console.log(`[KIE/kling-i2v] model=${model}, image="${imageUrl.slice(0, 80)}", duration=${duration}s`);
 
   const result = await kieRun(
@@ -632,7 +630,7 @@ async function generateVideoWithKling26KieInternal(imageUrl, prompt, options = {
         prompt,
         duration,
         sound: options.sound === true,
-        ...(useKling3 ? { mode: "pro", multi_shots: false } : {}),
+        ...(useKling3 ? { aspect_ratio: aspectRatio, mode: "pro", multi_shots: false } : {}),
       },
     },
     useKling3 ? "kling-i2v-3" : "kling-i2v",

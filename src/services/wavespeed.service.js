@@ -2,6 +2,8 @@ import { isR2Configured, uploadBufferToR2 } from "../utils/r2.js";
 import {
   generateImageWithNanoBananaKie,
   generateTextToImageNanoBananaKie,
+  generateImageWithSeedreamKie,
+  generateImageWithIdentityKie,
   getKieCallbackUrl,
 } from "./kie.service.js";
 import { IDENTITY_RECREATE_MODEL_CLOTHES } from "../constants/identityRecreationPrompts.js";
@@ -280,112 +282,14 @@ async function waitForResult(requestId, maxAttempts = 60) {
  */
 async function generateImageWithNanoBanana(images, prompt, options = {}) {
   try {
-    console.log("\nðŸŒ ============================================");
-    console.log("ðŸŒ NANO BANANA PRO EDIT (Gemini 3.0 Pro)");
-    console.log("ðŸŒ ============================================");
-    console.log(`ðŸ“¸ Images: ${images.length}`);
-    console.log(`ðŸ“ Prompt: ${prompt}`);
-    console.log("â³ Submitting to WaveSpeed...\n");
-
-    // Nano Banana Pro Edit accepts 'images' array for multi-image editing
-    const requestBody = {
-      images: images,
-      prompt: prompt,
-      enable_base64_output: false,
-      enable_sync_mode: false,
-      output_format: options.outputFormat || "png",
-    };
-
-    // Add resolution (1k, 2k, 4k) - default to 2k for quality
-    if (options.resolution) {
-      requestBody.resolution = options.resolution;
-    } else {
-      requestBody.resolution = "2k";
-    }
-
-    // Add aspect ratio if specified
-    if (options.aspectRatio) {
-      requestBody.aspect_ratio = options.aspectRatio;
-    }
-
-    // Submit task to Nano Banana Pro Edit endpoint
-    const submitResponse = await fetch(
-      `${WAVESPEED_API_URL}/google/nano-banana-pro/edit`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-        },
-        body: JSON.stringify(requestBody),
-      },
-    );
-
-    if (!WAVESPEED_API_KEY) {
-      throw new Error("WAVESPEED_API_KEY is not configured -- face swap unavailable");
-    }
-
-    const responseText = await submitResponse.text();
-
-    if (!submitResponse.ok) {
-      console.error(`âŒ API Error ${submitResponse.status}:`, responseText);
-      throw new Error(
-        `Failed to submit task: ${submitResponse.status} - ${responseText}`,
-      );
-    }
-
-    let submitData;
-    try {
-      submitData = JSON.parse(responseText);
-    } catch (e) {
-      console.error("âŒ Failed to parse response:", responseText);
-      throw new Error(
-        `Invalid JSON response: ${responseText.substring(0, 200)}`,
-      );
-    }
-
-    // Extract request ID
-    const requestId =
-      submitData.data?.id ||
-      submitData.request_id ||
-      submitData.id ||
-      submitData.requestId ||
-      submitData.task_id ||
-      submitData.taskId ||
-      submitData.prediction_id;
-
-    if (!requestId) {
-      console.error("âŒ No request ID found in response");
-      console.error("Full response:", JSON.stringify(submitData, null, 2));
-
-      // Check for sync mode result
-      if (submitData.output || submitData.result || submitData.url) {
-        const output = submitData.output || submitData.result || submitData.url;
-        console.log("âœ… Got immediate result (sync mode)");
-        return {
-          success: true,
-          outputUrl: output,
-        };
-      }
-
-      throw new Error("No request ID in response");
-    }
-
-    console.log(`âœ… Task submitted! Request ID: ${requestId}`);
-    console.log("â³ Waiting for result...\n");
-
-    // Poll for result
-    const result = await waitForResult(requestId, 90);
-
-    console.log(`\nðŸŒ ============================================`);
-    console.log(`ðŸŒ NANO BANANA PRO EDIT COMPLETE!`);
-    console.log(`ðŸŒ Output URL: ${result.outputUrl}`);
-    console.log(`ðŸŒ ============================================\n`);
-
-    return {
-      success: true,
-      outputUrl: result.outputUrl,
-    };
+    console.log("[Nano Banana] Routing edit through KIE nano-banana-pro");
+    return await generateImageWithNanoBananaKie(images, prompt, {
+      aspectRatio: options.aspectRatio || "9:16",
+      resolution: options.resolution || "2K",
+      outputFormat: options.outputFormat || "png",
+      onTaskCreated: options.onTaskCreated,
+      forcePolling: options.forcePolling,
+    });
   } catch (error) {
     console.error("âŒ ERROR in Nano Banana Pro Edit:", error.message);
     return {
@@ -406,110 +310,14 @@ async function generateImageWithNanoBanana(images, prompt, options = {}) {
  */
 async function generateImageWithSeedream(images, prompt, options = {}) {
   try {
-    console.log("\nðŸŒ™ ============================================");
-    console.log("ðŸŒ™ SEEDREAM V4.5 EDIT (NSFW Mode)");
-    console.log("ðŸŒ™ ============================================");
-    console.log(`ðŸ“¸ Images: ${images.length}`);
-    console.log(`ðŸ“ Prompt: ${prompt}`);
-    console.log("â³ Submitting to WaveSpeed...\n");
-
-    // Seedream V4.5 Edit API
-    const requestBody = {
-      images: images,
-      prompt: prompt,
-      enable_base64_output: false,
-      enable_sync_mode: false,
-    };
-
-    // Valid values: "WIDTHxHEIGHT" (e.g. "1024x1536"), "1k", "2k", "4k"
-    if (options.size && /^(\d+x\d+|[124]k)$/i.test(options.size)) {
-      requestBody.size = options.size.toLowerCase();
-    }
-
-    // Submit task to Seedream V4.5 Edit endpoint
-    const submitResponse = await fetch(
-      `${WAVESPEED_API_URL}/bytedance/seedream-v4.5/edit`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-        },
-        body: JSON.stringify(requestBody),
-      },
-    );
-
-    if (!WAVESPEED_API_KEY) {
-      throw new Error("WAVESPEED_API_KEY is not configured -- face swap unavailable");
-    }
-
-    const responseText = await submitResponse.text();
-
-    if (!submitResponse.ok) {
-      console.error(`âŒ API Error ${submitResponse.status}:`, responseText);
-      throw new Error(
-        `Failed to submit task: ${submitResponse.status} - ${responseText}`,
-      );
-    }
-
-    let submitData;
-    try {
-      submitData = JSON.parse(responseText);
-    } catch (e) {
-      console.error("âŒ Failed to parse response:", responseText);
-      throw new Error(
-        `Invalid JSON response: ${responseText.substring(0, 200)}`,
-      );
-    }
-
-    // Extract request ID from WaveSpeed response structure
-    const requestId =
-      submitData.data?.id ||
-      submitData.request_id ||
-      submitData.id ||
-      submitData.requestId ||
-      submitData.task_id ||
-      submitData.taskId ||
-      submitData.prediction_id;
-
-    if (!requestId) {
-      console.error("âŒ No request ID found in response");
-      console.error("Full response:", JSON.stringify(submitData, null, 2));
-
-      // Check for sync mode result
-      if (submitData.output || submitData.result || submitData.url) {
-        const output = submitData.output || submitData.result || submitData.url;
-        console.log("âœ… Got immediate result (sync mode)");
-        const archivedUrl = await archiveToR2(Array.isArray(output) ? output[0] : output);
-        return {
-          success: true,
-          outputUrl: archivedUrl,
-          requestId: "sync",
-        };
-      }
-
-      throw new Error(
-        `No request ID in response. Keys: ${Object.keys(submitData).join(", ")}`,
-      );
-    }
-
-    console.log(`âœ… Task submitted! Request ID: ${requestId}`);
-    console.log("â³ Waiting for result...\n");
-
-    // Poll for result (90 attempts = 270 seconds max)
-    const result = await waitForResult(requestId, 90);
-
-    console.log(`\nðŸŒ™ ============================================`);
-    console.log(`ðŸŒ™ SEEDREAM V4.5 EDIT COMPLETE!`);
-    console.log(`ðŸŒ™ Output URL: ${result.outputUrl}`);
-    console.log(`ðŸŒ™ ============================================\n`);
-
-    return {
-      success: true,
-      outputUrl: result.outputUrl,
-    };
+    console.log("[Seedream] Routing image edit through KIE seedream/4.5-edit");
+    return await generateImageWithSeedreamKie(images, prompt, {
+      aspectRatio: options.aspectRatio || "9:16",
+      quality: options.quality || "basic",
+      onTaskCreated: options.onTaskCreated,
+    });
   } catch (error) {
-    console.error("ERROR in Seedream V4.5 Edit:", error.message);
+    console.error("ERROR in Seedream 4.5 Edit:", error.message);
     return {
       success: false,
       error: error.message,
@@ -518,83 +326,24 @@ async function generateImageWithSeedream(images, prompt, options = {}) {
 }
 
 /**
- * Seedream V4.5 Edit via WaveSpeed with webhook. Returns deferred; result comes via POST to getWaveSpeedCallbackUrl().
- * Store replicateModel as "wavespeed-seedream:${taskId}" so the callback can find the generation.
+ * Backward-compatible alias: Seedream 4.5 Edit now runs via KIE.
  */
 export async function generateImageWithSeedreamWaveSpeed(images, prompt, options = {}) {
-  const callbackUrl = getWaveSpeedCallbackUrl();
-  const url = callbackUrl
-    ? `${WAVESPEED_API_URL}/bytedance/seedream-v4.5/edit?webhook=${encodeURIComponent(callbackUrl)}`
-    : `${WAVESPEED_API_URL}/bytedance/seedream-v4.5/edit`;
-  const requestBody = {
-    images,
-    prompt,
-    enable_base64_output: false,
-    enable_sync_mode: false,
-  };
-  if (options.size && /^(\d+x\d+|[124]k)$/i.test(options.size)) requestBody.size = options.size.toLowerCase();
-
-  const WAVESPEED_FETCH_TIMEOUT_MS = 60_000;
-  let text;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(WAVESPEED_FETCH_TIMEOUT_MS),
-      });
-      text = await res.text();
-      if (!res.ok) throw new Error(`WaveSpeed Seedream: ${res.status} - ${text}`);
-      break;
-    } catch (err) {
-      if (attempt === 2) throw err;
-      console.warn(`[WaveSpeed] Seedream fetch attempt ${attempt}/2 failed: ${err?.message}`);
-      await new Promise((r) => setTimeout(r, 2000));
-    }
-  }
-
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error("WaveSpeed Seedream: invalid JSON response");
-  }
-
-  const taskId = data.id ?? data.data?.id ?? data.request_id ?? data.task_id ?? data.taskId;
-  if (!taskId) {
-    if (data.outputs && data.outputs[0]) {
-      const outputUrl = Array.isArray(data.outputs) ? data.outputs[0] : data.outputs;
-      const archived = await archiveToR2(outputUrl);
-      return { success: true, outputUrl: archived };
-    }
-    throw new Error("WaveSpeed Seedream: no task id or output in response");
-  }
-
-  if (typeof options.onTaskCreated === "function") {
-    try {
-      await options.onTaskCreated(taskId);
-    } catch (_) {}
-  }
-
-  if (callbackUrl) {
-    return { success: true, deferred: true, taskId };
-  }
-  const result = await waitForResult(taskId, 90);
-  return { success: true, outputUrl: result.outputUrl };
+  return await generateImageWithSeedreamKie(images, prompt, {
+    aspectRatio: options.aspectRatio || "9:16",
+    quality: options.quality || "basic",
+    onTaskCreated: options.onTaskCreated,
+  });
 }
 
 /**
- * Identity recreation: Seedream 4.5 with identity refs + target image. Uses WaveSpeed + webhook.
+ * Backward-compatible alias: identity recreation now runs via KIE Seedream.
  */
 export async function generateImageWithIdentityWaveSpeed(identityImages, targetImage, options = {}) {
-  const allImages = [...identityImages, targetImage];
-  const prompt = options.customImagePrompt || IDENTITY_RECREATE_MODEL_CLOTHES;
-  return generateImageWithSeedreamWaveSpeed(allImages, prompt, {
-    ...options,
+  return await generateImageWithIdentityKie(identityImages, targetImage, {
+    aspectRatio: options.aspectRatio || "9:16",
+    quality: options.quality || "basic",
+    customImagePrompt: options.customImagePrompt || IDENTITY_RECREATE_MODEL_CLOTHES,
     onTaskCreated: options.onTaskCreated,
   });
 }
@@ -612,9 +361,9 @@ async function faceSwapVideo(videoUrl, faceImageUrl, options = {}) {
     const requestBody = {
       video: videoUrl,
       face_image: faceImageUrl,
-      target_gender: options.targetGender || "all",
-      target_index: options.targetIndex || 0,
-      max_duration: options.maxDuration || 0,
+      target_index: Number.isInteger(options.targetIndex)
+        ? Math.max(0, Math.min(10, options.targetIndex))
+        : 0,
     };
 
     const faceSwapEndpoint = `${WAVESPEED_API_URL}/wavespeed-ai/video-face-swap`;
@@ -739,7 +488,14 @@ async function faceSwapImage(targetImageUrl, sourceImageUrl) {
     }
 
     const result = await response.json();
-    const requestId = result.data?.id;
+    const requestId =
+      result.data?.id ||
+      result.request_id ||
+      result.id ||
+      result.requestId ||
+      result.task_id ||
+      result.taskId ||
+      result.prediction_id;
 
     if (!requestId) {
       throw new Error("No request ID in response");
@@ -1473,13 +1229,8 @@ async function submitNsfwVideo(imageUrl, prompt, options = {}) {
       },
       {
         url: baseSubmitUrl,
-        body: { ...requestBody, webhook: callbackUrl },
-        label: "body:webhook",
-      },
-      {
-        url: baseSubmitUrl,
-        body: { ...requestBody, callBackUrl: callbackUrl, callbackUrl: callbackUrl },
-        label: "body:callBackUrl",
+        body: requestBody,
+        label: "plain-body",
       },
     ];
 
@@ -1586,13 +1337,8 @@ async function submitNsfwVideoExtend(videoUrl, prompt, options = {}) {
       },
       {
         url: baseSubmitUrl,
-        body: { ...requestBody, webhook: callbackUrl },
-        label: "body:webhook",
-      },
-      {
-        url: baseSubmitUrl,
-        body: { ...requestBody, callBackUrl: callbackUrl, callbackUrl: callbackUrl },
-        label: "body:callBackUrl",
+        body: requestBody,
+        label: "plain-body",
       },
     ];
 
