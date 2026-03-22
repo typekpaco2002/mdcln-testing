@@ -29,7 +29,13 @@ import {
 } from "../services/credit.service.js";
 import { isR2Configured, mirrorToR2, reMirrorToR2 } from "../utils/r2.js";
 import { mirrorToBlob, isVercelBlobConfigured } from "../utils/kieUpload.js";
-import { validateImageUrl, validateVideoUrl, validateImageUrls } from "../utils/fileValidation.js";
+import {
+  validateImageUrl,
+  validateVideoUrl,
+  validateImageUrls,
+  validateNanoBananaInputImages,
+  validateSeedreamEditImages,
+} from "../utils/fileValidation.js";
 import { getUserFriendlyGenerationError } from "../utils/generationErrorMessages.js";
 import { buildAppearancePrefix } from "../utils/appearancePrompt.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
@@ -206,6 +212,10 @@ export async function generateImageWithIdentity(req, res) {
     const targetCheck = validateImageUrl(targetImage);
     if (!targetCheck.valid) {
       return res.status(400).json({ success: false, message: targetCheck.message });
+    }
+    const seedreamInputsCheck = await validateSeedreamEditImages([...identityImages, targetImage]);
+    if (!seedreamInputsCheck.valid) {
+      return res.status(400).json({ success: false, message: seedreamInputsCheck.message });
     }
 
     // Validate quantity (1-10)
@@ -2819,6 +2829,12 @@ export async function generatePromptBasedImage(req, res) {
       ? `Using reference images ${requiredReferenceCount === 2 ? "1 and 2" : "1, 2, and 3"} as identity reference for the person's face and features. Create a photo of this exact same person: ${prompt.trim()}. Keep the exact same face, facial features, hair color, eye color from the reference images. High quality, photorealistic.`
       : buildGenerationPrompt(prompt, style, contentRating, requiredReferenceCount);
     const finalPrompt = (appearancePrefix || "") + basePrompt;
+    const providerInputCheck = useSeedream
+      ? await validateSeedreamEditImages(identityImages)
+      : await validateNanoBananaInputImages(identityImages);
+    if (!providerInputCheck.valid) {
+      return res.status(400).json({ success: false, message: providerInputCheck.message });
+    }
 
     const aiModel = useSeedream ? "kie-seedream-4.5-edit" : "kie-nano-banana-pro";
     console.log(`\n${useSeedream ? "🌙" : "🍌"} PROMPT-BASED GENERATION (${useSeedream ? "KIE Seedream 4.5 Edit" : "KIE Nano Banana Pro"})`);
@@ -3783,6 +3799,10 @@ export async function generateCreatorStudio(req, res) {
     const refs = Array.isArray(referencePhotos)
       ? referencePhotos.filter((u) => typeof u === "string" && u.length > 0).slice(0, 8)
       : [];
+    const refsCheck = await validateNanoBananaInputImages(refs);
+    if (!refsCheck.valid) {
+      return res.status(400).json({ success: false, message: refsCheck.message });
+    }
 
     const pricing = await getGenerationPricing();
     const creditsNeeded = resolution === "4K" ? pricing.creatorStudio4K : pricing.creatorStudio1K2K;

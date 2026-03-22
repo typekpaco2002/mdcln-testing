@@ -1,3 +1,8 @@
+import fs from "fs";
+import os from "os";
+import path from "path";
+import crypto from "crypto";
+
 const SUPPORTED_IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp"]);
 const SUPPORTED_VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov"]);
 
@@ -66,6 +71,200 @@ function validateImageUrls(urls) {
   return { valid: true };
 }
 
+function formatMb(bytes) {
+  return `${(bytes / (1024 * 1024)).toFixed(bytes % (1024 * 1024) === 0 ? 0 : 1)}MB`;
+}
+
+async function inspectRemoteFile(url) {
+  let res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(15_000) });
+  if (!res.ok && (res.status === 405 || res.status === 403)) {
+    res = await fetch(url, {
+      method: "GET",
+      headers: { Range: "bytes=0-0" },
+      signal: AbortSignal.timeout(20_000),
+    });
+  }
+  if (!res.ok) {
+    throw new Error(`File URL returned HTTP ${res.status}. Re-upload the file and try again.`);
+  }
+  const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  const sizeHeader = res.headers.get("content-length");
+  const sizeBytes = sizeHeader ? parseInt(sizeHeader, 10) : null;
+  return {
+    extension: getExtensionFromUrl(url),
+    contentType,
+    sizeBytes: Number.isFinite(sizeBytes) ? sizeBytes : null,
+  };
+}
+
+async function probeRemoteVideoDuration(url, extensionHint = "mp4") {
+  const ext = extensionHint || getExtensionFromUrl(url) || "mp4";
+  const tmpPath = path.join(
+    os.tmpdir(),
+    `provider-validate-${crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}.${ext}`,
+  );
+
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const buffer = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(tmpPath, buffer);
+    const { probeInput } = await import("../services/video-repurpose.service.js");
+    const info = await probeInput(tmpPath);
+    return Number.isFinite(info?.duration) ? info.duration : null;
+  } finally {
+    try {
+      if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    } catch {}
+  }
+}
+
+async function validateRemoteMedia(url, rules) {
+  const {
+    label,
+    kind,
+    allowedExtensions,
+    allowedMimeTypes,
+    maxBytes,
+    minDurationSec,
+    maxDurationSec,
+  } = rules;
+
+  const basic = kind === "video" ? validateVideoUrl(url) : validateImageUrl(url);
+  if (!basic.valid) return basic;
+
+  let meta;
+  try {
+    meta = await inspectRemoteFile(url);
+  } catch (error) {
+    return { valid: false, message: `${label}: ${error.message}` };
+  }
+
+  if (meta.extension && allowedExtensions && !allowedExtensions.has(meta.extension)) {
+    return {
+      valid: false,
+      message: `${label}: unsupported ${kind} format. Allowed formats: ${Array.from(allowedExtensions).map((x) => x.toUpperCase()).join(", ")}.`,
+    };
+  }
+
+  if (
+    meta.contentType &&
+    allowedMimeTypes &&
+    !allowedMimeTypes.has(meta.contentType) &&
+    !meta.contentType.startsWith("application/octet-stream")
+  ) {
+    return {
+      valid: false,
+      message: `${label}: unsupported ${kind} content type (${meta.contentType}).`,
+    };
+  }
+
+  if (maxBytes && meta.sizeBytes && meta.sizeBytes > maxBytes) {
+    return {
+      valid: false,
+      message: `${label}: file is too large (${formatMb(meta.sizeBytes)}). Maximum allowed is ${formatMb(maxBytes)}.`,
+    };
+  }
+
+  if (kind === "video" && (minDurationSec || maxDurationSec)) {
+    try {
+      const durationSec = await probeRemoteVideoDuration(url, meta.extension || "mp4");
+      if (Number.isFinite(durationSec)) {
+        if (minDurationSec && durationSec < minDurationSec) {
+          return {
+            valid: false,
+            message: `${label}: video is too short (${durationSec.toFixed(1)}s). Minimum allowed is ${minDurationSec}s.`,
+          };
+        }
+        if (maxDurationSec && durationSec > maxDurationSec) {
+          return {
+            valid: false,
+            message: `${label}: video is too long (${durationSec.toFixed(1)}s). Maximum allowed is ${maxDurationSec}s.`,
+          };
+        }
+      }
+    } catch (error) {
+      return {
+        valid: false,
+        message: `${label}: could not verify video duration (${error.message}). Re-upload the file and try again.`,
+      };
+    }
+  }
+
+  return { valid: true, meta };
+}
+
+const MIME_IMAGE_JPEG_PNG_WEBP = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MIME_IMAGE_JPEG_PNG = new Set(["image/jpeg", "image/png"]);
+const MIME_VIDEO_MP4_MOV = new Set(["video/mp4", "video/x-mp4", "video/quicktime"]);
+const MIME_VIDEO_MP4_MOV_MKV = new Set([
+  "video/mp4",
+  "video/x-mp4",
+  "video/quicktime",
+  "video/x-matroska",
+]);
+
+async function validateNanoBananaInputImages(urls) {
+  if (!Array.isArray(urls) || urls.length === 0) return { valid: true };
+  for (let i = 0; i < urls.length; i++) {
+    const result = await validateRemoteMedia(urls[i], {
+      label: `Reference image ${i + 1}`,
+      kind: "image",
+      allowedExtensions: new Set(["jpg", "jpeg", "png", "webp"]),
+      allowedMimeTypes: MIME_IMAGE_JPEG_PNG_WEBP,
+      maxBytes: 30 * 1024 * 1024,
+    });
+    if (!result.valid) return result;
+  }
+  return { valid: true };
+}
+
+async function validateSeedreamEditImages(urls) {
+  if (!Array.isArray(urls) || urls.length === 0) return { valid: true };
+  for (let i = 0; i < urls.length; i++) {
+    const result = await validateRemoteMedia(urls[i], {
+      label: `Reference image ${i + 1}`,
+      kind: "image",
+      allowedExtensions: new Set(["jpg", "jpeg", "png", "webp"]),
+      allowedMimeTypes: MIME_IMAGE_JPEG_PNG_WEBP,
+      maxBytes: 10 * 1024 * 1024,
+    });
+    if (!result.valid) return result;
+  }
+  return { valid: true };
+}
+
+async function validateKlingImageToVideoInput(imageUrl) {
+  return validateRemoteMedia(imageUrl, {
+    label: "Input image",
+    kind: "image",
+    allowedExtensions: new Set(["jpg", "jpeg", "png", "webp"]),
+    allowedMimeTypes: MIME_IMAGE_JPEG_PNG_WEBP,
+    maxBytes: 10 * 1024 * 1024,
+  });
+}
+
+async function validateKlingMotionInputs(imageUrl, videoUrl, ultra = false) {
+  const imageResult = await validateRemoteMedia(imageUrl, {
+    label: "Reference image",
+    kind: "image",
+    allowedExtensions: new Set(["jpg", "jpeg", "png"]),
+    allowedMimeTypes: MIME_IMAGE_JPEG_PNG,
+    maxBytes: 10 * 1024 * 1024,
+  });
+  if (!imageResult.valid) return imageResult;
+
+  return validateRemoteMedia(videoUrl, {
+    label: "Motion video",
+    kind: "video",
+    allowedExtensions: ultra ? new Set(["mp4", "mov"]) : new Set(["mp4", "mov", "mkv"]),
+    allowedMimeTypes: ultra ? MIME_VIDEO_MP4_MOV : MIME_VIDEO_MP4_MOV_MKV,
+    maxBytes: 100 * 1024 * 1024,
+    minDurationSec: 3,
+    maxDurationSec: 30,
+  });
+}
+
 export async function validateContentType(url, type = "image") {
   const supported = type === "video" ? SUPPORTED_VIDEO_MIMES : SUPPORTED_IMAGE_MIMES;
   const friendlyList = type === "video" ? "MP4, WebM, or MOV" : "JPG, PNG, or WebP";
@@ -88,6 +287,10 @@ export {
   validateImageUrl,
   validateVideoUrl,
   validateImageUrls,
+  validateNanoBananaInputImages,
+  validateSeedreamEditImages,
+  validateKlingImageToVideoInput,
+  validateKlingMotionInputs,
   SUPPORTED_IMAGE_EXTENSIONS,
   SUPPORTED_VIDEO_EXTENSIONS,
 };

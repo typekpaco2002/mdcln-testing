@@ -96,11 +96,44 @@ import {
 import multer from "multer";
 import { handleUpload } from "@vercel/blob/client";
 import { isVercelBlobConfigured, uploadBufferToBlob } from "../utils/kieUpload.js";
+import {
+  validateNanoBananaInputImages,
+  validateSeedreamEditImages,
+} from "../utils/fileValidation.js";
 
 const ALLOWED_UPLOAD_TYPES = [
   "image/jpeg", "image/png", "image/webp", "image/gif",
   "video/mp4", "video/x-mp4", "video/quicktime", "video/webm",
 ];
+
+async function registerKieTaskForGeneration(taskId, generationId, userId, kind = "generation") {
+  if (!taskId || !generationId) return;
+  await prisma.kieTask.upsert({
+    where: { taskId },
+    update: {
+      provider: "kie",
+      entityType: "generation",
+      entityId: generationId,
+      step: "final",
+      userId: userId || null,
+      status: "processing",
+      payload: { type: kind },
+      errorMessage: null,
+      outputUrl: null,
+      completedAt: null,
+    },
+    create: {
+      taskId,
+      provider: "kie",
+      entityType: "generation",
+      entityId: generationId,
+      step: "final",
+      userId: userId || null,
+      status: "processing",
+      payload: { type: kind },
+    },
+  });
+}
 
 const voiceCloneUpload = multer({
   storage: multer.memoryStorage(),
@@ -1221,6 +1254,12 @@ router.post(
       const identityImages = referencePhotos.length > 0
         ? referencePhotos
         : [model.photo1Url, model.photo2Url, model.photo3Url].filter(Boolean);
+      const providerInputCheck = engine === "seedream"
+        ? await validateSeedreamEditImages(identityImages)
+        : await validateNanoBananaInputImages(identityImages);
+      if (!providerInputCheck.valid) {
+        return res.status(400).json({ success: false, error: providerInputCheck.message });
+      }
 
       // Build appearance from model's savedAppearance (single source of truth for all generations)
       const { buildAppearancePrefix } = await import("../utils/appearancePrompt.js");
@@ -1279,6 +1318,7 @@ router.post(
             where: { id: generation.id },
             data: { replicateModel: `kie-task:${taskId}` },
           });
+          await registerKieTaskForGeneration(taskId, generation.id, userId, "advanced-image");
         };
         try {
           const result = engine === "seedream"
@@ -1289,6 +1329,7 @@ router.post(
               where: { id: generation.id },
               data: { replicateModel: `kie-task:${result.taskId}` },
             });
+            await registerKieTaskForGeneration(result.taskId, generation.id, userId, "advanced-image");
             console.log(`🍌 [Advanced] KIE ${engine} submitted; result will arrive via callback (task ${result.taskId})`);
           } else if (result?.success && result?.outputUrl) {
             await prisma.generation.update({

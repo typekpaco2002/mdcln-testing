@@ -12,6 +12,12 @@
 
 import { isR2Configured, uploadBufferToR2 } from "../utils/r2.js";
 import { IDENTITY_RECREATE_MODEL_CLOTHES } from "../constants/identityRecreationPrompts.js";
+import {
+  validateNanoBananaInputImages,
+  validateSeedreamEditImages,
+  validateKlingImageToVideoInput,
+  validateKlingMotionInputs,
+} from "../utils/fileValidation.js";
 
 const KIE_API_KEY = process.env.KIE_API_KEY;
 const KIE_API_URL = "https://api.kie.ai/api/v1";
@@ -425,6 +431,10 @@ async function archiveToR2(sourceUrl) {
  */
 async function generateImageWithSeedreamKieInternal(images, prompt, options = {}) {
   console.log(`[KIE/seedream] images=${images.length}, prompt="${prompt.slice(0, 80)}"`);
+  const validation = await validateSeedreamEditImages(images);
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
   const result = await kieRun(
     {
       model: "seedream/4.5-edit",
@@ -469,6 +479,10 @@ async function generateImageWithNanoBananaKieInternal(images, prompt, options = 
   console.log(`[KIE/nano-banana] images=${images.length}`);
   console.log(`[KIE/nano-banana] image URLs:`, images.map(u => u.slice(0, 80)));
   console.log(`[KIE/nano-banana] prompt="${prompt.slice(0, 80)}"`);
+  const validation = await validateNanoBananaInputImages(images);
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
 
   const modelName = "nano-banana-pro";
   const result = await kieRun(
@@ -520,6 +534,10 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
   console.log(`[KIE/kling-motion] image="${imageUrl.slice(0, 120)}"`);
   console.log(`[KIE/kling-motion] video="${videoUrl.slice(0, 120)}"`);
   const useUltraMotionControl = options.ultra === true;
+  const validation = await validateKlingMotionInputs(imageUrl, videoUrl, useUltraMotionControl);
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
 
   // Soft pre-flight check — warn on failure but never block; KIE validates URLs itself.
   try {
@@ -621,6 +639,10 @@ async function generateVideoWithKling26KieInternal(imageUrl, prompt, options = {
   const model = useKling3 ? "kling-3.0/video" : "kling-2.6/image-to-video";
   const aspectRatio = options.aspectRatio || "16:9";
   console.log(`[KIE/kling-i2v] model=${model}, image="${imageUrl.slice(0, 80)}", duration=${duration}s`);
+  const validation = await validateKlingImageToVideoInput(imageUrl);
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
 
   const result = await kieRun(
     {
