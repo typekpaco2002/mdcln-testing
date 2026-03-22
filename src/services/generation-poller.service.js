@@ -83,7 +83,7 @@ class GenerationPollerService {
       where: {
         status: "processing",
         type: {
-          notIn: ["talking-head", "nsfw", "prompt-image", "prompt-video", "image-identity", "motion-transfer", "complete-recreation", "face-swap", "advanced-image"],
+          notIn: ["talking-head", "nsfw", "nsfw-video", "nsfw-video-extend", "prompt-image", "prompt-video", "image-identity", "motion-transfer", "complete-recreation", "face-swap", "advanced-image"],
         },
       },
       select: {

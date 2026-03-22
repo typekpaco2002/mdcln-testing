@@ -1458,54 +1458,51 @@ async function submitNsfwVideo(imageUrl, prompt, options = {}) {
     };
 
     const callbackUrl = getWaveSpeedCallbackUrl();
-    const baseSubmitUrl = `${WAVESPEED_API_URL}/wavespeed-ai/wan-2.2-spicy/image-to-video`;
-    const submitUrl = callbackUrl
-      ? `${baseSubmitUrl}?webhook=${encodeURIComponent(callbackUrl)}`
-      : baseSubmitUrl;
-    if (callbackUrl) {
-      console.log(`🔔 WaveSpeed NSFW video webhook: ${callbackUrl}`);
-    } else {
-      console.warn("⚠️ No WaveSpeed callback URL configured for NSFW video; relying on polling");
+    if (!callbackUrl) {
+      throw new Error("WaveSpeed callback URL is required (set WAVESPEED_CALLBACK_URL or CALLBACK_BASE_URL)");
     }
+    console.log(`🔔 WaveSpeed NSFW video webhook: ${callbackUrl}`);
+    const baseSubmitUrl = `${WAVESPEED_API_URL}/wavespeed-ai/wan-2.2-spicy/image-to-video`;
 
-    let submitResponse = await fetch(submitUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+    // Provider variants: keep callback semantics, try multiple accepted callback shapes.
+    const attempts = [
+      {
+        url: `${baseSubmitUrl}?webhook=${encodeURIComponent(callbackUrl)}`,
+        body: requestBody,
+        label: "query:webhook",
       },
-      body: JSON.stringify(requestBody),
-    });
+      {
+        url: baseSubmitUrl,
+        body: { ...requestBody, webhook: callbackUrl },
+        label: "body:webhook",
+      },
+      {
+        url: baseSubmitUrl,
+        body: { ...requestBody, callBackUrl: callbackUrl, callbackUrl: callbackUrl },
+        label: "body:callBackUrl",
+      },
+    ];
+
+    let submitResponse = null;
+    let responseText = "";
+    for (const attempt of attempts) {
+      submitResponse = await fetch(attempt.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+        },
+        body: JSON.stringify(attempt.body),
+      });
+      responseText = await submitResponse.text();
+      if (submitResponse.ok) {
+        break;
+      }
+      console.warn(`⚠️ WaveSpeed NSFW submit failed (${attempt.label}) HTTP ${submitResponse.status}; trying next callback variant`);
+    }
 
     if (!WAVESPEED_API_KEY) {
       throw new Error("WAVESPEED_API_KEY is not configured -- face swap unavailable");
-    }
-
-    let responseText = await submitResponse.text();
-
-    // Some WaveSpeed endpoints do not accept webhook query params.
-    // If that happens, retry once without webhook rather than failing the whole job.
-    if (!submitResponse.ok && callbackUrl) {
-      const lower = String(responseText || "").toLowerCase();
-      const likelyWebhookParamIssue =
-        submitResponse.status === 400 ||
-        submitResponse.status === 404 ||
-        lower.includes("webhook") ||
-        lower.includes("query") ||
-        lower.includes("unknown parameter") ||
-        lower.includes("invalid parameter");
-      if (likelyWebhookParamIssue) {
-        console.warn("⚠️ WaveSpeed rejected webhook param for NSFW video submit; retrying without webhook query");
-        submitResponse = await fetch(baseSubmitUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-          },
-          body: JSON.stringify(requestBody),
-        });
-        responseText = await submitResponse.text();
-      }
     }
 
     if (!submitResponse.ok) {
@@ -1575,52 +1572,50 @@ async function submitNsfwVideoExtend(videoUrl, prompt, options = {}) {
     };
 
     const callbackUrl = getWaveSpeedCallbackUrl();
-    const baseSubmitUrl = `${WAVESPEED_API_URL}/wavespeed-ai/wan-2.2-spicy/video-extend`;
-    const submitUrl = callbackUrl
-      ? `${baseSubmitUrl}?webhook=${encodeURIComponent(callbackUrl)}`
-      : baseSubmitUrl;
-    if (callbackUrl) {
-      console.log(`🔔 WaveSpeed NSFW video-extend webhook: ${callbackUrl}`);
-    } else {
-      console.warn("⚠️ No WaveSpeed callback URL configured for NSFW video-extend; relying on polling");
+    if (!callbackUrl) {
+      throw new Error("WaveSpeed callback URL is required (set WAVESPEED_CALLBACK_URL or CALLBACK_BASE_URL)");
     }
+    console.log(`🔔 WaveSpeed NSFW video-extend webhook: ${callbackUrl}`);
+    const baseSubmitUrl = `${WAVESPEED_API_URL}/wavespeed-ai/wan-2.2-spicy/video-extend`;
 
-    let submitResponse = await fetch(submitUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+    const attempts = [
+      {
+        url: `${baseSubmitUrl}?webhook=${encodeURIComponent(callbackUrl)}`,
+        body: requestBody,
+        label: "query:webhook",
       },
-      body: JSON.stringify(requestBody),
-    });
+      {
+        url: baseSubmitUrl,
+        body: { ...requestBody, webhook: callbackUrl },
+        label: "body:webhook",
+      },
+      {
+        url: baseSubmitUrl,
+        body: { ...requestBody, callBackUrl: callbackUrl, callbackUrl: callbackUrl },
+        label: "body:callBackUrl",
+      },
+    ];
+
+    let submitResponse = null;
+    let responseText = "";
+    for (const attempt of attempts) {
+      submitResponse = await fetch(attempt.url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+        },
+        body: JSON.stringify(attempt.body),
+      });
+      responseText = await submitResponse.text();
+      if (submitResponse.ok) {
+        break;
+      }
+      console.warn(`⚠️ WaveSpeed NSFW-extend submit failed (${attempt.label}) HTTP ${submitResponse.status}; trying next callback variant`);
+    }
 
     if (!WAVESPEED_API_KEY) {
       throw new Error("WAVESPEED_API_KEY is not configured -- face swap unavailable");
-    }
-
-    let responseText = await submitResponse.text();
-
-    if (!submitResponse.ok && callbackUrl) {
-      const lower = String(responseText || "").toLowerCase();
-      const likelyWebhookParamIssue =
-        submitResponse.status === 400 ||
-        submitResponse.status === 404 ||
-        lower.includes("webhook") ||
-        lower.includes("query") ||
-        lower.includes("unknown parameter") ||
-        lower.includes("invalid parameter");
-      if (likelyWebhookParamIssue) {
-        console.warn("⚠️ WaveSpeed rejected webhook param for NSFW video-extend submit; retrying without webhook query");
-        submitResponse = await fetch(baseSubmitUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-          },
-          body: JSON.stringify(requestBody),
-        });
-        responseText = await submitResponse.text();
-      }
     }
 
     if (!submitResponse.ok) {

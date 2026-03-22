@@ -298,8 +298,8 @@ async function kieRun(requestBody, label, timeoutMs, options = {}) {
   const callbackUrl = getKieCallbackUrl();
   const forcePolling = options.forcePolling === true; // e.g. create-model-with-AI reference image — no generation record to pair callback to
   const useCallback = !!callbackUrl && !forcePolling;
-  if (!useCallback && !forcePolling) {
-    console.warn(`[KIE] No callback URL for ${label}; falling back to polling mode`);
+  if (!forcePolling && !callbackUrl) {
+    throw new Error(`[KIE] Callback URL is required for ${label} (set KIE_CALLBACK_URL / CALLBACK_BASE_URL)`);
   }
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -534,12 +534,13 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
 
   const prompt = options.videoPrompt || options.prompt || "No distortion, no blur, background matches with the image source, the character's movements are consistent with the video.";
 
-  // KIE mode enums differ across model revisions/docs. Try a safe fallback set.
-  // Ultra historically used 1020p, classic used 1080p; newer docs also use std/pro.
+  // Deterministic mode mapping for video recreate:
+  // - kling-2.6/motion-control => 1080p
+  // - kling-3.0/motion-control => pro
   const model = useUltraMotionControl ? "kling-3.0/motion-control" : "kling-2.6/motion-control";
   const modeCandidates = useUltraMotionControl
-    ? ["1020p", "pro", "std", "1080p", "720p"]
-    : ["1080p", "pro", "std", "720p"];
+    ? ["pro"]
+    : ["1080p"];
   const requestBody = {
     model,
     input: {
@@ -553,13 +554,11 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
   };
 
   const callbackUrl = getKieCallbackUrl();
-  const useCallback = !!callbackUrl;
-  if (useCallback) {
-    requestBody.callBackUrl = callbackUrl;
-    console.log(`[KIE/kling-motion] Using callback URL: ${callbackUrl}`);
-  } else {
-    console.warn("[KIE/kling-motion] No callback URL configured; falling back to polling");
+  if (!callbackUrl) {
+    throw new Error("[KIE/kling-motion] Callback URL is required (set KIE_CALLBACK_URL / CALLBACK_BASE_URL)");
   }
+  requestBody.callBackUrl = callbackUrl;
+  console.log(`[KIE/kling-motion] Using callback URL: ${callbackUrl}`);
 
   // Use kieRun for retry logic, but fire onTaskSubmitted after first successful submission
   const MAX_ATTEMPTS = 3;
@@ -607,16 +606,9 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
         try { await options.onTaskSubmitted(taskId); } catch (_) {}
       }
 
-      if (useCallback) {
-        // Callback-only retrieval: results are finalized in /api/kie/callback
-        console.log(`[KIE/kling-motion] Deferred: result will arrive via callback for task ${taskId}`);
-        return { success: true, deferred: true, taskId };
-      }
-
-      // Poll fallback when callback URL is unavailable.
-      const rawUrl = await kiePollTask(taskId, KIE_POLL_TIMEOUT_VIDEO_MS, motionLabel);
-      const outputUrl = await archiveToR2(rawUrl);
-      return { success: true, outputUrl, taskId };
+      // Callback-only retrieval: results are finalized in /api/kie/callback
+      console.log(`[KIE/kling-motion] Deferred: result will arrive via callback for task ${taskId}`);
+      return { success: true, deferred: true, taskId };
     } catch (err) {
       lastErr = err;
       const msg = (err?.message || "").toLowerCase();
