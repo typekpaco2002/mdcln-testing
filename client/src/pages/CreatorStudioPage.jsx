@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Plus, Download, Loader2, Maximize2, Wand2, Sparkles, AlertCircle,
+  X, Plus, Download, Loader2, Maximize2, Wand2, Sparkles, AlertCircle, Zap,
   Trash2, Video, User, Play, Clock, Coins, ChevronDown, Mic, CheckCircle,
   PauseCircle, Info,
 } from "lucide-react";
@@ -966,16 +966,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
         <>
           {/* Canvas — results area */}
           <div className="flex-1 px-6 pt-4 pb-64 min-h-screen">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="relative flex-shrink-0">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{
-                    background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)",
-                    boxShadow: "0 0 0 1px rgba(139,92,246,0.4), 0 0 24px rgba(109,40,217,0.45)",
-                  }}>
-                  <Wand2 className="w-6 h-6 text-white" />
-                </div>
-              </div>
+            <div className="flex items-center gap-3 mb-8">
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">NanoBanana Pro</h1>
                 <p className="text-sm text-slate-400 mt-0.5">No model required · generate anything</p>
@@ -1025,8 +1016,8 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
                 pointerEvents: "none",
               }} />
             <div
-              className="relative w-full flex flex-col items-stretch justify-center p-3 rounded-2xl"
-              style={{ background: BAR_BG }}
+              className="relative w-full flex flex-col items-stretch justify-center p-3 rounded-[15px]"
+              style={{ background: "rgb(15,17,19)" }}
             >
               <textarea
                 value={prompt} onChange={(e) => setPrompt(e.target.value)}
@@ -1065,25 +1056,25 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
                     disabled={isGenerating || !prompt.trim()}
                     className="relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide overflow-hidden transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
-                      background: isGenerating
-                        ? "rgba(109,40,217,0.4)"
-                        : "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #4f46e5 100%)",
-                      boxShadow: isGenerating
-                        ? "none"
-                        : "0 0 0 1px rgba(139,92,246,0.6), 0 0 20px rgba(109,40,217,0.5), 0 2px 8px rgba(0,0,0,0.4)",
-                      color: "white",
+                      background: "rgba(109,40,217,0.35)",
+                      backdropFilter: "blur(12px)",
+                      WebkitBackdropFilter: "blur(12px)",
+                      border: "1px solid rgba(139,92,246,0.5)",
+                      boxShadow: "0 0 18px rgba(109,40,217,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
+                      color: "#ffffff",
                     }}
                   >
-                    {!isGenerating && (
-                      <span className="absolute inset-0 pointer-events-none" style={{
-                        background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.12) 50%, transparent 65%)",
-                      }} />
-                    )}
+                    {/* frosted sheen */}
+                    <span className="absolute inset-0 pointer-events-none rounded-xl" style={{
+                      background: "linear-gradient(160deg, rgba(255,255,255,0.07) 0%, transparent 60%)",
+                    }} />
                     {isGenerating
                       ? <Loader2 className="w-4 h-4 animate-spin relative z-10" />
-                      : <Sparkles className="w-4 h-4 relative z-10" />}
-                    <span className="relative z-10">
-                      {isGenerating ? "Generating…" : `Generate · ${COST} cr`}
+                      : <Zap className="w-4 h-4 relative z-10" />}
+                    <span className="relative z-10 flex items-center gap-1.5">
+                      {isGenerating ? "Generating…" : (
+                        <>Generate · {COST} <Coins className="w-3.5 h-3.5 text-yellow-400" /></>
+                      )}
                     </span>
                   </button>
                 </div>
@@ -1114,7 +1105,10 @@ export default function CreatorStudioPage({ sidebarCollapsed = false }) {
               <button onClick={handleGenerate} disabled={isGenerating || !prompt.trim()}
                 className="px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-40"
                 style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" }}>
-                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : `Generate · ${COST} cr`}
+                {isGenerating
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <span className="flex items-center gap-1">Generate · {COST} <Coins className="w-3.5 h-3.5 text-yellow-400" /></span>
+                }
               </button>
             </div>
           </div>
