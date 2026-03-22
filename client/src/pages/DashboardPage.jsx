@@ -28,6 +28,7 @@ import {
   Lock,
   Flame,
   Briefcase,
+  HelpCircle,
   BookOpen,
   Shuffle,
   TrendingUp,
@@ -478,7 +479,7 @@ export default function DashboardPage() {
           {activeTab === "home" && <HomePage setActiveTab={setActiveTab} setShowEarnModal={setShowEarnModal} setShowReferralModal={setShowReferralModal} onOpenCreateModel={() => { setUploadRealMode(false); setShowCreateModelModal(true); }} onOpenUploadReal={() => { setUploadRealMode(true); setShowCreateModelModal(true); }} onOpenCredits={() => setShowAddCredits(true)} />}
           {activeTab === "models" && <ModelsPage sidebarCollapsed={isSidebarCollapsed} />}
 {activeTab === "generate" && <GeneratePage setActiveTab={setActiveTab} />}
-        {activeTab === "creator-studio" && <CreatorStudioPage />}
+        {activeTab === "creator-studio" && <CreatorStudioPage sidebarCollapsed={isSidebarCollapsed} />}
         {activeTab === "reformatter" && <ContentReformatterPage />}
           {activeTab === "history" && <HistoryPage />}
           {activeTab === "settings" && <SettingsPage />}
@@ -836,10 +837,16 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
   const [showTutorial, setShowTutorial] = useState(() => {
     return safeLocalStorageGet("tutorial-dismissed") !== "true";
   });
+  const [tutorialVideoUrl, setTutorialVideoUrl] = useState("https://pub-deb24e74d34c49a3a2e474e11dbf5a64.r2.dev/static/dashboard_video.mp4");
   const [recentGenerations, setRecentGenerations] = useState([]);
 
   useEffect(() => {
     fetchMonthlyStats();
+    // Load dynamic tutorial video URL from branding API
+    fetch("/api/brand", { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => { if (d?.branding?.tutorialVideoUrl) setTutorialVideoUrl(d.branding.tutorialVideoUrl); })
+      .catch(() => {});
   }, []);
 
   const fetchMonthlyStats = async () => {
@@ -1074,7 +1081,7 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-amber-500" />
+              <HelpCircle className="w-4 h-4 text-white" />
               <span className="text-sm font-medium text-slate-300">Quick Tutorial</span>
             </div>
             <button
@@ -1096,7 +1103,7 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
                 playsInline
                 data-testid="video-getting-started"
               >
-                <source src="https://pub-deb24e74d34c49a3a2e474e11dbf5a64.r2.dev/static/dashboard_video.mp4" type="video/mp4" />
+                <source src={tutorialVideoUrl} type="video/mp4" />
               </video>
             </div>
           </div>

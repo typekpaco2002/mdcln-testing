@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Plus, Download, Loader2, Maximize2, Wand2, Sparkles, AlertCircle,
+  X, Plus, Download, Loader2, Maximize2, Wand2, Sparkles, AlertCircle, Zap,
 } from "lucide-react";
 import { creatorStudioAPI, uploadFile } from "../services/api";
 import { useAuthStore } from "../store";
@@ -34,17 +34,22 @@ const MAX_REFS = 8;
 const BAR_BG = "linear-gradient(115deg, rgba(36,43,50,0.12) 27.54%, rgba(219,219,219,0.12) 85.5%), rgba(15,17,19,0.96)";
 
 // ---------------------------------------------------------------------------
-// Tiny helper — pill chip button
+// Tiny helper — pill chip button (glows when active)
 // ---------------------------------------------------------------------------
 function Chip({ active, onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all select-none ${
-        active
-          ? "bg-white text-black"
-          : "text-slate-400 hover:text-white hover:bg-white/10"
-      }`}
+      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all select-none"
+      style={active ? {
+        background: "rgba(139,92,246,0.28)",
+        color: "#e9d5ff",
+        border: "1px solid rgba(139,92,246,0.55)",
+        boxShadow: "0 0 8px 1px rgba(139,92,246,0.25)",
+      } : {
+        color: "rgba(148,163,184,1)",
+        border: "1px solid transparent",
+      }}
     >
       {children}
     </button>
@@ -197,7 +202,7 @@ function Lightbox({ gen, onClose }) {
 // ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
-export default function CreatorStudioPage() {
+export default function CreatorStudioPage({ sidebarCollapsed = false }) {
   const user          = useAuthStore((s) => s.user);
   const refreshUser   = useAuthStore((s) => s.refreshUser);
 
@@ -344,7 +349,10 @@ export default function CreatorStudioPage() {
       </div>
 
       {/* ── Floating bottom bar ───────────────────────────────────────────── */}
-      <div className="hidden md:flex justify-center fixed bottom-4 left-56 right-6 z-20 pointer-events-none">
+      <div
+        className="hidden md:flex justify-center fixed bottom-4 right-6 z-20 pointer-events-none transition-all duration-300"
+        style={{ left: sidebarCollapsed ? "72px" : "260px" }}
+      >
         <div
           className="pointer-events-auto w-full max-w-2xl flex flex-col items-stretch justify-center p-3 rounded-2xl"
           style={{ background: BAR_BG }}
@@ -410,21 +418,35 @@ export default function CreatorStudioPage() {
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating || !prompt.trim()}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                className="relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide overflow-hidden transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
                   background: isGenerating
-                    ? "rgba(124,58,237,0.35)"
-                    : "linear-gradient(135deg,#7c3aed,#4f46e5)",
-                  boxShadow: isGenerating ? "none" : "0 0 18px rgba(124,58,237,0.45)",
+                    ? "rgba(109,40,217,0.4)"
+                    : "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #4f46e5 100%)",
+                  boxShadow: isGenerating
+                    ? "none"
+                    : "0 0 0 1px rgba(139,92,246,0.6), 0 0 20px rgba(109,40,217,0.5), 0 2px 8px rgba(0,0,0,0.4)",
                   color: "white",
                 }}
               >
-                {isGenerating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Wand2 className="w-4 h-4" />
+                {/* subtle shimmer overlay */}
+                {!isGenerating && (
+                  <span
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      background: "linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.12) 50%, transparent 65%)",
+                      backgroundSize: "200% 100%",
+                    }}
+                  />
                 )}
-                {isGenerating ? "Generating…" : `Generate · ${COST} cr`}
+                {isGenerating ? (
+                  <Loader2 className="w-4 h-4 animate-spin relative z-10" />
+                ) : (
+                  <Sparkles className="w-4 h-4 relative z-10" />
+                )}
+                <span className="relative z-10">
+                  {isGenerating ? "Generating…" : `Generate · ${COST} cr`}
+                </span>
               </button>
             </div>
           </div>

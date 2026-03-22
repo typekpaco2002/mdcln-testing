@@ -3221,12 +3221,8 @@ function PromptImageContent({ onGenerationUpdate, models, selectedModel, setSele
         await savePromptDraftNow({ prompt: enhanced, useNsfw, useCustomPrompt }, []);
         setPrompt(enhanced);
         const modeLabel = useNsfw ? "Spicy" : "Casual";
-        const enhanceCost = useNsfw ? 0 : 10;
-        toast.success(
-          enhanceCost > 0
-            ? `Prompt enhanced! ${modeLabel} mode · ${enhanceCost} 🪙 used`
-            : `Prompt enhanced! ${modeLabel} mode · free`,
-        );
+        const enhanceCost = 10;
+        toast.success(`Prompt enhanced! ${modeLabel} mode · ${enhanceCost} 🪙 used`);
         // Refresh credits so balance updates immediately
         await refreshUserCredits?.();
       } else {
@@ -3521,7 +3517,7 @@ function PromptImageContent({ onGenerationUpdate, models, selectedModel, setSele
               >
                 {enhancing
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Enhancing with AI…</>
-                  : <><Zap className="w-4 h-4" /> Enhance with AI · {useNsfw ? "FREE" : <><span>10</span> <Coins className="w-3.5 h-3.5" /></>} </>
+                  : <><Zap className="w-4 h-4" /> Enhance with AI · <span>10</span> <Coins className="w-3.5 h-3.5" /></>
                 }
               </button>
             </div>

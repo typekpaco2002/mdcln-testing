@@ -13,6 +13,8 @@ import {
   Loader2,
   Check,
   Mic,
+  Coins,
+  User,
 } from "lucide-react";
 import {
   MagnifyingGlass,
@@ -705,7 +707,7 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
               <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
                   <p className="text-xs font-medium text-white flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                    <User className="w-3.5 h-3.5 text-cyan-400" />
                     Model Looks
                   </p>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -721,7 +723,7 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
                     >
                       {(autoDetectingLooks
                         ? <><ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> Detecting…</>
-                        : <><Sparkle className="w-3 h-3" weight="fill" /> AI Auto-Assign · 10cr</>
+                        : <><Sparkle className="w-3 h-3" weight="fill" /> AI Auto-Assign · 10 <Coins className="w-3 h-3 text-yellow-400" /></>
                       )}
                     </button>
                   </div>
@@ -808,7 +810,8 @@ export default function ModelsPage({ sidebarCollapsed = false }) {
                   type="button"
                   onClick={() => setVoiceStudioModel(editingModel)}
                   disabled={editingModel.status === "processing"}
-                  className="mt-2 w-full py-2 rounded-lg text-xs font-semibold bg-violet-600/80 hover:bg-violet-600 text-white disabled:opacity-40 transition-colors"
+                  className="mt-2 w-full py-2 rounded-lg text-xs font-semibold backdrop-blur-sm text-violet-200 hover:text-white disabled:opacity-40 transition-all border border-violet-500/25 hover:border-violet-400/40"
+          style={{ background: "rgba(109,40,217,0.12)" }}
                 >
                   {editingModel.elevenLabsVoiceId ? "Replace custom voice…" : "Create custom voice…"}
                 </button>

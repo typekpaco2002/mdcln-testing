@@ -523,13 +523,14 @@ model ApiEndpointHealthSnapshot {
 }
 
 model AppBranding {
-  id         String   @id @default("global")
-  appName    String   @default("ModelClone")
-  logoUrl    String?
-  faviconUrl String?
-  baseUrl    String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default("global")
+  appName          String   @default("ModelClone")
+  logoUrl          String?
+  faviconUrl       String?
+  baseUrl          String?
+  tutorialVideoUrl String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model GenerationPricingConfig {

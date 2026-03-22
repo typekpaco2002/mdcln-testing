@@ -86,6 +86,8 @@ function LoraPromoBanner() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    // Only show on /dashboard
+    if (!window.location.pathname.startsWith("/dashboard")) return;
     const dismissed = safeLocalStorageGet("loraPromo_dismissed");
     if (!dismissed) {
       const timer = setTimeout(() => setVisible(true), 1500);
@@ -93,7 +95,9 @@ function LoraPromoBanner() {
     }
   }, [isAuthenticated]);
 
+  // Both X and "Don't show again" persist the dismissal
   const handleDismiss = () => {
+    safeLocalStorageSet("loraPromo_dismissed", "true");
     setVisible(false);
   };
 

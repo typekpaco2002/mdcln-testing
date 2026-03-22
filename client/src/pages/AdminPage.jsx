@@ -516,8 +516,9 @@ export default function AdminPage() {
 
   // ── Brand / email ───────────────────────────────────────────────────────────
   const [brandSettings, setBrandSettings] = useState({
-    appName: 'ModelClone', logoUrl: '', faviconUrl: '', baseUrl: 'https://modelclone.app',
+    appName: 'ModelClone', logoUrl: '', faviconUrl: '', baseUrl: 'https://modelclone.app', tutorialVideoUrl: '',
   });
+  const [tutorialVideoUploading, setTutorialVideoUploading] = useState(false);
   const [emailBuilder, setEmailBuilder] = useState({
     subject: 'Important Update from ModelClone',
     headline: 'Important News',
@@ -719,6 +720,7 @@ export default function AdminPage() {
         logoUrl: r.branding.logoUrl || '',
         faviconUrl: r.branding.faviconUrl || '',
         baseUrl: r.branding.baseUrl || 'https://modelclone.app',
+        tutorialVideoUrl: r.branding.tutorialVideoUrl || '',
       });
     } catch { toast.error('Failed to load brand settings'); }
     finally { setLoadingBranding(false); }
@@ -1136,6 +1138,7 @@ export default function AdminPage() {
         logoUrl: brandSettings.logoUrl?.trim() || null,
         faviconUrl: brandSettings.faviconUrl?.trim() || null,
         baseUrl: brandSettings.baseUrl?.trim() || null,
+        tutorialVideoUrl: brandSettings.tutorialVideoUrl?.trim() || null,
       });
       if (r?.success) { toast.success('Brand settings updated'); loadBranding(); }
       else toast.error('Failed');
@@ -2900,6 +2903,45 @@ export default function AdminPage() {
                   <PrimaryBtn onClick={handleSaveBranding} disabled={savingBranding}>
                     {savingBranding ? 'Saving…' : 'Save'}
                   </PrimaryBtn>
+              </div>
+
+              {/* Tutorial Video */}
+              <div className="pt-3 border-t border-white/[0.06]">
+                <p className="text-[11px] text-gray-400 font-medium mb-2">Quick Tutorial Video</p>
+                {brandSettings.tutorialVideoUrl && (
+                  <p className="text-[10px] text-slate-500 truncate mb-2">{brandSettings.tutorialVideoUrl}</p>
+                )}
+                <div className="flex items-center gap-2">
+                  <label className={`px-3 py-1.5 rounded-lg border border-white/[0.07] bg-white/[0.04] hover:bg-white/[0.08] text-xs text-gray-300 cursor-pointer transition ${tutorialVideoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    {tutorialVideoUploading ? 'Uploading…' : (brandSettings.tutorialVideoUrl ? 'Replace Video' : 'Upload Video')}
+                    <input type="file" accept="video/mp4,video/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setTutorialVideoUploading(true);
+                      try {
+                        const fd = new FormData(); fd.append('video', file);
+                        const r = await api.post('/admin/tutorial-video', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+                        if (r.data?.success) { setBrandSettings((p) => ({ ...p, tutorialVideoUrl: r.data.url })); toast.success('Tutorial video updated'); }
+                        else toast.error('Upload failed');
+                      } catch (ex) { toast.error(ex?.response?.data?.error || 'Upload failed'); }
+                      finally { setTutorialVideoUploading(false); e.target.value = ''; }
+                    }} />
+                  </label>
+                  {brandSettings.tutorialVideoUrl && (
+                    <button
+                      className="px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-xs text-red-400 transition"
+                      onClick={async () => {
+                        try {
+                          await api.delete('/admin/tutorial-video');
+                          setBrandSettings((p) => ({ ...p, tutorialVideoUrl: '' }));
+                          toast.success('Tutorial video reset to default');
+                        } catch { toast.error('Failed to delete'); }
+                      }}
+                    >
+                      Reset to Default
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">

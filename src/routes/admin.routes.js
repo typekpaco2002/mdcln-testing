@@ -6,7 +6,7 @@ import { authMiddleware, setAuthCookie, setRefreshCookie } from "../middleware/a
 import { adminMiddleware } from "../middleware/admin.middleware.js";
 import { BackupService } from "../services/backup.service.js";
 import { sendPromoEmail } from "../services/email.service.js";
-import { getAppBranding, updateAppBranding } from "../services/branding.service.js";
+import { getAppBranding, updateAppBranding, clearTutorialVideo } from "../services/branding.service.js";
 import multer from "multer";
 import { isR2Configured, uploadBufferToR2, uploadFileToR2, mirrorToR2 } from "../utils/r2.js";
 import {
@@ -57,12 +57,48 @@ router.get("/branding", async (_req, res) => {
 
 router.put("/branding", async (req, res) => {
   try {
-    const { appName, logoUrl, faviconUrl, baseUrl } = req.body || {};
-    const branding = await updateAppBranding({ appName, logoUrl, faviconUrl, baseUrl });
+    const { appName, logoUrl, faviconUrl, baseUrl, tutorialVideoUrl } = req.body || {};
+    const branding = await updateAppBranding({ appName, logoUrl, faviconUrl, baseUrl, tutorialVideoUrl });
     res.json({ success: true, branding });
   } catch (error) {
     console.error("Error updating brand settings:", error);
     res.status(400).json({ success: false, error: error.message || "Failed to update brand settings" });
+  }
+});
+
+// POST /api/admin/tutorial-video — upload a new tutorial video to R2
+router.post(
+  "/tutorial-video",
+  uploadEmailVideo.single("video"),
+  async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, error: "No video file provided" });
+      if (!isR2Configured()) return res.status(503).json({ success: false, error: "R2 storage not configured" });
+
+      const ext = req.file.originalname?.match(/\.[^.]+$/)?.[0]?.toLowerCase() || ".mp4";
+      const key = `static/dashboard_video${ext}`;
+      const url = await uploadBufferToR2(req.file.buffer, key, req.file.mimetype || "video/mp4");
+
+      // Persist URL in branding
+      const branding = await getAppBranding();
+      await updateAppBranding({ ...branding, tutorialVideoUrl: url });
+
+      res.json({ success: true, url });
+    } catch (error) {
+      console.error("Tutorial video upload error:", error);
+      res.status(500).json({ success: false, error: error.message || "Upload failed" });
+    }
+  },
+);
+
+// DELETE /api/admin/tutorial-video — reset tutorial video to default
+router.delete("/tutorial-video", async (_req, res) => {
+  try {
+    await clearTutorialVideo();
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Tutorial video delete error:", error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
