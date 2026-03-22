@@ -8,6 +8,7 @@ import {
 import { sendCreditPurchaseEmail, sendSpecialOfferConfirmationEmail } from "../services/email.service.js";
 import { recordReferralCommissionFromPayment, linkReferrerOnFirstPurchase } from "../services/referral.service.js";
 import { generateTwoPosesFromReference } from "../services/wavespeed.service.js";
+import { awardFirstPaidModelCompletionBonus } from "../services/credit.service.js";
 
 const router = express.Router();
 
@@ -54,6 +55,16 @@ console.log(
 const stripe = new Stripe(stripeSecretKey || "sk_test_placeholder", {
   apiVersion: "2024-11-20.acacia",
 });
+
+async function finalizeSpecialOfferModelReady(modelId, updates = {}) {
+  const model = await prisma.savedModel.update({
+    where: { id: modelId },
+    data: { ...updates, status: "ready" },
+    select: { id: true, userId: true },
+  });
+  const awarded = await awardFirstPaidModelCompletionBonus(model.userId, model.id);
+  return { model, awarded };
+}
 
 function inferRefundBucketFromTransaction(tx) {
   if (!tx) return "purchased";
@@ -519,9 +530,9 @@ router.post(
                 await tx.creditTransaction.create({
                   data: {
                     userId,
-                    amount: bonusCredits,
-                    type: 'purchase',
-                    description: `Special Offer: AI Model + ${bonusCredits} credits`,
+                    amount: 0,
+                    type: 'special_offer_model_fulfillment',
+                    description: 'Special Offer: AI Model fulfillment',
                     paymentSessionId: paymentIntent.id
                   }
                 });
@@ -542,7 +553,6 @@ router.post(
                 await tx.user.update({
                   where: { id: userId },
                   data: {
-                    purchasedCredits: { increment: bonusCredits },
                     onboardingCompleted: true,
                     hasUsedFreeTrial: true
                   }
@@ -582,28 +592,20 @@ router.post(
               }).then(async (posesResult) => {
                 try {
                   if (posesResult.success && posesResult.photos) {
-                    await prisma.savedModel.update({
-                      where: { id: result.model.id },
-                      data: {
-                        photo2Url: posesResult.photos.photo2Url || photo1Url,
-                        photo3Url: posesResult.photos.photo3Url || photo1Url,
-                        status: 'ready'
-                      }
+                    const readyResult = await finalizeSpecialOfferModelReady(result.model.id, {
+                      photo2Url: posesResult.photos.photo2Url || photo1Url,
+                      photo3Url: posesResult.photos.photo3Url || photo1Url,
                     });
+                    console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
                   } else {
-                    await prisma.savedModel.update({
-                      where: { id: result.model.id },
-                      data: { status: 'ready' }
-                    });
+                    const readyResult = await finalizeSpecialOfferModelReady(result.model.id);
+                    console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
                   }
                 } catch (e) {
                   console.error('❌ Webhook pose update failed:', e.message);
                 }
               }).catch(() => {
-                prisma.savedModel.update({
-                  where: { id: result.model.id },
-                  data: { status: 'ready' }
-                }).catch(console.error);
+                finalizeSpecialOfferModelReady(result.model.id).catch(console.error);
               });
             } catch (error) {
               if (error.code === 'P2002') {

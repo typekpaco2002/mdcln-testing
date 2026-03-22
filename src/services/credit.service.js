@@ -342,3 +342,40 @@ export async function refundGeneration(generationId) {
     { attempts: 3, delayMs: 1000, label: `refundGeneration(${generationId})` },
   );
 }
+
+export async function awardFirstPaidModelCompletionBonus(userId, modelId) {
+  const BONUS_CREDITS = 250;
+  if (!userId || !modelId) return 0;
+
+  return await prisma.$transaction(async (tx) => {
+    const existingBonus = await tx.creditTransaction.findFirst({
+      where: { userId, type: "first_paid_model_completion_bonus" },
+      select: { id: true },
+    });
+    if (existingBonus) return 0;
+
+    const model = await tx.savedModel.findUnique({
+      where: { id: modelId },
+      select: { id: true, userId: true, status: true, paymentIntentId: true },
+    });
+    if (!model || model.userId !== userId) return 0;
+    if (model.status !== "ready") return 0;
+    if (!model.paymentIntentId) return 0;
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { purchasedCredits: { increment: BONUS_CREDITS } },
+    });
+    await tx.creditTransaction.create({
+      data: {
+        userId,
+        amount: BONUS_CREDITS,
+        type: "first_paid_model_completion_bonus",
+        description: `First completed paid model bonus - ${BONUS_CREDITS} free credits`,
+      },
+    });
+
+    console.log(`🎁 Awarded ${BONUS_CREDITS} credits to user ${userId} for first completed paid model`);
+    return BONUS_CREDITS;
+  });
+}

@@ -117,7 +117,7 @@ export async function cleanupTrainingDataset(loraId, modelId) {
 }
 
 export async function awardFirstLoraTrainingBonus({ userId, modelId, targetLoraId = null }) {
-  const BONUS_CREDITS = 200;
+  const BONUS_CREDITS = 250;
   return prisma.$transaction(async (tx) => {
     const existingBonus = await tx.creditTransaction.findFirst({
       where: { userId, type: "first_lora_bonus" },

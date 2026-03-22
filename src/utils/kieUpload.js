@@ -97,12 +97,55 @@ function getImageDimensions(buffer, ext) {
 const MIRROR_RETRIES = 3;
 const MIRROR_RETRY_DELAY_MS = 2000;
 const MIRROR_FETCH_TIMEOUT_MS = 90_000;
+const MIRROR_CACHE_TTL_MS = 10 * 60 * 1000;
+const mirrorInFlight = new Map();
+const mirrorCache = new Map();
+
+function getCachedMirror(sourceUrl) {
+  const entry = mirrorCache.get(sourceUrl);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    mirrorCache.delete(sourceUrl);
+    return null;
+  }
+  return entry.blobUrl;
+}
+
+function rememberMirror(sourceUrl, blobUrl) {
+  mirrorCache.set(sourceUrl, {
+    blobUrl,
+    expiresAt: Date.now() + MIRROR_CACHE_TTL_MS,
+  });
+}
+
+function getBlobFilename(sourceUrl, ext) {
+  try {
+    const pathname = new URL(sourceUrl).pathname;
+    const base = pathname.split("/").pop() || `file.${ext}`;
+    const safe = base.replace(/[^a-zA-Z0-9._-]/g, "_");
+    return safe.toLowerCase().endsWith(`.${ext}`) ? safe : `${safe}.${ext}`;
+  } catch {
+    return `file.${ext}`;
+  }
+}
+
+function shouldFallbackToSourceUrl(sourceUrl) {
+  if (!sourceUrl) return false;
+  return !sourceUrl.includes("r2.dev");
+}
 
 /** Verify a URL is reachable (HEAD). Throws if not 2xx. */
 async function verifyUrlReachable(url, label = "url") {
-  const head = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(30_000) });
-  if (!head.ok) {
-    throw new Error(`${label} returned ${head.status} — file unreachable; re-upload and try again.`);
+  let res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(30_000) });
+  if (!res.ok && (res.status === 403 || res.status === 405)) {
+    res = await fetch(url, {
+      method: "GET",
+      headers: { Range: "bytes=0-0" },
+      signal: AbortSignal.timeout(30_000),
+    });
+  }
+  if (!res.ok) {
+    throw new Error(`${label} returned ${res.status} — file unreachable; re-upload and try again.`);
   }
 }
 
@@ -119,75 +162,101 @@ export async function mirrorToBlob(sourceUrl) {
     console.warn("[Blob] BLOB_READ_WRITE_TOKEN not set — using source URL (KIE may fail)");
     return sourceUrl;
   }
+  const cached = getCachedMirror(sourceUrl);
+  if (cached) {
+    console.log(`[Blob/KIE relay] Reusing cached mirror: ${cached.slice(0, 80)}`);
+    return cached;
+  }
+  const existing = mirrorInFlight.get(sourceUrl);
+  if (existing) {
+    console.log(`[Blob/KIE relay] Awaiting in-flight mirror for: ${sourceUrl.slice(0, 80)}`);
+    return existing;
+  }
   // Already on Vercel Blob — verify reachable then return
   if (sourceUrl.includes("vercel-storage.com") || sourceUrl.includes("blob.vercel.app")) {
     try {
       await verifyUrlReachable(sourceUrl, "Blob URL");
+      rememberMirror(sourceUrl, sourceUrl);
+      return sourceUrl;
     } catch (e) {
       console.warn(`[Blob] Existing Blob URL not reachable: ${e?.message}`);
     }
-    return sourceUrl;
   }
 
-  let lastErr;
-  for (let attempt = 1; attempt <= MIRROR_RETRIES; attempt++) {
-    try {
-      console.log(`[Blob/KIE relay] Fetching (attempt ${attempt}/${MIRROR_RETRIES}): ${sourceUrl.slice(0, 80)}`);
-      const res = await fetch(sourceUrl, { signal: AbortSignal.timeout(MIRROR_FETCH_TIMEOUT_MS) });
-      if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
+  const mirrorPromise = (async () => {
+    let lastErr;
+    for (let attempt = 1; attempt <= MIRROR_RETRIES; attempt++) {
+      try {
+        console.log(`[Blob/KIE relay] Fetching (attempt ${attempt}/${MIRROR_RETRIES}): ${sourceUrl.slice(0, 80)}`);
+        const res = await fetch(sourceUrl, { signal: AbortSignal.timeout(MIRROR_FETCH_TIMEOUT_MS) });
+        if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
 
-      const buffer = Buffer.from(await res.arrayBuffer());
-      const ct = res.headers.get("content-type") || "image/jpeg";
+        const buffer = Buffer.from(await res.arrayBuffer());
+        const ct = res.headers.get("content-type") || "image/jpeg";
 
-      const ext = sourceUrl.match(/\.(mp4|webm|jpg|jpeg|webp|png)(\?|$)/i)?.[1]?.toLowerCase()
-        || (ct.includes("mp4") ? "mp4" : ct.includes("webm") ? "webm"
-          : ct.includes("jpg") || ct.includes("jpeg") ? "jpg"
-          : ct.includes("webp") ? "webp" : "jpg");
+        const ext = sourceUrl.match(/\.(mp4|webm|jpg|jpeg|webp|png)(\?|$)/i)?.[1]?.toLowerCase()
+          || (ct.includes("mp4") ? "mp4" : ct.includes("webm") ? "webm"
+            : ct.includes("jpg") || ct.includes("jpeg") ? "jpg"
+            : ct.includes("webp") ? "webp" : "jpg");
 
-      let outBuffer = buffer;
-      if (ext !== "mp4" && ext !== "webm") {
-        const dims = getImageDimensions(buffer, ext);
-        if (dims) {
-          console.log(`[Blob/KIE relay] Image dimensions: ${dims.width}x${dims.height}`);
-          if (dims.width <= 300 || dims.height <= 300) {
-            throw new Error(`Image too small (${dims.width}x${dims.height}) — use at least 301px in each dimension.`);
-          }
-          const ratio = dims.width / dims.height;
-          if (ratio < 0.4 || ratio > 2.5) {
-            throw new Error(`Image aspect ratio ${ratio.toFixed(2)} is not supported; use between 0.4 and 2.5.`);
-          }
-          const minSide = Math.min(dims.width, dims.height);
-          if (minSide < 1024) {
-            try {
-              const sharp = (await import("sharp")).default;
-              const w = dims.width < dims.height ? 1024 : null;
-              const h = dims.width < dims.height ? null : 1024;
-              outBuffer = await sharp(buffer).resize(w, h).toBuffer();
-              console.log(`[Blob/KIE relay] Upscaled to 1024px min for KIE`);
-            } catch (e) {
-              console.warn("[Blob/KIE relay] Upscale skipped:", e?.message);
+        let outBuffer = buffer;
+        if (ext !== "mp4" && ext !== "webm") {
+          const dims = getImageDimensions(buffer, ext);
+          if (dims) {
+            console.log(`[Blob/KIE relay] Image dimensions: ${dims.width}x${dims.height}`);
+            if (dims.width <= 300 || dims.height <= 300) {
+              throw new Error(`Image too small (${dims.width}x${dims.height}) — use at least 301px in each dimension.`);
+            }
+            const ratio = dims.width / dims.height;
+            if (ratio < 0.4 || ratio > 2.5) {
+              throw new Error(`Image aspect ratio ${ratio.toFixed(2)} is not supported; use between 0.4 and 2.5.`);
+            }
+            const minSide = Math.min(dims.width, dims.height);
+            if (minSide < 1024) {
+              try {
+                const sharp = (await import("sharp")).default;
+                const w = dims.width < dims.height ? 1024 : null;
+                const h = dims.width < dims.height ? null : 1024;
+                outBuffer = await sharp(buffer).resize(w, h).toBuffer();
+                console.log(`[Blob/KIE relay] Upscaled to 1024px min for KIE`);
+              } catch (e) {
+                console.warn("[Blob/KIE relay] Upscale skipped:", e?.message);
+              }
             }
           }
         }
-      }
 
-      const finalCt = ext === "mp4" ? "video/mp4" : ext === "webm" ? "video/webm"
-        : ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+        const finalCt = ext === "mp4" ? "video/mp4" : ext === "webm" ? "video/webm"
+          : ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
 
-      const blobUrl = await uploadBufferToBlob(outBuffer, `file.${ext}`, finalCt);
-      await verifyUrlReachable(blobUrl, "Blob upload");
-      console.log(`[Blob/KIE relay] ✅ Ready: ${blobUrl.slice(0, 100)} (${buffer.length} bytes)`);
-      return blobUrl;
-    } catch (err) {
-      lastErr = err;
-      console.warn(`[Blob] mirror attempt ${attempt}/${MIRROR_RETRIES} failed: ${err?.message}`);
-      if (attempt < MIRROR_RETRIES) {
-        await new Promise(r => setTimeout(r, MIRROR_RETRY_DELAY_MS));
+        const blobUrl = await uploadBufferToBlob(
+          outBuffer,
+          getBlobFilename(sourceUrl, ext),
+          finalCt,
+        );
+        await verifyUrlReachable(blobUrl, "Blob upload");
+        rememberMirror(sourceUrl, blobUrl);
+        console.log(`[Blob/KIE relay] ✅ Ready: ${blobUrl.slice(0, 100)} (${buffer.length} bytes)`);
+        return blobUrl;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[Blob] mirror attempt ${attempt}/${MIRROR_RETRIES} failed: ${err?.message}`);
+        if (attempt < MIRROR_RETRIES) {
+          await new Promise(r => setTimeout(r, MIRROR_RETRY_DELAY_MS));
+        }
       }
     }
-  }
-  console.warn(`[Blob] mirror failed after ${MIRROR_RETRIES} attempts — returning source URL so content is not missing`);
-  return sourceUrl;
+    if (shouldFallbackToSourceUrl(sourceUrl)) {
+      console.warn(`[Blob] mirror failed after ${MIRROR_RETRIES} attempts — falling back to source URL`);
+      return sourceUrl;
+    }
+    throw lastErr || new Error("Blob mirror failed");
+  })().finally(() => {
+    mirrorInFlight.delete(sourceUrl);
+  });
+
+  mirrorInFlight.set(sourceUrl, mirrorPromise);
+  return mirrorPromise;
 }
 
 /**

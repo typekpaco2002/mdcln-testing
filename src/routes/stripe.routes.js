@@ -13,6 +13,7 @@ import {
   normalizeCreditUnits,
   resolveSubscriptionBillingCycle,
 } from "../utils/creditUnits.js";
+import { awardFirstPaidModelCompletionBonus } from "../services/credit.service.js";
 
 // DEPRECATED - keeping for reference but not used
 async function generatePosesAsyncDEPRECATED(modelId, referenceUrl, aiConfig) {
@@ -89,6 +90,16 @@ function sanitizeReferralId(rawReferralId) {
   if (referralId.length > 120) return null;
   if (!/^[A-Za-z0-9_-]+$/.test(referralId)) return null;
   return referralId;
+}
+
+async function finalizeSpecialOfferModelReady(modelId, updates = {}) {
+  const model = await prisma.savedModel.update({
+    where: { id: modelId },
+    data: { ...updates, status: 'ready' },
+    select: { id: true, userId: true },
+  });
+  const awarded = await awardFirstPaidModelCompletionBonus(model.userId, model.id);
+  return { model, awarded };
 }
 
 function getTrustedFrontendUrl(req) {
@@ -1456,9 +1467,9 @@ router.post('/confirm-special-offer', authMiddleware, async (req, res) => {
         await tx.creditTransaction.create({
           data: {
             userId,
-            amount: bonusCredits,
-            type: 'purchase',
-            description: `Special Offer: AI Model + ${bonusCredits} credits`,
+            amount: 0,
+            type: 'special_offer_model_fulfillment',
+            description: 'Special Offer: AI Model fulfillment',
             paymentSessionId: paymentIntentId
           }
         });
@@ -1478,11 +1489,9 @@ router.post('/confirm-special-offer', authMiddleware, async (req, res) => {
           }
         });
 
-        // Add bonus credits and mark onboarding complete
         const updatedUser = await tx.user.update({
           where: { id: userId },
           data: {
-            purchasedCredits: { increment: bonusCredits },
             onboardingCompleted: true,
             hasUsedFreeTrial: true
           }
@@ -1517,8 +1526,8 @@ router.post('/confirm-special-offer', authMiddleware, async (req, res) => {
         success: true, 
         model: result.model,
         modelStatus: 'generating',
-        credits: bonusCredits,
-        totalCredits: (result.user.credits || 0) + (result.user.subscriptionCredits || 0) + result.user.purchasedCredits
+        totalCredits: (result.user.credits || 0) + (result.user.subscriptionCredits || 0) + result.user.purchasedCredits,
+        bonusCreditsPending: bonusCredits
       });
       
     } catch (txError) {
@@ -1555,21 +1564,16 @@ router.post('/confirm-special-offer', authMiddleware, async (req, res) => {
       try {
         if (posesResult.success && posesResult.photos) {
           // Update model with generated poses
-          await prisma.savedModel.update({
-            where: { id: result.model.id },
-            data: {
-              photo2Url: posesResult.photos.photo2Url || photo1Url,
-              photo3Url: posesResult.photos.photo3Url || photo1Url,
-              status: 'ready'
-            }
+          const readyResult = await finalizeSpecialOfferModelReady(result.model.id, {
+            photo2Url: posesResult.photos.photo2Url || photo1Url,
+            photo3Url: posesResult.photos.photo3Url || photo1Url,
           });
+          console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
           console.log('✅ Model updated with 2 additional poses:', result.model.id);
         } else {
           // Generation failed, keep reference photos but mark as ready
-          await prisma.savedModel.update({
-            where: { id: result.model.id },
-            data: { status: 'ready' }
-          });
+          const readyResult = await finalizeSpecialOfferModelReady(result.model.id);
+          console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
           console.warn('⚠️ Pose generation failed, model ready with reference photos:', posesResult.error);
         }
       } catch (updateError) {
@@ -1578,10 +1582,7 @@ router.post('/confirm-special-offer', authMiddleware, async (req, res) => {
     }).catch((error) => {
       console.error('❌ Background pose generation error:', error.message);
       // Mark model as ready even if generation failed
-      prisma.savedModel.update({
-        where: { id: result.model.id },
-        data: { status: 'ready' }
-      }).catch(console.error);
+      finalizeSpecialOfferModelReady(result.model.id).catch(console.error);
     });
   } catch (error) {
     console.error('❌ Confirm special offer error:', error.message);
@@ -1767,9 +1768,9 @@ router.post('/verify-special-offer', authMiddleware, async (req, res) => {
         await tx.creditTransaction.create({
           data: {
             userId,
-            amount: bonusCredits,
-            type: 'purchase',
-            description: `Special Offer: AI Model + ${bonusCredits} credits`,
+            amount: 0,
+            type: 'special_offer_model_fulfillment',
+            description: 'Special Offer: AI Model fulfillment',
             paymentSessionId: sessionId
           }
         });
@@ -1789,11 +1790,9 @@ router.post('/verify-special-offer', authMiddleware, async (req, res) => {
           }
         });
 
-        // Add bonus credits and mark onboarding complete
         const updatedUser = await tx.user.update({
           where: { id: userId },
           data: {
-            purchasedCredits: { increment: bonusCredits },
             onboardingCompleted: true,
             hasUsedFreeTrial: true
           }
@@ -1829,7 +1828,7 @@ router.post('/verify-special-offer', authMiddleware, async (req, res) => {
         model: result.model,
         modelStatus: 'generating',
         credits: result.user.purchasedCredits + (result.user.subscriptionCredits || 0) + (result.user.credits || 0),
-        bonusCredits
+        bonusCreditsPending: bonusCredits
       });
     } catch (error) {
       if (error.code === 'P2002') {
@@ -1863,20 +1862,15 @@ router.post('/verify-special-offer', authMiddleware, async (req, res) => {
     }).then(async (posesResult) => {
       try {
         if (posesResult.success && posesResult.photos) {
-          await prisma.savedModel.update({
-            where: { id: result.model.id },
-            data: {
-              photo2Url: posesResult.photos.photo2Url || photo1Url,
-              photo3Url: posesResult.photos.photo3Url || photo1Url,
-              status: 'ready'
-            }
+          const readyResult = await finalizeSpecialOfferModelReady(result.model.id, {
+            photo2Url: posesResult.photos.photo2Url || photo1Url,
+            photo3Url: posesResult.photos.photo3Url || photo1Url,
           });
+          console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
           console.log('✅ Model updated with 2 additional poses:', result.model.id);
         } else {
-          await prisma.savedModel.update({
-            where: { id: result.model.id },
-            data: { status: 'ready' }
-          });
+          const readyResult = await finalizeSpecialOfferModelReady(result.model.id);
+          console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
           console.warn('⚠️ Pose generation failed, model ready with reference photos:', posesResult.error);
         }
       } catch (updateError) {
@@ -1884,10 +1878,7 @@ router.post('/verify-special-offer', authMiddleware, async (req, res) => {
       }
     }).catch((error) => {
       console.error('❌ Background pose generation error:', error.message);
-      prisma.savedModel.update({
-        where: { id: result.model.id },
-        data: { status: 'ready' }
-      }).catch(console.error);
+      finalizeSpecialOfferModelReady(result.model.id).catch(console.error);
     });
 
   } catch (error) {
@@ -2373,9 +2364,9 @@ router.post('/recover-special-offer', authMiddleware, async (req, res) => {
         await tx.creditTransaction.create({
           data: {
             userId,
-            amount: bonusCredits,
-            type: 'purchase',
-            description: `Special Offer: AI Model + ${bonusCredits} credits (recovered)`,
+            amount: 0,
+            type: 'special_offer_model_fulfillment',
+            description: 'Special Offer: AI Model fulfillment (recovered)',
             paymentSessionId: paymentIntentId
           }
         });
@@ -2398,7 +2389,6 @@ router.post('/recover-special-offer', authMiddleware, async (req, res) => {
         const updatedUser = await tx.user.update({
           where: { id: userId },
           data: {
-            purchasedCredits: { increment: bonusCredits },
             onboardingCompleted: true,
             hasUsedFreeTrial: true
           }
@@ -2446,34 +2436,26 @@ router.post('/recover-special-offer', authMiddleware, async (req, res) => {
     }).then(async (posesResult) => {
       try {
         if (posesResult.success && posesResult.photos) {
-          await prisma.savedModel.update({
-            where: { id: result.model.id },
-            data: {
-              photo2Url: posesResult.photos.photo2Url || photo1Url,
-              photo3Url: posesResult.photos.photo3Url || photo1Url,
-              status: 'ready'
-            }
+          const readyResult = await finalizeSpecialOfferModelReady(result.model.id, {
+            photo2Url: posesResult.photos.photo2Url || photo1Url,
+            photo3Url: posesResult.photos.photo3Url || photo1Url,
           });
+          console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
         } else {
-          await prisma.savedModel.update({
-            where: { id: result.model.id },
-            data: { status: 'ready' }
-          });
+          const readyResult = await finalizeSpecialOfferModelReady(result.model.id);
+          console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
         }
       } catch (e) {
         console.error('❌ Recovery pose generation update failed:', e.message);
       }
     }).catch(() => {
-      prisma.savedModel.update({
-        where: { id: result.model.id },
-        data: { status: 'ready' }
-      }).catch(console.error);
+      finalizeSpecialOfferModelReady(result.model.id).catch(console.error);
     });
 
     res.json({
       success: true,
       model: result.model,
-      credits: bonusCredits,
+      bonusCreditsPending: bonusCredits,
       message: 'Model creation recovered successfully'
     });
   } catch (error) {
