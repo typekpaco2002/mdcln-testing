@@ -27,6 +27,22 @@ function getActorId() {
   return process.env.APIFY_REEL_ACTOR_ID || "xMc5Ga1oCONPmWJIa";
 }
 
+function extractInstagramUsername(url) {
+  if (!url || typeof url !== "string") return null;
+  try {
+    const u = new URL(url);
+    if (!u.hostname.toLowerCase().includes("instagram")) return null;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (!parts.length) return null;
+    // Reel URLs: /reel/<id>/ ; Profile URLs: /username/ ; Reels tab: /username/reels/
+    if (parts[0] === "reel" || parts[0] === "p" || parts[0] === "tv") return null;
+    const username = String(parts[0] || "").replace(/^@/, "").trim().toLowerCase();
+    return /^[a-z0-9._]{1,30}$/.test(username) ? username : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Call Apify with multiple input formats; return first non-empty dataset. */
 async function callApify(input) {
   const client = getClient();
@@ -43,6 +59,14 @@ async function callApify(input) {
     if (u) {
       variants.push({ ...input, username: u });
       variants.push({ ...input, directUrls: [`https://www.instagram.com/${u}/`, `https://www.instagram.com/${u}/reels/`] });
+    }
+  }
+  if (Array.isArray(input?.directUrls) && input.directUrls.length > 0) {
+    const username = extractInstagramUsername(String(input.directUrls[0] || ""));
+    if (username) {
+      // Some actor variants require `username` even when directUrls is present.
+      variants.push({ ...input, username: [username] });
+      variants.push({ ...input, username });
     }
   }
 
@@ -244,7 +268,12 @@ export async function getTopReels(limit = 100) {
 export async function fetchFreshVideoUrl(reelPageUrl) {
   if (!reelPageUrl) return null;
   try {
-    const items = await callApify({ directUrls: [reelPageUrl], resultsLimit: 1 });
+    const username = extractInstagramUsername(reelPageUrl);
+    const items = await callApify({
+      directUrls: [reelPageUrl],
+      ...(username ? { username: [username] } : {}),
+      resultsLimit: 1,
+    });
     const mapped = mapItem(items[0] || {}, "tmp");
     return mapped?.videoUrl || null;
   } catch {

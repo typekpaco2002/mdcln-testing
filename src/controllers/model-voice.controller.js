@@ -43,12 +43,23 @@ import {
 
 function isMissingVoiceStudioTableError(error) {
   const message = String(error?.message || "").toLowerCase();
+  const code = String(error?.code || "");
+  const modelName = String(error?.meta?.modelName || "").toLowerCase();
+  const table = String(error?.meta?.table || "").toLowerCase();
+  const mentionsVoiceTables =
+    message.includes("modelvoice") ||
+    message.includes("generatedvoiceaudio") ||
+    modelName.includes("modelvoice") ||
+    modelName.includes("generatedvoiceaudio") ||
+    table.includes("modelvoice") ||
+    table.includes("generatedvoiceaudio");
   return (
-    (message.includes("modelvoice") || message.includes("generatedvoiceaudio")) &&
-    (message.includes("does not exist") ||
-      message.includes("no such table") ||
-      message.includes("relation") ||
-      message.includes("table"))
+    (code === "P2021" && mentionsVoiceTables) ||
+    (mentionsVoiceTables &&
+      (message.includes("does not exist") ||
+        message.includes("no such table") ||
+        message.includes("relation") ||
+        message.includes("table")))
   );
 }
 

@@ -368,6 +368,9 @@ export async function deleteModel(req, res) {
       console.warn("Voice Studio tables missing during model delete; skipping related voice cleanup.");
     }
 
+    modelVoices = Array.isArray(modelVoices) ? modelVoices : [];
+    generatedVoiceAudios = Array.isArray(generatedVoiceAudios) ? generatedVoiceAudios : [];
+
     const voiceIdsToDelete = new Set(
       [
         model.elevenLabsVoiceId,
