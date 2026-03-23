@@ -51,6 +51,18 @@ async function getStreamWithToken(reelId) {
   }
 }
 
+async function getDownloadWithToken(reelId) {
+  if (!reelId) return null;
+  const base = `${API_BASE}/viral-reels/${reelId}/download`;
+  try {
+    const { data } = await api.get(`/viral-reels/${reelId}/stream-token`);
+    const token = data?.token;
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+  } catch {
+    return base;
+  }
+}
+
 // ── Formatting ───────────────────────────────────────────────────────────────
 
 function fmt(n) {
@@ -129,23 +141,20 @@ function ReelModal({ reel, onClose, token }) {
     if (downloading) return;
     setDownloading(true);
     try {
-      const res = await api.get(`/viral-reels/${reel.id}/download`, { responseType: "blob" });
-      const blobUrl = URL.createObjectURL(res.data);
+      const url = await getDownloadWithToken(reel.id);
+      if (!url) throw new Error("Missing download URL");
       const a = document.createElement("a");
-      a.href = blobUrl;
+      a.href = url;
       a.download = `reel_${reel.instagram_reel_id || reel.id}.mp4`;
+      a.rel = "noopener";
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(blobUrl);
       toast.success("Download started");
     } catch (err) {
       const data = err?.response?.data;
-      if (typeof data === "object" && data?.message) {
-        toast.error(data.message);
-      } else {
-        toast.error("Download failed");
-      }
+      const message = typeof data === "object" && data?.message ? data.message : (err?.message || "Download failed");
+      toast.error(message);
     } finally {
       setDownloading(false);
     }

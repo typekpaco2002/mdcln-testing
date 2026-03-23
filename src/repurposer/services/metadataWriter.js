@@ -9,6 +9,11 @@ function toExifDate(date) {
   return `${date.getFullYear()}:${pad(date.getMonth() + 1)}:${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+function toQuickTimeDate(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getUTCFullYear()}:${pad(date.getUTCMonth() + 1)}:${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}Z`;
+}
+
 function toGpsDateStamp(date) {
   return date.toISOString().split("T")[0].replace(/-/g, ":");
 }
@@ -59,6 +64,18 @@ async function readIdentityTags(filePath) {
       "-Keys:Make",
       "-Keys:Model",
       "-Keys:LensModel",
+      "-ItemList:Make",
+      "-ItemList:Model",
+      "-ItemList:LensModel",
+      "-GPSCoordinates",
+      "-QuickTime:GPSCoordinates",
+      "-Keys:GPSCoordinates",
+      "-ItemList:GPSCoordinates",
+      "-Composite:GPSPosition",
+      "-GPSLatitude",
+      "-GPSLongitude",
+      "-EXIF:GPSLatitude",
+      "-EXIF:GPSLongitude",
       filePath,
     ],
     { timeout: 20000 },
@@ -83,19 +100,37 @@ function hasExpectedIdentityTags(tags, profile) {
     hasTagValue(tags.Make, make) ||
     hasTagValue(tags["EXIF:Make"], make) ||
     hasTagValue(tags["QuickTime:Make"], make) ||
-    hasTagValue(tags["Keys:Make"], make);
+    hasTagValue(tags["Keys:Make"], make) ||
+    hasTagValue(tags["ItemList:Make"], make);
   const hasModel =
     hasTagValue(tags.Model, model) ||
     hasTagValue(tags["EXIF:Model"], model) ||
     hasTagValue(tags["QuickTime:Model"], model) ||
-    hasTagValue(tags["Keys:Model"], model);
+    hasTagValue(tags["Keys:Model"], model) ||
+    hasTagValue(tags["ItemList:Model"], model);
   const hasLens =
     hasTagValue(tags.LensModel, lens) ||
     hasTagValue(tags["EXIF:LensModel"], lens) ||
     hasTagValue(tags["QuickTime:LensModel"], lens) ||
-    hasTagValue(tags["Keys:LensModel"], lens);
+    hasTagValue(tags["Keys:LensModel"], lens) ||
+    hasTagValue(tags["ItemList:LensModel"], lens);
 
   return hasMake && hasModel && hasLens;
+}
+
+function hasExpectedGpsTags(tags) {
+  const gpsCandidates = [
+    tags.GPSCoordinates,
+    tags["QuickTime:GPSCoordinates"],
+    tags["Keys:GPSCoordinates"],
+    tags["ItemList:GPSCoordinates"],
+    tags["Composite:GPSPosition"],
+    tags.GPSLatitude,
+    tags.GPSLongitude,
+    tags["EXIF:GPSLatitude"],
+    tags["EXIF:GPSLongitude"],
+  ];
+  return gpsCandidates.some((v) => String(v || "").trim().length > 0);
 }
 
 /**
@@ -142,6 +177,7 @@ export async function writeMetadata(options) {
     : profile.shutterRange[0];
 
   const exifDate = toExifDate(dateTaken);
+  const quickTimeDate = toQuickTimeDate(dateTaken);
 
   const args = [
     "-overwrite_original",
@@ -181,14 +217,19 @@ export async function writeMetadata(options) {
 
   if (isVideo) {
     args.push(
+      "-api",
+      "QuickTimeUTC=1",
       `-QuickTime:Make=${profile.make}`,
       `-QuickTime:Model=${profile.model}`,
       `-QuickTime:LensModel=${profile.lensModel}`,
       `-Keys:Make=${profile.make}`,
       `-Keys:Model=${profile.model}`,
       `-Keys:LensModel=${profile.lensModel}`,
-      `-QuickTime:CreateDate=${exifDate}`,
-      `-QuickTime:ModifyDate=${exifDate}`,
+      `-ItemList:Make=${profile.make}`,
+      `-ItemList:Model=${profile.model}`,
+      `-ItemList:LensModel=${profile.lensModel}`,
+      `-QuickTime:CreateDate=${quickTimeDate}`,
+      `-QuickTime:ModifyDate=${quickTimeDate}`,
     );
   }
 
@@ -204,6 +245,7 @@ export async function writeMetadata(options) {
     const latAbs = Math.abs(gpsLat).toFixed(6);
     const lngAbs = Math.abs(gpsLng).toFixed(6);
     const quicktimeGps = `${latSign}${latAbs}${lngSign}${lngAbs}+${Math.abs(altitude).toFixed(1)}/`;
+    const decimalGps = `${Number(gpsLat).toFixed(6)} ${Number(gpsLng).toFixed(6)} ${Number(altitude).toFixed(1)}`;
 
     args.push(
       `-GPSLatitude=${toGPSCoords(gpsLat)}`,
@@ -214,8 +256,10 @@ export async function writeMetadata(options) {
       "-GPSAltitudeRef=0",
       `-GPSDateStamp=${toGpsDateStamp(dateTaken)}`,
       `-GPSTimeStamp=${toGpsTimeStamp(dateTaken)}`,
+      `-GPSCoordinates=${decimalGps}`,
       `-Keys:GPSCoordinates=${quicktimeGps}`,
       `-QuickTime:GPSCoordinates=${quicktimeGps}`,
+      `-ItemList:GPSCoordinates=${quicktimeGps}`,
     );
   }
 
@@ -229,7 +273,7 @@ export async function writeMetadata(options) {
 
   // Verify critical identity metadata exists; some containers/codecs drop generic tags.
   let tags = await readIdentityTags(filePath);
-  if (hasExpectedIdentityTags(tags, profile)) return;
+  if (hasExpectedIdentityTags(tags, profile) && (!hasGps || hasExpectedGpsTags(tags))) return;
 
   // Fallback pass without wiping metadata, using explicit groups.
   const fallbackArgs = [
@@ -246,12 +290,34 @@ export async function writeMetadata(options) {
   ];
   if (isVideo) {
     fallbackArgs.push(
+      "-api",
+      "QuickTimeUTC=1",
       `-QuickTime:Make=${profile.make}`,
       `-QuickTime:Model=${profile.model}`,
       `-QuickTime:LensModel=${profile.lensModel}`,
       `-Keys:Make=${profile.make}`,
       `-Keys:Model=${profile.model}`,
       `-Keys:LensModel=${profile.lensModel}`,
+      `-ItemList:Make=${profile.make}`,
+      `-ItemList:Model=${profile.model}`,
+      `-ItemList:LensModel=${profile.lensModel}`,
+    );
+  }
+  if (hasGps) {
+    const altitude = Number.isFinite(gpsAlt)
+      ? gpsAlt
+      : rand(profile.gpsAltitudeRange[0], profile.gpsAltitudeRange[1]);
+    const latSign = gpsLat >= 0 ? "+" : "-";
+    const lngSign = gpsLng >= 0 ? "+" : "-";
+    const latAbs = Math.abs(gpsLat).toFixed(6);
+    const lngAbs = Math.abs(gpsLng).toFixed(6);
+    const quicktimeGps = `${latSign}${latAbs}${lngSign}${lngAbs}+${Math.abs(altitude).toFixed(1)}/`;
+    const decimalGps = `${Number(gpsLat).toFixed(6)} ${Number(gpsLng).toFixed(6)} ${Number(altitude).toFixed(1)}`;
+    fallbackArgs.push(
+      `-GPSCoordinates=${decimalGps}`,
+      `-QuickTime:GPSCoordinates=${quicktimeGps}`,
+      `-Keys:GPSCoordinates=${quicktimeGps}`,
+      `-ItemList:GPSCoordinates=${quicktimeGps}`,
     );
   }
   fallbackArgs.push(filePath);
@@ -259,6 +325,9 @@ export async function writeMetadata(options) {
 
   tags = await readIdentityTags(filePath);
   if (!hasExpectedIdentityTags(tags, profile)) {
-    throw new Error("Critical identity metadata tags missing after write/verify pass");
+    throw new Error("Critical identity metadata tags (make/model/lens) missing after write/verify pass");
+  }
+  if (hasGps && !hasExpectedGpsTags(tags)) {
+    throw new Error("GPS metadata missing after write/verify pass");
   }
 }

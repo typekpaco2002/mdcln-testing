@@ -277,7 +277,7 @@ router.get("/:id/stream", mediaAuth, requireSub, async (req, res) => {
 });
 
 // Download
-router.get("/:id/download", authMiddleware, requireSub, async (req, res) => {
+router.get("/:id/download", mediaAuth, requireSub, async (req, res) => {
   const reel = await prisma.reel.findUnique({ where: { id: req.params.id } });
   if (!reel) return res.status(404).json({ error: "Not found" });
 
