@@ -133,7 +133,7 @@ export async function textToSpeech(text, voiceId, options = {}) {
     },
     body: JSON.stringify({
       text: text,
-      model_id: options.modelId || options.model_id || "eleven_multilingual_v2",
+      model_id: options.modelId || options.model_id || "eleven_v3",
       voice_settings: {
         stability: options.stability || 0.5,
         similarity_boost: options.similarityBoost || 0.75,
@@ -290,7 +290,7 @@ export async function designVoicePreviews(voiceDescription, options = {}) {
   const body = {
     voice_description: voiceDescription,
     auto_generate_text: options.autoGenerateText !== false,
-    model_id: options.modelId || "eleven_multilingual_ttv_v2",
+    model_id: options.modelId || "eleven_v3",
   };
 
   const response = await fetch(`${ELEVENLABS_API_URL}/text-to-voice/design`, {
