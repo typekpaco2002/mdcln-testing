@@ -1924,36 +1924,43 @@ export default function AdminPage() {
                         </td>
                         <td className="py-2.5 px-3 text-[11px] text-gray-500 whitespace-nowrap">{fmtDate(user.createdAt)}</td>
                         <td className="py-2.5 px-3">
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
                             <button onClick={() => { setSelectedUser(user); setShowAddCredits(true); }}
-                              className="p-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition" title="Add Credits">
+                              className="px-2 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition inline-flex items-center gap-1" title="Add Credits">
                               <Plus className="w-3.5 h-3.5 text-gray-300" />
+                              <span className="text-[10px] text-gray-300">Credits</span>
                         </button>
                             <button onClick={() => { setSelectedUser(user); setShowNsfwOverride(true); }}
-                              className="p-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition" title="NSFW Override">
+                              className="px-2 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition inline-flex items-center gap-1" title="NSFW Override">
                               <Shield className="w-3.5 h-3.5 text-gray-300" />
+                              <span className="text-[10px] text-gray-300">NSFW</span>
                         </button>
                             <button onClick={() => { setSelectedUser(user); setShowEditSettings(true); }}
-                              className="p-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition" title="Edit Settings">
+                              className="px-2 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition inline-flex items-center gap-1" title="Edit Settings">
                               <Settings className="w-3.5 h-3.5 text-gray-300" />
+                              <span className="text-[10px] text-gray-300">Settings</span>
                         </button>
                             <button onClick={() => handleOpenManagePurchases(user)}
-                              className="p-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition" title="Manage User Purchases">
+                              className="px-2 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition inline-flex items-center gap-1" title="Manage User Purchases">
                               <DollarSign className="w-3.5 h-3.5 text-gray-300" />
+                              <span className="text-[10px] text-gray-300">Purchases</span>
                             </button>
                             <button onClick={() => handleSyncStripeForUser(user)}
                               disabled={syncingStripeUserId === user.id}
-                              className="p-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition disabled:opacity-40"
+                              className="px-2 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition disabled:opacity-40 inline-flex items-center gap-1"
                               title="Sync Stripe State">
                               <RefreshCw className={`w-3.5 h-3.5 text-gray-300 ${syncingStripeUserId === user.id ? 'animate-spin' : ''}`} />
+                              <span className="text-[10px] text-gray-300">Stripe</span>
                             </button>
                             <button onClick={() => handleGenerateImpersonationLink(user)}
-                              className="p-1.5 rounded-md bg-blue-500/[0.08] hover:bg-blue-500/[0.18] border border-blue-500/[0.16] transition" title="Generate Login Payload">
+                              className="px-2 py-1.5 rounded-md bg-blue-500/[0.08] hover:bg-blue-500/[0.18] border border-blue-500/[0.16] transition inline-flex items-center gap-1" title="Generate Login Payload">
                               <Zap className="w-3.5 h-3.5 text-blue-300" />
+                              <span className="text-[10px] text-blue-300">Login</span>
                             </button>
                             <button onClick={() => setConfirmDelete(user)}
-                              className="p-1.5 rounded-md bg-red-500/[0.08] hover:bg-red-500/[0.15] border border-red-500/[0.12] transition" title="Delete User">
+                              className="px-2 py-1.5 rounded-md bg-red-500/[0.08] hover:bg-red-500/[0.15] border border-red-500/[0.12] transition inline-flex items-center gap-1" title="Delete User">
                               <Trash2 className="w-3.5 h-3.5 text-red-400/70" />
+                              <span className="text-[10px] text-red-300">Delete</span>
                         </button>
                       </div>
                     </td>

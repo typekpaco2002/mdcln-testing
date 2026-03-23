@@ -30,6 +30,34 @@ const router = express.Router();
 const KIE_API_KEY = process.env.KIE_API_KEY;
 const KIE_API_URL = "https://api.kie.ai/api/v1";
 const MARKETING_CAMPAIGN_ACTION = "marketing_campaign";
+const SENDGRID_MAX_EMAILS_PER_MINUTE = Math.max(
+  1,
+  parseInt(process.env.SENDGRID_MAX_EMAILS_PER_MINUTE || "600", 10) || 600,
+);
+const SENDGRID_WINDOW_MS = 60_000;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function createSendGridRateLimiter(maxPerMinute = SENDGRID_MAX_EMAILS_PER_MINUTE) {
+  let windowStart = Date.now();
+  let sentInWindow = 0;
+  return async (emailCount = 1) => {
+    const units = Math.max(1, parseInt(emailCount, 10) || 1);
+    while (true) {
+      const now = Date.now();
+      if (now - windowStart >= SENDGRID_WINDOW_MS) {
+        windowStart = now;
+        sentInWindow = 0;
+      }
+      if (sentInWindow + units <= maxPerMinute) {
+        sentInWindow += units;
+        return;
+      }
+      const waitMs = Math.max(250, SENDGRID_WINDOW_MS - (now - windowStart) + 50);
+      await sleep(waitMs);
+    }
+  };
+}
 
 function parseJsonSafe(value, fallback = null) {
   if (typeof value !== "string") return fallback;
@@ -975,12 +1003,12 @@ router.post("/send-marketing-email", async (req, res) => {
     let failed = 0;
     const errors = [];
     // SendGrid v3 Mail Send supports up to 1000 personalizations/recipients per request.
-    const BATCH_SIZE = 1000;
+    const BATCH_SIZE = Math.min(600, SENDGRID_MAX_EMAILS_PER_MINUTE);
     const MAX_RECORDED_ERRORS = 200;
     const RUN_BUDGET_MS = 240_000; // stay below Vercel 300s hard timeout
     const runStartedAt = Date.now();
+    const reserveSendWindow = createSendGridRateLimiter(SENDGRID_MAX_EMAILS_PER_MINUTE);
 
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const getErrorStatus = (err) =>
       err?.code ||
       err?.response?.statusCode ||
@@ -1006,6 +1034,7 @@ router.post("/send-marketing-email", async (req, res) => {
     const sendBatchWithRetry = async (messages, maxRetries = 4) => {
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
+          await reserveSendWindow(messages.length);
           await sgMail.send(messages);
           return;
         } catch (err) {
@@ -1053,7 +1082,7 @@ router.post("/send-marketing-email", async (req, res) => {
       } catch (error) {
         console.error(`Batch ${batchNo} failed as bulk, retrying per-recipient...`, error?.message || error);
         pushError(`Batch ${batchNo} bulk failure: ${error?.message || "unknown error"}`);
-        const settled = await mapWithConcurrency(batch, 20, async (user) => {
+        const settled = await mapWithConcurrency(batch, 5, async (user) => {
           try {
             await sendBatchWithRetry([{
               to: user.email,
@@ -1165,14 +1194,41 @@ router.post("/send-promo-50off", async (req, res) => {
     let sent = 0;
     let failed = 0;
     const errors = [];
-    const BATCH_SIZE = 50;
+    const reserveSendWindow = createSendGridRateLimiter(SENDGRID_MAX_EMAILS_PER_MINUTE);
+    const BATCH_SIZE = Math.min(200, SENDGRID_MAX_EMAILS_PER_MINUTE);
+    const CONCURRENCY = 5;
+    const sendPromoWithRetry = async (email, firstName, maxRetries = 3) => {
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          await reserveSendWindow(1);
+          return await sendPromoEmail(email, firstName);
+        } catch (err) {
+          if (attempt === maxRetries) throw err;
+          const backoffMs = Math.min(8000, 750 * (2 ** attempt)) + Math.floor(Math.random() * 300);
+          await sleep(backoffMs);
+        }
+      }
+      return { success: false, error: "unknown_error" };
+    };
 
     for (let i = 0; i < users.length; i += BATCH_SIZE) {
       const batch = users.slice(i, i + BATCH_SIZE);
-
-      const results = await Promise.allSettled(
-        batch.map((user) => sendPromoEmail(user.email, user.name ? user.name.split(" ")[0] : null))
-      );
+      const results = new Array(batch.length);
+      let nextIndex = 0;
+      const workers = Array.from({ length: Math.min(CONCURRENCY, batch.length) }, async () => {
+        while (true) {
+          const idx = nextIndex++;
+          if (idx >= batch.length) return;
+          const user = batch[idx];
+          try {
+            const value = await sendPromoWithRetry(user.email, user.name ? user.name.split(" ")[0] : null);
+            results[idx] = { status: "fulfilled", value };
+          } catch (reason) {
+            results[idx] = { status: "rejected", reason };
+          }
+        }
+      });
+      await Promise.all(workers);
 
       results.forEach((r, idx) => {
         if (r.status === "fulfilled" && r.value.success) {
@@ -1184,10 +1240,6 @@ router.post("/send-promo-50off", async (req, res) => {
       });
 
       console.log(`📧 Batch ${Math.floor(i / BATCH_SIZE) + 1}: ${sent} sent, ${failed} failed`);
-
-      if (i + BATCH_SIZE < users.length) {
-        await new Promise((r) => setTimeout(r, 2000));
-      }
     }
 
     console.log(`\n✅ Promo email campaign complete: ${sent} sent, ${failed} failed`);
