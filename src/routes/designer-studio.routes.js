@@ -79,7 +79,7 @@ router.post("/kling-i2v", async (req, res) => {
 /**
  * POST /api/designer-studio/kling-motion
  * Body: { imageUrl, videoUrl, prompt?, ultra? }
- * ultra: true = Kling 3.0 Motion Control. Returns taskId; poll GET /task/:taskId for result.
+ * ultra: true = Motion Control Pro+ tier. Returns taskId; poll GET /task/:taskId for result.
  */
 router.post("/kling-motion", async (req, res) => {
   try {

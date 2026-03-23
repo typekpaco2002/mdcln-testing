@@ -664,6 +664,7 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
 
   const model = useUltraMotionControl ? "kling-3.0/motion-control" : "kling-2.6/motion-control";
   const want1080 =
+    useUltraMotionControl ||
     options.motion1080p === true ||
     options.motionMode === "1080p" ||
     options.motionMode === "pro";

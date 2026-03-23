@@ -2520,7 +2520,7 @@ function VideoGeneration() {
                 </span>
                 <span className="text-[9px] text-slate-500">
                   {recreateUltraMode
-                    ? "Kling 3.0 Motion Control · 1080p"
+                    ? "Motion Control Pro+ · 1080p"
                     : "Motion Control 2.6 · 1080p"}
                 </span>
               </div>
@@ -2535,7 +2535,7 @@ function VideoGeneration() {
             </p>
           </div>
 
-          {/* Ultra: Kling 3.0 Motion Control @ 1080p */}
+          {/* Ultra: Motion Control Pro+ @ 1080p */}
           <div className="mb-5 flex items-start gap-3">
             <button
               type="button"
@@ -2546,7 +2546,7 @@ function VideoGeneration() {
               <div className={`w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${recreateUltraMode ? "translate-x-[22px]" : "translate-x-0.5"}`} />
             </button>
             <div className="min-w-0">
-              <p className="text-[11px] text-slate-300 font-medium">Ultra — Kling 3.0 Motion Control</p>
+              <p className="text-[11px] text-slate-300 font-medium">Ultra — Motion Control Pro+</p>
               <p className="text-[10px] text-slate-500 leading-snug">
                 1080p · ~{VIDEO_RECREATE_ULTRA_PER_SEC} <Coins className="w-2.5 h-2.5 inline" />/sec
               </p>
