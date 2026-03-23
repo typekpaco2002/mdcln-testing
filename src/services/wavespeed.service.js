@@ -143,12 +143,32 @@ function getExplicitContentUserMessage(originalError) {
   return "Your image was flagged as too explicit. Please use a different image that shows less skin or is less suggestive. Try using a photo with more clothing or a different pose.";
 }
 
+function isRetryableFetchError(error) {
+  const msg = String(error?.message || "").toLowerCase();
+  const code = String(error?.cause?.code || error?.code || "").toLowerCase();
+  return (
+    msg.includes("fetch failed") ||
+    msg.includes("network") ||
+    msg.includes("socket") ||
+    msg.includes("timeout") ||
+    msg.includes("timed out") ||
+    msg.includes("econnreset") ||
+    msg.includes("enotfound") ||
+    msg.includes("eai_again") ||
+    code.includes("econnreset") ||
+    code.includes("etimedout") ||
+    code.includes("enotfound") ||
+    code.includes("eai_again")
+  );
+}
+
 // Helper to wait for task completion
 async function waitForResult(requestId, maxAttempts = 60) {
   const pollUrl = `${WAVESPEED_API_URL}/predictions/${requestId}/result`;
 
   console.log(`ðŸ” Polling URL: ${pollUrl}`);
   let consecutiveHttpErrors = 0;
+  let consecutiveNetworkErrors = 0;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     // Don't wait before first poll!
@@ -156,12 +176,28 @@ async function waitForResult(requestId, maxAttempts = 60) {
       await new Promise((resolve) => setTimeout(resolve, 3000)); // 3 seconds between polls
     }
 
-    const response = await fetch(pollUrl, {
-      headers: {
-        Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-      },
-      signal: AbortSignal.timeout(20_000),
-    });
+    let response;
+    try {
+      response = await fetch(pollUrl, {
+        headers: {
+          Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+        },
+        signal: AbortSignal.timeout(20_000),
+      });
+      consecutiveNetworkErrors = 0;
+    } catch (error) {
+      if (isRetryableFetchError(error) && consecutiveNetworkErrors < 8) {
+        consecutiveNetworkErrors += 1;
+        if (consecutiveNetworkErrors === 1 || consecutiveNetworkErrors % 3 === 0) {
+          console.warn(
+            `âš ï¸ Transient poll network error for request ${requestId} ` +
+            `(attempt ${attempt + 1}/${maxAttempts}, transient ${consecutiveNetworkErrors}/8): ${error.message}`,
+          );
+        }
+        continue;
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1057,6 +1093,10 @@ async function generateTalkingHead(imageUrl, audioUrl, prompt = null) {
     if (prompt) console.log(`ðŸ’¬ Prompt: ${prompt}`);
     console.log("â³ Submitting to Kling V2 Avatar...\n");
 
+    if (!WAVESPEED_API_KEY) {
+      throw new Error("WAVESPEED_API_KEY is not configured");
+    }
+
     const requestBody = {
       image: imageUrl,
       audio: audioUrl,
@@ -1066,17 +1106,48 @@ async function generateTalkingHead(imageUrl, audioUrl, prompt = null) {
       requestBody.prompt = prompt.trim();
     }
 
-    const response = await fetch(
-      `${WAVESPEED_API_URL}/kwaivgi/kling-v2-ai-avatar-standard`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${WAVESPEED_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
+    const submitUrl = `${WAVESPEED_API_URL}/kwaivgi/kling-v2-ai-avatar-standard`;
+    const submitMaxAttempts = 3;
+    let response = null;
+    let lastSubmitError = null;
+
+    for (let attempt = 1; attempt <= submitMaxAttempts; attempt++) {
+      if (attempt > 1) {
+        const backoffMs = attempt * 3000;
+        console.warn(`âš ï¸ Kling V2 Avatar submit retry ${attempt}/${submitMaxAttempts} in ${Math.round(backoffMs / 1000)}s`);
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
       }
-    );
+
+      try {
+        response = await fetch(submitUrl, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${WAVESPEED_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(30_000),
+        });
+      } catch (error) {
+        lastSubmitError = error;
+        if (isRetryableFetchError(error) && attempt < submitMaxAttempts) {
+          continue;
+        }
+        throw error;
+      }
+
+      if (response.ok) break;
+
+      const status = response.status;
+      if ((status === 429 || status >= 500) && attempt < submitMaxAttempts) {
+        continue;
+      }
+      break;
+    }
+
+    if (!response && lastSubmitError) {
+      throw lastSubmitError;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
