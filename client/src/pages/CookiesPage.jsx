@@ -40,8 +40,8 @@ export default function CookiesPage() {
           <h2>3. Third-Party Cookies</h2>
           <p>We may use cookies from:</p>
           <ul>
-            <li><strong>Cloudinary:</strong> For content delivery</li>
-            <li><strong>Stripe:</strong> For payment processing</li>
+            <li><strong>Media Delivery Provider:</strong> For content delivery</li>
+            <li><strong>Payment Processor:</strong> For payment processing</li>
           </ul>
 
           <h2>4. Managing Cookies</h2>

@@ -53,7 +53,7 @@ export default function PrivacyPage() {
 
           <h2>3. Data Storage and Security</h2>
           <p>
-            Your content is securely stored using Cloudinary CDN with encryption. We use industry-standard security measures including:
+            Your content is securely stored using encrypted media delivery infrastructure. We use industry-standard security measures including:
           </p>
           <ul>
             <li>Encrypted data transmission (HTTPS/TLS)</li>
@@ -65,9 +65,9 @@ export default function PrivacyPage() {
           <h2>4. Third-Party Services</h2>
           <p>We use the following third-party services:</p>
           <ul>
-            <li><strong>Cloudinary:</strong> For image and video storage</li>
-            <li><strong>WaveSpeed AI:</strong> For AI model processing</li>
-            <li><strong>Stripe:</strong> For payment processing (coming soon)</li>
+            <li><strong>Media Storage Provider:</strong> For image and video storage</li>
+            <li><strong>AI Processing Providers:</strong> For AI generation processing</li>
+            <li><strong>Payment Processor:</strong> For payment processing (coming soon)</li>
           </ul>
 
           <h2>5. Data Retention</h2>

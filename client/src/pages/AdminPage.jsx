@@ -18,6 +18,12 @@ const getTotalCredits = (u) =>
   (u.subscriptionCredits || 0) + (u.purchasedCredits || 0) + (u.credits || 0);
 const fmt$ = (cents) => `$${((cents || 0) / 100).toFixed(2)}`;
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+const PROVIDER_NAME_RE = /\b(heygen|elevenlabs?|kling|nanobanana|nano\s*banana|replicate|fal(?:\.ai)?|wavespeed|openrouter|apify|kie)\b/ig;
+const redactProviderText = (value, fallback = '—') => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return fallback;
+  return raw.replace(PROVIDER_NAME_RE, 'provider');
+};
 
 const TELEMETRY_OPTIONS = [
   { value: 1,   label: '1h'  },
@@ -116,14 +122,14 @@ const GENERATION_PRICING_GROUPS = [
     ],
   },
   {
-    title: 'Creator Studio (NanoBanana Pro)',
+    title: 'Creator Studio (Image Generation)',
     fields: [
       { key: 'creatorStudio1K2K', label: 'Creator Studio — 1K / 2K image' },
       { key: 'creatorStudio4K', label: 'Creator Studio — 4K image' },
     ],
   },
   {
-    title: 'Real Avatars (HeyGen)',
+    title: 'Real Avatars (Photo Avatars)',
     fields: [
       { key: 'avatarCreation', label: 'Avatar creation (one-time fee)' },
       { key: 'avatarMonthly', label: 'Avatar monthly maintenance' },
@@ -339,7 +345,7 @@ function ManageUserPurchasesModal({ open, user, purchases, loading, refundingId,
               { label: 'Date' },
               { label: 'Type' },
               { label: 'Credits' },
-              { label: 'Stripe ID' },
+              { label: 'Billing ID' },
               { label: 'Status' },
               { label: 'Action', align: 'right' },
             ]} />
@@ -1158,13 +1164,13 @@ export default function AdminPage() {
     try {
       const r = await api.post(`/admin/users/${user.id}/stripe-sync`, {});
       if (r.data?.success) {
-        toast.success(`Stripe synced for ${user.email}`);
+        toast.success(`Billing sync completed for ${user.email}`);
         await loadUsers(search, usersPage);
       } else {
-        toast.error(r.data?.message || 'Stripe sync failed');
+        toast.error(r.data?.message || 'Billing sync failed');
       }
     } catch (e) {
-      toast.error(e?.response?.data?.message || 'Stripe sync failed');
+      toast.error(e?.response?.data?.message || 'Billing sync failed');
     } finally {
       setSyncingStripeUserId(null);
     }
@@ -1428,7 +1434,7 @@ export default function AdminPage() {
         const raw = await fetch(backup.cloudinaryUrl);
         backupData = await raw.json();
       }
-      if (!backupData) throw new Error('No restorable data found in this backup entry. Download it manually from Cloudinary.');
+      if (!backupData) throw new Error('No restorable data found in this backup entry. Download it manually from storage.');
       await api.post('/admin/backup/restore-credits', { backupData });
       toast.success('Credits restored from backup');
     } catch (e) {
@@ -1694,12 +1700,12 @@ export default function AdminPage() {
                 <KpiCard label="Est. Revenue" value={`$${stats.credits?.estimatedRevenue || '0.00'}`} sub="1 credit ≈ $0.01 (usage implied)" />
               </div>
 
-              {/* Stripe Revenue */}
+              {/* Billing Revenue */}
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 mb-4">
                 <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
                     <DollarSign className="w-3.5 h-3.5 text-gray-500" />
-                    <span className="text-xs font-medium text-gray-300">Stripe Revenue</span>
+                    <span className="text-xs font-medium text-gray-300">Billing Revenue</span>
                     <span className="text-[11px] text-gray-600 px-1.5 py-0.5 rounded border border-white/[0.06] bg-white/[0.03]">{periodLabel}</span>
                     {stripeRevenueLoading && <RefreshCw className="w-3 h-3 text-gray-600 animate-spin" />}
                     {!stripeRevenueLoading && stripeRevenue?._cached && (
@@ -1716,7 +1722,7 @@ export default function AdminPage() {
                 {!stripeRevenue && !stripeRevenueLoading && (
                   <div className="flex items-center gap-3">
                     <p className="text-xs text-gray-600">
-                      {stripeRevenueError || 'Could not load Stripe data'}
+                      {stripeRevenueError || 'Could not load billing data'}
                     </p>
                   <button
                       onClick={() => (showDailyTracking
@@ -1732,13 +1738,13 @@ export default function AdminPage() {
                 {stripeRevenue && (
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
-                      <KpiCard label="MRR" value={fmt$(stripeRevenue.subscriptions?.mrrCents)} sub="Stripe prices · subs matched in DB" accent />
+                      <KpiCard label="MRR" value={fmt$(stripeRevenue.subscriptions?.mrrCents)} sub="Current prices · subs matched in DB" accent />
                       <KpiCard label="ARR" value={fmt$(stripeRevenue.subscriptions?.arrCents)} sub="MRR × 12" accent />
                       <KpiCard label="Period Revenue" value={fmt$(stripeRevenue.periodRevenue?.amountCents)} sub={`${stripeRevenue.periodRevenue?.chargeCount || 0} charges · ${periodLabel}`} />
                       <KpiCard
                         label="Active Subs"
                         value={stripeRevenue.subscriptions?.active || 0}
-                        sub={stripeRevenue.subscriptions?.churnInPeriod > 0 ? `${stripeRevenue.subscriptions.churnInPeriod} churned in period (Stripe)` : 'active + not cancelled (DB)'}
+                        sub={stripeRevenue.subscriptions?.churnInPeriod > 0 ? `${stripeRevenue.subscriptions.churnInPeriod} churned in period` : 'active + not cancelled (DB)'}
                         trend={stripeRevenue.subscriptions?.churnInPeriod > 0 ? -1 : 0}
                       />
                     </div>
@@ -1894,7 +1900,7 @@ export default function AdminPage() {
                 <table className="w-full text-sm">
                   <THead cols={[
                     { label: 'Email' }, { label: 'Name' }, { label: 'Plan' }, { label: 'Status' },
-                    { label: 'Credits' }, { label: 'Used' }, { label: 'Gens' }, { label: 'Stripe' },
+                    { label: 'Credits' }, { label: 'Used' }, { label: 'Gens' }, { label: 'Billing' },
                     { label: 'LoRA' }, { label: 'Pro' }, { label: 'Joined' }, { label: 'Actions', align: 'right' },
                   ]} />
               <tbody>
@@ -1984,9 +1990,9 @@ export default function AdminPage() {
                             <button onClick={() => handleSyncStripeForUser(user)}
                               disabled={syncingStripeUserId === user.id}
                               className="px-2 py-1.5 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] transition disabled:opacity-40 inline-flex items-center gap-1"
-                              title="Sync Stripe State">
+                              title="Sync billing state">
                               <RefreshCw className={`w-3.5 h-3.5 text-gray-300 ${syncingStripeUserId === user.id ? 'animate-spin' : ''}`} />
-                              <span className="text-[10px] text-gray-300">Stripe</span>
+                              <span className="text-[10px] text-gray-300">Billing</span>
                             </button>
                             <button onClick={() => handleGenerateImpersonationLink(user)}
                               className="px-2 py-1.5 rounded-md bg-blue-500/[0.08] hover:bg-blue-500/[0.18] border border-blue-500/[0.16] transition inline-flex items-center gap-1" title="Generate Login Payload">
@@ -2074,7 +2080,7 @@ export default function AdminPage() {
         {/* ── Recover Payment ───────────────────────────────────────────────── */}
         <Section>
           <SectionHeader title="Recover Payment" />
-          <p className="text-xs text-gray-500 mb-3">Paste a Stripe subscription (sub_…) or payment intent ID (pi_…) to re-award credits.</p>
+          <p className="text-xs text-gray-500 mb-3">Paste a billing subscription (sub_…) or payment intent ID (pi_…) to re-award credits.</p>
           <div className="flex gap-2 flex-wrap">
             <input
               type="text" value={recoverStripeId} onChange={(e) => setRecoverStripeId(e.target.value)}
@@ -2171,7 +2177,7 @@ export default function AdminPage() {
         <Section>
           <SectionHeader title="Lost Generation Reconciliation" />
           <p className="text-xs text-gray-500 mb-3">
-            Scan failed KIE jobs (replicateModel starts with kie-task:), recover finished outputs from KIE, mirror to R2, and mark recovered.
+            Scan failed external jobs, recover finished outputs, mirror to R2, and mark recovered.
           </p>
           <p className="text-xs text-gray-500 mb-3">
             <strong>Single user:</strong> enter User ID/email/username and limit. <strong>All users:</strong> use the buttons below (limit applies to total generations scanned).
@@ -2804,7 +2810,7 @@ export default function AdminPage() {
           )}
         </Section>
 
-        {/* ── Custom ElevenLabs voices (platform cap) ─────────────────────────── */}
+        {/* ── Custom voices (platform cap) ─────────────────────────── */}
         <Section>
           <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
             <CollapseToggle
@@ -2814,7 +2820,7 @@ export default function AdminPage() {
                 setShowVoicePlatform(next);
                 if (next) loadVoicePlatformConfig();
               }}
-              label="Custom voices (ElevenLabs cap)"
+              label="Custom voices (platform cap)"
             />
             {showVoicePlatform && (
               <GhostBtn onClick={loadVoicePlatformConfig} disabled={loadingVoicePlatform}>
@@ -2826,7 +2832,7 @@ export default function AdminPage() {
           {showVoicePlatform && (
             <div className="space-y-4 max-w-md">
               <p className="text-[11px] text-gray-500 -mt-2">
-                Hard cap on how many saved models may hold a custom ElevenLabs voice at once (design + clone).
+                Hard cap on how many saved models may hold a custom voice at once (design + clone).
                 Recreating a voice on the same model does not increase usage.
               </p>
               <p className="text-xs text-gray-400">
@@ -2853,7 +2859,7 @@ export default function AdminPage() {
           )}
         </Section>
 
-        {/* ── Provider API balances ─────────────────────────────────────────── */}
+        {/* ── Service API balances ─────────────────────────────────────────── */}
         <Section>
           <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
             <CollapseToggle
@@ -2863,7 +2869,7 @@ export default function AdminPage() {
                 setShowProviderBalances(next);
                 if (next && !providerBalances && !loadingProviderBalances) loadProviderBalances();
               }}
-              label="Provider API balances"
+              label="Service API balances"
             />
             {showProviderBalances && (
               <GhostBtn onClick={loadProviderBalances} disabled={loadingProviderBalances}>
@@ -2877,8 +2883,8 @@ export default function AdminPage() {
               <p className="text-[11px] text-gray-500 -mt-2 flex items-start gap-2">
                 <Wallet className="w-3.5 h-3.5 text-gray-600 shrink-0 mt-0.5" />
                 <span>
-                  Live balances from KIE, OpenRouter, fal.ai, WaveSpeed, Apify, and ElevenLabs (server env keys only — never exposed here).
-                  OpenRouter needs a <strong className="text-gray-400">management</strong> key for the credits endpoint.
+                  Live balances from connected external services (server env keys only — never exposed here).
+                  Some services require dedicated management keys for credits endpoints.
                 </span>
               </p>
               {providerBalances?.checkedAt && (
@@ -2888,22 +2894,22 @@ export default function AdminPage() {
               )}
               {loadingProviderBalances && !providerBalances?.providers?.length ? (
                 <div className="flex items-center gap-2 text-xs text-gray-500 py-6">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Loading provider data…
+                  <Loader2 className="w-4 h-4 animate-spin" /> Loading service data…
                 </div>
               ) : providerBalances?.providers?.length ? (
                 <div className="overflow-x-auto rounded-xl border border-white/[0.07]">
                   <table className="w-full text-xs">
                     <THead cols={[
-                      { label: 'Provider' },
+                      { label: 'Service' },
                       { label: 'Env key' },
                       { label: 'Status' },
                       { label: 'Summary' },
                       { label: 'Detail / error' },
                     ]} />
                     <tbody>
-                      {providerBalances.providers.map((p) => (
+                      {providerBalances.providers.map((p, idx) => (
                         <tr key={p.id} className="border-b border-white/[0.04]">
-                          <td className="py-2.5 px-3 text-gray-300 font-medium whitespace-nowrap">{p.name}</td>
+                          <td className="py-2.5 px-3 text-gray-300 font-medium whitespace-nowrap">{`Service ${idx + 1}`}</td>
                           <td className="py-2.5 px-3">
                             <Badge variant={p.configured ? 'green' : 'default'}>
                               {p.configured ? 'Configured' : 'Missing'}
@@ -2914,13 +2920,13 @@ export default function AdminPage() {
                               {p.status === 'ok' ? 'OK' : p.status === 'not_configured' ? '—' : 'Error'}
                             </Badge>
                           </td>
-                          <td className="py-2.5 px-3 text-gray-200 font-medium whitespace-nowrap">{p.headline}</td>
+                          <td className="py-2.5 px-3 text-gray-200 font-medium whitespace-nowrap">{redactProviderText(p.headline)}</td>
                           <td className="py-2.5 px-3 text-gray-500 max-w-[min(360px,85vw)]">
                             {p.error ? (
-                              <span className="text-red-400/90 break-words">{p.error}</span>
+                              <span className="text-red-400/90 break-words">{redactProviderText(p.error, 'Error')}</span>
                             ) : (
                               <span className="break-words">
-                                {p.lines?.length ? p.lines.map((l) => `${l.label}: ${l.value}`).join(' · ') : '—'}
+                                {p.lines?.length ? p.lines.map((l) => `${redactProviderText(l.label, 'item')}: ${redactProviderText(l.value, '')}`).join(' · ') : '—'}
                               </span>
                             )}
                           </td>
@@ -2996,7 +3002,7 @@ export default function AdminPage() {
                     onChange={(e) => setClearReelsRescrape(e.target.checked)}
                     className="rounded border-white/20 bg-white/5"
                   />
-                  After clear, start full rescrape (if Apify is configured)
+                  After clear, start full rescrape (if external scraper is configured)
                 </label>
                 <DangerBtn
                   onClick={() => setConfirmClearReels(true)}
@@ -3764,7 +3770,7 @@ ${emailBuilder.ctaText && emailBuilder.ctaUrl ? `<div class="cta-wrap"><a class=
       <ConfirmModal
         open={confirmClearReels}
         title="Clear all cached reels?"
-        message={`This deletes every Reel Finder reel row (${reelProfiles.reduce((s, p) => s + (p._count?.reels || 0), 0)} total). Instagram profiles you track stay in the list.${clearReelsRescrape ? ' A full scrape will be started afterward when possible (Apify token set and no job already running).' : ' No automatic rescrape — use Force Scrape when ready.'}`}
+        message={`This deletes every Reel Finder reel row (${reelProfiles.reduce((s, p) => s + (p._count?.reels || 0), 0)} total). Instagram profiles you track stay in the list.${clearReelsRescrape ? ' A full scrape will be started afterward when possible (scraper token set and no job already running).' : ' No automatic rescrape — use Force Scrape when ready.'}`}
         danger
         onConfirm={handleClearReelsConfirm}
         onCancel={() => setConfirmClearReels(false)}

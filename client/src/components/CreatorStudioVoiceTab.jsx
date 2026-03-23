@@ -372,7 +372,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
             </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-300">
-            Create up to 3 saved voices per model, generate ElevenLabs audio with Multilingual v3 pricing,
+            Create up to 3 saved voices per model, generate high-quality multilingual audio,
             and keep a per-model history of generated clips once your subscription is active.
           </p>
         </div>

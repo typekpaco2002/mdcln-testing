@@ -6,7 +6,7 @@ export const TUTORIAL_SLOTS = [
   { key: "generate.video.prompt", label: "Generate Content - Prompt Video" },
   { key: "generate.video.faceswap", label: "Generate Content - Face Swap Video" },
   { key: "generate.video.talking", label: "Generate Content - Talking Video" },
-  { key: "creator.nanobanana-pro", label: "Creator Studio - NanoBanana Pro" },
+  { key: "creator.nanobanana-pro", label: "Creator Studio - Image Generation" },
   { key: "creator.voice-studio", label: "Creator Studio - Voice Studio" },
   { key: "creator.real-avatars", label: "Creator Studio - Real Avatars" },
   { key: "nsfw.training", label: "NSFW - Training" },

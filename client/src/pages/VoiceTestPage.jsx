@@ -77,13 +77,13 @@ export default function VoiceTestPage() {
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Voice Preview Comparison</h1>
         <p className="text-gray-400 mb-6">
-          Compare the <span className="text-blue-400">original ElevenLabs preview</span> with <span className="text-green-400">our cached preview</span>. 
+          Compare the <span className="text-blue-400">original provider preview</span> with <span className="text-green-400">our cached preview</span>. 
           They should sound like the same person.
         </p>
 
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6">
           <p className="text-amber-400 text-sm">
-            <strong>How to verify:</strong> Click "Original" to hear ElevenLabs official preview, then click "Our Version" - 
+            <strong>How to verify:</strong> Click "Original" to hear the official provider preview, then click "Our Version" - 
             the voice should sound the same (different words, but same person). If they sound like different people, that's a mismatch.
           </p>
         </div>

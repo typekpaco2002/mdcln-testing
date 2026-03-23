@@ -174,19 +174,19 @@ export default function DesignerStudioPage() {
   const tools = [
     {
       id: "nano",
-      label: "Nano Banana Pro",
+      label: "Image Generation",
       desc: "Text-to-image or identity-preserving image from prompt + optional reference images.",
       icon: ImageIcon,
     },
     {
       id: "i2v",
-      label: "Kling Image to Video",
+      label: "Image to Video",
       desc: "Animate a single image with a motion prompt. 2.6 or 3.0.",
       icon: Video,
     },
     {
       id: "motion",
-      label: "Kling Motion Control",
+      label: "Motion Control",
       desc: "Apply motion from a reference video to your image. 2.6 or 3.0.",
       icon: Move,
     },
@@ -211,7 +211,7 @@ export default function DesignerStudioPage() {
             </div>
           </div>
           <p className="hidden text-xs text-slate-500 sm:block">
-            Direct access — Nano Banana Pro, Kling I2V &amp; Motion (admin only)
+            Direct access — image generation, image-to-video &amp; motion tools (admin only)
           </p>
         </div>
       </header>
@@ -238,12 +238,12 @@ export default function DesignerStudioPage() {
           </div>
         </div>
 
-        {/* Nano Banana Pro */}
+        {/* Image generation */}
         {activeTool === "nano" && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 shadow-xl">
             <h2 className="mb-1 flex items-center gap-2 text-base font-semibold">
               <ImageIcon className="w-4 h-4 text-emerald-400" />
-              Nano Banana Pro
+              Image Generation
             </h2>
             <p className="mb-6 text-xs text-slate-500">{tools[0].desc}</p>
             <form onSubmit={runNanoBanana} className="space-y-4">
@@ -322,12 +322,12 @@ export default function DesignerStudioPage() {
           </section>
         )}
 
-        {/* Kling I2V */}
+        {/* Image to video */}
         {activeTool === "i2v" && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 shadow-xl">
             <h2 className="mb-1 flex items-center gap-2 text-base font-semibold">
               <Video className="w-4 h-4 text-violet-400" />
-              Kling Image to Video
+              Image to Video
             </h2>
             <p className="mb-6 text-xs text-slate-500">{tools[1].desc}</p>
             <form onSubmit={runKlingI2v} className="space-y-4">
@@ -376,7 +376,7 @@ export default function DesignerStudioPage() {
                     onChange={(e) => setI2vUseKling3(e.target.checked)}
                     className="rounded border-white/20 bg-black/40 text-violet-500 focus:ring-violet-500/50"
                   />
-                  <span className="text-sm text-slate-300">Use Kling 3.0</span>
+                  <span className="text-sm text-slate-300">Use 3.0 model</span>
                 </label>
               </div>
               <button
@@ -414,12 +414,12 @@ export default function DesignerStudioPage() {
           </section>
         )}
 
-        {/* Kling Motion */}
+        {/* Motion control */}
         {activeTool === "motion" && (
           <section className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 shadow-xl">
             <h2 className="mb-1 flex items-center gap-2 text-base font-semibold">
               <Move className="w-4 h-4 text-cyan-400" />
-              Kling Motion Control
+              Motion Control
             </h2>
             <p className="mb-6 text-xs text-slate-500">{tools[2].desc}</p>
             <form onSubmit={runKlingMotion} className="space-y-4">
@@ -466,7 +466,7 @@ export default function DesignerStudioPage() {
                   onChange={(e) => setMotUltra(e.target.checked)}
                   className="rounded border-white/20 bg-black/40 text-cyan-500 focus:ring-cyan-500/50"
                 />
-                <span className="text-sm text-slate-300">Use Kling 3.0 Motion</span>
+                <span className="text-sm text-slate-300">Use 3.0 motion model</span>
               </label>
               <button
                 type="submit"

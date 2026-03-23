@@ -268,7 +268,7 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
       fd.append("name", name.trim());
       fd.append("photo", photo);
       const data = await avatarAPI.create(fd);
-      toast.success("Avatar submitted! HeyGen is processing it — check back in a few minutes.");
+      toast.success("Avatar submitted! Processing started — check back in a few minutes.");
       reset();
       onCreated(data.avatar);
       onClose();
@@ -693,7 +693,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
         </div>
         <div>
           <h2 className="text-sm font-bold text-white">Real Avatars</h2>
-          <p className="text-[11px] text-slate-500">HeyGen Photo Avatar IV · up to {MAX_AVATARS} per model</p>
+          <p className="text-[11px] text-slate-500">Photo avatar generation · up to {MAX_AVATARS} per model</p>
           <TutorialInfoLink
             className="mt-1"
             tutorialUrl={byKey?.["creator.real-avatars"]?.url || null}
@@ -865,9 +865,9 @@ function RealAvatarsTab({ sidebarCollapsed }) {
 // Main page — tab switcher wrapping both sections
 // ---------------------------------------------------------------------------
 const TABS = [
-  { id: "generate",    label: "Generate",     icon: Zap,  desc: "NanoBanana Pro · no model required" },
-  { id: "voices",      label: "Voice Studio", icon: Mic,  desc: "ElevenLabs audio" },
-  { id: "avatars",     label: "Real Avatars",  icon: User, desc: "HeyGen Photo Avatar IV" },
+  { id: "generate",    label: "Generate",     icon: Zap,  desc: "Advanced image generation · no model required" },
+  { id: "voices",      label: "Voice Studio", icon: Mic,  desc: "Custom voice audio" },
+  { id: "avatars",     label: "Real Avatars",  icon: User, desc: "Photo avatar videos" },
 ];
 
 export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab = "generate", initialModelId = null }) {
@@ -999,12 +999,12 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
           <div className="flex-1 px-6 pt-4 pb-64 min-h-screen">
             <div className="flex items-center gap-3 mb-8">
               <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">NanoBanana Pro</h1>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Image Generation</h1>
                 <p className="text-sm text-slate-400 mt-0.5">No model required · generate anything</p>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <TutorialInfoLink
                     tutorialUrl={byKey?.["creator.nanobanana-pro"]?.url || null}
-                    label="click to view tutorial - nanobanana pro"
+                    label="click to view tutorial - image generation"
                   />
                   <TutorialInfoLink
                     tutorialUrl={byKey?.["creator.voice-studio"]?.url || null}

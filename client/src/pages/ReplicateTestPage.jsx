@@ -115,7 +115,7 @@ export default function ReplicateTestPage() {
         console.log("[TEST] Uploaded reference:", referenceImageUrl);
       }
       
-      setStatus("Calling Replicate API (30-90 seconds)...");
+      setStatus("Calling generation API (30-90 seconds)...");
       console.log("[TEST] Calling generate endpoint");
 
       const response = await fetch("/api/test-replicate/generate", {
@@ -155,7 +155,7 @@ export default function ReplicateTestPage() {
     <div className="min-h-screen bg-gray-900 p-4 md:p-8">
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Replicate API Test</h1>
+          <h1 className="text-3xl font-bold text-white">Generation API Test</h1>
           <p className="text-gray-400">Admin test page - {user?.email || "Not logged in"}</p>
         </div>
 

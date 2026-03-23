@@ -976,7 +976,7 @@ function CheckoutForm({ item, itemType, onSuccess, onClose, paymentMethod, onSwi
             {(stripeLoadTimedOut || (!cardElementReady && !stripe)) && (
               <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-3">
                 <p className="text-xs text-amber-300">
-                  Secure card field did not load. You can continue with hosted Stripe checkout.
+                  Secure card field did not load. You can continue with hosted checkout.
                 </p>
                 {(itemType === 'subscription' || itemType === 'credits') && (
                   <button
