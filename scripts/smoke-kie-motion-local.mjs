@@ -51,9 +51,8 @@ async function createMotionTask({ model, imageUrl, videoUrl, callBackUrl }) {
 
   const is30 = model.includes("kling-3.0");
   const inputObj = {
-    mode: "720p",
+    mode: "1080p",
     video_urls: [videoUrl],
-    character_orientation: is30 ? "image" : "video",
     prompt:
       "No distortion, no blur, background matches with the image source, the character's movements are consistent with the video.",
     input_urls: [imageUrl],
@@ -63,7 +62,7 @@ async function createMotionTask({ model, imageUrl, videoUrl, callBackUrl }) {
   const body = {
     model,
     callBackUrl,
-    input: JSON.stringify(inputObj),
+    input: inputObj,
   };
 
   const res = await fetch(`${KIE_API_URL}/jobs/createTask`, {

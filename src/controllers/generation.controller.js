@@ -523,7 +523,6 @@ async function processVideoMotionInBackground(
   creditsNeeded,
   keepAudio = true,
   ultra = false,
-  motion1080p = false,
 ) {
   try {
     console.log(
@@ -544,7 +543,6 @@ async function processVideoMotionInBackground(
         {
           videoPrompt: prompt || "",
           ultra,
-          motion1080p: Boolean(ultra || motion1080p),
           onTaskSubmitted: async (taskId) => {
             await persistKieGenerationCorrelation({
               taskId,
@@ -634,11 +632,8 @@ export async function generateVideoWithMotion(req, res) {
       keepAudio = true,
       ultra = false,
       ultraMode,
-      motionPro = false,
-      motionProMode,
     } = req.body;
     const useUltra = ultra === true || ultraMode === true;
-    const useMotionPro = motionPro === true || motionProMode === true;
     userId = req.user.userId;
 
     // Validate required fields
@@ -695,16 +690,14 @@ export async function generateVideoWithMotion(req, res) {
     const user = await checkAndExpireCredits(userId);
     const totalCredits = getTotalCredits(user);
     const pricing = await getGenerationPricing();
-    const motionProPerSec =
+    const classicPerSec =
       typeof pricing.videoRecreateMotionProPerSec === "number"
         ? pricing.videoRecreateMotionProPerSec
         : 18;
-    // Tiers: 720p 2.6 (std) | 1080p 2.6 (motion pro) | 1080p 3.0 (ultra)
+    // Tiers: 1080p kling-2.6 (classic) | 1080p kling-3.0 (ultra)
     const creditsNeeded = useUltra
       ? Math.ceil(videoDuration * pricing.videoRecreateUltraPerSec)
-      : useMotionPro
-        ? Math.ceil(videoDuration * motionProPerSec)
-        : Math.ceil(videoDuration * pricing.videoRecreateStdPerSec);
+      : Math.ceil(videoDuration * classicPerSec);
 
     if (totalCredits < creditsNeeded) {
       return res.status(403).json({
@@ -716,7 +709,7 @@ export async function generateVideoWithMotion(req, res) {
     // Deduct credits BEFORE generation
     await deductCredits(userId, creditsNeeded);
     creditsDeducted = creditsNeeded; // Track for emergency refund
-    const tierLog = useUltra ? "pro-plus" : useMotionPro ? "pro-1080p" : "std-720p";
+    const tierLog = useUltra ? "ultra-3.0-1080p" : "classic-2.6-1080p";
     console.log(`💳 Deducted ${creditsNeeded} credits upfront (motion ${tierLog})`);
 
     const generation = await prisma.generation.create({
@@ -752,7 +745,6 @@ export async function generateVideoWithMotion(req, res) {
       creditsNeeded,
       keepAudio,
       useUltra,
-      useUltra ? false : useMotionPro,
     ).catch((error) => {
       console.error("❌ Background processing error:", error);
     });
@@ -2048,13 +2040,10 @@ export async function generateVideoDirectly(req, res) {
       tempId,
       ultra = false,
       ultraMode,
-      motionPro = false,
-      motionProMode,
       selectedImageUrl,
     } = req.body; // selectedImageUrl = user's first frame (identity already applied) → skip identity step
     userId = req.user.userId;
     const useUltraDirect = ultra === true || ultraMode === true;
-    const useMotionProDirect = motionPro === true || motionProMode === true;
 
     // Validate inputs
     if (!referenceVideoUrl) {
@@ -2094,15 +2083,13 @@ export async function generateVideoDirectly(req, res) {
     const user = await checkAndExpireCredits(userId);
     const totalCredits = getTotalCredits(user);
     const pricing = await getGenerationPricing();
-    const motionProPerSecDirect =
+    const classicPerSecDirect =
       typeof pricing.videoRecreateMotionProPerSec === "number"
         ? pricing.videoRecreateMotionProPerSec
         : 18;
     const creditsNeeded = useUltraDirect
       ? Math.ceil(videoDuration * pricing.videoRecreateUltraPerSec)
-      : useMotionProDirect
-        ? Math.ceil(videoDuration * motionProPerSecDirect)
-        : Math.ceil(videoDuration * pricing.videoRecreateStdPerSec);
+      : Math.ceil(videoDuration * classicPerSecDirect);
 
     if (totalCredits < creditsNeeded) {
       return res.status(403).json({
@@ -2147,7 +2134,6 @@ export async function generateVideoDirectly(req, res) {
       const result = await requestQueue.enqueue(async () =>
         generateVideoWithMotionKie(kieImageUrl, kieVideoUrl, {
           ultra: useUltraDirect,
-          motion1080p: useUltraDirect || useMotionProDirect,
           onTaskSubmitted: async (taskId) => {
             await persistKieGenerationCorrelation({
               taskId,

@@ -24,8 +24,9 @@ export const DEFAULT_GENERATION_PRICING = Object.freeze({
   avatarMonthly: 500,     // monthly maintenance per avatar
   avatarVideoPerSec: 5,   // per second of generated video
 
+  /** Legacy; recreate classic tier uses videoRecreateMotionProPerSec */
   videoRecreateStdPerSec: 10,
-  /** 2.6 motion-control at 1080p (user-facing “Motion Control Pro”) */
+  /** kling-2.6/motion-control @ 1080p (default “classic” recreate) */
   videoRecreateMotionProPerSec: 18,
   videoRecreateUltraPerSec: 25,
   videoPrompt5s: 60,

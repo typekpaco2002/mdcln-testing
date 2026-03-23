@@ -108,24 +108,22 @@ async function run() {
           prompt: "smooth realistic motion",
           input_urls: [sampleImage],
           video_urls: [sampleVideo],
-          mode: "720p",
-          character_orientation: "image",
+          mode: "1080p",
         },
       },
     },
     {
-      label: "video recreate kling-3.0/motion-control (string input + 720p)",
+      label: "video recreate kling-3.0/motion-control (object input + 1080p)",
       body: {
         model: "kling-3.0/motion-control",
         callBackUrl: "https://example.com/api/kie/callback",
-        input: JSON.stringify({
+        input: {
           prompt: "smooth realistic motion",
           input_urls: [sampleImage],
           video_urls: [sampleVideo],
-          mode: "720p",
-          character_orientation: "video",
+          mode: "1080p",
           background_source: "input_video",
-        }),
+        },
       },
     },
   ];

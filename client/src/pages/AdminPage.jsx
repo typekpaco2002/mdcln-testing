@@ -143,9 +143,9 @@ const GENERATION_PRICING_GROUPS = [
   {
     title: 'Video',
     fields: [
-      { key: 'videoRecreateStdPerSec', label: 'Video recreate — credits / sec (720p / 2.6)' },
-      { key: 'videoRecreateMotionProPerSec', label: 'Video recreate — credits / sec (1080p / 2.6 Pro)' },
-      { key: 'videoRecreateUltraPerSec', label: 'Video recreate — credits / sec (1080p / 3.0 Ultra)' },
+      { key: 'videoRecreateMotionProPerSec', label: 'Video recreate — classic (Motion Control 2.6 · 1080p) credits / sec' },
+      { key: 'videoRecreateUltraPerSec', label: 'Video recreate — ultra (Kling 3.0 Motion Control · 1080p) credits / sec' },
+      { key: 'videoRecreateStdPerSec', label: 'Video recreate — legacy std (unused; classic uses row above)' },
       { key: 'videoPrompt5s', label: 'Video from prompt — 5s' },
       { key: 'videoPrompt10s', label: 'Video from prompt — 10s' },
       { key: 'videoFaceSwapPerSec', label: 'Video face swap — credits / sec' },

@@ -121,9 +121,8 @@ async function waitForRateSlot(label) {
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 /**
- * Motion-control: build `input` as an object first (validate URLs), then serialize to a JSON **string**
- * for createTask — this matches the wire format KIE accepts in production (nested object also works for some routes).
- * Other models keep `input` as an object.
+ * Motion-control: `input` must be a plain JSON object on the wire (same as other KIE models).
+ * Double-stringifying breaks createTask — the HTTP body must be `{ "input": { ... } }`, not `{ "input": "{...}" }`.
  */
 function normalizeKieCreateRequestBody(rawBody, label) {
   if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) {
@@ -191,26 +190,18 @@ function normalizeKieCreateRequestBody(rawBody, label) {
       );
     }
 
-    /**
-     * Align with content-studio: both kling-2.6 and kling-3.0 motion-control use `720p` | `1080p`
-     * (KIE accepts this in production). Map legacy std/pro → 720p/1080p.
-     */
-    const mRaw = String(next.mode ?? "").trim().toLowerCase();
-    if (mRaw === "1080p" || mRaw === "pro" || mRaw === "professional") {
-      next.mode = "1080p";
-    } else if (
-      mRaw === "720p" ||
-      mRaw === "std" ||
-      mRaw === "standard" ||
-      mRaw === ""
-    ) {
-      next.mode = "720p";
+    /** App product: motion recreate is always 1080p for 2.6 and 3.0 (ignore legacy 720p in stored payloads). */
+    next.mode = "1080p";
+
+    // KIE: do not send character_orientation (invalid / not in 2.6 spec). 3.0 uses background_source.
+    delete next.character_orientation;
+    if (model.includes("kling-3.0")) {
+      if (!next.background_source) next.background_source = "input_video";
     } else {
-      console.warn(`[KIE] Unknown motion mode "${next.mode}" for ${model} — using 720p`);
-      next.mode = "720p";
+      delete next.background_source;
     }
 
-    body.input = JSON.stringify(next);
+    body.input = next;
   } else {
     body.input = input;
   }
@@ -228,16 +219,14 @@ async function kieCreateTask(requestBody, label = "task") {
 
   const modelName = String(body.model || "");
   const motionControl = modelName.includes("motion-control");
-  if (motionControl) {
-    if (typeof body.input !== "string") {
-      throw new Error(`[KIE] motion-control createTask expects input as JSON string (got ${typeof body.input})`);
-    }
-  } else if (typeof body.input !== "object" || body.input === null || Array.isArray(body.input)) {
-    throw new Error(`[KIE] createTask requires input as object (got ${typeof body.input})`);
+  if (typeof body.input !== "object" || body.input === null || Array.isArray(body.input)) {
+    throw new Error(
+      `[KIE] createTask requires input as object (got ${typeof body.input})${motionControl ? " [motion-control]" : ""}`,
+    );
   }
 
   console.log(
-    `[KIE] Submitting ${label} (input=${typeof body.input}${motionControl ? ", motion-control" : ""}):`,
+    `[KIE] Submitting ${label} (input=object${motionControl ? ", motion-control" : ""}):`,
     JSON.stringify(body).slice(0, 320),
   );
 
@@ -635,7 +624,8 @@ async function generateTextToImageNanoBananaKieInternal(prompt, options = {}) {
  * Kling 3.0 image-to-video with motion (recreate video).
  * @param {string} imageUrl - starting frame image
  * @param {string} videoUrl - reference video for motion (passed as end frame or element)
- * @param {object} options - { prompt, videoPrompt, ultra, ultraMode, motion1080p, motionMode, characterOrientation, onTaskSubmitted }
+ * @param {object} options - { prompt, videoPrompt, ultra, ultraMode, onTaskSubmitted }
+ * Classic = kling-2.6/motion-control @ 1080p. Ultra = kling-3.0/motion-control @ 1080p + background_source.
  */
 async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = {}) {
   console.log(`[KIE/kling-motion] image="${imageUrl.slice(0, 120)}"`);
@@ -661,25 +651,24 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
   const prompt = options.videoPrompt || options.prompt || "No distortion, no blur, background matches with the image source, the character's movements are consistent with the video.";
 
   const model = useUltraMotionControl ? "kling-3.0/motion-control" : "kling-2.6/motion-control";
-  const want1080 =
-    options.motion1080p === true ||
-    options.motionMode === "1080p" ||
-    options.motionMode === "pro";
-  const mode = want1080 ? "1080p" : "720p";
-  const characterOrientation =
-    options.characterOrientation === "image" || options.characterOrientation === "video"
-      ? options.characterOrientation
-      : "video";
+  /** Product: both tiers are 1080p (2.6 classic vs 3.0 ultra). */
+  const mode = "1080p";
+
+  const input = {
+    prompt,
+    input_urls: [img],
+    video_urls: [vid],
+    mode,
+  };
+  // kling-2.6: do not send character_orientation (not in spec; "video" caused issues).
+  // kling-3.0: use background_source per KIE docs (not character_orientation).
+  if (useUltraMotionControl) {
+    input.background_source = "input_video";
+  }
+
   const requestBody = {
     model,
-    input: {
-      prompt,
-      input_urls: [img],
-      video_urls: [vid],
-      character_orientation: characterOrientation,
-      mode,
-      ...(useUltraMotionControl ? { background_source: "input_video" } : {}),
-    },
+    input,
   };
 
   const callbackUrl = getKieCallbackUrl();

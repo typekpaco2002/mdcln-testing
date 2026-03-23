@@ -26,8 +26,8 @@ This document is the in-depth map of:
 | NSFW image generation | ComfyUI NSFW workflow (Illustrious checkpoint) | RunPod endpoint workflow | RunPod | `src/controllers/nsfw.controller.js`, `src/services/fal.service.js` |
 | NSFW video generation | i2v | `wavespeed-ai/wan-2.2-spicy/image-to-video` | WaveSpeed | `src/services/wavespeed.service.js` |
 | NSFW video extend | extend | `wavespeed-ai/wan-2.2-spicy/video-extend` | WaveSpeed | `src/services/wavespeed.service.js` |
-| Motion recreate | std/ultra job type | `kling-2.6/motion-control`, `kling-3.0/motion-control` | KIE.AI | `src/services/kie.service.js` |
-| Motion recreate params | **Motion-control** `input` is sent as a **JSON string** on the wire; `input.mode` **`720p`** / **`1080p`** for both **2.6** and **3.0** (KIE accepts this). Legacy **`std`**/**`pro`** are mapped to 720p/1080p. | KIE.AI | `src/services/kie.service.js` |
+| Motion recreate | classic (2.6) vs ultra (3.0) | `kling-2.6/motion-control`, `kling-3.0/motion-control` | KIE.AI | `src/services/kie.service.js` |
+| Motion recreate params | **`input` is a JSON object** (not a string) on createTask. **`mode`:** **`1080p`** for both tiers. **2.6:** `prompt`, `input_urls`, `video_urls`, `mode` only. **3.0:** same + **`background_source`:** **`input_video`**. No `character_orientation`. | KIE.AI | `src/services/kie.service.js` |
 | LoRA training | training pipeline | `fal-ai/z-image-turbo-trainer-v2` | fal.ai | `src/services/fal.service.js` |
 | LoRA captioning helper | dataset captions | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/services/fal.service.js` |
 | LoRA auto-assign helper | pose/additive LoRA selection | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/services/fal.service.js` |
