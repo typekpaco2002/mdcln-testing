@@ -284,10 +284,6 @@ router.get("/:id/download", mediaAuth, requireSub, async (req, res) => {
   let videoUrl = reel.videoUrl;
 
   if (videoUrl) {
-    if (isR2(videoUrl)) {
-      res.setHeader("Content-Disposition", `attachment; filename="reel_${reel.instagramReelId || reel.id}.mp4"`);
-      return res.redirect(302, videoUrl);
-    }
     try {
       res.setHeader("Content-Disposition", `attachment; filename="reel_${reel.instagramReelId || reel.id}.mp4"`);
       await pipeStream(videoUrl, res, () => cacheReelToR2InBackground(reel.id, videoUrl));
@@ -304,7 +300,6 @@ router.get("/:id/download", mediaAuth, requireSub, async (req, res) => {
       if (freshUrl) {
         prisma.reel.update({ where: { id: reel.id }, data: { videoUrl: freshUrl } }).catch(() => {});
         res.setHeader("Content-Disposition", `attachment; filename="reel_${reel.instagramReelId || reel.id}.mp4"`);
-        if (isR2(freshUrl)) return res.redirect(302, freshUrl);
         await pipeStream(freshUrl, res, () => cacheReelToR2InBackground(reel.id, freshUrl)).catch(() => {});
         return;
       }
