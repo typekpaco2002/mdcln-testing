@@ -847,8 +847,8 @@ export async function postModelVoicesDesignConfirm(req, res) {
     const generatedVoiceId = String(req.body?.generatedVoiceId || "").trim();
     const voiceDescription = String(req.body?.voiceDescription || "").trim();
     const language = normalizeVoiceStudioLanguageCode(req.body?.language);
-    const gender = normalizeVoiceStudioGender(req.body?.gender);
-    const fullDescription = mergeVoiceDescriptionForDesign(voiceDescription, language, gender);
+    const selectedGender = normalizeVoiceStudioGender(req.body?.gender);
+    const fullDescription = mergeVoiceDescriptionForDesign(voiceDescription, language, selectedGender);
 
     if (!consentOk(req.body?.consentConfirmed)) {
       return res.status(400).json({
@@ -922,7 +922,7 @@ export async function postModelVoicesDesignConfirm(req, res) {
           name: voiceName,
           description: voiceDescription,
           language,
-          gender: gender || null,
+          gender: selectedGender || null,
           previewUrl,
           isDefault: existingVoices.length === 0,
         },
@@ -1028,6 +1028,7 @@ export async function postModelVoicesClone(req, res) {
     creditsCharged = cost;
 
     const language = normalizeVoiceStudioLanguageCode(req.body?.language);
+    const selectedGender = normalizeVoiceStudioGender(req.body?.gender);
     const voiceName = internalVoiceLabel(model);
     const cloned = await cloneVoiceFromMp3Buffer({
       voiceName,
@@ -1060,7 +1061,7 @@ export async function postModelVoicesClone(req, res) {
           name: voiceName,
           description: `Clone for model ${model.name}`,
           language,
-          gender: gender || null,
+          gender: selectedGender || null,
           previewUrl,
           sampleAudioUrl,
           isDefault: existingVoices.length === 0,
