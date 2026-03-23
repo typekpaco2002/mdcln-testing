@@ -229,6 +229,7 @@ import avatarRoutes from "./avatar.routes.js";
 import { sendFrontendErrorAlert } from "../services/email.service.js";
 import rateLimit from "express-rate-limit";
 import { getAppBranding } from "../services/branding.service.js";
+import { getTutorialCatalog } from "../services/tutorial-videos.service.js";
 
 const router = express.Router();
 const consumedImpersonationJtis = new Map();
@@ -258,6 +259,16 @@ router.get("/brand", async (_req, res) => {
   } catch (error) {
     console.error("Brand endpoint error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch branding" });
+  }
+});
+
+router.get("/tutorials/catalog", async (_req, res) => {
+  try {
+    const catalog = await getTutorialCatalog();
+    res.json({ success: true, tutorials: catalog.entries, byKey: catalog.byKey });
+  } catch (error) {
+    console.error("Tutorial catalog endpoint error:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch tutorial catalog" });
   }
 });
 

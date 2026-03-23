@@ -74,6 +74,8 @@ import AppSidebar from "../components/AppSidebar";
 import LazyVideo from "../components/LazyVideo";
 import CourseTipBanner from "../components/CourseTipBanner";
 import NudesPackModal from "../components/NudesPackModal";
+import TutorialInfoLink from "../components/TutorialInfoLink";
+import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
 import {
   getNudesPackTotalCredits,
   NUDES_PACK_MAX_POSES,
@@ -3274,6 +3276,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
 
   // State
   const [selectedModel, setSelectedModel] = useState(null);
+  const { byKey } = useTutorialCatalog();
   const [activePhase, setActivePhase] = useState("training"); // "training", "generate", or "video"
   const [videoSelectedImage, setVideoSelectedImage] = useState(null);
   const [videoPrompt, setVideoPrompt] = useState("");
@@ -3607,6 +3610,13 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
 
   // Get selected model data
   const selectedModelData = models.find((m) => m.id === selectedModel);
+  const nsfwSlotByPhase = {
+    training: "nsfw.training",
+    generate: "nsfw.generate",
+    video: "nsfw.video",
+    img2img: "nsfw.img2img",
+  };
+  const activeNsfwTutorialUrl = byKey?.[nsfwSlotByPhase[activePhase]]?.url || null;
   const hasNsfwAccess = models.some((m) => m.isAIGenerated === true || m.nsfwOverride === true || m.nsfwUnlocked === true);
   const isLoraReady = selectedModelData?.nsfwUnlocked === true || 
     modelLoras.some(l => l.status === 'ready');
@@ -4410,6 +4420,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
         <p className="text-xs sm:text-sm text-slate-400">
           Train custom LoRA models and generate NSFW content with verified models
         </p>
+        <TutorialInfoLink className="mt-2" tutorialUrl={activeNsfwTutorialUrl} />
       </div>
 
       <CourseTipBanner type="nsfw" onNavigateToCourse={() => setDashboardTab?.("course", "generate-nsfw")} />

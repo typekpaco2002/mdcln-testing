@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api, { adminAPI, adminTelemetryAPI, brandingAPI, referralAPI, uploadToCloudinary as uploadFile } from '../services/api';
+import api, { adminAPI, adminTelemetryAPI, brandingAPI, referralAPI, tutorialsAPI, uploadToCloudinary as uploadFile } from '../services/api';
 import AddCreditsAdminModal from '../components/AddCreditsAdminModal';
 import EditUserSettingsModal from '../components/EditUserSettingsModal';
 import NsfwOverrideModal from '../components/NsfwOverrideModal';
@@ -540,6 +540,9 @@ export default function AdminPage() {
     appName: 'ModelClone', logoUrl: '', faviconUrl: '', baseUrl: 'https://modelclone.app', tutorialVideoUrl: '',
   });
   const [tutorialVideoUploading, setTutorialVideoUploading] = useState(false);
+  const [tutorialSlots, setTutorialSlots] = useState([]);
+  const [loadingTutorialSlots, setLoadingTutorialSlots] = useState(false);
+  const [uploadingTutorialSlot, setUploadingTutorialSlot] = useState("");
   const [emailBuilder, setEmailBuilder] = useState({
     subject: 'Important Update from ModelClone',
     headline: 'Important News',
@@ -646,6 +649,7 @@ export default function AdminPage() {
     loadTelemetry(telemetryHours);
     loadReelFinderAdmin();
     loadBranding();
+    loadTutorialSlots();
     loadBackupHistory();
     loadCampaigns();
   }, []);
@@ -746,6 +750,20 @@ export default function AdminPage() {
       });
     } catch { toast.error('Failed to load brand settings'); }
     finally { setLoadingBranding(false); }
+  };
+
+  const loadTutorialSlots = async () => {
+    try {
+      setLoadingTutorialSlots(true);
+      const r = await tutorialsAPI.getAdminSlots();
+      if (r?.success) {
+        setTutorialSlots(Array.isArray(r.slots) ? r.slots : []);
+      }
+    } catch {
+      toast.error('Failed to load tutorial slots');
+    } finally {
+      setLoadingTutorialSlots(false);
+    }
   };
 
   const loadReelFinderAdmin = async () => {
@@ -1178,6 +1196,24 @@ export default function AdminPage() {
       toast.success('Logo uploaded');
     } catch { toast.error('Upload failed'); }
     finally { setSavingBranding(false); }
+  };
+
+  const handleUploadTutorialSlot = async (slotKey, file) => {
+    if (!slotKey || !file) return;
+    try {
+      setUploadingTutorialSlot(slotKey);
+      const result = await tutorialsAPI.uploadSlotVideo({ slot: slotKey, file });
+      if (result?.success) {
+        toast.success('Tutorial slot updated');
+        await loadTutorialSlots();
+      } else {
+        toast.error(result?.error || 'Upload failed');
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.error || 'Upload failed');
+    } finally {
+      setUploadingTutorialSlot("");
+    }
   };
 
   const handleSendEmail = async (isTest = false) => {
@@ -3140,6 +3176,59 @@ export default function AdminPage() {
                 {brandSettings.tutorialVideoUrl && (
                   <p className="text-[10px] text-slate-600 mt-2 truncate">{brandSettings.tutorialVideoUrl}</p>
                 )}
+
+                <div className="pt-4 mt-4 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-xs font-semibold text-gray-300">Page / Mode Tutorial Slots</p>
+                    <GhostBtn onClick={loadTutorialSlots} disabled={loadingTutorialSlots} className="py-1 px-2 text-[10px]">
+                      {loadingTutorialSlots ? 'Refreshing…' : 'Refresh slots'}
+                    </GhostBtn>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mb-3">
+                    Upload videos for My Models, Generate Video modes, Creator Studio, and NSFW mode tutorials.
+                  </p>
+                  <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                    {tutorialSlots.map((slot) => (
+                      <div key={slot.key} className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-2.5">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <p className="text-[11px] text-gray-200">{slot.label}</p>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${slot.exists ? 'bg-emerald-500/15 text-emerald-300' : 'bg-white/[0.08] text-gray-500'}`}>
+                            {slot.exists ? 'Set' : 'Not set'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <label className={`px-2.5 py-1 rounded-md border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-[11px] text-violet-300 cursor-pointer transition ${uploadingTutorialSlot === slot.key ? 'opacity-50 pointer-events-none' : ''}`}>
+                            {uploadingTutorialSlot === slot.key ? 'Uploading…' : 'Upload video'}
+                            <input
+                              type="file"
+                              accept="video/mp4,video/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                e.target.value = '';
+                                if (!file) return;
+                                await handleUploadTutorialSlot(slot.key, file);
+                              }}
+                            />
+                          </label>
+                          {slot.url && (
+                            <a
+                              href={slot.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[10px] text-slate-500 hover:text-slate-300 truncate max-w-[280px]"
+                            >
+                              {slot.url}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {!loadingTutorialSlots && tutorialSlots.length === 0 && (
+                      <p className="text-[11px] text-gray-600">No tutorial slots found.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
               <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">

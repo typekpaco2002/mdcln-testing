@@ -35,8 +35,8 @@ import {
 } from "lucide-react";
 
 /** Video recreate per-second defaults (align with server `generation-pricing.service`) */
-const VIDEO_RECREATE_CLASSIC_PER_SEC = 18; // kling-2.6 motion-control 1080p
-const VIDEO_RECREATE_ULTRA_PER_SEC = 25; // kling-3.0 motion-control 1080p
+const VIDEO_RECREATE_CLASSIC_PER_SEC = 10; // kling-2.6 motion-control 1080p
+const VIDEO_RECREATE_ULTRA_PER_SEC = 20; // kling-3.0 motion-control 1080p
 
 // Gallery Image Picker - lets user pick from previously generated images
 function GalleryImagePicker({ modelId, selectedImage, onSelect, accentColor = "purple" }) {
@@ -438,6 +438,7 @@ import GenerationResults from "../components/GenerationResults";
 import { GenerationHistory } from "../components/GenerationHistory";
 import TutorialButton from "../components/TutorialButton";
 import { TUTORIALS } from "../utils/tutorials";
+import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
 import AddCreditsModal from "../components/AddCreditsModal";
 import { CreditCard } from "lucide-react";
 import LivePreviewPanel from "../components/LivePreviewPanel";
@@ -448,6 +449,11 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
   const [activeTab, setActiveTab] = useState("image");
   const [isTabDrawerOpen, setIsTabDrawerOpen] = useState(false);
   const [hasSelectedTopTab, setHasSelectedTopTab] = useState(false);
+  const { getTutorial } = useTutorialCatalog();
+  const videoTutorialRecreate = getTutorial("generate.video.recreate", "Recreate Video Tutorial");
+  const videoTutorialPrompt = getTutorial("generate.video.prompt", "Prompt Video Tutorial");
+  const videoTutorialFaceSwap = getTutorial("generate.video.faceswap", "Face Swap Video Tutorial");
+  const videoTutorialTalking = getTutorial("generate.video.talking", "Talking Video Tutorial");
 
   useEffect(() => {
     const handleBack = () => {
@@ -2337,7 +2343,7 @@ function VideoGeneration() {
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">Recreate</span>
-                <TutorialButton tutorial={TUTORIALS.video.twoStep} />
+                <TutorialButton tutorial={videoTutorialRecreate} showWhenMissing />
               </div>
               <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                 <span className="text-[9px] font-medium text-yellow-400 inline-flex items-center gap-0.5">Classic 2.6 · 1080p · {VIDEO_RECREATE_CLASSIC_PER_SEC} <Coins className="w-2.5 h-2.5" />/sec</span>
@@ -2376,7 +2382,7 @@ function VideoGeneration() {
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">Prompt</span>
-                <TutorialButton tutorial={TUTORIALS.video.prompt} />
+                <TutorialButton tutorial={videoTutorialPrompt} showWhenMissing />
               </div>
               <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                 <span className="text-[9px] font-medium text-yellow-400 inline-flex items-center gap-0.5">10-12 <Coins className="w-2.5 h-2.5" />/sec</span>
@@ -2410,7 +2416,7 @@ function VideoGeneration() {
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">Face Swap</span>
-                <TutorialButton tutorial={TUTORIALS.video.faceswap} />
+                <TutorialButton tutorial={videoTutorialFaceSwap} showWhenMissing />
               </div>
               <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                 <span className="text-[9px] font-medium text-yellow-400 inline-flex items-center gap-0.5">10 <Coins className="w-2.5 h-2.5" />/sec</span>
@@ -2444,6 +2450,7 @@ function VideoGeneration() {
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">Talking</span>
+                <TutorialButton tutorial={videoTutorialTalking} showWhenMissing />
               </div>
               <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20">
                 <span className="text-[9px] font-medium text-yellow-400 inline-flex items-center gap-0.5">~13 <Coins className="w-2.5 h-2.5" />/sec</span>

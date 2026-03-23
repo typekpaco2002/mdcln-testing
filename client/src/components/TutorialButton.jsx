@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { HelpCircle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import toast from "react-hot-toast";
 
 /**
  * TutorialButton - Shows tutorial video in modal
@@ -11,13 +12,17 @@ import { motion, AnimatePresence } from "framer-motion";
  * @param {string} tutorial.youtubeId - YouTube video ID
  * @param {string} tutorial.description - Short description
  */
-export default function TutorialButton({ tutorial }) {
+export default function TutorialButton({ tutorial, showWhenMissing = false, missingMessage = "Coming soon" }) {
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!tutorial) return null;
+  if (!tutorial && !showWhenMissing) return null;
 
   const handleOpen = (e) => {
     e.stopPropagation();
+    if (!tutorial?.videoUrl && !tutorial?.youtubeId) {
+      toast(missingMessage);
+      return;
+    }
     setIsOpen(true);
   };
 
@@ -50,7 +55,7 @@ export default function TutorialButton({ tutorial }) {
       </div>
 
       {/* Modal - Rendered via Portal */}
-      {isOpen &&
+      {isOpen && tutorial &&
         createPortal(
           <AnimatePresence>
             <>

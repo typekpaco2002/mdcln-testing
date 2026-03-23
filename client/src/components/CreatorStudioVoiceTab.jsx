@@ -20,6 +20,8 @@ import ModelSelectorCollapsible from "./ModelSelectorCollapsible";
 import { modelAPI } from "../services/api";
 import { useAuthStore } from "../store";
 import { hasPremiumAccess } from "../utils/premiumAccess";
+import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
+import TutorialInfoLink from "./TutorialInfoLink";
 
 function estimateSecsFromChars(chars) {
   if (!chars) return 0;
@@ -63,6 +65,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
   const user = useAuthStore((state) => state.user);
   const refreshUser = useAuthStore((state) => state.refreshUser);
   const canUseVoiceStudio = hasPremiumAccess(user);
+  const { byKey } = useTutorialCatalog();
 
   const [selectedModelId, setSelectedModelId] = useState(null);
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
@@ -385,6 +388,10 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
           <p className="text-sm text-slate-400">
             Multilingual v3 audio generation, up to {limits.maxSavedVoicesPerModel || 3} saved voices per model.
           </p>
+          <TutorialInfoLink
+            className="mt-2"
+            tutorialUrl={byKey?.["creator.voice-studio"]?.url || null}
+          />
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
           <span className="text-slate-500">Credits available:</span>{" "}

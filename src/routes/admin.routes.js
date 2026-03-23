@@ -8,7 +8,14 @@ import { BackupService } from "../services/backup.service.js";
 import { sendPromoEmail } from "../services/email.service.js";
 import { getAppBranding, updateAppBranding, clearTutorialVideo } from "../services/branding.service.js";
 import multer from "multer";
-import { isR2Configured, uploadBufferToR2, uploadFileToR2, mirrorToR2 } from "../utils/r2.js";
+import { isR2Configured, uploadBufferToR2, uploadFileToR2, mirrorToR2, uploadToR2 } from "../utils/r2.js";
+import {
+  getTutorialCatalog,
+  getTutorialPublicUrl,
+  getTutorialR2Key,
+  getTutorialSlot,
+  isValidTutorialSlot,
+} from "../services/tutorial-videos.service.js";
 import {
   getLatestEndpointHealthSnapshots,
   getTelemetryOverview,
@@ -150,6 +157,46 @@ router.delete("/tutorial-video", async (_req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+router.get("/tutorial-video-slots", async (_req, res) => {
+  try {
+    const catalog = await getTutorialCatalog();
+    res.json({ success: true, slots: catalog.entries, byKey: catalog.byKey });
+  } catch (error) {
+    console.error("Tutorial slots fetch error:", error);
+    res.status(500).json({ success: false, error: error.message || "Failed to load tutorial slots" });
+  }
+});
+
+router.post(
+  "/tutorial-video-slot",
+  uploadEmailVideo.single("video"),
+  async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, error: "No video file provided" });
+      if (!isR2Configured()) return res.status(503).json({ success: false, error: "R2 storage not configured" });
+
+      const slotKey = String(req.body?.slot || "").trim();
+      if (!isValidTutorialSlot(slotKey)) {
+        return res.status(400).json({ success: false, error: "Invalid tutorial slot" });
+      }
+
+      const r2Key = getTutorialR2Key(slotKey);
+      const url = await uploadToR2(req.file.buffer, r2Key, req.file.mimetype || "video/mp4");
+      const slot = getTutorialSlot(slotKey);
+      res.json({
+        success: true,
+        slot: slotKey,
+        label: slot?.label || slotKey,
+        key: r2Key,
+        url: url || getTutorialPublicUrl(slotKey),
+      });
+    } catch (error) {
+      console.error("Tutorial slot upload error:", error);
+      res.status(500).json({ success: false, error: error.message || "Upload failed" });
+    }
+  },
+);
 
 router.get("/pricing/generation", async (_req, res) => {
   try {

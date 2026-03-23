@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
@@ -120,6 +120,21 @@ export async function deleteFromR2(url) {
 
   await client.send(command);
   console.log(`✅ Deleted from R2: ${key}`);
+}
+
+export async function hasR2Object(key) {
+  const client = getS3Client();
+  if (!client) return false;
+  try {
+    const command = new HeadObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+    });
+    await client.send(command);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function getR2PublicUrl(key) {

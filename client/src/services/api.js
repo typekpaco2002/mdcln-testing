@@ -676,6 +676,26 @@ export const brandingAPI = {
   },
 };
 
+export const tutorialsAPI = {
+  getCatalog: async () => {
+    const response = await api.get("/tutorials/catalog");
+    return response.data;
+  },
+  getAdminSlots: async () => {
+    const response = await api.get("/admin/tutorial-video-slots");
+    return response.data;
+  },
+  uploadSlotVideo: async ({ slot, file }) => {
+    const formData = new FormData();
+    formData.append("slot", slot);
+    formData.append("video", file);
+    const response = await api.post("/admin/tutorial-video-slot", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  },
+};
+
 export const adminAPI = {
   loraRecovery: async ({
     userId,

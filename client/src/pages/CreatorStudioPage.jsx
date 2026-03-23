@@ -11,6 +11,8 @@ import { creatorStudioAPI, avatarAPI, modelAPI, uploadFile } from "../services/a
 import { useAuthStore } from "../store";
 import { useActiveGeneration } from "../hooks/useActiveGeneration";
 import CreatorStudioVoiceTab from "../components/CreatorStudioVoiceTab";
+import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
+import TutorialInfoLink from "../components/TutorialInfoLink";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -578,6 +580,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
   const [deletingId, setDeletingId] = useState(null);
   const [videos, setVideos] = useState([]);
   const [modelDropOpen, setModelDropOpen] = useState(false);
+  const { byKey } = useTutorialCatalog();
 
   // Load user models
   const { data: modelsData, isLoading: modelsLoading } = useQuery({
@@ -691,6 +694,10 @@ function RealAvatarsTab({ sidebarCollapsed }) {
         <div>
           <h2 className="text-sm font-bold text-white">Real Avatars</h2>
           <p className="text-[11px] text-slate-500">HeyGen Photo Avatar IV · up to {MAX_AVATARS} per model</p>
+          <TutorialInfoLink
+            className="mt-1"
+            tutorialUrl={byKey?.["creator.real-avatars"]?.url || null}
+          />
         </div>
       </div>
 
@@ -867,6 +874,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
   const [activeTab, setActiveTab] = useState(initialTab);
   const user        = useAuthStore((s) => s.user);
   const refreshUser = useAuthStore((s) => s.refreshUser);
+  const { byKey } = useTutorialCatalog();
   const isAdminUser = user?.role === "admin";
   const visibleTabs = isAdminUser ? TABS : TABS.filter((t) => t.id !== "avatars");
 
@@ -993,6 +1001,20 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">NanoBanana Pro</h1>
                 <p className="text-sm text-slate-400 mt-0.5">No model required · generate anything</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <TutorialInfoLink
+                    tutorialUrl={byKey?.["creator.nanobanana-pro"]?.url || null}
+                    label="click to view tutorial - nanobanana pro"
+                  />
+                  <TutorialInfoLink
+                    tutorialUrl={byKey?.["creator.voice-studio"]?.url || null}
+                    label="click to view tutorial - voice studio"
+                  />
+                  <TutorialInfoLink
+                    tutorialUrl={byKey?.["creator.real-avatars"]?.url || null}
+                    label="click to view tutorial - real avatars"
+                  />
+                </div>
               </div>
             </div>
 

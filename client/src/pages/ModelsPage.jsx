@@ -38,6 +38,8 @@ import { selectorCategories } from "../data/nsfwSelectors";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { cn } from "../lib/utils";
+import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
+import TutorialInfoLink from "../components/TutorialInfoLink";
 
 export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioForModel }) {
   const [models, setModels] = useState([]);
@@ -50,6 +52,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
   const [savingAge, setSavingAge] = useState(false);
   const [uploading, setUploading] = useState(null);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState(null);
+  const { byKey } = useTutorialCatalog();
 
   // Look variable editor state
   const [editLooks, setEditLooks] = useState({});
@@ -294,6 +297,10 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
             <p className="text-slate-400 text-sm">
               Create and manage your AI face models
             </p>
+            <TutorialInfoLink
+              className="mt-1"
+              tutorialUrl={byKey?.["models.my-models"]?.url || null}
+            />
           </div>
         </div>
 
