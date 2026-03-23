@@ -121,8 +121,9 @@ async function waitForRateSlot(label) {
 // ─── API calls ────────────────────────────────────────────────────────────────
 
 /**
- * Motion-control: `input` must be a plain JSON object on the wire (same as other KIE models).
- * Double-stringifying breaks createTask — the HTTP body must be `{ "input": { ... } }`, not `{ "input": "{...}" }`.
+ * Motion-control: keep wire format aligned with content-studio (stringified `input`).
+ * KIE's motion-control endpoint has been most reliable in production with:
+ *   { model, callBackUrl, input: JSON.stringify({ ... }) }
  */
 function normalizeKieCreateRequestBody(rawBody, label) {
   if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) {
@@ -193,15 +194,19 @@ function normalizeKieCreateRequestBody(rawBody, label) {
     /** App product: motion recreate is always 1080p for 2.6 and 3.0 (ignore legacy 720p in stored payloads). */
     next.mode = "1080p";
 
-    // KIE: do not send character_orientation (invalid / not in 2.6 spec). 3.0 uses background_source.
-    delete next.character_orientation;
+    // Match content-studio payload shape for maximum compatibility.
+    const characterOrientation =
+      next.character_orientation === "image" || next.character_orientation === "video"
+        ? next.character_orientation
+        : "video";
+    next.character_orientation = characterOrientation;
     if (model.includes("kling-3.0")) {
       if (!next.background_source) next.background_source = "input_video";
     } else {
       delete next.background_source;
     }
 
-    body.input = next;
+    body.input = JSON.stringify(next);
   } else {
     body.input = input;
   }
@@ -219,14 +224,16 @@ async function kieCreateTask(requestBody, label = "task") {
 
   const modelName = String(body.model || "");
   const motionControl = modelName.includes("motion-control");
-  if (typeof body.input !== "object" || body.input === null || Array.isArray(body.input)) {
-    throw new Error(
-      `[KIE] createTask requires input as object (got ${typeof body.input})${motionControl ? " [motion-control]" : ""}`,
-    );
+  if (motionControl) {
+    if (typeof body.input !== "string") {
+      throw new Error(`[KIE] motion-control createTask expects input as JSON string (got ${typeof body.input})`);
+    }
+  } else if (typeof body.input !== "object" || body.input === null || Array.isArray(body.input)) {
+    throw new Error(`[KIE] createTask requires input as object (got ${typeof body.input})`);
   }
 
   console.log(
-    `[KIE] Submitting ${label} (input=object${motionControl ? ", motion-control" : ""}):`,
+    `[KIE] Submitting ${label} (input=${typeof body.input}${motionControl ? ", motion-control" : ""}):`,
     JSON.stringify(body).slice(0, 320),
   );
 
@@ -654,21 +661,21 @@ async function generateVideoWithMotionKieInternal(imageUrl, videoUrl, options = 
   /** Product: both tiers are 1080p (2.6 classic vs 3.0 ultra). */
   const mode = "1080p";
 
-  const input = {
+  const inputObj = {
     prompt,
     input_urls: [img],
     video_urls: [vid],
     mode,
   };
-  // kling-2.6: do not send character_orientation (not in spec; "video" caused issues).
-  // kling-3.0: use background_source per KIE docs (not character_orientation).
+  // Keep parity with content-studio request shape.
+  inputObj.character_orientation = "video";
   if (useUltraMotionControl) {
-    input.background_source = "input_video";
+    inputObj.background_source = "input_video";
   }
 
   const requestBody = {
     model,
-    input,
+    input: JSON.stringify(inputObj),
   };
 
   const callbackUrl = getKieCallbackUrl();

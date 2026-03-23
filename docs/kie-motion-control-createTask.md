@@ -1,17 +1,12 @@
 # KIE `createTask` — motion-control (reference)
 
-Do **not** double-serialize `input`. The HTTP JSON body must look like:
+Use the same wire format as production content-studio for motion-control:
 
 ```json
 {
   "model": "kling-2.6/motion-control",
   "callBackUrl": "https://your.app/api/kie/callback",
-  "input": {
-    "prompt": "…",
-    "input_urls": ["https://…"],
-    "video_urls": ["https://…"],
-    "mode": "1080p"
-  }
+  "input": "{\"prompt\":\"…\",\"input_urls\":[\"https://…\"],\"video_urls\":[\"https://…\"],\"mode\":\"1080p\",\"character_orientation\":\"video\"}"
 }
 ```
 
@@ -21,6 +16,4 @@ For **`kling-3.0/motion-control`**, add:
 "background_source": "input_video"
 ```
 
-Wrong (breaks API): `"input": "{\"prompt\":...}"`  ← string value instead of object.
-
-Implementation: `normalizeKieCreateRequestBody` + `kieCreateTask` in `src/services/kie.service.js`.
+Implementation: `generateVideoWithMotionKieInternal` + `normalizeKieCreateRequestBody` in `src/services/kie.service.js`.
