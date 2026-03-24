@@ -28,6 +28,349 @@ import api from "../services/api";
 import toast from "react-hot-toast";
 import CheckoutModal from "../components/CheckoutModal";
 import { pollModelUntilReady } from "../utils/modelStatusPolling";
+import { selectorCategories } from "../data/nsfwSelectors";
+
+const LOCALE_STORAGE_KEY = "app_locale";
+
+const PAGE_COPY = {
+  en: {
+    optionFemale: "Female",
+    optionMale: "Male",
+    optionBlonde: "Blonde",
+    optionBrown: "Brown",
+    optionBlack: "Black",
+    optionRed: "Red",
+    optionAuburn: "Auburn",
+    optionPlatinum: "Platinum",
+    optionWhite: "White",
+    optionPink: "Pink",
+    optionLong: "Long",
+    optionMedium: "Medium",
+    optionShort: "Short",
+    optionStraight: "Straight",
+    optionWavy: "Wavy",
+    optionCurly: "Curly",
+    optionSmall: "Small",
+    optionBig: "Big",
+    optionCuteFeminine: "Cute Feminine",
+    optionModelFace: "Model Face",
+    optionNatural: "Natural",
+    optionBlue: "Blue",
+    optionGreen: "Green",
+    optionHazel: "Hazel",
+    optionGray: "Gray",
+    optionSlim: "Slim",
+    optionAthletic: "Athletic",
+    optionCurvy: "Curvy",
+    optionPetite: "Petite",
+    optionHourglass: "Hourglass",
+    optionMuscular: "Muscular",
+    optionEuropean: "European",
+    optionAfrican: "African",
+    optionLatino: "Latino",
+    optionAsian: "Asian",
+    optionMiddleEastern: "Middle Eastern",
+    optionMixed: "Mixed",
+    optionNaturalLook: "Natural Look",
+    optionStrongMakeup: "Strong Makeup",
+    required: "Required",
+    toastUploadOnePhoto: "Upload at least one photo first",
+    toastLooksDetected: "Looks detected!",
+    toastDetectionFailed: "Detection failed",
+    toastDetectLooksFailed: "Failed to detect looks",
+    toastPortraitGenerated: "Portrait generated!",
+    toastGenerationFailed: "Generation failed. Please try again.",
+    toastTrialAlreadyUsed: "You've already used your free trial",
+    toastUploadAll3: "Please upload all 3 photos",
+    toastModelCreated: "Model created!",
+    toastUploadFailed: "Upload failed. Please try again.",
+    toastPaymentConfirmed: "Payment confirmed! Creating your AI model...",
+    toastModelReady: "Your AI model is ready!",
+    toastWelcome: "Welcome to ModelClone!",
+    toastWelcomeModelReady: "Welcome to ModelClone! Your AI model is ready.",
+    toastEnterPrompt: "Please enter a prompt",
+    toastGenericError: "Something went wrong. Please try again.",
+    loadingHint: "This usually takes 15-30 seconds",
+    badgeFreeTrial: "100% FREE TRIAL",
+    chooseTitleLine1: "What would you like",
+    chooseTitleLine2: "to create?",
+    chooseSubtitle: "Try one free generation to experience the AI quality",
+    chooseAiTitle: "Create AI Model",
+    chooseAiSubtitle: "Generate a unique face and unlimited content",
+    chooseRealTitle: "Use Real Photos",
+    chooseRealSubtitle: "Upload your photos and create AI content",
+    skipToDashboard: "Skip to dashboard ->",
+    back: "Back",
+    aiNameTitle: "Name Your AI Model",
+    aiNameSubtitle: "Give your creation a unique identity",
+    aiNamePlaceholder: "e.g. Luna, Alex, Sofia...",
+    aiNameHint: "This name will identify your model",
+    continue: "Continue",
+    aiDesignTitle: "Design Your AI Model",
+    aiDesignSubtitle: "Use the same Model Looks as dashboard AI model creation",
+    fieldGender: "Gender",
+    fieldAge: "Age",
+    fieldBodyType: "Body Type",
+    fieldHeritage: "Heritage",
+    fieldHairColor: "Hair Color",
+    fieldHairLength: "Hair Length",
+    fieldHairTexture: "Hair Texture",
+    fieldEyeColor: "Eye Color",
+    fieldLipSize: "Lip Size",
+    fieldFaceType: "Face Type",
+    fieldStyle: "Style",
+    agePlaceholder: "e.g. 25",
+    buttonGeneratePortrait: "Generate Portrait",
+    selectGenderToContinue: "Select gender to continue",
+    fieldReferencePrompt: "Reference Prompt",
+    optional: "(Optional)",
+    referencePromptHint: "Must be non-explicit (for reference image)",
+    referencePromptPlaceholder: "e.g. freckles, dimples, long wavy hair",
+    custom: "Custom",
+    customPlaceholder: "Type custom...",
+    loadingCreatingAiModel: "Creating Your AI Model",
+    offerTimerLabel: "Offer ends in",
+    offerReady: "Ready",
+    offerTitle: "Turn Your AI Into Income",
+    offerSubtitlePrefix: "Top creators earn",
+    offerSubtitleHighlight: "$10K+ monthly",
+    offerSubtitleSuffix: "with AI content",
+    offerRegularPrice: "Regular $10",
+    offerPriceSuffix: "one-time",
+    offerSave: "Save 40%",
+    offerItemCourseTitle: "Scale to $10K Course",
+    offerItemCourseSubtitle: "By industry leaders in AI content",
+    offerItemCreditsTitle: "Generation Credits",
+    offerItemCreditsSubtitle: "Create multiple photos and videos",
+    offerItemModelTitle: "Your AI Model Forever",
+    offerItemModelSubtitle: "Generate unlimited content",
+    offerItemBadge: "FREE",
+    offerCta: "Start Earning Now - $6",
+    offerTrustSecure: "Secure",
+    offerTrustInstant: "Instant",
+    offerTrustRating: "4.9 rating",
+    offerGuarantee: "30-Day Money Back Guarantee",
+    offerSocialProof: "creators joined this week",
+    offerSkip: "Skip for now",
+    processingTitle: "Generating AI Model...",
+    processingSubtitle: "This can take up to a few minutes",
+    processingWarning: "Please don't close this window",
+    realUploadTitle: "Upload Your Photos",
+    realUploadSubtitle: "2 face photos and 1 body photo",
+    photoFace1: "Face 1",
+    photoFace2: "Face 2",
+    photoBody: "Body",
+    modelLooksTitle: "Model Looks",
+    modelLooksOptional: "(optional)",
+    autoDetecting: "Detecting...",
+    autoAssign: "AI Auto-Assign",
+    looksFieldLips: "Lips",
+    looksFieldMakeup: "Makeup",
+    tipLabel: "Tip:",
+    tipText: "Use clear, well-lit photos with your face visible.",
+    buttonCreateModel: "Create My Model",
+    loadingCreatingModel: "Creating Your Model",
+    realPreviewTitle: "Your Model is Ready!",
+    realPreviewSubtitle: "Here's a preview of what you can create",
+    generatingPreview: "Generating preview...",
+    previewStatusGenerating: "Creating a sample image...",
+    previewStatusReady: "This is just a taste of what's possible!",
+    buttonGenerateOwnPrompt: "Generate My Own Prompt",
+    realPromptTitle: "Create Your Image",
+    realPromptSubtitle: "Describe what you want to see",
+    promptLabel: "Describe your image",
+    promptPlaceholder: "E.g., professional headshot in a modern office...",
+    buttonGenerateImage: "Generate Image",
+    realGeneratingTitle: "Creating Your Image",
+    realGeneratingSubtitle: "Usually takes 10-30 seconds...",
+    blurredTitle: "Preview Ready!",
+    blurredSubtitle: "Get credits to see the full result",
+    blurredImageReady: "Your image is ready!",
+    blurredUnlockHint: "Unlock to see the result",
+    unlockTitle: "Unlock Full Access",
+    unlockSubtitle: "Get credits to see this image and generate unlimited photos, videos, and face swaps!",
+    buttonGetCredits: "Get Credits",
+    continueDashboard: "Continue to dashboard ->",
+    checkoutItemName: "AI Model + Credits",
+  },
+  ru: {
+    optionFemale: "Female",
+    optionMale: "Male",
+    optionBlonde: "Blonde",
+    optionBrown: "Brown",
+    optionBlack: "Black",
+    optionRed: "Red",
+    optionAuburn: "Auburn",
+    optionPlatinum: "Platinum",
+    optionWhite: "White",
+    optionPink: "Pink",
+    optionLong: "Long",
+    optionMedium: "Medium",
+    optionShort: "Short",
+    optionStraight: "Straight",
+    optionWavy: "Wavy",
+    optionCurly: "Curly",
+    optionSmall: "Small",
+    optionBig: "Big",
+    optionCuteFeminine: "Cute Feminine",
+    optionModelFace: "Model Face",
+    optionNatural: "Natural",
+    optionBlue: "Blue",
+    optionGreen: "Green",
+    optionHazel: "Hazel",
+    optionGray: "Gray",
+    optionSlim: "Slim",
+    optionAthletic: "Athletic",
+    optionCurvy: "Curvy",
+    optionPetite: "Petite",
+    optionHourglass: "Hourglass",
+    optionMuscular: "Muscular",
+    optionEuropean: "European",
+    optionAfrican: "African",
+    optionLatino: "Latino",
+    optionAsian: "Asian",
+    optionMiddleEastern: "Middle Eastern",
+    optionMixed: "Mixed",
+    optionNaturalLook: "Natural Look",
+    optionStrongMakeup: "Strong Makeup",
+    required: "Required",
+    toastUploadOnePhoto: "Upload at least one photo first",
+    toastLooksDetected: "Looks detected!",
+    toastDetectionFailed: "Detection failed",
+    toastDetectLooksFailed: "Failed to detect looks",
+    toastPortraitGenerated: "Portrait generated!",
+    toastGenerationFailed: "Generation failed. Please try again.",
+    toastTrialAlreadyUsed: "You've already used your free trial",
+    toastUploadAll3: "Please upload all 3 photos",
+    toastModelCreated: "Model created!",
+    toastUploadFailed: "Upload failed. Please try again.",
+    toastPaymentConfirmed: "Payment confirmed! Creating your AI model...",
+    toastModelReady: "Your AI model is ready!",
+    toastWelcome: "Welcome to ModelClone!",
+    toastWelcomeModelReady: "Welcome to ModelClone! Your AI model is ready.",
+    toastEnterPrompt: "Please enter a prompt",
+    toastGenericError: "Something went wrong. Please try again.",
+    loadingHint: "This usually takes 15-30 seconds",
+    badgeFreeTrial: "100% FREE TRIAL",
+    chooseTitleLine1: "What would you like",
+    chooseTitleLine2: "to create?",
+    chooseSubtitle: "Try one free generation to experience the AI quality",
+    chooseAiTitle: "Create AI Model",
+    chooseAiSubtitle: "Generate a unique face and unlimited content",
+    chooseRealTitle: "Use Real Photos",
+    chooseRealSubtitle: "Upload your photos and create AI content",
+    skipToDashboard: "Skip to dashboard ->",
+    back: "Back",
+    aiNameTitle: "Name Your AI Model",
+    aiNameSubtitle: "Give your creation a unique identity",
+    aiNamePlaceholder: "e.g. Luna, Alex, Sofia...",
+    aiNameHint: "This name will identify your model",
+    continue: "Continue",
+    aiDesignTitle: "Design Your AI Model",
+    aiDesignSubtitle: "Use the same Model Looks as dashboard AI model creation",
+    fieldGender: "Gender",
+    fieldAge: "Age",
+    fieldBodyType: "Body Type",
+    fieldHeritage: "Heritage",
+    fieldHairColor: "Hair Color",
+    fieldHairLength: "Hair Length",
+    fieldHairTexture: "Hair Texture",
+    fieldEyeColor: "Eye Color",
+    fieldLipSize: "Lip Size",
+    fieldFaceType: "Face Type",
+    fieldStyle: "Style",
+    agePlaceholder: "e.g. 25",
+    buttonGeneratePortrait: "Generate Portrait",
+    selectGenderToContinue: "Select gender to continue",
+    fieldReferencePrompt: "Reference Prompt",
+    optional: "(Optional)",
+    referencePromptHint: "Must be non-explicit (for reference image)",
+    referencePromptPlaceholder: "e.g. freckles, dimples, long wavy hair",
+    custom: "Custom",
+    customPlaceholder: "Type custom...",
+    loadingCreatingAiModel: "Creating Your AI Model",
+    offerTimerLabel: "Offer ends in",
+    offerReady: "Ready",
+    offerTitle: "Turn Your AI Into Income",
+    offerSubtitlePrefix: "Top creators earn",
+    offerSubtitleHighlight: "$10K+ monthly",
+    offerSubtitleSuffix: "with AI content",
+    offerRegularPrice: "Regular $10",
+    offerPriceSuffix: "one-time",
+    offerSave: "Save 40%",
+    offerItemCourseTitle: "Scale to $10K Course",
+    offerItemCourseSubtitle: "By industry leaders in AI content",
+    offerItemCreditsTitle: "Generation Credits",
+    offerItemCreditsSubtitle: "Create multiple photos and videos",
+    offerItemModelTitle: "Your AI Model Forever",
+    offerItemModelSubtitle: "Generate unlimited content",
+    offerItemBadge: "FREE",
+    offerCta: "Start Earning Now - $6",
+    offerTrustSecure: "Secure",
+    offerTrustInstant: "Instant",
+    offerTrustRating: "4.9 rating",
+    offerGuarantee: "30-Day Money Back Guarantee",
+    offerSocialProof: "creators joined this week",
+    offerSkip: "Skip for now",
+    processingTitle: "Generating AI Model...",
+    processingSubtitle: "This can take up to a few minutes",
+    processingWarning: "Please don't close this window",
+    realUploadTitle: "Upload Your Photos",
+    realUploadSubtitle: "2 face photos and 1 body photo",
+    photoFace1: "Face 1",
+    photoFace2: "Face 2",
+    photoBody: "Body",
+    modelLooksTitle: "Model Looks",
+    modelLooksOptional: "(optional)",
+    autoDetecting: "Detecting...",
+    autoAssign: "AI Auto-Assign",
+    looksFieldLips: "Lips",
+    looksFieldMakeup: "Makeup",
+    tipLabel: "Tip:",
+    tipText: "Use clear, well-lit photos with your face visible.",
+    buttonCreateModel: "Create My Model",
+    loadingCreatingModel: "Creating Your Model",
+    realPreviewTitle: "Your Model is Ready!",
+    realPreviewSubtitle: "Here's a preview of what you can create",
+    generatingPreview: "Generating preview...",
+    previewStatusGenerating: "Creating a sample image...",
+    previewStatusReady: "This is just a taste of what's possible!",
+    buttonGenerateOwnPrompt: "Generate My Own Prompt",
+    realPromptTitle: "Create Your Image",
+    realPromptSubtitle: "Describe what you want to see",
+    promptLabel: "Describe your image",
+    promptPlaceholder: "E.g., professional headshot in a modern office...",
+    buttonGenerateImage: "Generate Image",
+    realGeneratingTitle: "Creating Your Image",
+    realGeneratingSubtitle: "Usually takes 10-30 seconds...",
+    blurredTitle: "Preview Ready!",
+    blurredSubtitle: "Get credits to see the full result",
+    blurredImageReady: "Your image is ready!",
+    blurredUnlockHint: "Unlock to see the result",
+    unlockTitle: "Unlock Full Access",
+    unlockSubtitle: "Get credits to see this image and generate unlimited photos, videos, and face swaps!",
+    buttonGetCredits: "Get Credits",
+    continueDashboard: "Continue to dashboard ->",
+    checkoutItemName: "AI Model + Credits",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
 
 const STEP = {
   CHOOSE: 0,
@@ -124,8 +467,24 @@ const STYLE_OPTIONS = [
   { value: "strong-makeup", label: "Strong Makeup" },
 ];
 
+// Keep onboarding AI-look selectors in sync with dashboard Create AI Model form.
+const appearanceGroups = selectorCategories.find((c) => c.id === "appearance")?.groups || [];
+const modelLooksGroups = [
+  { key: "gender", label: "Gender", options: ["female", "male"] },
+  ...appearanceGroups,
+];
+const allLookKeys = modelLooksGroups.map((g) => g.key);
 
-function PhotoUploadSlot({ label, file, onFileSelect, onRemove, required }) {
+function buildInitialAiConfig() {
+  return {
+    age: "",
+    referencePrompt: "",
+    ...Object.fromEntries(allLookKeys.map((k) => [k, ""])),
+  };
+}
+
+
+function PhotoUploadSlot({ label, file, onFileSelect, onRemove, required, requiredText }) {
   const handleDrop = useCallback((e) => {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
@@ -166,7 +525,7 @@ function PhotoUploadSlot({ label, file, onFileSelect, onRemove, required }) {
         <label className="flex flex-col items-center justify-center h-full cursor-pointer p-3">
           <Camera className="w-6 h-6 text-slate-400 mb-2" />
           <p className="text-xs text-slate-400 text-center">{label}</p>
-          {required && <p className="text-[10px] text-red-400 mt-1">Required</p>}
+          {required && <p className="text-[10px] text-red-400 mt-1">{requiredText}</p>}
           <input
             type="file"
             accept="image/jpeg,image/png,image/jpg"
@@ -180,6 +539,8 @@ function PhotoUploadSlot({ label, file, onFileSelect, onRemove, required }) {
 }
 
 export default function OnboardingPage() {
+  const [locale] = useState(resolveLocale);
+  const copy = PAGE_COPY[locale] || PAGE_COPY.en;
   const navigate = useNavigate();
   const { user, refreshUserCredits } = useAuthStore();
   const [step, setStep] = useState(STEP.CHOOSE);
@@ -212,34 +573,10 @@ export default function OnboardingPage() {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const [aiConfig, setAiConfig] = useState({
-    gender: null,
-    age: "",
-    hairColor: null,
-    hairLength: null,
-    hairTexture: null,
-    lipSize: null,
-    faceType: null,
-    eyeColor: null,
-    bodyType: null,
-    heritage: null,
-    style: null,
-  });
+  const [aiConfig, setAiConfig] = useState(buildInitialAiConfig);
   
-  // Check if all AI config fields are selected
-  const aiAgeValid = Number.isFinite(parseInt(aiConfig.age, 10)) && parseInt(aiConfig.age, 10) >= 1;
-  const isAiConfigComplete =
-    aiConfig.gender &&
-    aiAgeValid &&
-    aiConfig.hairColor &&
-    aiConfig.hairLength &&
-    aiConfig.hairTexture &&
-    aiConfig.lipSize &&
-    aiConfig.faceType &&
-    aiConfig.eyeColor &&
-    aiConfig.bodyType &&
-    aiConfig.heritage &&
-    aiConfig.style;
+  // Match dashboard flow: gender is required; age/other looks are optional.
+  const isAiConfigComplete = !!aiConfig.gender;
 
   const [realPhotos, setRealPhotos] = useState({
     face1: null,
@@ -252,9 +589,67 @@ export default function OnboardingPage() {
   const [realAge, setRealAge] = useState("");
   const [autoDetecting, setAutoDetecting] = useState(false);
 
+  const optionLabelByValue = {
+    female: copy.optionFemale,
+    male: copy.optionMale,
+    blonde: copy.optionBlonde,
+    brown: copy.optionBrown,
+    black: copy.optionBlack,
+    red: copy.optionRed,
+    auburn: copy.optionAuburn,
+    platinum: copy.optionPlatinum,
+    white: copy.optionWhite,
+    pink: copy.optionPink,
+    long: copy.optionLong,
+    medium: copy.optionMedium,
+    short: copy.optionShort,
+    straight: copy.optionStraight,
+    wavy: copy.optionWavy,
+    curly: copy.optionCurly,
+    small: copy.optionSmall,
+    big: copy.optionBig,
+    cute: copy.optionCuteFeminine,
+    model: copy.optionModelFace,
+    natural: copy.optionNatural,
+    blue: copy.optionBlue,
+    green: copy.optionGreen,
+    hazel: copy.optionHazel,
+    gray: copy.optionGray,
+    slim: copy.optionSlim,
+    athletic: copy.optionAthletic,
+    curvy: copy.optionCurvy,
+    petite: copy.optionPetite,
+    hourglass: copy.optionHourglass,
+    muscular: copy.optionMuscular,
+    european: copy.optionEuropean,
+    african: copy.optionAfrican,
+    latino: copy.optionLatino,
+    asian: copy.optionAsian,
+    "middle-eastern": copy.optionMiddleEastern,
+    mixed: copy.optionMixed,
+    "strong-makeup": copy.optionStrongMakeup,
+  };
+
+  const getOptionLabel = (value) => optionLabelByValue[value] || value;
+  const getLookGroupLabel = (key, fallback) =>
+    (
+      {
+        gender: copy.fieldGender,
+        bodyType: copy.fieldBodyType,
+        heritage: copy.fieldHeritage,
+        hairColor: copy.fieldHairColor,
+        hairLength: copy.fieldHairLength,
+        hairTexture: copy.fieldHairTexture,
+        eyeColor: copy.fieldEyeColor,
+        lipSize: copy.fieldLipSize,
+        faceType: copy.fieldFaceType,
+        style: copy.fieldStyle,
+      }
+    )[key] || fallback;
+
   const handleAutoDetectLooks = async () => {
     if (!realPhotos.face1 && !realPhotos.face2 && !realPhotos.body) {
-      toast.error("Upload at least one photo first");
+      toast.error(copy.toastUploadOnePhoto);
       return;
     }
     setAutoDetecting(true);
@@ -281,12 +676,12 @@ export default function OnboardingPage() {
         const { age, ...chipLooks } = response.data.looks;
         setRealLooks(chipLooks);
         if (age) setRealAge(String(age));
-        toast.success("Looks detected!");
+        toast.success(copy.toastLooksDetected);
       } else {
-        toast.error(response.data.message || "Detection failed");
+        toast.error(response.data.message || copy.toastDetectionFailed);
       }
     } catch (error) {
-      const msg = error.response?.data?.message || "Failed to detect looks";
+      const msg = error.response?.data?.message || copy.toastDetectLooksFailed;
       toast.error(msg);
     } finally {
       setAutoDetecting(false);
@@ -307,34 +702,32 @@ export default function OnboardingPage() {
     setIsLoading(true);
 
     try {
+      const ageNum = aiConfig.age ? parseInt(aiConfig.age, 10) : undefined;
+      const savedAppearance = Object.fromEntries(
+        Object.entries(aiConfig).filter(([key, value]) => key !== "age" && key !== "gender" && value),
+      );
+
       const response = await api.post("/onboarding/trial-generate", {
         gender: aiConfig.gender,
-        age: aiConfig.age ? parseInt(aiConfig.age, 10) : undefined,
-        style: aiConfig.style,
-        hairColor: aiConfig.hairColor,
-        hairLength: aiConfig.hairLength,
-        hairTexture: aiConfig.hairTexture,
-        lipSize: aiConfig.lipSize,
-        faceType: aiConfig.faceType,
-        eyeColor: aiConfig.eyeColor,
-        bodyType: aiConfig.bodyType,
-        heritage: aiConfig.heritage,
+        age: ageNum,
+        referencePrompt: aiConfig.referencePrompt || "",
+        savedAppearance,
       });
 
       if (response.data.success) {
         setGeneratedPortrait(response.data.referenceUrl);
         await refreshUserCredits();
         setStep(STEP.AI_OFFER); // Show special offer instead of prompt
-        toast.success("Portrait generated!");
+        toast.success(copy.toastPortraitGenerated);
       } else {
         throw new Error(response.data.message);
       }
     } catch (error) {
       console.error("Trial generation failed:", error);
-      const message = error.response?.data?.message || "Generation failed. Please try again.";
+      const message = error.response?.data?.message || copy.toastGenerationFailed;
       
       if (error.response?.data?.code === "TRIAL_ALREADY_USED") {
-        toast.error("You've already used your free trial");
+        toast.error(copy.toastTrialAlreadyUsed);
         navigate("/dashboard");
       } else {
         toast.error(message);
@@ -347,7 +740,7 @@ export default function OnboardingPage() {
 
   const handleUploadRealPhotos = async () => {
     if (!realPhotos.face1 || !realPhotos.face2 || !realPhotos.body) {
-      toast.error("Please upload all 3 photos");
+      toast.error(copy.toastUploadAll3);
       return;
     }
 
@@ -376,7 +769,7 @@ export default function OnboardingPage() {
         setGeneratedPortrait(response.data.model.photo1Url);
         await refreshUserCredits();
         setStep(STEP.REAL_PREVIEW);
-        toast.success("Model created!");
+        toast.success(copy.toastModelCreated);
         
         // Auto-generate a preview image with "selfie smiling" prompt
         generatePreviewImage(response.data.model.id, response.data.model.photo1Url);
@@ -385,10 +778,10 @@ export default function OnboardingPage() {
       }
     } catch (error) {
       console.error("Upload failed:", error);
-      const message = error.response?.data?.message || "Upload failed. Please try again.";
+      const message = error.response?.data?.message || copy.toastUploadFailed;
       
       if (error.response?.data?.code === "TRIAL_ALREADY_USED") {
-        toast.error("You've already used your free trial");
+        toast.error(copy.toastTrialAlreadyUsed);
         navigate("/dashboard");
       } else {
         toast.error(message);
@@ -490,7 +883,7 @@ export default function OnboardingPage() {
     
     // If model is still generating, poll for completion
     if (result?.modelStatus === 'generating' && result?.model?.id) {
-      toast.success("Payment confirmed! Creating your AI model...");
+      toast.success(copy.toastPaymentConfirmed);
       
       // Poll for model completion (can take several minutes)
       const modelId = result.model.id;
@@ -506,22 +899,22 @@ export default function OnboardingPage() {
         },
       }).then((pollResult) => {
         if (pollResult.ready) {
-          toast.success("Your AI model is ready!");
+          toast.success(copy.toastModelReady);
           navigate("/dashboard");
           return;
         }
         // Timeout - navigate anyway (model will finish in background)
-        toast.success("Welcome to ModelClone!");
+        toast.success(copy.toastWelcome);
         navigate("/dashboard");
       });
     } else if (result?.success) {
       // Model was already ready or fallback
-      toast.success("Welcome to ModelClone! Your AI model is ready.");
+      toast.success(copy.toastWelcomeModelReady);
       navigate("/dashboard");
     } else {
       // Fallback - payment was processed but we didn't get expected response
       console.warn("Special offer success without expected result:", result);
-      toast.success("Welcome to ModelClone!");
+      toast.success(copy.toastWelcome);
       navigate("/dashboard");
     }
   };
@@ -550,7 +943,7 @@ export default function OnboardingPage() {
                 content_name: 'AI Model Creation - Special Offer'
               });
             }
-            toast.success("Welcome to ModelClone! Your AI model is ready.");
+            toast.success(copy.toastWelcomeModelReady);
             await refreshUserCredits();
             // Clear URL params to prevent re-verification on refresh
             window.history.replaceState({}, document.title, "/onboarding");
@@ -559,7 +952,7 @@ export default function OnboardingPage() {
         } catch (error) {
           console.error("Verification failed:", error);
           // Still navigate - the webhook likely processed it
-          toast.success("Welcome to ModelClone!");
+          toast.success(copy.toastWelcome);
           await refreshUserCredits();
           navigate("/dashboard");
         }
@@ -569,7 +962,7 @@ export default function OnboardingPage() {
 
   const handleShowBlurredPreview = async () => {
     if (!prompt.trim()) {
-      toast.error("Please enter a prompt");
+      toast.error(copy.toastEnterPrompt);
       return;
     }
     // Show fake generating step with delay (3-5 seconds)
@@ -585,7 +978,7 @@ export default function OnboardingPage() {
       navigate("/dashboard?openCredits=true");
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(copy.toastGenericError);
     }
   };
 
@@ -597,20 +990,19 @@ export default function OnboardingPage() {
       navigate("/dashboard");
     } catch (error) {
       console.error("Failed to complete onboarding:", error);
-      toast.error("Something went wrong. Please try again.");
+      toast.error(copy.toastGenericError);
     }
   };
 
   const renderProgressIndicator = () => {
     let currentStep = 0;
-    let totalSteps = 3;
     
     if (path === "ai") {
-      if (step >= STEP.AI_RESULT) currentStep = 3;
-      else if (step >= STEP.AI_PROMPT) currentStep = 2;
-      else if (step >= STEP.AI_CONFIG) currentStep = 1;
+      if (step >= STEP.AI_OFFER) currentStep = 3;
+      else if (step >= STEP.AI_CONFIG) currentStep = 2;
+      else if (step >= STEP.AI_NAME) currentStep = 1;
     } else if (path === "real") {
-      if (step >= STEP.REAL_RESULT) currentStep = 3;
+      if (step >= STEP.REAL_BLURRED) currentStep = 3;
       else if (step >= STEP.REAL_PROMPT) currentStep = 2;
       else if (step >= STEP.REAL_UPLOAD) currentStep = 1;
     }
@@ -650,7 +1042,7 @@ export default function OnboardingPage() {
         </div>
       </div>
       <h2 className="text-lg md:text-xl font-bold mb-1.5 text-white">{message}</h2>
-      <p className="text-slate-400 text-xs md:text-sm">This usually takes 15-30 seconds</p>
+      <p className="text-slate-400 text-xs md:text-sm">{copy.loadingHint}</p>
     </div>
   );
 
@@ -705,16 +1097,16 @@ export default function OnboardingPage() {
                     <Gift className="w-4 h-4 text-green-400" />
                     <div className="absolute inset-0 blur-sm bg-green-400/50" />
                   </div>
-                  <span className="text-sm text-green-300 font-bold tracking-wide">100% FREE TRIAL</span>
+                  <span className="text-sm text-green-300 font-bold tracking-wide">{copy.badgeFreeTrial}</span>
                 </div>
 
                 <h1 className="text-2xl md:text-4xl font-bold mb-2 md:mb-3 leading-tight">
-                  <span className="text-white">What would you like</span>
+                  <span className="text-white">{copy.chooseTitleLine1}</span>
                   <br />
-                  <span className="text-white">to create?</span>
+                  <span className="text-white">{copy.chooseTitleLine2}</span>
                 </h1>
                 <p className="text-slate-400 text-sm md:text-base mb-8 max-w-sm mx-auto">
-                  Try one free generation to experience the AI quality
+                  {copy.chooseSubtitle}
                 </p>
 
                 {/* Premium glassmorphism cards */}
@@ -738,10 +1130,10 @@ export default function OnboardingPage() {
                       </div>
                       <div className="flex-1 text-left min-w-0">
                         <h3 className="font-bold text-base md:text-lg mb-0.5 text-white group-hover:text-white transition-colors">
-                          Create AI Model
+                          {copy.chooseAiTitle}
                         </h3>
                         <p className="text-xs md:text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
-                          Generate a unique face and unlimited content
+                          {copy.chooseAiSubtitle}
                         </p>
                       </div>
                       <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
@@ -769,10 +1161,10 @@ export default function OnboardingPage() {
                       </div>
                       <div className="flex-1 text-left min-w-0">
                         <h3 className="font-bold text-base md:text-lg mb-0.5 text-white group-hover:text-white transition-colors">
-                          Use Real Photos
+                          {copy.chooseRealTitle}
                         </h3>
                         <p className="text-xs md:text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
-                          Upload your photos and create AI content
+                          {copy.chooseRealSubtitle}
                         </p>
                       </div>
                       <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-white/10 transition-colors">
@@ -787,7 +1179,7 @@ export default function OnboardingPage() {
                   className="mt-8 py-2.5 px-6 text-slate-500 hover:text-slate-300 active:text-white text-xs font-medium transition-colors"
                   data-testid="button-skip-onboarding"
                 >
-                  Skip to dashboard →
+                  {copy.skipToDashboard}
                 </button>
               </div>
             )}
@@ -798,7 +1190,7 @@ export default function OnboardingPage() {
                   onClick={() => setStep(STEP.CHOOSE)}
                   className="group text-xs text-slate-400 active:text-white mb-6 flex items-center gap-1.5 py-1.5 px-2 -ml-2 rounded-lg hover:bg-white/5 transition-colors"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
+                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> {copy.back}
                 </button>
 
                 <div className="text-center mb-8">
@@ -809,9 +1201,9 @@ export default function OnboardingPage() {
                     <div className="absolute inset-0 rounded-2xl bg-white/10 blur-xl opacity-0" />
                   </div>
                   <h2 className="text-xl md:text-2xl font-bold mb-1.5">
-                    <span className="text-white">Name Your AI Model</span>
+                    <span className="text-white">{copy.aiNameTitle}</span>
                   </h2>
-                  <p className="text-slate-400 text-sm">Give your creation a unique identity</p>
+                  <p className="text-slate-400 text-sm">{copy.aiNameSubtitle}</p>
                 </div>
 
                 {/* Glassmorphism input card */}
@@ -820,14 +1212,14 @@ export default function OnboardingPage() {
                     type="text"
                     value={modelName}
                     onChange={(e) => setModelName(e.target.value)}
-                    placeholder="e.g. Luna, Alex, Sofia..."
+                    placeholder={copy.aiNamePlaceholder}
                     className="w-full px-4 py-4 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-white/40 focus:bg-white/10 text-center text-lg font-medium transition-all"
                     data-testid="input-model-name"
                     maxLength={30}
                   />
                   
                   <p className="text-[11px] text-slate-500 text-center mt-3">
-                    This name will identify your model
+                    {copy.aiNameHint}
                   </p>
                 </div>
 
@@ -837,7 +1229,7 @@ export default function OnboardingPage() {
                   className="group w-full py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed bg-white text-black hover:bg-white/90"
                   data-testid="button-continue-to-design"
                 >
-                  Continue
+                  {copy.continue}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </div>
@@ -849,47 +1241,23 @@ export default function OnboardingPage() {
                   onClick={() => setStep(STEP.AI_NAME)}
                   className="group text-xs text-slate-400 active:text-white mb-5 flex items-center gap-1.5 py-1.5 px-2 -ml-2 rounded-lg hover:bg-white/5 transition-colors"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
+                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> {copy.back}
                 </button>
 
                 <div className="text-center mb-6">
                   <h2 className="text-xl md:text-2xl font-bold mb-1.5">
-                    <span className="text-white">Design Your AI Model</span>
+                    <span className="text-white">{copy.aiDesignTitle}</span>
                   </h2>
-                  <p className="text-slate-400 text-sm">Customize the appearance</p>
+                  <p className="text-slate-400 text-sm">{copy.aiDesignSubtitle}</p>
                 </div>
 
                 {/* Glassmorphism form card */}
                 <div className="relative p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 space-y-4">
-                  {/* Gender Selection */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      Gender <span className="text-slate-400">*</span>
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {GENDER_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, gender: option.value })}
-                          className={`py-3 px-3 rounded-xl border transition-all text-sm font-medium active:scale-[0.97] ${
-                            aiConfig.gender === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-gender-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Body Type */}
+                  {/* Age */}
                   <div>
                     <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
                       <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      Age <span className="text-slate-400">*</span>
+                      {copy.fieldAge}
                     </label>
                     <input
                       type="number"
@@ -897,226 +1265,88 @@ export default function OnboardingPage() {
                       max="90"
                       value={aiConfig.age}
                       onChange={(e) => setAiConfig({ ...aiConfig, age: e.target.value })}
-                      placeholder="e.g. 25"
+                      placeholder={copy.agePlaceholder}
                       className="w-28 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-white/30"
                     />
                   </div>
 
-                  {/* Body Type */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <Heart className="w-3.5 h-3.5 text-slate-400" />
-                      Body Type
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {BODY_TYPE_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, bodyType: option.value })}
-                          className={`py-2.5 px-2 rounded-lg border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.bodyType === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-body-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Heritage */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      Heritage
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {HERITAGE_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, heritage: option.value })}
-                          className={`py-2.5 px-2 rounded-lg border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.heritage === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-heritage-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hair Color */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <Palette className="w-3.5 h-3.5 text-slate-400" />
-                      Hair Color
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {HAIR_COLOR_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, hairColor: option.value })}
-                          className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.hairColor === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-hair-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hair Length */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <Palette className="w-3.5 h-3.5 text-slate-400" />
-                      Hair Length
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {HAIR_LENGTH_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, hairLength: option.value })}
-                          className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.hairLength === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-hairlength-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Hair Texture */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <Palette className="w-3.5 h-3.5 text-slate-400" />
-                      Hair Texture
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {HAIR_TEXTURE_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, hairTexture: option.value })}
-                          className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.hairTexture === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-hairtexture-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Eye Color */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <Eye className="w-3.5 h-3.5 text-slate-400" />
-                      Eye Color
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {EYE_COLOR_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, eyeColor: option.value })}
-                          className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.eyeColor === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-eye-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Lip Size */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <Heart className="w-3.5 h-3.5 text-slate-400" />
-                      Lip Size
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {LIP_SIZE_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, lipSize: option.value })}
-                          className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.lipSize === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-lipsize-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Face Type */}
-                  <div>
-                    <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      Face Type
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {FACE_TYPE_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, faceType: option.value })}
-                          className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.faceType === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-facetype-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Style / Makeup */}
+                  {/* Reference Prompt (same as dashboard create model AI flow) */}
                   <div>
                     <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
                       <Wand2 className="w-3.5 h-3.5 text-slate-400" />
-                      Style
+                      {copy.fieldReferencePrompt} <span className="text-slate-500">{copy.optional}</span>
                     </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {STYLE_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setAiConfig({ ...aiConfig, style: option.value })}
-                          className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
-                            aiConfig.style === option.value
-                              ? "border-white/40 bg-white/15 text-white"
-                              : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
-                          }`}
-                          data-testid={`button-style-${option.value}`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
+                    <p className="text-[11px] text-amber-400 mb-2">
+                      {copy.referencePromptHint}
+                    </p>
+                    <textarea
+                      value={aiConfig.referencePrompt}
+                      onChange={(e) => setAiConfig((prev) => ({ ...prev, referencePrompt: e.target.value }))}
+                      placeholder={copy.referencePromptPlaceholder}
+                      className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-white/30 resize-none"
+                      rows={3}
+                      data-testid="textarea-reference-prompt-onboarding"
+                    />
                   </div>
+
+                  {/* Model Looks groups (same as dashboard create-model AI form) */}
+                  {modelLooksGroups.map((group) => {
+                    const value = aiConfig[group.key] || "";
+                    const isCustom = value && !group.options.includes(value);
+                    const icon = group.key === "gender" ? User : group.key.includes("hair") ? Palette : group.key.includes("eye") ? Eye : group.key.includes("lip") ? Heart : Wand2;
+                    return (
+                      <div key={group.key}>
+                        <label className="flex items-center gap-2 text-xs font-semibold mb-2.5 text-slate-300">
+                          {icon && (() => {
+                            const Icon = icon;
+                            return <Icon className="w-3.5 h-3.5 text-slate-400" />;
+                          })()}
+                          {getLookGroupLabel(group.key, group.label)}
+                          {group.key === "gender" && <span className="text-slate-400">*</span>}
+                        </label>
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.options.map((option) => {
+                            const selected = value === option;
+                            return (
+                              <button
+                                key={option}
+                                onClick={() => setAiConfig((prev) => ({ ...prev, [group.key]: selected ? "" : option }))}
+                                className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
+                                  selected
+                                    ? "border-white/40 bg-white/15 text-white"
+                                    : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                                }`}
+                                data-testid={`button-look-${group.key}-${option}`}
+                              >
+                                {getOptionLabel(option)}
+                              </button>
+                            );
+                          })}
+                          <button
+                            onClick={() => setAiConfig((prev) => ({ ...prev, [group.key]: isCustom ? "" : " " }))}
+                            className={`py-2 px-3 rounded-full border transition-all text-xs font-medium active:scale-[0.97] ${
+                              isCustom
+                                ? "border-white/40 bg-white/15 text-white"
+                                : "border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white"
+                            }`}
+                            data-testid={`button-look-custom-${group.key}`}
+                          >
+                            {copy.custom}
+                          </button>
+                        </div>
+                        {(isCustom || value === " ") && (
+                          <input
+                            type="text"
+                            value={value === " " ? "" : value}
+                            onChange={(e) => setAiConfig((prev) => ({ ...prev, [group.key]: e.target.value }))}
+                            placeholder={copy.customPlaceholder}
+                            className="mt-2 w-full px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-white/30"
+                            data-testid={`input-look-custom-${group.key}`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
 
                 </div>
 
@@ -1127,18 +1357,18 @@ export default function OnboardingPage() {
                   data-testid="button-generate-portrait"
                 >
                   <Zap className="w-5 h-5" />
-                  Generate Portrait
+                  {copy.buttonGeneratePortrait}
                 </button>
                 
                 {!isAiConfigComplete && (
                   <p className="text-xs text-slate-500 text-center mt-3">
-                    Select all options to continue
+                    {copy.selectGenderToContinue}
                   </p>
                 )}
               </div>
             )}
 
-            {step === STEP.AI_GENERATING && renderLoadingState("Creating Your AI Model")}
+            {step === STEP.AI_GENERATING && renderLoadingState(copy.loadingCreatingAiModel)}
 
             {step === STEP.AI_OFFER && (
               <div className="text-center">
@@ -1146,7 +1376,7 @@ export default function OnboardingPage() {
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <div className="relative px-3 py-1.5 rounded-full bg-red-500/10 backdrop-blur-sm border border-red-500/30 flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-red-500" />
-                    <span className="text-[11px] text-red-200 font-medium">Offer ends in</span>
+                    <span className="text-[11px] text-red-200 font-medium">{copy.offerTimerLabel}</span>
                     <span className="text-sm font-mono font-bold text-white">{formatTime(timeLeft)}</span>
                   </div>
                 </div>
@@ -1165,17 +1395,17 @@ export default function OnboardingPage() {
                   </div>
                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-green-500/20 border border-green-500/40 backdrop-blur-sm">
                     <span className="text-[11px] text-green-400 font-semibold flex items-center gap-1.5">
-                      <Check className="w-3 h-3" /> Ready
+                      <Check className="w-3 h-3" /> {copy.offerReady}
                     </span>
                   </div>
                 </div>
 
                 {/* Main Headline */}
                 <h2 className="text-xl md:text-2xl font-bold mb-1">
-                  <span className="text-white">Turn Your AI Into Income</span>
+                  <span className="text-white">{copy.offerTitle}</span>
                 </h2>
                 <p className="text-slate-400 text-xs md:text-sm mb-5">
-                  Top creators earn <span className="text-green-400 font-bold">$10K+ monthly</span> with AI content
+                  {copy.offerSubtitlePrefix} <span className="text-green-400 font-bold">{copy.offerSubtitleHighlight}</span> {copy.offerSubtitleSuffix}
                 </p>
 
                 {/* Premium Glassmorphism Card */}
@@ -1186,14 +1416,14 @@ export default function OnboardingPage() {
                   {/* Price Row */}
                   <div className="relative flex items-center justify-between mb-5">
                     <div className="text-left">
-                      <p className="text-[11px] text-slate-500 line-through mb-0.5">Regular $10</p>
+                      <p className="text-[11px] text-slate-500 line-through mb-0.5">{copy.offerRegularPrice}</p>
                       <div className="flex items-baseline gap-1.5">
                         <span className="text-3xl md:text-4xl font-bold text-white">$6</span>
-                        <span className="text-[11px] text-slate-400 font-medium">one-time</span>
+                        <span className="text-[11px] text-slate-400 font-medium">{copy.offerPriceSuffix}</span>
                       </div>
                     </div>
                     <div className="px-3 py-1.5 rounded-lg bg-green-500/20 border border-green-500/30">
-                      <span className="text-green-400 text-xs font-bold">Save 40%</span>
+                      <span className="text-green-400 text-xs font-bold">{copy.offerSave}</span>
                     </div>
                   </div>
 
@@ -1206,10 +1436,10 @@ export default function OnboardingPage() {
                         </div>
                       </div>
                       <div className="text-left flex-1 min-w-0">
-                        <p className="text-white font-semibold text-sm">Scale to $10K Course</p>
-                        <p className="text-slate-400 text-[11px]">By industry leaders in AI content</p>
+                        <p className="text-white font-semibold text-sm">{copy.offerItemCourseTitle}</p>
+                        <p className="text-slate-400 text-[11px]">{copy.offerItemCourseSubtitle}</p>
                       </div>
-                      <span className="text-[10px] text-white bg-white/15 px-2 py-1 rounded-full font-bold flex-shrink-0">FREE</span>
+                      <span className="text-[10px] text-white bg-white/15 px-2 py-1 rounded-full font-bold flex-shrink-0">{copy.offerItemBadge}</span>
                     </div>
                     
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 select-none hover:bg-white/8 transition-colors">
@@ -1219,10 +1449,10 @@ export default function OnboardingPage() {
                         </div>
                       </div>
                       <div className="text-left flex-1 min-w-0">
-                        <p className="text-white font-semibold text-sm">Generation Credits</p>
-                        <p className="text-slate-400 text-[11px]">Create multiple photos and videos</p>
+                        <p className="text-white font-semibold text-sm">{copy.offerItemCreditsTitle}</p>
+                        <p className="text-slate-400 text-[11px]">{copy.offerItemCreditsSubtitle}</p>
                       </div>
-                      <span className="text-[10px] text-white bg-white/15 px-2 py-1 rounded-full font-bold flex-shrink-0">FREE</span>
+                      <span className="text-[10px] text-white bg-white/15 px-2 py-1 rounded-full font-bold flex-shrink-0">{copy.offerItemBadge}</span>
                     </div>
                     
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 select-none hover:bg-white/8 transition-colors">
@@ -1232,10 +1462,10 @@ export default function OnboardingPage() {
                         </div>
                       </div>
                       <div className="text-left flex-1 min-w-0">
-                        <p className="text-white font-semibold text-sm">Your AI Model Forever</p>
-                        <p className="text-slate-400 text-[11px]">Generate unlimited content</p>
+                        <p className="text-white font-semibold text-sm">{copy.offerItemModelTitle}</p>
+                        <p className="text-slate-400 text-[11px]">{copy.offerItemModelSubtitle}</p>
                       </div>
-                      <span className="text-[10px] text-white bg-white/15 px-2 py-1 rounded-full font-bold flex-shrink-0">FREE</span>
+                      <span className="text-[10px] text-white bg-white/15 px-2 py-1 rounded-full font-bold flex-shrink-0">{copy.offerItemBadge}</span>
                     </div>
                   </div>
 
@@ -1246,7 +1476,7 @@ export default function OnboardingPage() {
                     data-testid="button-special-offer"
                   >
                     <span className="relative z-10 flex items-center gap-2">
-                      Start Earning Now - $6
+                      {copy.offerCta}
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                     </span>
                     {/* Shimmer effect */}
@@ -1257,15 +1487,15 @@ export default function OnboardingPage() {
                   <div className="flex items-center justify-center gap-4 mt-4 text-[11px] text-slate-400">
                     <span className="flex items-center gap-1.5">
                       <Shield className="w-3 h-3 text-green-400" />
-                      Secure
+                      {copy.offerTrustSecure}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Zap className="w-3 h-3 text-slate-400" />
-                      Instant
+                      {copy.offerTrustInstant}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Star className="w-3 h-3 text-slate-400" />
-                      4.9 rating
+                      {copy.offerTrustRating}
                     </span>
                   </div>
                   
@@ -1273,7 +1503,7 @@ export default function OnboardingPage() {
                   <div className="mt-4 py-2.5 px-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                     <p className="text-emerald-400 text-xs font-medium flex items-center justify-center gap-2">
                       <Shield className="w-3.5 h-3.5" />
-                      30-Day Money Back Guarantee
+                      {copy.offerGuarantee}
                     </p>
                   </div>
                   
@@ -1284,7 +1514,7 @@ export default function OnboardingPage() {
                       <div className="w-5 h-5 rounded-full bg-white/20 border border-slate-800" />
                       <div className="w-5 h-5 rounded-full bg-white/10 border border-slate-800" />
                     </div>
-                    <span><strong className="text-white">2,847</strong> creators joined this week</span>
+                    <span><strong className="text-white">2,847</strong> {copy.offerSocialProof}</span>
                   </div>
                 </div>
 
@@ -1294,7 +1524,7 @@ export default function OnboardingPage() {
                   className="text-slate-500 hover:text-slate-300 active:text-white transition-colors text-xs py-3 font-medium"
                   data-testid="button-skip-offer"
                 >
-                  Skip for now
+                  {copy.offerSkip}
                 </button>
               </div>
             )}
@@ -1307,11 +1537,11 @@ export default function OnboardingPage() {
                     <Loader2 className="w-6 h-6 text-white animate-spin" />
                   </div>
                 </div>
-                <h2 className="text-lg md:text-xl font-bold mb-1.5 text-white">Generating AI Model...</h2>
-                <p className="text-slate-400 text-xs md:text-sm mb-3">This can take up to a few minutes</p>
+                <h2 className="text-lg md:text-xl font-bold mb-1.5 text-white">{copy.processingTitle}</h2>
+                <p className="text-slate-400 text-xs md:text-sm mb-3">{copy.processingSubtitle}</p>
                 <p className="text-amber-400/80 text-xs font-medium flex items-center justify-center gap-1.5">
                   <Shield className="w-3.5 h-3.5" />
-                  Please don't close this window
+                  {copy.processingWarning}
                 </p>
               </div>
             )}
@@ -1322,82 +1552,85 @@ export default function OnboardingPage() {
                   onClick={() => setStep(STEP.CHOOSE)}
                   className="group text-xs text-slate-400 active:text-white mb-5 flex items-center gap-1.5 py-1.5 px-2 -ml-2 rounded-lg hover:bg-white/5 transition-colors"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back
+                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> {copy.back}
                 </button>
 
                 <div className="text-center mb-6">
                   <h2 className="text-xl md:text-2xl font-bold mb-1.5">
-                    <span className="text-white">Upload Your Photos</span>
+                    <span className="text-white">{copy.realUploadTitle}</span>
                   </h2>
-                  <p className="text-slate-400 text-sm">2 face photos and 1 body photo</p>
+                  <p className="text-slate-400 text-sm">{copy.realUploadSubtitle}</p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mb-5">
                   <PhotoUploadSlot
-                    label="Face 1"
+                    label={copy.photoFace1}
                     file={realPhotos.face1}
                     onFileSelect={(file) => setRealPhotos({ ...realPhotos, face1: file })}
                     onRemove={() => setRealPhotos({ ...realPhotos, face1: null })}
                     required
+                    requiredText={copy.required}
                   />
                   <PhotoUploadSlot
-                    label="Face 2"
+                    label={copy.photoFace2}
                     file={realPhotos.face2}
                     onFileSelect={(file) => setRealPhotos({ ...realPhotos, face2: file })}
                     onRemove={() => setRealPhotos({ ...realPhotos, face2: null })}
                     required
+                    requiredText={copy.required}
                   />
                   <PhotoUploadSlot
-                    label="Body"
+                    label={copy.photoBody}
                     file={realPhotos.body}
                     onFileSelect={(file) => setRealPhotos({ ...realPhotos, body: file })}
                     onRemove={() => setRealPhotos({ ...realPhotos, body: null })}
                     required
+                    requiredText={copy.required}
                   />
                 </div>
 
                 {/* Model Looks Configuration */}
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 mb-4 space-y-3">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">Model Looks <span className="text-slate-500 font-normal normal-case">(optional)</span></h3>
+                    <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">{copy.modelLooksTitle} <span className="text-slate-500 font-normal normal-case">{copy.modelLooksOptional}</span></h3>
                     <button
                       onClick={handleAutoDetectLooks}
                       disabled={autoDetecting || (!realPhotos.face1 && !realPhotos.face2 && !realPhotos.body)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-40 active:scale-[0.97] border border-violet-500/40 bg-violet-500/15 text-violet-300 hover:bg-violet-500/25"
                     >
                       {autoDetecting ? (
-                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Detecting…</>
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {copy.autoDetecting}</>
                       ) : (
-                        <><Sparkles className="w-3.5 h-3.5" /> AI Auto-Assign</>
+                        <><Sparkles className="w-3.5 h-3.5" /> {copy.autoAssign}</>
                       )}
                     </button>
                   </div>
 
                   {/* Age input */}
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Age</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">{copy.fieldAge}</p>
                     <input
                       type="number"
                       min="1"
                       max="90"
                       value={realAge}
                       onChange={(e) => setRealAge(e.target.value)}
-                      placeholder="e.g. 25"
+                      placeholder={copy.agePlaceholder}
                       className="w-24 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 text-white text-xs placeholder-slate-600 focus:outline-none focus:border-white/30"
                     />
                   </div>
 
                   {[
-                    { key: "gender",      label: "Gender",       options: GENDER_OPTIONS },
-                    { key: "heritage",    label: "Heritage",     options: HERITAGE_OPTIONS },
-                    { key: "bodyType",    label: "Body Type",    options: BODY_TYPE_OPTIONS },
-                    { key: "hairColor",   label: "Hair Color",   options: HAIR_COLOR_OPTIONS },
-                    { key: "hairLength",  label: "Hair Length",  options: HAIR_LENGTH_OPTIONS },
-                    { key: "hairTexture", label: "Hair Texture", options: HAIR_TEXTURE_OPTIONS },
-                    { key: "eyeColor",    label: "Eye Color",    options: EYE_COLOR_OPTIONS },
-                    { key: "faceType",    label: "Face Type",    options: FACE_TYPE_OPTIONS },
-                    { key: "lipSize",     label: "Lips",         options: LIP_SIZE_OPTIONS },
-                    { key: "style",       label: "Makeup",       options: STYLE_OPTIONS },
+                    { key: "gender",      label: copy.fieldGender,      options: GENDER_OPTIONS },
+                    { key: "heritage",    label: copy.fieldHeritage,    options: HERITAGE_OPTIONS },
+                    { key: "bodyType",    label: copy.fieldBodyType,    options: BODY_TYPE_OPTIONS },
+                    { key: "hairColor",   label: copy.fieldHairColor,   options: HAIR_COLOR_OPTIONS },
+                    { key: "hairLength",  label: copy.fieldHairLength,  options: HAIR_LENGTH_OPTIONS },
+                    { key: "hairTexture", label: copy.fieldHairTexture, options: HAIR_TEXTURE_OPTIONS },
+                    { key: "eyeColor",    label: copy.fieldEyeColor,    options: EYE_COLOR_OPTIONS },
+                    { key: "faceType",    label: copy.fieldFaceType,    options: FACE_TYPE_OPTIONS },
+                    { key: "lipSize",     label: copy.looksFieldLips,   options: LIP_SIZE_OPTIONS },
+                    { key: "style",       label: copy.looksFieldMakeup, options: STYLE_OPTIONS },
                   ].map(({ key, label, options }) => (
                     <div key={key}>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">{label}</p>
@@ -1415,7 +1648,7 @@ export default function OnboardingPage() {
                                 : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
                             }`}
                           >
-                            {opt.label}
+                            {getOptionLabel(opt.value)}
                           </button>
                         ))}
                       </div>
@@ -1425,7 +1658,7 @@ export default function OnboardingPage() {
 
                 <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 mb-5">
                   <p className="text-xs text-yellow-200">
-                    <strong>Tip:</strong> Use clear, well-lit photos with your face visible.
+                    <strong>{copy.tipLabel}</strong> {copy.tipText}
                   </p>
                 </div>
 
@@ -1436,23 +1669,23 @@ export default function OnboardingPage() {
                   data-testid="button-upload-photos"
                 >
                   <Upload className="w-5 h-5" />
-                  Create My Model
+                  {copy.buttonCreateModel}
                 </button>
               </div>
             )}
 
-            {step === STEP.REAL_UPLOADING && renderLoadingState("Creating Your Model")}
+            {step === STEP.REAL_UPLOADING && renderLoadingState(copy.loadingCreatingModel)}
 
             {step === STEP.REAL_PREVIEW && (
               <div className="text-center">
-                <h2 className="text-xl md:text-2xl font-bold mb-1">Your Model is Ready!</h2>
-                <p className="text-slate-400 text-sm mb-4">Here's a preview of what you can create</p>
+                <h2 className="text-xl md:text-2xl font-bold mb-1">{copy.realPreviewTitle}</h2>
+                <p className="text-slate-400 text-sm mb-4">{copy.realPreviewSubtitle}</p>
 
                 <div className="rounded-xl overflow-hidden border border-white/10 mb-4 relative max-w-xs mx-auto">
                   {isGeneratingPreview ? (
                     <div className="w-full aspect-square bg-white/5 flex flex-col items-center justify-center">
                       <Loader2 className="w-8 h-8 text-slate-400 animate-spin mb-2" />
-                      <p className="text-xs text-slate-400">Generating preview...</p>
+                      <p className="text-xs text-slate-400">{copy.generatingPreview}</p>
                     </div>
                   ) : (
                     <img
@@ -1464,7 +1697,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <p className="text-xs text-slate-400 mb-4">
-                  {isGeneratingPreview ? "Creating a sample image..." : "This is just a taste of what's possible!"}
+                  {isGeneratingPreview ? copy.previewStatusGenerating : copy.previewStatusReady}
                 </p>
 
                 <button
@@ -1474,7 +1707,7 @@ export default function OnboardingPage() {
                   data-testid="button-generate-own"
                 >
                   <Wand2 className="w-5 h-5" />
-                  Generate My Own Prompt
+                  {copy.buttonGenerateOwnPrompt}
                 </button>
               </div>
             )}
@@ -1485,12 +1718,12 @@ export default function OnboardingPage() {
                   onClick={() => setStep(STEP.REAL_PREVIEW)}
                   className="text-xs text-slate-400 active:text-white mb-4 flex items-center gap-1 py-1"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" /> Back
+                  <ArrowLeft className="w-3.5 h-3.5" /> {copy.back}
                 </button>
 
                 <div className="text-center mb-4">
-                  <h2 className="text-xl md:text-2xl font-bold mb-1">Create Your Image</h2>
-                  <p className="text-slate-400 text-sm">Describe what you want to see</p>
+                  <h2 className="text-xl md:text-2xl font-bold mb-1">{copy.realPromptTitle}</h2>
+                  <p className="text-slate-400 text-sm">{copy.realPromptSubtitle}</p>
                 </div>
 
                 <div className="rounded-xl overflow-hidden border border-white/10 mb-4 max-w-[200px] mx-auto">
@@ -1503,12 +1736,12 @@ export default function OnboardingPage() {
 
                 <div className="mb-5">
                   <label className="block text-[10px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-2">
-                    Describe your image
+                    {copy.promptLabel}
                   </label>
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="E.g., professional headshot in a modern office..."
+                    placeholder={copy.promptPlaceholder}
                     className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-slate-500 resize-none focus:outline-none focus:border-white/40"
                     rows={3}
                     data-testid="input-prompt-real"
@@ -1522,7 +1755,7 @@ export default function OnboardingPage() {
                   data-testid="button-generate-image-real"
                 >
                   <ImageIcon className="w-5 h-5" />
-                  Generate Image
+                  {copy.buttonGenerateImage}
                 </button>
               </div>
             )}
@@ -1534,15 +1767,15 @@ export default function OnboardingPage() {
                   <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-cyan-400 animate-spin" />
                   <Zap className="absolute inset-0 m-auto w-6 h-6 text-slate-400" />
                 </div>
-                <h2 className="text-xl font-bold mb-1">Creating Your Image</h2>
-                <p className="text-slate-400 text-sm">Usually takes 10-30 seconds...</p>
+                <h2 className="text-xl font-bold mb-1">{copy.realGeneratingTitle}</h2>
+                <p className="text-slate-400 text-sm">{copy.realGeneratingSubtitle}</p>
               </div>
             )}
 
             {step === STEP.REAL_BLURRED && (
               <div className="text-center">
-                <h2 className="text-xl md:text-2xl font-bold mb-1">Preview Ready!</h2>
-                <p className="text-slate-400 text-sm mb-4">Get credits to see the full result</p>
+                <h2 className="text-xl md:text-2xl font-bold mb-1">{copy.blurredTitle}</h2>
+                <p className="text-slate-400 text-sm mb-4">{copy.blurredSubtitle}</p>
 
                 <div className="relative rounded-xl overflow-hidden mb-5 border border-white/10 max-w-xs mx-auto">
                   <img
@@ -1555,18 +1788,18 @@ export default function OnboardingPage() {
                     <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center mb-3 border border-white/20">
                       <Zap className="w-6 h-6 text-slate-400" />
                     </div>
-                    <p className="text-sm font-semibold mb-0.5">Your image is ready!</p>
-                    <p className="text-xs text-slate-300">Unlock to see the result</p>
+                    <p className="text-sm font-semibold mb-0.5">{copy.blurredImageReady}</p>
+                    <p className="text-xs text-slate-300">{copy.blurredUnlockHint}</p>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-white/5 border border-white/10 mb-4">
                   <div className="flex items-center justify-center gap-2 mb-2">
                     <Crown className="w-4 h-4 text-slate-400" />
-                    <span className="font-semibold text-base">Unlock Full Access</span>
+                    <span className="font-semibold text-base">{copy.unlockTitle}</span>
                   </div>
                   <p className="text-slate-300 text-xs mb-4">
-                    Get credits to see this image and generate unlimited photos, videos, and face swaps!
+                    {copy.unlockSubtitle}
                   </p>
 
                   <button
@@ -1575,7 +1808,7 @@ export default function OnboardingPage() {
                     data-testid="button-get-credits-real"
                   >
                     <Zap className="w-5 h-5" />
-                    Get Credits
+                    {copy.buttonGetCredits}
                   </button>
                 </div>
 
@@ -1584,7 +1817,7 @@ export default function OnboardingPage() {
                   className="text-slate-500 active:text-white transition-colors text-[11px] py-2"
                   data-testid="button-continue-dashboard-real"
                 >
-                  Continue to dashboard →
+                  {copy.continueDashboard}
                 </button>
               </div>
             )}
@@ -1598,7 +1831,7 @@ export default function OnboardingPage() {
         item={{
           price: 6,
           credits: 250,
-          name: "AI Model + Credits",
+          name: copy.checkoutItemName,
           referenceUrl: generatedPortrait,
           aiConfig: { ...aiConfig, modelName },
         }}

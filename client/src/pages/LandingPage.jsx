@@ -12,6 +12,24 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import OptimizedGalleryImage from '../components/OptimizedGalleryImage';
 import CursorGlow from '../components/CursorGlow';
 
+const LOCALE_STORAGE_KEY = 'app_locale';
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 // ── Live activity data ────────────────────────────────────────────────────────
 const ACTIVITY_CREATOR = [
   { avatar: 'SL', name: 'Sofia L.',          action: 'generated 47 posts in one session',   location: 'Miami, FL',   time: '2m ago' },
@@ -470,6 +488,7 @@ function ScrollProgress() {
 
 export default function LandingPage() {
   const location = useLocation();
+  const [locale] = useState(resolveLocale);
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [userType, setUserType] = useState('creator');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -566,29 +585,258 @@ export default function LandingPage() {
     },
   };
 
-  const activeContent = content[userType];
+  const contentRu = {
+    creator: {
+      stats: [
+        { value: '500K+', label: 'Создано постов' },
+        { value: '10K+', label: 'Сгенерировано видеорекламы' },
+        { value: '2,500+', label: 'Активных авторов' },
+        { value: '$2.5M+', label: 'Сгенерировано дохода' },
+      ],
+      hero: {
+        badge: 'Доверяют 2 500+ авторов контента и инфлюенсеров',
+        headline1: 'Хватит снимать.',
+        headline2: 'Начните публиковать.',
+        description:
+          'Вы тратите 4+ часа в день на макияж, настройку камеры и съёмку одного и того же контента. Ваша аудитория хочет БОЛЬШЕГО — но вы уже на грани выгорания.',
+        subheading:
+          'Создавайте безлимитный контент для Instagram, TikTok и YouTube без съёмок. Загрузите 3 фото один раз.',
+        pain: '❌ Часы макияжа и съёмок → ✅ 30 минут на целую неделю контента',
+      },
+      benefits: [
+        {
+          icon: Camera,
+          title: 'Никакого выгорания от съёмок',
+          description:
+            'Перестаньте тратить 20–30 часов в неделю на съёмки. Создайте месяц Instagram Reels, TikTok и YouTube Shorts за один вечер.',
+        },
+        {
+          icon: DollarSign,
+          title: 'Растите аудиторию в 3–5 раз быстрее',
+          description:
+            'Публикуйте в 10 раз больше контента = в 10 раз больше вовлечённости. Стабильные публикации = лучшая работа алгоритмов.',
+        },
+        {
+          icon: Shield,
+          title: 'Сохраняйте приватность',
+          description:
+            'Создавайте контент, не показывая свой дом, окружение или местоположение. Никаких незнакомцев, узнающих вашу спальню.',
+        },
+        {
+          icon: Clock,
+          title: 'Экономьте 25+ часов в неделю',
+          description:
+            'Никакого макияжа. Никакой настройки освещения. Никаких ракурсов. Просто загрузите видеошаблон, нажмите «Создать» и публикуйте.',
+        },
+      ],
+      testimonials: [
+        {
+          name: 'Sophia L.',
+          role: 'Фитнес-инфлюенсер',
+          earnings: '250K followers',
+          avatar: 'SL',
+          content:
+            'Перешла с 3 постов в неделю на ежедневный контент. Набрала 150 тыс. подписчиков за 90 дней. Вовлечённость утроилась.',
+          rating: 5,
+        },
+        {
+          name: 'Jessica M.',
+          role: 'Бьюти-блогер',
+          earnings: '180K followers',
+          avatar: 'JM',
+          content:
+            'Я выгорела, снимая по 3–4 часа каждый день. Теперь создаю недели Reels и TikTok за один вечер.',
+          rating: 5,
+        },
+        {
+          name: 'Riley K.',
+          role: 'Лайфстайл-инфлюенсер',
+          earnings: '420K followers',
+          avatar: 'RK',
+          content:
+            'Экономия времени сама по себе того стоит. Но расти в 4 раза быстрее, работая меньше? Это изменило всё.',
+          rating: 5,
+        },
+      ],
+      faqs: [
+        {
+          q: 'Насколько реалистичны результаты?',
+          a: 'Наш ИИ достигает точности 99%+. Результаты неотличимы от настоящих видео. Тысячи авторов используют это ежедневно — подписчики ничего не замечают.',
+        },
+        {
+          q: 'Могу ли я полностью перестать снимать?',
+          a: 'Большинство авторов используют 70–80% ИИ-контента и 20–30% реальных съёмок для аутентичности. Этот баланс сохраняет искренность ленты и максимизирует рост.',
+        },
+        {
+          q: 'Как быстро можно создавать контент?',
+          a: 'Видео: 2–5 минут. Изображения: 30–60 секунд. Можно создавать 20–30 постов в час. Большинство авторов собирают целую неделю контента за одну сессию.',
+        },
+        {
+          q: 'Это законно для коммерческого использования?',
+          a: 'ДА — на 100% законно при использовании ВАШЕГО СОБСТВЕННОГО лица. Вы владеете всем созданным контентом с полными коммерческими правами для соцсетей, рекламы и маркетинга.',
+        },
+        {
+          q: 'Подойдёт ли это, если я не разбираюсь в технологиях?',
+          a: 'Да! Загрузите 3 фото один раз, затем просто перетаскивайте видео, на которые хотите наложить своё лицо. Если вы умеете постить в Instagram — значит, справитесь с ModelClone.',
+        },
+        {
+          q: 'Как обеспечить конфиденциальность моих данных?',
+          a: 'Ваши фотографии зашифрованы с банковским уровнем защиты. Мы никогда не передаём, не продаём и не используем ваши данные ни для чего, кроме создания ВАШЕГО контента.',
+        },
+      ],
+    },
+    agency: {
+      stats: [
+        { value: '150+', label: 'Агентств используют нас' },
+        { value: '1,200+', label: 'Авторов под управлением' },
+        { value: '$8M+', label: 'Доход клиентов' },
+        { value: '85%', label: 'Снижение затрат' },
+      ],
+      hero: {
+        badge: 'Доверяют 150+ агентств по управлению талантами и инфлюенсерами',
+        headline1: 'Перестаньте зависеть',
+        headline2: 'От ненадёжных авторов.',
+        description:
+          'Ваши авторы отменяют съёмки. Опаздывают. Ленятся после набора подписчиков. Каждое агентство знает: масштабироваться невозможно, когда зависишь от доступности авторов.',
+        subheading:
+          'Создавайте контент для 10+ авторов из одного офиса. Без съёмок. Без проблем с авторами. Только результаты.',
+        pain: '❌ Зависимость от авторов → ✅ Предсказуемое, масштабируемое производство контента',
+      },
+      benefits: [
+        {
+          icon: BarChart,
+          title: 'Масштабируйтесь без найма',
+          description:
+            'Управляйте 10+ авторами с той же командой. Сократите операционные расходы на 60%, увеличив производительность в 10 раз.',
+        },
+        {
+          icon: UserCheck,
+          title: 'Больше никакой зависимости от авторов',
+          description:
+            'Автор заболел? Ленится? Ушёл? Не важно. Создавайте их контент в любом случае. Ваш рост не останавливается никогда.',
+        },
+        {
+          icon: RefreshCw,
+          title: 'Увеличьте рост каждого автора в 3×',
+          description:
+            'Публикуйте в 10 раз больше контента на автора = в 10 раз больше вовлечённости. Средний прирост подписчиков вырастает с 5 тыс. до 50 тыс. в месяц.',
+        },
+        {
+          icon: Briefcase,
+          title: 'Инструменты корпоративного уровня',
+          description:
+            'Пакетная обработка, мультиавторская панель управления, доступ к API, возможность белой метки. Создано для агентств любого масштаба.',
+        },
+      ],
+      testimonials: [
+        {
+          name: 'Miami Elite Agency',
+          role: 'Управление талантами',
+          models: '23 creators',
+          avatar: 'ME',
+          content:
+            'Мы управляем 23 авторами, и ModelClone увеличил наш выпуск контента в 10 раз. Прирост подписчиков на автора вырос на 285%.',
+          rating: 5,
+        },
+        {
+          name: 'Premium Talent Co',
+          role: 'Владелец агентства',
+          models: '17 creators',
+          avatar: 'PM',
+          content:
+            'До: зависели от настроения авторов. После: стабильный контент вне зависимости от участия авторов.',
+          rating: 5,
+        },
+        {
+          name: 'Elite Creators Group',
+          role: 'Мультиавторское агентство',
+          models: '31 creators',
+          avatar: 'EC',
+          content:
+            'Та же команда, выпуск в 5 раз больше, рост в 3 раза выше. ModelClone решил нашу главную проблему масштабирования.',
+          rating: 5,
+        },
+      ],
+      faqs: [
+        {
+          q: 'Сколькими авторами мы можем управлять?',
+          a: 'Корпоративные планы поддерживают 10+ авторов. Большинство агентств эффективно управляют 15–30 авторами на нашем бизнес-плане.',
+        },
+        {
+          q: 'Что если автор покинет наше агентство?',
+          a: 'Удалите их модель лица мгновенно. Все данные безвозвратно стираются в течение 24 часов. Новые авторы добавляются в любое время.',
+        },
+        {
+          q: 'Можем ли мы использовать белую метку?',
+          a: 'Да! Корпоративные планы включают возможность белой метки, собственный брендинг и выделенную инфраструктуру.',
+        },
+        {
+          q: 'Как работает пакетная обработка?',
+          a: 'Загрузите 50+ видео за раз, выберите авторов и обрабатывайте всё в ночное время. Просыпайтесь с сотнями постов, готовых к публикации.',
+        },
+        {
+          q: 'Нужно ли авторам знать, что мы используем ИИ?',
+          a: 'Нет. Это ваш бизнес-инструмент. Большинство агентств используют ИИ для 60–80% контента. Вы контролируете всё, что создаётся.',
+        },
+        {
+          q: 'Какую поддержку получают агентства?',
+          a: 'Выделенный менеджер по работе с клиентами, приоритетная поддержка 24/7, обучение при подключении и прямой Slack-канал для срочных вопросов.',
+        },
+      ],
+    },
+  };
+
+  const activeContent = (locale === 'ru' ? contentRu : content)[userType];
 
   const howItWorks = [
     {
       step: '01',
-      title: isCreator ? 'Upload 3 Face Photos' : 'Upload Creator Photos',
+      title: isCreator
+        ? (locale === 'ru' ? 'Загрузите 3 фото лица' : 'Upload 3 Face Photos')
+        : (locale === 'ru' ? 'Загрузите фото авторов' : 'Upload Creator Photos'),
       description: isCreator
-        ? 'Send us 3 clear photos from different angles. Your AI model is ready in 24 hours. Face data is encrypted and never shared.'
-        : 'Upload 3 photos per creator. AI models are ready in 24 hours. All data encrypted and isolated per creator.',
+        ? (
+          locale === 'ru'
+            ? 'Отправьте нам 3 чёткие фотографии с разных ракурсов. Ваша ИИ-модель будет готова через 24 часа. Данные лица зашифрованы и никогда не передаются третьим лицам.'
+            : 'Send us 3 clear photos from different angles. Your AI model is ready in 24 hours. Face data is encrypted and never shared.'
+        )
+        : (
+          locale === 'ru'
+            ? 'Загрузите по 3 фотографии на каждого автора. ИИ-модели готовы через 24 часа. Все данные зашифрованы и изолированы для каждого автора.'
+            : 'Upload 3 photos per creator. AI models are ready in 24 hours. All data encrypted and isolated per creator.'
+        ),
     },
     {
       step: '02',
-      title: 'Generate Unlimited Content',
+      title: locale === 'ru' ? 'Создавайте безлимитный контент' : 'Generate Unlimited Content',
       description: isCreator
-        ? 'Upload any video or describe what you want. AI puts your face on it perfectly. Reels, TikToks, YouTube Shorts — anything.'
-        : 'Upload videos in bulk or use prompts. Select creators. Process 100+ videos overnight.',
+        ? (
+          locale === 'ru'
+            ? 'Загрузите любое видео или опишите, что хотите. ИИ идеально накладывает ваше лицо. Reels, TikToks, YouTube Shorts — всё что угодно.'
+            : 'Upload any video or describe what you want. AI puts your face on it perfectly. Reels, TikToks, YouTube Shorts — anything.'
+        )
+        : (
+          locale === 'ru'
+            ? 'Загружайте видео пакетами или используйте текстовые запросы. Выбирайте авторов. Обрабатывайте 100+ видео за ночь.'
+            : 'Upload videos in bulk or use prompts. Select creators. Process 100+ videos overnight.'
+        ),
     },
     {
       step: '03',
-      title: isCreator ? 'Post & Grow' : 'Distribute & Scale',
+      title: isCreator
+        ? (locale === 'ru' ? 'Публикуйте и растите' : 'Post & Grow')
+        : (locale === 'ru' ? 'Распространяйте и масштабируйтесь' : 'Distribute & Scale'),
       description: isCreator
-        ? 'Download in HD/4K, add your branding, and post to all platforms. Grow your audience infinitely.'
-        : 'Download content organised by creator. Distribute to all platforms. Track performance and scale what works.',
+        ? (
+          locale === 'ru'
+            ? 'Скачайте в HD/4K, добавьте свой брендинг и публикуйте на всех платформах. Увеличивайте аудиторию без ограничений.'
+            : 'Download in HD/4K, add your branding, and post to all platforms. Grow your audience infinitely.'
+        )
+        : (
+          locale === 'ru'
+            ? 'Скачайте контент, организованный по авторам. Распространяйте на всех платформах. Отслеживайте результаты и масштабируйте то, что работает.'
+            : 'Download content organised by creator. Distribute to all platforms. Track performance and scale what works.'
+        ),
     },
   ];
 

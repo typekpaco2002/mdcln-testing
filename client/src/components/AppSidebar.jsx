@@ -29,9 +29,26 @@ import {
   Mic,
 } from "lucide-react";
 import { SiTelegram, SiDiscord, SiInstagram } from "react-icons/si";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useBranding } from "../hooks/useBranding";
 import { hasPremiumAccess } from "../utils/premiumAccess";
+
+const LOCALE_STORAGE_KEY = "app_locale";
+const SUPPORTED_LOCALES = ["en", "ru"];
+
+function getCurrentLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (SUPPORTED_LOCALES.includes(normalizedQs)) return normalizedQs;
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (SUPPORTED_LOCALES.includes(saved)) return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
 
 export default function AppSidebar({
   activeTab,
@@ -45,14 +62,34 @@ export default function AppSidebar({
   collapsed: collapsedProp,
   setCollapsed: setCollapsedProp,
 }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const branding = useBranding();
   const canAccessPremium = hasPremiumAccess(user);
   const [localCollapsed, setLocalCollapsed] = useState(false);
   const collapsed = typeof collapsedProp === "boolean" ? collapsedProp : localCollapsed;
   const setCollapsed = setCollapsedProp || setLocalCollapsed;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [locale, setLocale] = useState(getCurrentLocale);
   const collapsedRow = collapsed ? "justify-center px-0 gap-0 min-h-[44px]" : "";
   const collapsedProfileRow = collapsed ? "justify-center px-0 gap-0 min-h-[48px]" : "";
+
+  const handleLocaleChange = (nextLocale) => {
+    if (!SUPPORTED_LOCALES.includes(nextLocale)) return;
+    if (nextLocale === locale) return;
+    setLocale(nextLocale);
+    try {
+      localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
+    } catch {
+      // Ignore storage errors
+    }
+    const params = new URLSearchParams(location.search);
+    params.set("lang", nextLocale);
+    const nextSearch = params.toString();
+    navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ""}${location.hash || ""}`, {
+      replace: true,
+    });
+  };
 
   const mainNavItems = [
     { id: "home", label: "Dashboard", icon: Home },
@@ -150,6 +187,31 @@ export default function AppSidebar({
                   <span className="text-sm font-medium text-white truncate">
                     {user?.name || user?.email?.split("@")[0] || "Profile"}
                   </span>
+                  <div
+                    className="ml-auto inline-flex items-center rounded-md border border-white/10 bg-white/[0.03] p-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {SUPPORTED_LOCALES.map((code) => {
+                      const active = locale === code;
+                      return (
+                        <button
+                          key={code}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLocaleChange(code);
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase transition ${
+                            active
+                              ? "bg-white text-black"
+                              : "text-slate-400 hover:text-white hover:bg-white/[0.08]"
+                          }`}
+                          data-testid={`locale-switch-${code}`}
+                        >
+                          {code}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <ChevronDown
                     className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${
                       showProfileMenu ? "rotate-180" : ""

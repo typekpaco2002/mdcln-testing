@@ -675,7 +675,7 @@ export async function login(req, res) {
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: "Email not found",
+        message: "Invalid email or password",
       });
     }
 
@@ -683,7 +683,7 @@ export async function login(req, res) {
     if (!validPassword) {
       return res.status(401).json({
         success: false,
-        message: "Incorrect password",
+        message: "Invalid email or password",
       });
     }
 

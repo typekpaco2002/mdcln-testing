@@ -84,17 +84,18 @@ router.post("/", express.raw({ type: () => true, limit: "1mb" }), async (req, re
       const age = timestamp ? Math.abs(Date.now() / 1000 - parseInt(timestamp, 10)) : 999;
       if (age > 300) {
         console.warn("[WaveSpeed Callback] Rejected: timestamp too old");
-        return ack();
+        return res.status(401).json({ error: "Invalid webhook timestamp" });
       }
       if (!verifyWebhookSignature(rawBody, webhookId, timestamp, signature)) {
         console.warn("[WaveSpeed Callback] Invalid signature");
-        return ack();
+        return res.status(401).json({ error: "Invalid signature" });
       }
     } else if (process.env.NODE_ENV === "production") {
       if (!warnedMissingWaveSpeedWebhookSecret) {
         warnedMissingWaveSpeedWebhookSecret = true;
         console.warn("[WaveSpeed Callback] WAVESPEED_WEBHOOK_SECRET not set");
       }
+      return res.status(503).json({ error: "Webhook signing not configured" });
     }
 
     let body;

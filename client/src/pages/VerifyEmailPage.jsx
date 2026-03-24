@@ -5,11 +5,68 @@ import { Mail, ArrowRight, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
 import { useAuthStore } from '../store';
+const LOCALE_STORAGE_KEY = 'app_locale';
+
+const COPY = {
+  en: {
+    missingEmail: 'Email not found. Please sign up again.',
+    codeIncomplete: 'Please enter the full 6-digit code',
+    success: 'Email verified! Welcome to ModelClone',
+    failed: 'Verification failed',
+    resendSuccess: 'Verification code sent! Check your email',
+    resendFailed: 'Failed to resend code',
+    title: 'Verify Your Email',
+    subtitleLine1: 'We sent a 6-digit code to',
+    buttonVerifying: 'Verifying...',
+    buttonVerify: 'Verify Email',
+    resendSending: 'Sending...',
+    resendDefault: "Didn't receive code? Resend",
+    tipPrefix: '💡 Tip:',
+    tipText: "Check your spam folder if you don't see the email. The code expires in 10 minutes.",
+    backToLogin: '← Back to Login',
+  },
+  ru: {
+    missingEmail: 'Адрес электронной почты не найден. Пожалуйста, зарегистрируйтесь заново.',
+    codeIncomplete: 'Введите полный 6-значный код',
+    success: 'Адрес электронной почты подтвержден! Добро пожаловать в ModelClone',
+    failed: 'Подтверждение не удалось',
+    resendSuccess: 'Код подтверждения отправлен! Проверьте свою электронную почту',
+    resendFailed: 'Не удалось повторно отправить код',
+    title: 'Подтвердите свой адрес электронной почты',
+    subtitleLine1: 'Мы отправили 6-значный код на',
+    buttonVerifying: 'Проверка...',
+    buttonVerify: 'Подтвердить адрес электронной почты',
+    resendSending: 'Отправляется...',
+    resendDefault: 'Не получили код? Отправить заново',
+    tipPrefix: '💡 Совет:',
+    tipText: 'Проверьте папку «Спам», если не видите письмо. Срок действия кода истекает через 10 минут.',
+    backToLogin: '← Вернуться к входу',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 export default function VerifyEmailPage() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const inputRefs = useRef([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,10 +75,10 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     if (!email) {
-      toast.error('Email not found. Please sign up again.');
+      toast.error(copy.missingEmail);
       navigate('/signup');
     }
-  }, [email, navigate]);
+  }, [email, navigate, copy.missingEmail]);
 
   const handleChange = (index, value) => {
     if (value.length > 1) {
@@ -60,7 +117,7 @@ export default function VerifyEmailPage() {
     const verificationCode = code.join('');
     
     if (verificationCode.length !== 6) {
-      toast.error('Please enter the full 6-digit code');
+      toast.error(copy.codeIncomplete);
       return;
     }
 
@@ -71,15 +128,15 @@ export default function VerifyEmailPage() {
       
       if (data.success) {
         setAuth(data.user, data.token);
-        toast.success('Email verified! Welcome to ModelClone');
+        toast.success(copy.success);
         navigate('/dashboard');
       } else {
-        toast.error(data.message || 'Verification failed');
+        toast.error(data.message || copy.failed);
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Verification failed');
+      toast.error(error.response?.data?.message || copy.failed);
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
@@ -94,12 +151,12 @@ export default function VerifyEmailPage() {
       const data = await authAPI.resendCode(email);
       
       if (data.success) {
-        toast.success('Verification code sent! Check your email');
+        toast.success(copy.resendSuccess);
       } else {
-        toast.error(data.message || 'Failed to resend code');
+        toast.error(data.message || copy.resendFailed);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to resend code');
+      toast.error(error.response?.data?.message || copy.resendFailed);
     } finally {
       setResending(false);
     }
@@ -131,9 +188,9 @@ export default function VerifyEmailPage() {
               <Mail className="w-8 h-8 text-white" />
             </div>
             
-            <h1 className="text-3xl font-bold mb-2">Verify Your Email</h1>
+            <h1 className="text-3xl font-bold mb-2">{copy.title}</h1>
             <p className="text-gray-400">
-              We sent a 6-digit code to<br />
+              {copy.subtitleLine1}<br />
               <span className="text-white font-semibold">{email}</span>
             </p>
           </div>
@@ -168,11 +225,11 @@ export default function VerifyEmailPage() {
             {loading ? (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                <span>Verifying...</span>
+                <span>{copy.buttonVerifying}</span>
               </div>
             ) : (
               <>
-                Verify Email
+                {copy.buttonVerify}
                 <ArrowRight className="w-5 h-5" />
               </>
             )}
@@ -185,15 +242,14 @@ export default function VerifyEmailPage() {
               disabled={resending}
               className="text-gray-400 hover:text-white transition text-sm disabled:opacity-50"
             >
-              {resending ? 'Sending...' : "Didn't receive code? Resend"}
+              {resending ? copy.resendSending : copy.resendDefault}
             </button>
           </div>
 
           {/* Info */}
           <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
             <p className="text-sm text-gray-300">
-              💡 <strong>Tip:</strong> Check your spam folder if you don't see the email. 
-              The code expires in 10 minutes.
+              {copy.tipPrefix} {copy.tipText}
             </p>
           </div>
         </div>
@@ -201,7 +257,7 @@ export default function VerifyEmailPage() {
         {/* Back to Login */}
         <div className="text-center mt-6">
           <Link to="/login" className="text-gray-400 hover:text-white transition">
-            ← Back to Login
+            {copy.backToLogin}
           </Link>
         </div>
       </motion.div>

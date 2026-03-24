@@ -3,6 +3,113 @@ import { Upload, RefreshCw, Download, Copy, CheckCircle2, AlertCircle, FileType2
 import toast from "react-hot-toast";
 import { reformatterAPI } from "../services/api";
 
+const LOCALE_STORAGE_KEY = "app_locale";
+
+const COPY = {
+  en: {
+    title: "Content Reformatter",
+    subtitle: "Convert unsupported uploads into compatible formats for your workflow.",
+    chooseFile: "Choose file to convert",
+    helpImages: "Images: HEIC/HEIF/AVIF/BMP/TIFF/... -> JPEG",
+    helpVideos: "Videos: MOV and other formats -> MP4",
+    selectedFileTitle: "Selected File",
+    noFileSelected: "No file selected yet.",
+    labelSize: "Size:",
+    labelDetectedType: "Detected type:",
+    detectedTypeUnknown: "unknown",
+    labelTargetFormat: "Target format:",
+    buttonUploading: "Uploading & starting…",
+    buttonConvertTo: "Convert -> {format}",
+    hintFileUploaded: "File is uploaded, then converted. Results appear in Conversion history.",
+    toastLoadHistoryFailed: "Failed to load history",
+    toastStartedDefault:
+      "Conversion started. You can leave this page — progress appears in Conversion history.",
+    toastStartFailed: "Failed to start conversion",
+    toastUrlCopied: "Converted file URL copied",
+    toastCopyFailed: "Could not copy URL",
+    resultComplete: "Conversion Complete",
+    resultOriginal: "Original",
+    resultConverted: "Converted",
+    buttonOpenDownload: "Open / Download",
+    buttonCopyUrl: "Copy URL",
+    historyTitle: "Conversion history",
+    historyNote: "(saved to storage for 1 month)",
+    historyLoading: "Loading...",
+    historyEmpty: "No conversions yet. Convert a file to see it here.",
+    historyItemDefaultName: "Converted file",
+    historyAvailableUntil: "Available until {date}",
+    historyStatusProcessing: "Processing…",
+    historyStatusFailed: "Failed",
+    historyButtonDownload: "Download",
+    historyButtonLoadMore: "Load more",
+    historyButtonLoadingMore: "Loading...",
+    targetFormatImage: "JPEG",
+    targetFormatVideo: "MP4",
+    detectedTypeImage: "image",
+    detectedTypeVideo: "video",
+  },
+  ru: {
+    title: "Конвертер контента",
+    subtitle: "Преобразуйте неподдерживаемые файлы в совместимые форматы для вашего рабочего процесса.",
+    chooseFile: "Выбрать файл для конвертации",
+    helpImages: "Изображения: HEIC/HEIF/AVIF/BMP/TIFF/... -> JPEG",
+    helpVideos: "Видео: MOV и другие форматы -> MP4",
+    selectedFileTitle: "Выбранный файл",
+    noFileSelected: "Файл ещё не выбран.",
+    labelSize: "Размер:",
+    labelDetectedType: "Определённый тип:",
+    detectedTypeUnknown: "неизвестно",
+    labelTargetFormat: "Целевой формат:",
+    buttonUploading: "Загрузка и запуск…",
+    buttonConvertTo: "Конвертировать -> {format}",
+    hintFileUploaded:
+      "Файл загружается, затем конвертируется. Результаты отображаются в истории конвертаций.",
+    toastLoadHistoryFailed: "Не удалось загрузить историю",
+    toastStartedDefault:
+      "Конвертация запущена. Вы можете покинуть эту страницу — прогресс отображается в истории конвертаций.",
+    toastStartFailed: "Не удалось запустить конвертацию",
+    toastUrlCopied: "URL конвертированного файла скопирован",
+    toastCopyFailed: "Не удалось скопировать URL",
+    resultComplete: "Конвертация завершена",
+    resultOriginal: "Оригинал",
+    resultConverted: "Конвертировано",
+    buttonOpenDownload: "Открыть / Скачать",
+    buttonCopyUrl: "Скопировать URL",
+    historyTitle: "История конвертаций",
+    historyNote: "(сохраняется в хранилище на 1 месяц)",
+    historyLoading: "Загрузка...",
+    historyEmpty: "Конвертаций пока нет. Конвертируйте файл, чтобы увидеть его здесь.",
+    historyItemDefaultName: "Конвертированный файл",
+    historyAvailableUntil: "Доступно до {date}",
+    historyStatusProcessing: "Обработка…",
+    historyStatusFailed: "Ошибка",
+    historyButtonDownload: "Скачать",
+    historyButtonLoadMore: "Загрузить ещё",
+    historyButtonLoadingMore: "Загрузка...",
+    targetFormatImage: "JPEG",
+    targetFormatVideo: "MP4",
+    detectedTypeImage: "изображение",
+    detectedTypeVideo: "видео",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 function formatBytes(bytes) {
   const value = Number(bytes || 0);
   if (!value) return "0 B";
@@ -17,6 +124,8 @@ function formatBytes(bytes) {
 }
 
 export default function ContentReformatterPage() {
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const [selectedFile, setSelectedFile] = useState(null);
   const [isConverting, setIsConverting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -37,7 +146,7 @@ export default function ContentReformatterPage() {
     return "image";
   }, [selectedFile]);
 
-  const targetLabel = fileKind === "video" ? "MP4" : "JPEG";
+  const targetLabel = fileKind === "video" ? copy.targetFormatVideo : copy.targetFormatImage;
 
   const loadHistory = async (cursor) => {
     setLoadingHistory(true);
@@ -50,7 +159,7 @@ export default function ContentReformatterPage() {
       }
       setHistoryCursor(data.nextCursor || null);
     } catch (e) {
-      toast.error(e?.response?.data?.message || e?.message || "Failed to load history");
+      toast.error(e?.response?.data?.message || e?.message || copy.toastLoadHistoryFailed);
     } finally {
       setLoadingHistory(false);
     }
@@ -92,11 +201,9 @@ export default function ContentReformatterPage() {
       setUploadProgress(100);
       setShowHistory(true);
       await loadHistory();
-      toast.success(
-        data?.message || "Conversion started. You can leave this page — progress appears in Conversion history.",
-      );
+      toast.success(data?.message || copy.toastStartedDefault);
     } catch (err) {
-      const message = err?.response?.data?.message || err?.message || "Failed to start conversion";
+      const message = err?.response?.data?.message || err?.message || copy.toastStartFailed;
       setError(message);
       toast.error(message);
     } finally {
@@ -125,9 +232,9 @@ export default function ContentReformatterPage() {
     if (!result?.outputUrl) return;
     try {
       await navigator.clipboard.writeText(result.outputUrl);
-      toast.success("Converted file URL copied");
+      toast.success(copy.toastUrlCopied);
     } catch {
-      toast.error("Could not copy URL");
+      toast.error(copy.toastCopyFailed);
     }
   };
 
@@ -157,9 +264,9 @@ export default function ContentReformatterPage() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-white">Content Reformatter</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-white">{copy.title}</h1>
         <p className="text-slate-400 mt-2">
-          Convert unsupported uploads into compatible formats for your workflow.
+          {copy.subtitle}
         </p>
       </div>
 
@@ -174,26 +281,33 @@ export default function ContentReformatterPage() {
             />
             <div className="flex items-center gap-3 text-slate-200">
               <Upload className="w-5 h-5 text-cyan-300" />
-              <span className="font-medium">Choose file to convert</span>
+              <span className="font-medium">{copy.chooseFile}</span>
             </div>
             <p className="text-xs text-slate-500 mt-3">
-              Images: HEIC/HEIF/AVIF/BMP/TIFF/... -&gt; JPEG
+              {copy.helpImages}
               <br />
-              Videos: MOV and other formats -&gt; MP4
+              {copy.helpVideos}
             </p>
           </label>
 
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <h2 className="text-sm font-semibold text-white mb-3">Selected File</h2>
+            <h2 className="text-sm font-semibold text-white mb-3">{copy.selectedFileTitle}</h2>
             {!selectedFile ? (
-              <p className="text-sm text-slate-500">No file selected yet.</p>
+              <p className="text-sm text-slate-500">{copy.noFileSelected}</p>
             ) : (
               <div className="space-y-2 text-sm">
                 <div className="text-slate-200 font-medium break-all">{selectedFile.name}</div>
-                <div className="text-slate-400">Size: {formatBytes(selectedFile.size)}</div>
-                <div className="text-slate-400">Detected type: {fileKind || "unknown"}</div>
+                <div className="text-slate-400">{copy.labelSize} {formatBytes(selectedFile.size)}</div>
+                <div className="text-slate-400">
+                  {copy.labelDetectedType}{" "}
+                  {fileKind === "image"
+                    ? copy.detectedTypeImage
+                    : fileKind === "video"
+                      ? copy.detectedTypeVideo
+                      : copy.detectedTypeUnknown}
+                </div>
                 <div className="text-slate-300">
-                  Target format: <span className="font-semibold text-emerald-300">{targetLabel}</span>
+                  {copy.labelTargetFormat} <span className="font-semibold text-emerald-300">{targetLabel}</span>
                 </div>
               </div>
             )}
@@ -208,7 +322,7 @@ export default function ContentReformatterPage() {
             data-testid="button-convert-content"
           >
             {isConverting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileType2 className="w-4 h-4" />}
-            {isConverting ? "Uploading & starting…" : `Convert → ${targetLabel}`}
+            {isConverting ? copy.buttonUploading : copy.buttonConvertTo.replace("{format}", targetLabel)}
           </button>
 
           {isConverting && uploadProgress > 0 && (
@@ -216,7 +330,7 @@ export default function ContentReformatterPage() {
           )}
         </div>
         <p className="mt-2 text-xs text-slate-500">
-          File is uploaded, then converted. Results appear in Conversion history.
+          {copy.hintFileUploaded}
         </p>
 
         {error && (
@@ -231,17 +345,17 @@ export default function ContentReformatterPage() {
         <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 md:p-6">
           <div className="flex items-center gap-2 text-emerald-200 font-semibold">
             <CheckCircle2 className="w-5 h-5" />
-            Conversion Complete
+            {copy.resultComplete}
           </div>
 
           <div className="mt-4 grid md:grid-cols-2 gap-3 text-sm">
             <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-              <div className="text-slate-400">Original</div>
+              <div className="text-slate-400">{copy.resultOriginal}</div>
               <div className="text-white">{String(result.originalFormat || "").toUpperCase()}</div>
               <div className="text-slate-400 mt-1">{formatBytes(result.originalSizeBytes)}</div>
             </div>
             <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-              <div className="text-slate-400">Converted</div>
+              <div className="text-slate-400">{copy.resultConverted}</div>
               <div className="text-white inline-flex items-center gap-2">
                 {result.mediaKind === "video" ? <Video className="w-4 h-4 text-cyan-300" /> : <FileType2 className="w-4 h-4 text-cyan-300" />}
                 {String(result.convertedFormat || "").toUpperCase()}
@@ -257,7 +371,7 @@ export default function ContentReformatterPage() {
               data-testid="button-download-converted"
             >
               <Download className="w-4 h-4" />
-              Open / Download
+              {copy.buttonOpenDownload}
             </button>
             <button
               onClick={handleCopyUrl}
@@ -265,7 +379,7 @@ export default function ContentReformatterPage() {
               data-testid="button-copy-converted-url"
             >
               <Copy className="w-4 h-4" />
-              Copy URL
+              {copy.buttonCopyUrl}
             </button>
           </div>
         </div>
@@ -278,15 +392,15 @@ export default function ContentReformatterPage() {
           className="flex items-center gap-2 text-white font-medium hover:text-cyan-300 transition"
         >
           <History className="w-5 h-5" />
-          Conversion history
-          <span className="text-slate-500 text-sm">(saved to storage for 1 month)</span>
+          {copy.historyTitle}
+          <span className="text-slate-500 text-sm">{copy.historyNote}</span>
         </button>
         {showHistory && (
           <div className="mt-4">
             {loadingHistory && history.length === 0 ? (
-              <p className="text-slate-400 text-sm">Loading...</p>
+              <p className="text-slate-400 text-sm">{copy.historyLoading}</p>
             ) : history.length === 0 ? (
-              <p className="text-slate-500 text-sm">No conversions yet. Convert a file to see it here.</p>
+              <p className="text-slate-500 text-sm">{copy.historyEmpty}</p>
             ) : (
               <ul className="space-y-2">
                 {history.map((job) => (
@@ -295,16 +409,16 @@ export default function ContentReformatterPage() {
                     className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/20 p-3 text-sm"
                   >
                     <div className="min-w-0">
-                      <div className="text-slate-200 font-medium truncate">{job.originalFileName || "Converted file"}</div>
+                      <div className="text-slate-200 font-medium truncate">{job.originalFileName || copy.historyItemDefaultName}</div>
                       <div className="text-slate-500 text-xs mt-0.5">
                         {formatDate(job.createdAt)}
-                        {job.expiresAt && ` · Available until ${formatDate(job.expiresAt)}`}
+                        {job.expiresAt && ` · ${copy.historyAvailableUntil.replace("{date}", formatDate(job.expiresAt))}`}
                       </div>
                     </div>
                     {job.status === "processing" && (
                       <span className="text-amber-400 text-xs shrink-0 inline-flex items-center gap-1">
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        Processing…
+                        {copy.historyStatusProcessing}
                       </span>
                     )}
                     {job.status === "completed" && job.outputUrl && (
@@ -314,11 +428,11 @@ export default function ContentReformatterPage() {
                         className="px-3 py-1.5 rounded-lg bg-white text-black font-medium inline-flex items-center gap-1.5 shrink-0"
                       >
                         <Download className="w-4 h-4" />
-                        Download
+                        {copy.historyButtonDownload}
                       </button>
                     )}
                     {job.status === "failed" && (
-                      <span className="text-red-400 text-xs">{job.errorMessage || "Failed"}</span>
+                      <span className="text-red-400 text-xs">{job.errorMessage || copy.historyStatusFailed}</span>
                     )}
                   </li>
                 ))}
@@ -331,7 +445,7 @@ export default function ContentReformatterPage() {
                 disabled={loadingHistory}
                 className="mt-3 text-sm text-cyan-400 hover:text-cyan-300 disabled:opacity-50"
               >
-                {loadingHistory ? "Loading..." : "Load more"}
+                {loadingHistory ? copy.historyButtonLoadingMore : copy.historyButtonLoadMore}
               </button>
             )}
           </div>

@@ -8,6 +8,7 @@ import { authAPI, referralAPI } from '../services/api';
 import { useAuthStore } from '../store';
 import { signInWithGoogle } from '../lib/firebase';
 import { generateFingerprint } from '../utils/fingerprint';
+const LOCALE_STORAGE_KEY = 'app_locale';
 
 function safeLocalStorageGet(key) {
   try {
@@ -33,6 +34,76 @@ function safeLocalStorageRemove(key) {
   }
 }
 
+const COPY = {
+  en: {
+    googleFailed: 'Google sign-in failed',
+    welcome: 'Welcome!',
+    allFieldsRequired: 'Please fill in all fields',
+    enter2fa: 'Please enter your 2FA code',
+    googleAccountHint: 'This account uses Google sign-in. Please use the Google button below.',
+    welcomeBackToast: 'Welcome back!',
+    enterAuthCodeToast: 'Enter your 2FA code from your authenticator app',
+    verifyEmailFirst: 'Please verify your email first',
+    invalid2fa: 'Invalid 2FA code. Please try again.',
+    title: 'Welcome Back',
+    subtitle: 'Sign in to continue creating',
+    labelEmail: 'Email',
+    labelPassword: 'Password',
+    forgotPassword: 'Forgot password?',
+    label2fa: 'Two-Factor Authentication Code',
+    help2fa: 'Enter the 6-digit code from your authenticator app',
+    buttonSigningIn: 'Signing in...',
+    buttonSignIn: 'Sign In',
+    dividerOr: 'or',
+    continueWithGoogle: 'Continue with Google',
+    noAccount: "Don't have an account?",
+    createAccount: 'Create Account',
+    backHome: '← Back to Home',
+  },
+  ru: {
+    googleFailed: 'Ошибка входа через Google',
+    welcome: 'Добро пожаловать!',
+    allFieldsRequired: 'Пожалуйста, заполните все поля',
+    enter2fa: 'Введите код 2FA',
+    googleAccountHint: 'Для этой учетной записи используется вход через Google. Пожалуйста, воспользуйтесь кнопкой Google ниже.',
+    welcomeBackToast: 'Снова с вами!',
+    enterAuthCodeToast: 'Введите код 2FA из приложения-аутентификатора',
+    verifyEmailFirst: 'Сначала подтвердите свой адрес электронной почты',
+    invalid2fa: 'Неверный код 2FA. Попробуйте еще раз.',
+    title: 'Добро пожаловать обратно',
+    subtitle: 'Войдите, чтобы продолжить создание',
+    labelEmail: 'Электронная почта',
+    labelPassword: 'Пароль',
+    forgotPassword: 'Забыли пароль?',
+    label2fa: 'Код двухфакторной аутентификации',
+    help2fa: 'Введите 6-значный код из приложения-аутентификатора',
+    buttonSigningIn: 'Вход...',
+    buttonSignIn: 'Войти',
+    dividerOr: 'или',
+    continueWithGoogle: 'Продолжить с Google',
+    noAccount: 'У вас нет учетной записи?',
+    createAccount: 'Создать учетную запись',
+    backHome: '← Назад на главную',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +111,8 @@ export default function LoginPage() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const navigate = useNavigate();
   const location = useLocation();
   const setAuth = useAuthStore((state) => state.setAuth);
@@ -69,7 +142,7 @@ export default function LoginPage() {
     try {
       const googleResult = await signInWithGoogle();
       if (!googleResult.success) {
-        toast.error(googleResult.error || 'Google sign-in failed');
+        toast.error(googleResult.error || copy.googleFailed);
         return;
       }
 
@@ -94,7 +167,7 @@ export default function LoginPage() {
 
       if (data.success) {
         setAuth(data.user, data.token);
-        toast.success('Welcome!');
+        toast.success(copy.welcome);
         const redirectTo = safeLocalStorageGet("redirectAfterLogin");
         if (redirectTo) {
           safeLocalStorageRemove("redirectAfterLogin");
@@ -110,7 +183,7 @@ export default function LoginPage() {
     } catch (error) {
       console.error('Google login error:', error);
       const errorData = error.response?.data;
-      toast.error(errorData?.message || 'Google sign-in failed');
+      toast.error(errorData?.message || copy.googleFailed);
     } finally {
       setGoogleLoading(false);
     }
@@ -120,12 +193,12 @@ export default function LoginPage() {
     e.preventDefault();
     
     if (!email || !password) {
-      toast.error('Please fill in all fields');
+      toast.error(copy.allFieldsRequired);
       return;
     }
 
     if (requires2FA && !twoFactorCode) {
-      toast.error('Please enter your 2FA code');
+      toast.error(copy.enter2fa);
       return;
     }
 
@@ -140,7 +213,7 @@ export default function LoginPage() {
         
         // If user signed up with Google, prompt them to use Google login
         if (authProvider === 'google' || authProvider === 'firebase') {
-          toast.error('This account uses Google sign-in. Please use the Google button below.');
+          toast.error(copy.googleAccountHint);
           setLoading(false);
           return;
         }
@@ -153,7 +226,7 @@ export default function LoginPage() {
       
       if (data.success) {
         setAuth(data.user, data.token);
-        toast.success('Welcome back!');
+        toast.success(copy.welcomeBackToast);
         const redirectTo = safeLocalStorageGet("redirectAfterLogin");
         if (redirectTo) {
           safeLocalStorageRemove("redirectAfterLogin");
@@ -163,10 +236,10 @@ export default function LoginPage() {
         }
       } else if (data.requires2FA) {
         setRequires2FA(true);
-        toast('Enter your 2FA code from your authenticator app');
+        toast(copy.enterAuthCodeToast);
       } else {
         if (data.requiresVerification) {
-          toast.error('Please verify your email first');
+          toast.error(copy.verifyEmailFirst);
           navigate('/verify', { state: { email } });
         } else {
           toast.error(data.message || 'Login failed');
@@ -178,11 +251,11 @@ export default function LoginPage() {
       if (errorData?.requires2FA) {
         setRequires2FA(true);
         if (errorData.message === 'Invalid 2FA code') {
-          toast.error('Invalid 2FA code. Please try again.');
+          toast.error(copy.invalid2fa);
           setTwoFactorCode('');
         }
       } else if (errorData?.requiresVerification) {
-        toast.error('Please verify your email first');
+        toast.error(copy.verifyEmailFirst);
         navigate('/verify', { state: { email: errorData.email || email } });
       } else {
         toast.error(errorData?.message || 'Login failed');
@@ -214,15 +287,15 @@ export default function LoginPage() {
         {/* Login Card */}
         <div className="glass-premium rounded-3xl p-10 shadow-2xl">
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold mb-3 tracking-tight">Welcome Back</h1>
-            <p className="text-gray-400 text-lg">Sign in to continue creating</p>
+            <h1 className="text-4xl font-bold mb-3 tracking-tight">{copy.title}</h1>
+            <p className="text-gray-400 text-lg">{copy.subtitle}</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email */}
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-300">
-                Email
+                {copy.labelEmail}
               </label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -242,14 +315,14 @@ export default function LoginPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-300">
-                  Password
+                  {copy.labelPassword}
                 </label>
                 <Link 
                   to="/forgot-password" 
                   className="text-sm text-slate-400 hover:text-white transition"
                   data-testid="link-forgot-password"
                 >
-                  Forgot password?
+                  {copy.forgotPassword}
                 </Link>
               </div>
               <div className="relative">
@@ -270,7 +343,7 @@ export default function LoginPage() {
             {requires2FA && (
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-300">
-                  Two-Factor Authentication Code
+                  {copy.label2fa}
                 </label>
                 <div className="relative">
                   <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-400" />
@@ -287,7 +360,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <p className="text-xs text-gray-400 mt-2">
-                  Enter the 6-digit code from your authenticator app
+                  {copy.help2fa}
                 </p>
               </div>
             )}
@@ -302,11 +375,11 @@ export default function LoginPage() {
               {loading ? (
                 <div className="flex items-center gap-3">
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Signing in...</span>
+                  <span>{copy.buttonSigningIn}</span>
                 </div>
               ) : (
                 <>
-                  Sign In
+                  {copy.buttonSignIn}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -319,7 +392,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-400">or</span>
+              <span className="px-4 bg-black text-gray-400">{copy.dividerOr}</span>
             </div>
           </div>
 
@@ -339,7 +412,7 @@ export default function LoginPage() {
             ) : (
               <>
                 <SiGoogle className="w-5 h-5" />
-                Continue with Google
+                {copy.continueWithGoogle}
               </>
             )}
           </button>
@@ -350,7 +423,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-400">Don't have an account?</span>
+              <span className="px-4 bg-black text-gray-400">{copy.noAccount}</span>
             </div>
           </div>
 
@@ -360,14 +433,14 @@ export default function LoginPage() {
             className="block w-full py-3.5 rounded-xl glass-premium btn-magnetic font-bold text-center text-base"
             data-testid="button-create-account"
           >
-            Create Account
+            {copy.createAccount}
           </Link>
         </div>
 
         {/* Back to Home */}
         <div className="text-center mt-6">
           <Link to="/" className="text-gray-400 hover:text-white transition">
-            ← Back to Home
+            {copy.backHome}
           </Link>
         </div>
       </motion.div>

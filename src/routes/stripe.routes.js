@@ -2,7 +2,7 @@ import express from 'express';
 import Stripe from 'stripe';
 import prisma from "../lib/prisma.js";
 import { authMiddleware } from '../middleware/auth.middleware.js';
-import { generateTwoPosesFromReference } from '../services/wavespeed.service.js';
+import { generateModelPosesFromReference } from '../services/wavespeed.service.js';
 import { recordReferralCommissionFromPayment, validateReferralCodeForCheckout, linkReferrerOnFirstPurchase } from "../services/referral.service.js";
 import { sendSpecialOfferConfirmationEmail } from "../services/email.service.js";
 import {
@@ -1589,27 +1589,30 @@ router.post('/confirm-special-offer', authMiddleware, async (req, res) => {
       throw txError;
     }
     
-    // STEP 2: Generate poses in background (after response sent)
-    console.log('🎨 Starting background generation of 2 additional poses...');
+    // STEP 2: Generate full 3-photo model using the same pipeline as basic AI model generation.
+    // Flow: reference -> generate photo1 selfie -> generate photo2/photo3 from [reference, photo1].
+    console.log('🎨 Starting background full model generation (same pipeline as basic AI generate)...');
     
-    generateTwoPosesFromReference(referenceUrl, {
+    generateModelPosesFromReference(referenceUrl, {
+      ...aiConfig,
       outfitType: aiConfig?.style || 'casual',
-      poseStyle: aiConfig?.poseStyle || 'natural'
+      poseStyle: aiConfig?.poseStyle || 'natural',
     }).then(async (posesResult) => {
       try {
         if (posesResult.success && posesResult.photos) {
-          // Update model with generated poses
+          // Update model with full 3-photo output from the consistency pipeline.
           const readyResult = await finalizeSpecialOfferModelReady(result.model.id, {
+            photo1Url: posesResult.photos.photo1Url || photo1Url,
             photo2Url: posesResult.photos.photo2Url || photo1Url,
             photo3Url: posesResult.photos.photo3Url || photo1Url,
           });
           console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
-          console.log('✅ Model updated with 2 additional poses:', result.model.id);
+          console.log('✅ Model updated with full 3-photo output:', result.model.id);
         } else {
-          // Generation failed, keep reference photos but mark as ready
+          // Generation failed, keep reference placeholders but mark as ready.
           const readyResult = await finalizeSpecialOfferModelReady(result.model.id);
           console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
-          console.warn('⚠️ Pose generation failed, model ready with reference photos:', posesResult.error);
+          console.warn('⚠️ Full model generation failed, model ready with reference photos:', posesResult.error);
         }
       } catch (updateError) {
         console.error('❌ Failed to update model with poses:', updateError.message);
@@ -1889,24 +1892,26 @@ router.post('/verify-special-offer', authMiddleware, async (req, res) => {
       throw error;
     }
     
-    console.log('🎨 Starting background generation of 2 additional poses...');
+    console.log('🎨 Starting background full model generation (same pipeline as basic AI generate)...');
     
-    generateTwoPosesFromReference(referenceUrl, {
+    generateModelPosesFromReference(referenceUrl, {
+      ...aiConfig,
       outfitType: aiConfig?.style || 'casual',
-      poseStyle: aiConfig?.poseStyle || 'natural'
+      poseStyle: aiConfig?.poseStyle || 'natural',
     }).then(async (posesResult) => {
       try {
         if (posesResult.success && posesResult.photos) {
           const readyResult = await finalizeSpecialOfferModelReady(result.model.id, {
+            photo1Url: posesResult.photos.photo1Url || photo1Url,
             photo2Url: posesResult.photos.photo2Url || photo1Url,
             photo3Url: posesResult.photos.photo3Url || photo1Url,
           });
           console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
-          console.log('✅ Model updated with 2 additional poses:', result.model.id);
+          console.log('✅ Model updated with full 3-photo output:', result.model.id);
         } else {
           const readyResult = await finalizeSpecialOfferModelReady(result.model.id);
           console.log(`🎁 Special offer completion bonus awarded: ${readyResult.awarded}`);
-          console.warn('⚠️ Pose generation failed, model ready with reference photos:', posesResult.error);
+          console.warn('⚠️ Full model generation failed, model ready with reference photos:', posesResult.error);
         }
       } catch (updateError) {
         console.error('❌ Failed to update model with poses:', updateError.message);
@@ -2465,13 +2470,15 @@ router.post('/recover-special-offer', authMiddleware, async (req, res) => {
       console.error('⚠️ Failed to send recovery confirmation email:', emailError.message);
     }
 
-    generateTwoPosesFromReference(referenceUrl, {
+    generateModelPosesFromReference(referenceUrl, {
+      ...aiConfig,
       outfitType: aiConfig?.style || 'casual',
-      poseStyle: aiConfig?.poseStyle || 'natural'
+      poseStyle: aiConfig?.poseStyle || 'natural',
     }).then(async (posesResult) => {
       try {
         if (posesResult.success && posesResult.photos) {
           const readyResult = await finalizeSpecialOfferModelReady(result.model.id, {
+            photo1Url: posesResult.photos.photo1Url || photo1Url,
             photo2Url: posesResult.photos.photo2Url || photo1Url,
             photo3Url: posesResult.photos.photo3Url || photo1Url,
           });

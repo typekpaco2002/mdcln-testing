@@ -58,6 +58,205 @@ import CreateModelModal from "../components/CreateModelModal";
 import AppSidebar from "../components/AppSidebar";
 import { useBranding } from "../hooks/useBranding";
 
+const LOCALE_STORAGE_KEY = "app_locale";
+
+const COPY = {
+  en: {
+    toastCreditsAlreadyAdded: "Your credits have already been added to your account.",
+    toastVerifyPaymentFailed: "Failed to verify payment",
+    toastProcessVerificationFailed: "Failed to process payment verification",
+    toastLoggedOut: "Logged out successfully",
+    mobileNavDashboard: "Dashboard",
+    mobileNavModels: "Models",
+    mobileNavGenerate: "Generate",
+    mobileNavCreatorStudio: "Creator Studio",
+    mobileNavVoiceStudio: "Voice Studio",
+    mobileNavReformatter: "Reformatter",
+    mobileNavHistory: "History",
+    mobileNavSettings: "Settings",
+    mobileNavCourses: "Courses",
+    mobileNavNsfw: "NSFW",
+    mobileNavPhotoVideoRepurposer: "Photo/Video Repurposer",
+    mobileNavReelFinder: "Reel Finder",
+    badgeSoon: "Soon",
+    mobileEarnWithAi: "Earn With AI",
+    mobileReferAndEarn: "Refer And Earn",
+    mobileTelegram: "Telegram",
+    mobileDiscord: "Discord",
+    mobileJobBoard: "Job Board",
+    badgeNew: "New",
+    mobileAdmin: "Admin",
+    mobileLogout: "Logout",
+    premiumGateTitle: "Premium Feature",
+    premiumGateDescription:
+      "Purchase a subscription to gain access to premium features including Courses, Photo/Video Repurposer, and Reel Finder.",
+    premiumGateViewPlans: "View Subscription Plans",
+    premiumGateMaybeLater: "Maybe Later",
+    earnModalTitle: "Earn With Your AI Model",
+    earnModalBody1:
+      "Monetize your AI-generated content on Fanvue - a platform where you can have AI models and sell their content.",
+    earnModalBody2: "AI models are officially allowed! Keep 100% of your revenue with no model drama.",
+    earnModalChipKeepProfits: "Keep all profits",
+    earnModalChipNoRealModels: "No real models",
+    earnModalChipEarn247: "Earn 24/7",
+    earnModalCta: "Start Earning on Fanvue",
+    earnModalDiscordText: "Learn how to market your AI model completely for free",
+    earnModalDiscordCta: "Join ModelClone Discord",
+    referralModalTitle: "Referral Program",
+    referralModalSubtitle: "Earn 15% from each referred user's first purchase",
+    referralModalHowItWorks: "How it works",
+    referralModalStep1: "Create your unique referral link",
+    referralModalStep2: "Share it and bring new users",
+    referralModalStep3: "Request payout once your eligible reward reaches $100+",
+    referralModalCta: "Open Referral Program",
+    referralModalChipCommission: "15% first-purchase commission",
+    referralModalChipPayouts: "Manual admin payouts",
+    referralModalChipUnlimited: "Unlimited referrals",
+    whatsNewTitle: "New Feature Added!",
+    whatsNewSubtitle: "February 2026 Update",
+    whatsNewFeatureTitle: "NSFW Studio",
+    whatsNewFeatureBody:
+      "Create adult content with your AI models. Train custom LoRA models and generate explicit images with face swap technology.",
+    whatsNewNote: "Access requires verified models. Check the sidebar for the new NSFW tab.",
+    whatsNewCta: "Explore NSFW Studio",
+    whatsNewMaybeLater: "Maybe Later",
+    homeWelcomeBack: "Welcome back,",
+    homeFallbackCreator: "Creator",
+    homeSubtitle: "Your AI content creation hub",
+    statsCredits: "Credits",
+    statsAddCredits: "Add Credits",
+    statsImages: "Images",
+    statsVideos: "Videos",
+    statsThisMonth: "this month",
+    mainCreateModelTitle: "Create AI Model",
+    mainCreateModelBody: "Set name, attributes & upload 3 photos",
+    mainUploadRealTitle: "Upload Real Model",
+    mainUploadRealBody: "Upload photos of a real person",
+    tutorialTitle: "Quick Tutorial",
+    recentCreations: "Recent Creations",
+    viewAll: "View All",
+    quickActionsTitle: "Quick Actions",
+    quickCreateModelTitle: "Create a Model",
+    quickCreateModelBody: "Upload 3 photos to train your model",
+    quickGetStarted: "Get Started",
+    quickStartEarningTitle: "Start Earning",
+    quickStartEarningBody: "Monetize your content on Fanvue",
+    quickLearnMore: "Learn More",
+    quickAffiliateTitle: "Affiliate",
+    quickAffiliateBody: "Get 15% commission on each referral's first purchase",
+    ctaReadyTitle: "Ready to Create?",
+    ctaReadyBody: "Generate stunning AI images and videos",
+    ctaStartGenerating: "Start Generating",
+    purchaseTierFallback: "Your Plan",
+  },
+  ru: {
+    toastCreditsAlreadyAdded: "Кредиты уже зачислены на ваш счёт.",
+    toastVerifyPaymentFailed: "Не удалось подтвердить платёж",
+    toastProcessVerificationFailed: "Не удалось обработать подтверждение платежа",
+    toastLoggedOut: "Вы успешно вышли из системы",
+    mobileNavDashboard: "Панель управления",
+    mobileNavModels: "Модели",
+    mobileNavGenerate: "Создать",
+    mobileNavCreatorStudio: "Студия автора",
+    mobileNavVoiceStudio: "Голосовая студия",
+    mobileNavReformatter: "Рефоматер",
+    mobileNavHistory: "История",
+    mobileNavSettings: "Настройки",
+    mobileNavCourses: "Курсы",
+    mobileNavNsfw: "NSFW",
+    mobileNavPhotoVideoRepurposer: "Переработка фото/видео",
+    mobileNavReelFinder: "Поиск рилс",
+    badgeSoon: "Скоро",
+    mobileEarnWithAi: "Заработок с ИИ",
+    mobileReferAndEarn: "Приглашай и зарабатывай",
+    mobileTelegram: "Telegram",
+    mobileDiscord: "Discord",
+    mobileJobBoard: "Биржа заказов",
+    badgeNew: "Новое",
+    mobileAdmin: "Администратор",
+    mobileLogout: "Выйти",
+    premiumGateTitle: "Премиум-функция",
+    premiumGateDescription:
+      "Оформите подписку, чтобы получить доступ к премиум-функциям: Курсам, Переработке фото/видео и Поиску рилс.",
+    premiumGateViewPlans: "Посмотреть планы подписки",
+    premiumGateMaybeLater: "Позже",
+    earnModalTitle: "Зарабатывайте с вашей ИИ-моделью",
+    earnModalBody1:
+      "Монетизируйте ваш ИИ-контент на Fanvue — платформе, где вы можете создавать ИИ-модели и продавать их контент.",
+    earnModalBody2:
+      "ИИ-модели официально разрешены! Сохраняйте 100% дохода без проблем с реальными моделями.",
+    earnModalChipKeepProfits: "Забирайте всю прибыль",
+    earnModalChipNoRealModels: "Без реальных моделей",
+    earnModalChipEarn247: "Зарабатывайте 24/7",
+    earnModalCta: "Начать зарабатывать на Fanvue",
+    earnModalDiscordText: "Узнайте, как продвигать вашу ИИ-модель совершенно бесплатно",
+    earnModalDiscordCta: "Вступить в Discord ModelClone",
+    referralModalTitle: "Реферальная программа",
+    referralModalSubtitle: "Зарабатывайте 15% с первой покупки каждого приглашённого пользователя",
+    referralModalHowItWorks: "Как это работает",
+    referralModalStep1: "Создайте уникальную реферальную ссылку",
+    referralModalStep2: "Поделитесь ею и привлекайте новых пользователей",
+    referralModalStep3: "Запросите выплату, когда ваше вознаграждение достигнет $100+",
+    referralModalCta: "Открыть реферальную программу",
+    referralModalChipCommission: "15% комиссия с первой покупки",
+    referralModalChipPayouts: "Выплаты через администратора",
+    referralModalChipUnlimited: "Неограниченное количество рефералов",
+    whatsNewTitle: "Добавлена новая функция!",
+    whatsNewSubtitle: "Обновление февраля 2026",
+    whatsNewFeatureTitle: "NSFW-студия",
+    whatsNewFeatureBody:
+      "Создавайте контент для взрослых с вашими ИИ-моделями. Обучайте собственные LoRA-модели и генерируйте откровенные изображения с технологией замены лица.",
+    whatsNewNote: "Доступ требует верифицированных моделей. Найдите новую вкладку NSFW на боковой панели.",
+    whatsNewCta: "Открыть NSFW-студию",
+    whatsNewMaybeLater: "Позже",
+    homeWelcomeBack: "С возвращением,",
+    homeFallbackCreator: "Автор",
+    homeSubtitle: "Ваш центр создания ИИ-контента",
+    statsCredits: "Кредиты",
+    statsAddCredits: "Пополнить кредиты",
+    statsImages: "Изображения",
+    statsVideos: "Видео",
+    statsThisMonth: "в этом месяце",
+    mainCreateModelTitle: "Создать ИИ-модель",
+    mainCreateModelBody: "Укажите имя, характеристики и загрузите 3 фото",
+    mainUploadRealTitle: "Загрузить реальную модель",
+    mainUploadRealBody: "Загрузите фотографии реального человека",
+    tutorialTitle: "Быстрое руководство",
+    recentCreations: "Последние работы",
+    viewAll: "Смотреть все",
+    quickActionsTitle: "Быстрые действия",
+    quickCreateModelTitle: "Создать модель",
+    quickCreateModelBody: "Загрузите 3 фото для обучения модели",
+    quickGetStarted: "Начать",
+    quickStartEarningTitle: "Начать зарабатывать",
+    quickStartEarningBody: "Монетизируйте контент на Fanvue",
+    quickLearnMore: "Узнать больше",
+    quickAffiliateTitle: "Партнёрская программа",
+    quickAffiliateBody: "Получайте 15% комиссии с первой покупки каждого реферала",
+    ctaReadyTitle: "Готовы создавать?",
+    ctaReadyBody: "Генерируйте впечатляющие ИИ-изображения и видео",
+    ctaStartGenerating: "Начать генерацию",
+    purchaseTierFallback: "Ваш план",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 function safeLocalStorageGet(key) {
   try {
     return localStorage.getItem(key);
@@ -75,6 +274,8 @@ function safeLocalStorageSet(key, value) {
 }
 
 export default function DashboardPage() {
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const { user, logout, updateUser, refreshUserCredits } = useAuthStore();
   const branding = useBranding();
   const navigate = useNavigate();
@@ -171,7 +372,7 @@ export default function DashboardPage() {
           if (data.alreadyProcessed) {
             // Payment was already processed - just notify user
             toast.success(
-              "Your credits have already been added to your account.",
+              copy.toastCreditsAlreadyAdded,
             );
             await loadUserProfile();
           } else {
@@ -182,7 +383,7 @@ export default function DashboardPage() {
               type: purchaseType,
               tierName:
                 data.tierName ||
-                (purchaseType === "subscription" ? "Your Plan" : null),
+                (purchaseType === "subscription" ? copy.purchaseTierFallback : null),
             });
             setShowSuccessModal(true);
 
@@ -190,11 +391,11 @@ export default function DashboardPage() {
             await loadUserProfile();
           }
         } else {
-          toast.error(data.error || "Failed to verify payment");
+          toast.error(data.error || copy.toastVerifyPaymentFailed);
         }
       } catch (error) {
         console.error("Failed to verify Stripe session:", error);
-        toast.error("Failed to process payment verification");
+        toast.error(copy.toastProcessVerificationFailed);
       }
 
       // Remove session_id from URL
@@ -205,7 +406,7 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     await logout();
     navigate("/");
-    toast.success("Logged out successfully");
+    toast.success(copy.toastLoggedOut);
   };
   
   const handleCloseWhatsNew = () => {
@@ -227,18 +428,18 @@ export default function DashboardPage() {
   };
 
   const mobileMenuItems = [
-    { id: 'home', label: 'Dashboard', icon: Home },
-    { id: 'models', label: 'Models', icon: Users },
-    { id: 'generate', label: 'Generate', icon: Zap },
-    { id: 'creator-studio', label: 'Creator Studio', icon: Wand2 },
-    { id: 'voice-studio', label: 'Voice Studio', icon: Mic, premium: true },
-    { id: 'reformatter', label: 'Reformatter', icon: FileType2 },
-    { id: 'history', label: 'History', icon: Clock },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
-    { id: 'course', label: 'Courses', icon: BookOpen, premium: true },
-    { id: 'nsfw', label: 'NSFW', icon: Flame },
-    { id: 'repurposer', label: 'Photo/Video Repurposer', icon: Shuffle, premium: true },
-    { id: 'reelfinder', label: 'Reel Finder', icon: TrendingUp, premium: true },
+    { id: 'home', label: copy.mobileNavDashboard, icon: Home },
+    { id: 'models', label: copy.mobileNavModels, icon: Users },
+    { id: 'generate', label: copy.mobileNavGenerate, icon: Zap },
+    { id: 'creator-studio', label: copy.mobileNavCreatorStudio, icon: Wand2 },
+    { id: 'voice-studio', label: copy.mobileNavVoiceStudio, icon: Mic, premium: true },
+    { id: 'reformatter', label: copy.mobileNavReformatter, icon: FileType2 },
+    { id: 'history', label: copy.mobileNavHistory, icon: Clock },
+    { id: 'settings', label: copy.mobileNavSettings, icon: SettingsIcon },
+    { id: 'course', label: copy.mobileNavCourses, icon: BookOpen, premium: true },
+    { id: 'nsfw', label: copy.mobileNavNsfw, icon: Flame },
+    { id: 'repurposer', label: copy.mobileNavPhotoVideoRepurposer, icon: Shuffle, premium: true },
+    { id: 'reelfinder', label: copy.mobileNavReelFinder, icon: TrendingUp, premium: true },
   ];
 
   return (
@@ -371,7 +572,7 @@ export default function DashboardPage() {
                   )}
                   {item.comingSoon && (
                     <span className="ml-auto px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-gradient-to-r from-rose-500/20 to-orange-500/20 text-rose-300 border border-rose-500/30">
-                      Soon
+                      {copy.badgeSoon}
                     </span>
                   )}
                 </button>
@@ -389,7 +590,7 @@ export default function DashboardPage() {
                 data-testid="mobile-earn"
               >
                 <DollarSign className="w-5 h-5 text-slate-300" />
-                Earn With AI
+                {copy.mobileEarnWithAi}
               </button>
 
               <button
@@ -403,7 +604,7 @@ export default function DashboardPage() {
                 data-testid="mobile-referral"
               >
                 <Gift className="w-5 h-5 text-slate-300" />
-                Refer And Earn
+                {copy.mobileReferAndEarn}
               </button>
 
               {/* Telegram & Discord (match desktop sidebar socials) */}
@@ -415,7 +616,7 @@ export default function DashboardPage() {
                 data-testid="mobile-telegram"
               >
                 <SiTelegram className="w-5 h-5 text-slate-300" />
-                Telegram
+                {copy.mobileTelegram}
               </a>
 
               <a
@@ -426,7 +627,7 @@ export default function DashboardPage() {
                 data-testid="mobile-discord"
               >
                 <SiDiscord className="w-5 h-5 text-slate-300" />
-                Discord
+                {copy.mobileDiscord}
               </a>
 
               <button
@@ -441,9 +642,9 @@ export default function DashboardPage() {
                 data-testid="mobile-jobs"
               >
                 <Briefcase className="w-5 h-5 text-slate-300" />
-                <span>Job Board</span>
+                <span>{copy.mobileJobBoard}</span>
                 <span className="ml-auto px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-white/10 text-white/90 border border-white/25">
-                  New
+                  {copy.badgeNew}
                 </span>
               </button>
 
@@ -458,7 +659,7 @@ export default function DashboardPage() {
                   data-testid="mobile-admin"
                 >
                   <SettingsIcon className="w-5 h-5 text-rose-400" />
-                  Admin
+                  {copy.mobileAdmin}
                 </button>
               )}
 
@@ -473,7 +674,7 @@ export default function DashboardPage() {
                 data-testid="mobile-logout"
               >
                 <LogOut className="w-5 h-5" />
-                Logout
+                {copy.mobileLogout}
               </button>
             </nav>
           </motion.div>
@@ -484,7 +685,7 @@ export default function DashboardPage() {
       {/* Content - with left margin for sidebar on desktop */}
       <main className={`relative z-10 pt-16 md:pt-14 pb-12 min-h-screen transition-all duration-300 overflow-x-hidden ${isSidebarCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"}`}>
         <div className={`relative z-10 p-3 sm:p-4 md:p-6 ${isSidebarCollapsed ? "mx-auto w-full max-w-[1600px]" : ""}`}>
-          {activeTab === "home" && <HomePage setActiveTab={setActiveTab} setShowEarnModal={setShowEarnModal} setShowReferralModal={setShowReferralModal} onOpenCreateModel={() => { setUploadRealMode(false); setShowCreateModelModal(true); }} onOpenUploadReal={() => { setUploadRealMode(true); setShowCreateModelModal(true); }} onOpenCredits={() => setShowAddCredits(true)} />}
+          {activeTab === "home" && <HomePage copy={copy} setActiveTab={setActiveTab} setShowEarnModal={setShowEarnModal} setShowReferralModal={setShowReferralModal} onOpenCreateModel={() => { setUploadRealMode(false); setShowCreateModelModal(true); }} onOpenUploadReal={() => { setUploadRealMode(true); setShowCreateModelModal(true); }} onOpenCredits={() => setShowAddCredits(true)} />}
           {activeTab === "models" && <ModelsPage sidebarCollapsed={isSidebarCollapsed} openVoiceStudioForModel={openVoiceStudioForModel} />}
 {activeTab === "generate" && <GeneratePage setActiveTab={setActiveTab} openVoiceStudioForModel={openVoiceStudioForModel} />}
         {activeTab === "creator-studio" && <CreatorStudioPage sidebarCollapsed={isSidebarCollapsed} initialTab="generate" initialModelId={voiceStudioInitialModelId} />}
@@ -546,9 +747,9 @@ export default function DashboardPage() {
                 <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)' }}>
                   <Lock className="w-8 h-8 text-violet-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2" data-testid="text-premium-gate-title">Premium Feature</h3>
+                <h3 className="text-xl font-bold text-white mb-2" data-testid="text-premium-gate-title">{copy.premiumGateTitle}</h3>
                 <p className="text-slate-400 text-sm mb-6" data-testid="text-premium-gate-description">
-                  Purchase a subscription to gain access to premium features including Courses, Photo/Video Repurposer, and Reel Finder.
+                  {copy.premiumGateDescription}
                 </p>
                 <button
                   onClick={() => {
@@ -559,14 +760,14 @@ export default function DashboardPage() {
                   style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}
                   data-testid="button-premium-subscribe"
                 >
-                  View Subscription Plans
+                  {copy.premiumGateViewPlans}
                 </button>
                 <button
                   onClick={() => setShowPremiumGate(false)}
                   className="w-full mt-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white transition-colors"
                   data-testid="button-premium-dismiss"
                 >
-                  Maybe Later
+                  {copy.premiumGateMaybeLater}
                 </button>
               </div>
             </motion.div>
@@ -606,29 +807,28 @@ export default function DashboardPage() {
                   <DollarSign className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-400" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
-                  Earn With Your AI Model
+                  {copy.earnModalTitle}
                 </h2>
               </div>
 
               <div className="space-y-3 sm:space-y-4 text-gray-300 mb-4 sm:mb-6">
                 <p className="text-base sm:text-lg leading-relaxed">
-                  Monetize your AI-generated content on <span className="text-emerald-400 font-semibold">Fanvue</span> - 
-                  a platform where you can have <span className="text-white font-medium">AI models</span> and sell their content.
+                  {copy.earnModalBody1}
                 </p>
                 <p className="text-base sm:text-lg leading-relaxed">
-                  <span className="text-emerald-400 font-semibold">AI models are officially allowed!</span> Keep 100% of your revenue with no model drama.
+                  {copy.earnModalBody2}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-emerald-400 mb-4 sm:mb-8 justify-center">
                 <span className="flex items-center gap-1 sm:gap-1.5 bg-white/[0.06] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/10">
-                  <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Keep all profits
+                  <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> {copy.earnModalChipKeepProfits}
                 </span>
                 <span className="flex items-center gap-1 sm:gap-1.5 bg-white/[0.06] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/10">
-                  <Users className="w-3 h-3 sm:w-4 sm:h-4" /> No real models
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" /> {copy.earnModalChipNoRealModels}
                 </span>
                 <span className="flex items-center gap-1 sm:gap-1.5 bg-white/[0.06] px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/10">
-                  <Clock className="w-3 h-3 sm:w-4 sm:h-4" /> Earn 24/7
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4" /> {copy.earnModalChipEarn247}
                 </span>
               </div>
 
@@ -639,13 +839,13 @@ export default function DashboardPage() {
                 className="w-full inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-4 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-bold text-base sm:text-lg rounded-xl transition-all mb-3 sm:mb-4"
                 data-testid="button-fanvue-affiliate-modal"
               >
-                Start Earning on Fanvue
+                {copy.earnModalCta}
                 <ExternalLink className="w-4 h-4 sm:w-5 sm:h-5" />
               </a>
 
               <div className="text-center pt-3 sm:pt-4 border-t border-white/5">
                 <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3">
-                  Learn how to market your AI model completely for free
+                  {copy.earnModalDiscordText}
                 </p>
                 <a
                   href="https://discord.gg/vpwGygjEaB"
@@ -657,7 +857,7 @@ export default function DashboardPage() {
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
                   </svg>
-                  Join ModelClone Discord
+                  {copy.earnModalDiscordCta}
                 </a>
               </div>
             </div>
@@ -698,10 +898,10 @@ export default function DashboardPage() {
                   <Share2 className="w-7 h-7 sm:w-8 sm:h-8 text-purple-400" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
-                  Referral Program
+                  {copy.referralModalTitle}
                 </h2>
                 <p className="text-purple-300 text-sm sm:text-base">
-                  Earn 15% from each referred user's first purchase
+                  {copy.referralModalSubtitle}
                 </p>
               </div>
 
@@ -709,20 +909,20 @@ export default function DashboardPage() {
                 <div className="bg-purple-500/5 border border-purple-500/15 rounded-xl p-3 sm:p-4">
                   <h3 className="font-semibold text-white mb-2 flex items-center gap-2 text-sm sm:text-base">
                     <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
-                    How it works
+                    {copy.referralModalHowItWorks}
                   </h3>
                   <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                     <li className="flex items-start gap-2">
                       <span className="text-purple-400 font-bold">1.</span>
-                      Create your unique referral link
+                      {copy.referralModalStep1}
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-purple-400 font-bold">2.</span>
-                      Share it and bring new users
+                      {copy.referralModalStep2}
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-purple-400 font-bold">3.</span>
-                      Request payout once your eligible reward reaches <span className="text-purple-300 font-semibold">$100+</span>
+                      {copy.referralModalStep3}
                     </li>
                   </ul>
                 </div>
@@ -736,18 +936,18 @@ export default function DashboardPage() {
                 className="w-full inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-4 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 font-bold text-base sm:text-lg rounded-xl transition-all mb-3 sm:mb-4"
                 data-testid="button-open-referral-program"
               >
-                Open Referral Program
+                {copy.referralModalCta}
               </button>
 
               <div className="flex flex-wrap gap-2 sm:gap-3 text-xs sm:text-sm text-purple-300 justify-center">
                 <span className="flex items-center gap-1 sm:gap-1.5 bg-purple-500/10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-purple-500/15">
-                  <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> 15% first-purchase commission
+                  <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> {copy.referralModalChipCommission}
                 </span>
                 <span className="flex items-center gap-1 sm:gap-1.5 bg-purple-500/10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-purple-500/15">
-                  <Clock className="w-3 h-3 sm:w-4 sm:h-4" /> Manual admin payouts
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4" /> {copy.referralModalChipPayouts}
                 </span>
                 <span className="flex items-center gap-1 sm:gap-1.5 bg-purple-500/10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-purple-500/15">
-                  <Users className="w-3 h-3 sm:w-4 sm:h-4" /> Unlimited referrals
+                  <Users className="w-3 h-3 sm:w-4 sm:h-4" /> {copy.referralModalChipUnlimited}
                 </span>
               </div>
             </div>
@@ -792,23 +992,23 @@ export default function DashboardPage() {
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500/20 to-pink-500/20 mb-3">
                 <Flame className="w-7 h-7 text-rose-400" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-1">New Feature Added!</h2>
-              <p className="text-sm text-slate-400">February 2026 Update</p>
+              <h2 className="text-xl font-bold text-white mb-1">{copy.whatsNewTitle}</h2>
+              <p className="text-sm text-slate-400">{copy.whatsNewSubtitle}</p>
             </div>
             
             <div className="p-5">
               <div className="flex items-start gap-3 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 mb-4">
                 <Flame className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h3 className="font-semibold text-white mb-1">NSFW Studio</h3>
+                  <h3 className="font-semibold text-white mb-1">{copy.whatsNewFeatureTitle}</h3>
                   <p className="text-sm text-slate-300">
-                    Create adult content with your AI models. Train custom LoRA models and generate explicit images with face swap technology.
+                    {copy.whatsNewFeatureBody}
                   </p>
                 </div>
               </div>
               
               <p className="text-xs text-slate-500 text-center mb-4">
-                Access requires verified models. Check the sidebar for the new NSFW tab.
+                {copy.whatsNewNote}
               </p>
               
               <button
@@ -821,7 +1021,7 @@ export default function DashboardPage() {
               >
                 <span className="flex items-center justify-center gap-2">
                   <Flame className="w-4 h-4" />
-                  Explore NSFW Studio
+                  {copy.whatsNewCta}
                 </span>
               </button>
               
@@ -829,7 +1029,7 @@ export default function DashboardPage() {
                 onClick={handleCloseWhatsNew}
                 className="w-full mt-2 py-2 text-sm text-slate-400 hover:text-white transition-colors"
               >
-                Maybe Later
+                {copy.whatsNewMaybeLater}
               </button>
             </div>
           </motion.div>
@@ -840,7 +1040,7 @@ export default function DashboardPage() {
   );
 }
 
-function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpenCreateModel, onOpenUploadReal, onOpenCredits }) {
+function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, onOpenCreateModel, onOpenUploadReal, onOpenCredits }) {
   const { user } = useAuthStore();
   const [monthlyStats, setMonthlyStats] = useState({ images: 0, videos: 0 });
   const [showTutorial, setShowTutorial] = useState(() => {
@@ -898,9 +1098,9 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
         <div className="flex items-center gap-3 mb-2">
           <div>
             <h1 className="text-[40px] font-bold text-white">
-              Welcome back, <span className="text-white">{user?.name || 'Creator'}</span>
+              {copy.homeWelcomeBack} <span className="text-white">{user?.name || copy.homeFallbackCreator}</span>
             </h1>
-            <p className="text-slate-400 text-xl mt-2">Your AI content creation hub</p>
+            <p className="text-slate-400 text-xl mt-2">{copy.homeSubtitle}</p>
           </div>
         </div>
       </div>
@@ -933,7 +1133,7 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
               <div className="relative">
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Coins className={`w-4 h-4 ${isCritical ? 'text-red-400' : 'text-yellow-400'}`} />
-                  <span className={`text-[10px] uppercase tracking-wider font-medium ${isCritical ? 'text-red-400' : 'text-yellow-400'}`}>Credits</span>
+                  <span className={`text-[10px] uppercase tracking-wider font-medium ${isCritical ? 'text-red-400' : 'text-yellow-400'}`}>{copy.statsCredits}</span>
                 </div>
                 <p className={`text-2xl sm:text-3xl font-bold tabular-nums ${isCritical ? 'text-red-300' : 'text-yellow-200'}`}>{credits}</p>
                 <button
@@ -945,7 +1145,7 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
                   }`}
                 >
                   <Plus className="w-3 h-3" />
-                  Add Credits
+                  {copy.statsAddCredits}
                 </button>
               </div>
             </div>
@@ -970,10 +1170,10 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
           <div className="relative">
             <div className="flex items-center justify-center gap-2 mb-1">
               <ImageIcon className="w-4 h-4 text-purple-400" />
-              <span className="text-[10px] uppercase tracking-wider text-purple-300 font-medium" style={{ color: 'rgba(208, 171, 247, 1)' }}>Images</span>
+              <span className="text-[10px] uppercase tracking-wider text-purple-300 font-medium" style={{ color: 'rgba(208, 171, 247, 1)' }}>{copy.statsImages}</span>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-purple-200 tabular-nums">{monthlyStats.images}</p>
-            <p className="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wide">this month</p>
+            <p className="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wide">{copy.statsThisMonth}</p>
           </div>
         </div>
 
@@ -995,10 +1195,10 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
           <div className="relative">
             <div className="flex items-center justify-center gap-2 mb-1">
               <Video className="w-4 h-4 text-cyan-400" />
-              <span className="text-[10px] uppercase tracking-wider text-cyan-300 font-medium">Videos</span>
+              <span className="text-[10px] uppercase tracking-wider text-cyan-300 font-medium">{copy.statsVideos}</span>
             </div>
             <p className="text-2xl sm:text-3xl font-bold text-cyan-200 tabular-nums">{monthlyStats.videos}</p>
-            <p className="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wide">this month</p>
+            <p className="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wide">{copy.statsThisMonth}</p>
           </div>
         </div>
       </div>
@@ -1019,8 +1219,8 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Create AI Model</h3>
-              <p className="text-slate-400 text-sm">Set name, attributes & upload 3 photos</p>
+              <h3 className="text-lg font-bold text-white mb-1">{copy.mainCreateModelTitle}</h3>
+              <p className="text-slate-400 text-sm">{copy.mainCreateModelBody}</p>
             </div>
             <div 
               className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
@@ -1056,8 +1256,8 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Upload Real Model</h3>
-              <p className="text-slate-400 text-sm">Upload photos of a real person</p>
+              <h3 className="text-lg font-bold text-white mb-1">{copy.mainUploadRealTitle}</h3>
+              <p className="text-slate-400 text-sm">{copy.mainUploadRealBody}</p>
             </div>
             <div 
               className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
@@ -1092,7 +1292,7 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-white" />
-              <span className="text-sm font-medium text-slate-300">Quick Tutorial</span>
+              <span className="text-sm font-medium text-slate-300">{copy.tutorialTitle}</span>
             </div>
             <button
               onClick={() => {
@@ -1124,13 +1324,13 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
       {recentGenerations.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Recent Creations</label>
+            <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.recentCreations}</label>
             <button
               onClick={() => { setActiveTab("history"); }}
               className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
               data-testid="button-view-all-history"
             >
-              <span>View All</span>
+              <span>{copy.viewAll}</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -1182,7 +1382,7 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
 
       {/* Quick Actions Grid */}
       <div className="mb-6">
-        <label className="block text-[11px] uppercase tracking-[0.15em] text-white font-medium mb-3">Quick Actions</label>
+        <label className="block text-[11px] uppercase tracking-[0.15em] text-white font-medium mb-3">{copy.quickActionsTitle}</label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Go to Models */}
           <button
@@ -1210,11 +1410,11 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
                   />
                   <User className="w-4 h-4 text-purple-300 relative z-[1]" />
                 </div>
-                <span className="text-sm font-semibold text-purple-300">Create a Model</span>
+                <span className="text-sm font-semibold text-purple-300">{copy.quickCreateModelTitle}</span>
               </div>
-              <p className="text-xs text-slate-400 mb-3">Upload 3 photos to train your model</p>
+              <p className="text-xs text-slate-400 mb-3">{copy.quickCreateModelBody}</p>
               <div className="flex items-center gap-1 text-purple-400 text-xs font-medium group-hover:gap-2 transition-all">
-                <span>Get Started</span>
+                <span>{copy.quickGetStarted}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
             </div>
@@ -1246,11 +1446,11 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
                   />
                   <DollarSign className="w-4 h-4 text-emerald-300 relative z-[1]" />
                 </div>
-                <span className="text-sm font-semibold text-emerald-300">Start Earning</span>
+                <span className="text-sm font-semibold text-emerald-300">{copy.quickStartEarningTitle}</span>
               </div>
-              <p className="text-xs text-slate-400 mb-3">Monetize your content on Fanvue</p>
+              <p className="text-xs text-slate-400 mb-3">{copy.quickStartEarningBody}</p>
               <div className="flex items-center gap-1 text-emerald-400 text-xs font-medium group-hover:gap-2 transition-all">
-                <span>Learn More</span>
+                <span>{copy.quickLearnMore}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
             </div>
@@ -1282,11 +1482,11 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
                   />
                   <Share2 className="w-4 h-4 text-pink-300 relative z-[1]" />
                 </div>
-                <span className="text-sm font-semibold text-pink-300">Affiliate</span>
+                <span className="text-sm font-semibold text-pink-300">{copy.quickAffiliateTitle}</span>
               </div>
-              <p className="text-xs text-slate-400 mb-3">Get 15% commission on each referral's first purchase</p>
+              <p className="text-xs text-slate-400 mb-3">{copy.quickAffiliateBody}</p>
               <div className="flex items-center gap-1 text-pink-400 text-xs font-medium group-hover:gap-2 transition-all">
-                <span>Start Earning</span>
+                <span>{copy.quickStartEarningTitle}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
             </div>
@@ -1311,8 +1511,8 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
               <Zap className="w-5 h-5 text-yellow-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Ready to Create?</h3>
-              <p className="text-slate-400 text-sm">Generate stunning AI images and videos</p>
+              <h3 className="text-lg font-semibold text-white">{copy.ctaReadyTitle}</h3>
+              <p className="text-slate-400 text-sm">{copy.ctaReadyBody}</p>
             </div>
           </div>
           <button
@@ -1323,7 +1523,7 @@ function HomePage({ setActiveTab, setShowEarnModal, setShowReferralModal, onOpen
           >
             <span className="flex items-center justify-center gap-2">
               <ArrowRight className="w-4 h-4" />
-              Start Generating
+              {copy.ctaStartGenerating}
             </span>
           </button>
         </div>

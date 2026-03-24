@@ -56,6 +56,53 @@ import ProGenerationPage from './pages/Pro/ProGenerationPage';
 import toast from 'react-hot-toast';
 import SeoRobotsMeta from './components/SeoRobotsMeta';
 
+const LOCALE_STORAGE_KEY = "app_locale";
+const APP_COPY = {
+  en: {
+    promoTitle: "New NSFW Model Launched",
+    promoBodyPrefix: "Highest quality AI model on the market. Train your first LoRA and get",
+    promoBodyHighlight: "free credits",
+    promoBodySuffix: "instantly.",
+    promoBonusPrefix: "Train your first LoRA =",
+    promoBonusHighlight: "free credits bonus",
+    promoDontShow: "Don't show again",
+    promoTryNow: "Try it now",
+    paymentComplete: "Payment complete! Your credits have been added.",
+    bankVerificationFailed: "Bank verification failed. Please try payment again.",
+    paymentConfirmFailed: "Payment confirmation failed. Please refresh your dashboard.",
+  },
+  ru: {
+    promoTitle: "Запущена новая NSFW-модель",
+    promoBodyPrefix: "Самая качественная ИИ-модель на рынке. Обучите первую LoRA и получите",
+    promoBodyHighlight: "бесплатные кредиты",
+    promoBodySuffix: "сразу.",
+    promoBonusPrefix: "Обучите первую LoRA =",
+    promoBonusHighlight: "бонус бесплатных кредитов",
+    promoDontShow: "Больше не показывать",
+    promoTryNow: "Попробовать",
+    paymentComplete: "Платеж завершен! Кредиты добавлены на ваш баланс.",
+    bankVerificationFailed: "Проверка банка не прошла. Пожалуйста, попробуйте оплату снова.",
+    paymentConfirmFailed: "Не удалось подтвердить оплату. Обновите панель управления.",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 function safeLocalStorageGet(key) {
   try {
     return localStorage.getItem(key);
@@ -81,6 +128,7 @@ function safeLocalStorageRemove(key) {
 }
 
 function LoraPromoBanner() {
+  const copy = APP_COPY[resolveLocale()] || APP_COPY.en;
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [visible, setVisible] = useState(false);
 
@@ -135,9 +183,9 @@ function LoraPromoBanner() {
             <Info className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white mb-0.5">New NSFW Model Launched</h3>
+            <h3 className="text-sm font-bold text-white mb-0.5">{copy.promoTitle}</h3>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Highest quality AI model on the market. Train your first LoRA and get <span className="text-emerald-400 font-semibold">free credits</span> instantly.
+              {copy.promoBodyPrefix} <span className="text-emerald-400 font-semibold">{copy.promoBodyHighlight}</span> {copy.promoBodySuffix}
             </p>
           </div>
         </div>
@@ -145,8 +193,8 @@ function LoraPromoBanner() {
         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mb-3 backdrop-blur-md bg-white/[0.04] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] border-white/10">
           <Gift className="w-4 h-4 text-emerald-400 shrink-0" />
           <p className="text-[11px] font-medium">
-            <span className="text-white">Train your first LoRA = </span>
-            <span className="text-emerald-300">free credits bonus</span>
+            <span className="text-white">{copy.promoBonusPrefix} </span>
+            <span className="text-emerald-300">{copy.promoBonusHighlight}</span>
           </p>
         </div>
 
@@ -156,14 +204,14 @@ function LoraPromoBanner() {
             className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
             data-testid="button-promo-dont-show"
           >
-            Don't show again
+            {copy.promoDontShow}
           </button>
           <a
             href="/nsfw"
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-black bg-white hover:bg-slate-100 transition-all"
             data-testid="link-promo-try-now"
           >
-            Try it now
+            {copy.promoTryNow}
           </a>
         </div>
       </div>
@@ -263,6 +311,7 @@ function ForceLogoutListener() {
 
 // When user returns from Stripe 3DS redirect, refresh credits and clean URL
 function Stripe3DSReturnHandler() {
+  const copy = APP_COPY[resolveLocale()] || APP_COPY.en;
   const location = useLocation();
   const navigate = useNavigate();
   useEffect(() => {
@@ -312,13 +361,13 @@ function Stripe3DSReturnHandler() {
             await stripeAPI.confirmPayment(paymentIntentId || pending.paymentIntentId);
           }
           await auth.refreshUserCredits?.();
-          toast.success('Payment complete! Your credits have been added.');
+          toast.success(copy.paymentComplete);
         } else if (status === 'failed') {
-          toast.error('Bank verification failed. Please try payment again.');
+          toast.error(copy.bankVerificationFailed);
         }
       } catch (error) {
         console.error("Stripe return confirmation failed:", error);
-        toast.error(error?.response?.data?.error || error?.message || "Payment confirmation failed. Please refresh your dashboard.");
+        toast.error(error?.response?.data?.error || error?.message || copy.paymentConfirmFailed);
       } finally {
         safeLocalStorageRemove(PENDING_KEY);
         finish();

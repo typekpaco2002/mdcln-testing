@@ -6,6 +6,43 @@ import { queryClient } from '../lib/queryClient';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const API_PREFIX = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
+const LOCALE_STORAGE_KEY = 'app_locale';
+
+const COPY = {
+  en: {
+    missingLink: 'Missing login link. Use the link from the admin panel.',
+    loginFailed: 'Login failed',
+    networkError: 'Network error',
+    signingIn: 'Signing you in...',
+    invalidTitle: 'Login link invalid or expired',
+    returnHome: 'Return home',
+  },
+  ru: {
+    missingLink: 'Ссылка для входа отсутствует. Воспользуйтесь ссылкой из панели администратора.',
+    loginFailed: 'Ошибка входа',
+    networkError: 'Сетевая ошибка',
+    signingIn: 'Выполняется вход...',
+    invalidTitle: 'Ссылка для входа недействительна или срок её действия истек',
+    returnHome: 'Вернуться на главную',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 /**
  * Handles admin impersonation login links: /admin-login?token=...
@@ -14,6 +51,8 @@ const API_PREFIX = API_BASE.endsWith('/api') ? API_BASE : `${API_BASE}/api`;
 export default function AdminLoginPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const setAuth = useAuthStore((s) => s.setAuth);
   const refreshUserCredits = useAuthStore((s) => s.refreshUserCredits);
   const [status, setStatus] = useState('loading'); // 'loading' | 'success' | 'error'
@@ -23,7 +62,7 @@ export default function AdminLoginPage() {
     const token = searchParams.get('token');
     if (!token) {
       setStatus('error');
-      setError('Missing login link. Use the link from the admin panel.');
+      setError(copy.missingLink);
       return;
     }
 
@@ -43,7 +82,7 @@ export default function AdminLoginPage() {
         }
         if (!data.success) {
           setStatus('error');
-          setError(data?.error || 'Login failed');
+          setError(data?.error || copy.loginFailed);
           return;
         }
         setStatus('success');
@@ -63,19 +102,19 @@ export default function AdminLoginPage() {
       } catch (err) {
         if (!cancelled) {
           setStatus('error');
-          setError(err?.message || 'Network error');
+          setError(err?.message || copy.networkError);
         }
       }
     })();
     return () => { cancelled = true; };
-  }, [searchParams, navigate, setAuth, refreshUserCredits]);
+  }, [searchParams, navigate, setAuth, refreshUserCredits, copy.missingLink, copy.loginFailed, copy.networkError]);
 
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin mx-auto text-white/70 mb-4" />
-          <p className="text-slate-400">Signing you in...</p>
+          <p className="text-slate-400">{copy.signingIn}</p>
         </div>
       </div>
     );
@@ -86,9 +125,9 @@ export default function AdminLoginPage() {
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-4">
         <div className="max-w-md w-full rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-          <h1 className="text-lg font-semibold text-red-200 mb-2">Login link invalid or expired</h1>
+          <h1 className="text-lg font-semibold text-red-200 mb-2">{copy.invalidTitle}</h1>
           <p className="text-sm text-slate-400 mb-4">{error}</p>
-          <a href="/" className="text-sm text-white underline">Return home</a>
+          <a href="/" className="text-sm text-white underline">{copy.returnHome}</a>
         </div>
       </div>
     );

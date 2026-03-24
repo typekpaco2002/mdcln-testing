@@ -1,17 +1,61 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { LayoutDashboard, User, Sparkles, Video, LogOut } from "lucide-react";
 import { useAuthStore } from "../../store";
 
+const LOCALE_STORAGE_KEY = "app_locale";
+
+const COPY = {
+  en: {
+    title: "Pro Studio",
+    inviteOnly: "Invite-only",
+    navDashboard: "Dashboard",
+    navModels: "Models",
+    navNsfwStudio: "NSFW Studio",
+    navGenerationStudio: "Generation Studio",
+    navAriaLabel: "Pro Studio navigation",
+    signOut: "Sign out",
+  },
+  ru: {
+    title: "Pro Studio",
+    inviteOnly: "Только по приглашению",
+    navDashboard: "Панель управления",
+    navModels: "Модели",
+    navNsfwStudio: "Студия NSFW",
+    navGenerationStudio: "Студия Generation",
+    navAriaLabel: "Навигация Pro Studio",
+    signOut: "Выйти",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 export default function ProLayout() {
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
 
   const nav = [
-    { to: "/pro", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/pro/models", label: "Models", icon: User },
-    { to: "/pro/nsfw", label: "NSFW Studio", icon: Sparkles },
-    { to: "/pro/generation", label: "Generation Studio", icon: Video },
+    { to: "/pro", label: copy.navDashboard, icon: LayoutDashboard },
+    { to: "/pro/models", label: copy.navModels, icon: User },
+    { to: "/pro/nsfw", label: copy.navNsfwStudio, icon: Sparkles },
+    { to: "/pro/generation", label: copy.navGenerationStudio, icon: Video },
   ];
 
   return (
@@ -39,13 +83,13 @@ export default function ProLayout() {
       >
         <div className="p-5 border-b border-[var(--pro-border)]">
           <h1 className="text-base font-semibold tracking-tight" data-pro-heading style={{ color: "var(--pro-text)" }}>
-            Pro Studio
+            {copy.title}
           </h1>
           <p className="text-xs mt-1" style={{ color: "var(--pro-text-muted)" }}>
-            Invite-only
+            {copy.inviteOnly}
           </p>
         </div>
-        <nav className="flex-1 p-3 space-y-0.5" aria-label="Pro Studio navigation">
+        <nav className="flex-1 p-3 space-y-0.5" aria-label={copy.navAriaLabel}>
           {nav.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -78,7 +122,7 @@ export default function ProLayout() {
             style={{ color: "var(--pro-text-muted)" }}
           >
             <LogOut className="w-3.5 h-3.5 shrink-0" aria-hidden />
-            Sign out
+            {copy.signOut}
           </button>
         </div>
       </aside>

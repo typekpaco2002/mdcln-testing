@@ -4,10 +4,69 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Lock, Shield, ArrowRight, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
+const LOCALE_STORAGE_KEY = 'app_locale';
+
+const COPY = {
+  en: {
+    allFieldsRequired: 'Please fill in all fields',
+    minLength: 'Password must be at least 6 characters',
+    mismatch: 'Passwords do not match',
+    success: 'Password reset successfully!',
+    failed: 'Failed to reset password',
+    title: 'Reset Password',
+    subtitle: 'Enter the code from your email',
+    labelEmail: 'Email',
+    labelCode: '6-Digit Code',
+    labelNewPassword: 'New Password',
+    labelConfirmPassword: 'Confirm Password',
+    buttonResetting: 'Resetting...',
+    buttonReset: 'Reset Password',
+    rememberPassword: 'Remember your password?',
+    backSignIn: 'Back to Sign In',
+    backHome: '← Back to Home',
+  },
+  ru: {
+    allFieldsRequired: 'Пожалуйста, заполните все поля',
+    minLength: 'Пароль должен состоять не менее чем из 6 символов',
+    mismatch: 'Пароли не совпадают',
+    success: 'Пароль успешно сброшен!',
+    failed: 'Не удалось сбросить пароль',
+    title: 'Сброс пароля',
+    subtitle: 'Введите код из письма',
+    labelEmail: 'Электронная почта',
+    labelCode: '6-значный код',
+    labelNewPassword: 'Новый пароль',
+    labelConfirmPassword: 'Подтвердите пароль',
+    buttonResetting: 'Сброс...',
+    buttonReset: 'Сбросить пароль',
+    rememberPassword: 'Запомнить пароль?',
+    backSignIn: 'Вернуться к входу',
+    backHome: '← Вернуться на главную',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 export default function ResetPasswordPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const [email, setEmail] = useState(location.state?.email || '');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -18,17 +77,17 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     
     if (!email || !code || !newPassword || !confirmPassword) {
-      toast.error('Please fill in all fields');
+      toast.error(copy.allFieldsRequired);
       return;
     }
 
     if (newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error(copy.minLength);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(copy.mismatch);
       return;
     }
 
@@ -38,13 +97,13 @@ export default function ResetPasswordPage() {
       const data = await authAPI.resetPassword(email, code, newPassword);
       
       if (data.success) {
-        toast.success('Password reset successfully!');
+        toast.success(copy.success);
         navigate('/login');
       } else {
-        toast.error(data.message || 'Failed to reset password');
+        toast.error(data.message || copy.failed);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to reset password');
+      toast.error(error.response?.data?.message || copy.failed);
     } finally {
       setLoading(false);
     }
@@ -75,8 +134,8 @@ export default function ResetPasswordPage() {
             <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4">
               <Shield className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold mb-2">Reset Password</h1>
-            <p className="text-gray-400">Enter the code from your email</p>
+            <h1 className="text-3xl font-bold mb-2">{copy.title}</h1>
+            <p className="text-gray-400">{copy.subtitle}</p>
           </div>
 
           <form onSubmit={handleResetPassword} className="space-y-6">
@@ -84,7 +143,7 @@ export default function ResetPasswordPage() {
             {!location.state?.email && (
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-300">
-                  Email
+                  {copy.labelEmail}
                 </label>
                 <input
                   type="email"
@@ -101,7 +160,7 @@ export default function ResetPasswordPage() {
             {/* Verification Code */}
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-300">
-                6-Digit Code
+                {copy.labelCode}
               </label>
               <input
                 type="text"
@@ -118,7 +177,7 @@ export default function ResetPasswordPage() {
             {/* New Password */}
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-300">
-                New Password
+                {copy.labelNewPassword}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -137,7 +196,7 @@ export default function ResetPasswordPage() {
             {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-300">
-                Confirm Password
+                {copy.labelConfirmPassword}
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -163,11 +222,11 @@ export default function ResetPasswordPage() {
               {loading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                  <span>Resetting...</span>
+                  <span>{copy.buttonResetting}</span>
                 </div>
               ) : (
                 <>
-                  Reset Password
+                  {copy.buttonReset}
                   <ArrowRight className="w-5 h-5" />
                 </>
               )}
@@ -180,7 +239,7 @@ export default function ResetPasswordPage() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-400">Remember your password?</span>
+              <span className="px-4 bg-black text-gray-400">{copy.rememberPassword}</span>
             </div>
           </div>
 
@@ -190,14 +249,14 @@ export default function ResetPasswordPage() {
             className="block w-full py-3 rounded-xl glass hover:bg-white/10 transition font-semibold text-center"
             data-testid="link-login"
           >
-            Back to Sign In
+            {copy.backSignIn}
           </Link>
         </div>
 
         {/* Back to Home */}
         <div className="text-center mt-6">
           <Link to="/" className="text-gray-400 hover:text-white transition">
-            ← Back to Home
+            {copy.backHome}
           </Link>
         </div>
       </motion.div>

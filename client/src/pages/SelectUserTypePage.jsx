@@ -14,20 +14,137 @@ function useHasHydrated() {
 }
 
 const KEYS = ['creator', 'agency', 'createModel'];
+const LOCALE_STORAGE_KEY = 'app_locale';
+
+const PAGE_COPY = {
+  en: {
+    loading: 'Loading…',
+    hero_welcome: 'Welcome',
+    hero_title: 'How are you using ModelClone?',
+    hero_subtitle: "Select your path — we'll tailor the experience for you.",
+    creator_title: "I'm a Creator",
+    creator_subtitle: 'Content Creator / Influencer',
+    creator_description:
+      'Scale your content output without the burnout of constant filming. One setup, unlimited content.',
+    creator_benefit_1: 'Create 10× more content',
+    creator_benefit_2: 'Stop filming 4+ hours daily',
+    creator_benefit_3: 'Grow your audience 3–5× faster',
+    creator_benefit_4: 'Keep your privacy',
+    creator_stat_1_label: 'Time Saved',
+    creator_stat_2_label: 'Content Output',
+    creator_stat_3_label: 'Audience Growth',
+    agency_title: "I'm an Agency",
+    agency_subtitle: 'Talent Management / Agency Owner',
+    agency_description:
+      'Scale your roster without creator dependency or the overhead of hiring more staff.',
+    agency_benefit_1: 'Manage 10+ creators efficiently',
+    agency_benefit_2: 'Never depend on unreliable creators',
+    agency_benefit_3: 'Scale without hiring costs',
+    agency_benefit_4: 'Increase growth per creator 3×',
+    agency_stat_1_label: 'Creators Managed',
+    agency_stat_2_label: 'Cost Reduction',
+    agency_stat_3_label: 'Growth Per Creator',
+    create_model_title: 'Create AI Model',
+    create_model_subtitle: 'Build an AI Model from Scratch',
+    create_model_description:
+      'Design a unique AI model in seconds — choose attributes, generate, and start creating content immediately.',
+    create_model_benefit_1: 'Ready in seconds',
+    create_model_benefit_2: 'No technical knowledge needed',
+    create_model_benefit_3: 'Choose any attributes',
+    create_model_benefit_4: 'Unlimited creative possibilities',
+    create_model_stat_1_label: 'Setup Time',
+    create_model_stat_2_label: 'Attributes',
+    create_model_stat_3_label: 'AI Accuracy',
+    what_you_get: 'What you get',
+    cta_learn_more: 'Learn More',
+    cta_continue_as: 'Continue as {{role}}',
+    role_creator: 'Creator',
+    role_agency: 'Agency',
+    not_sure_text: 'Not sure? Pick one to explore — you can always switch later.',
+    already_member: 'Already a member?',
+    log_in: 'Log in',
+  },
+  ru: {
+    loading: 'Загрузка…',
+    hero_welcome: 'Добро пожаловать',
+    hero_title: 'Как вы используете ModelClone?',
+    hero_subtitle: 'Выберите свой путь — мы подберем для вас индивидуальный подход.',
+    creator_title: 'Я — контент-мейкер',
+    creator_subtitle: 'Контент-мейкер / Инфлюенсер',
+    creator_description:
+      'Увеличьте объем создаваемого контента, не переутомляясь постоянными съемками. Одна настройка — неограниченное количество контента.',
+    creator_benefit_1: 'Создавайте в 10 раз больше контента',
+    creator_benefit_2: 'Перестаньте снимать по 4 и более часов в день',
+    creator_benefit_3: 'Увеличивайте свою аудиторию в 3–5 раз быстрее',
+    creator_benefit_4: 'Сохраняйте свою конфиденциальность',
+    creator_stat_1_label: 'Сэкономленное время',
+    creator_stat_2_label: 'Объем контента',
+    creator_stat_3_label: 'Рост аудитории',
+    agency_title: 'Я агентство',
+    agency_subtitle: 'Управление талантами / Владелец агентства',
+    agency_description:
+      'Расширяйте свой список авторов без зависимости от них и без затрат на наем дополнительного персонала.',
+    agency_benefit_1: 'Эффективно управляйте более чем 10 авторами',
+    agency_benefit_2: 'Никогда не зависите от ненадежных авторов',
+    agency_benefit_3: 'Расширяйте масштабы без затрат на найм',
+    agency_benefit_4: 'Увеличьте рост на одного автора в 3 раза',
+    agency_stat_1_label: 'Количество авторов под управлением',
+    agency_stat_2_label: 'Сокращение затрат',
+    agency_stat_3_label: 'Рост на одного автора',
+    create_model_title: 'Создать модель ИИ',
+    create_model_subtitle: 'Создать модель ИИ с нуля',
+    create_model_description:
+      'Разработайте уникальную модель ИИ за считанные секунды — выберите атрибуты, сгенерируйте и сразу же начните создавать контент.',
+    create_model_benefit_1: 'Готово за секунды',
+    create_model_benefit_2: 'Не требуется технических знаний',
+    create_model_benefit_3: 'Выберите любые атрибуты',
+    create_model_benefit_4: 'Неограниченные творческие возможности',
+    create_model_stat_1_label: 'Время настройки',
+    create_model_stat_2_label: 'Атрибуты',
+    create_model_stat_3_label: 'Точность ИИ',
+    what_you_get: 'Что вы получаете',
+    cta_learn_more: 'Узнать больше',
+    cta_continue_as: 'Продолжить в качестве {{role}}',
+    role_creator: 'Креативщик',
+    role_agency: 'Агентство',
+    not_sure_text: 'Не уверены? Выберите один вариант, чтобы ознакомиться — вы всегда сможете сменить его позже.',
+    already_member: 'Уже являетесь участником?',
+    log_in: 'Войти',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 export default function SelectUserTypePage() {
   const navigate = useNavigate();
   const [selectedType, setSelectedType] = useState('creator');
+  const [locale] = useState(resolveLocale);
   const [sessionValid, setSessionValid] = useState(null);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const hasHydrated = useHasHydrated();
   const checkedRef = useRef(false);
+  const copy = PAGE_COPY[locale] || PAGE_COPY.en;
 
   // Gate: never redirect or run session check before hydration (avoids dev loop from auth redirect before session ready)
   if (!hasHydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
-        <div className="animate-pulse text-white/50 text-sm">Loading…</div>
+        <div className="animate-pulse text-white/50 text-sm">{copy.loading}</div>
       </div>
     );
   }
@@ -68,40 +185,40 @@ export default function SelectUserTypePage() {
     creator: {
       type: 'creator',
       icon: User,
-      title: "I'm a Creator",
-      subtitle: 'Content Creator / Influencer',
-      description: 'Scale your content output without the burnout of constant filming. One setup, unlimited content.',
-      benefits: ['Create 10\u00d7 more content', 'Stop filming 4+ hours daily', 'Grow your audience 3\u20135\u00d7 faster', 'Keep your privacy'],
+      title: copy.creator_title,
+      subtitle: copy.creator_subtitle,
+      description: copy.creator_description,
+      benefits: [copy.creator_benefit_1, copy.creator_benefit_2, copy.creator_benefit_3, copy.creator_benefit_4],
       stats: [
-        { label: 'Time Saved', value: '90%' },
-        { label: 'Content Output', value: '10\u00d7' },
-        { label: 'Audience Growth', value: '3\u20135\u00d7' },
+        { label: copy.creator_stat_1_label, value: '90%' },
+        { label: copy.creator_stat_2_label, value: '10\u00d7' },
+        { label: copy.creator_stat_3_label, value: '3\u20135\u00d7' },
       ],
     },
     agency: {
       type: 'agency',
       icon: Users,
-      title: "I'm an Agency",
-      subtitle: 'Talent Management / Agency Owner',
-      description: 'Scale your roster without creator dependency or the overhead of hiring more staff.',
-      benefits: ['Manage 10+ creators efficiently', 'Never depend on unreliable creators', 'Scale without hiring costs', 'Increase growth per creator 3\u00d7'],
+      title: copy.agency_title,
+      subtitle: copy.agency_subtitle,
+      description: copy.agency_description,
+      benefits: [copy.agency_benefit_1, copy.agency_benefit_2, copy.agency_benefit_3, copy.agency_benefit_4],
       stats: [
-        { label: 'Creators Managed', value: '10+' },
-        { label: 'Cost Reduction', value: '80%' },
-        { label: 'Growth Per Creator', value: '3\u00d7' },
+        { label: copy.agency_stat_1_label, value: '10+' },
+        { label: copy.agency_stat_2_label, value: '80%' },
+        { label: copy.agency_stat_3_label, value: '3\u00d7' },
       ],
     },
     createModel: {
       type: 'createModel',
       icon: Wand2,
-      title: 'Create AI Model',
-      subtitle: 'Build an AI Model from Scratch',
-      description: 'Design a unique AI model in seconds \u2014 choose attributes, generate, and start creating content immediately.',
-      benefits: ['Ready in seconds', 'No technical knowledge needed', 'Choose any attributes', 'Unlimited creative possibilities'],
+      title: copy.create_model_title,
+      subtitle: copy.create_model_subtitle,
+      description: copy.create_model_description,
+      benefits: [copy.create_model_benefit_1, copy.create_model_benefit_2, copy.create_model_benefit_3, copy.create_model_benefit_4],
       stats: [
-        { label: 'Setup Time', value: '30s' },
-        { label: 'Attributes', value: '5+' },
-        { label: 'AI Accuracy', value: '99%' },
+        { label: copy.create_model_stat_1_label, value: '30s' },
+        { label: copy.create_model_stat_2_label, value: '5+' },
+        { label: copy.create_model_stat_3_label, value: '99%' },
       ],
       isSpecial: true,
     },
@@ -161,13 +278,13 @@ export default function SelectUserTypePage() {
           className="text-center mb-8"
         >
           <p className="text-[10px] font-medium tracking-[0.22em] uppercase mb-3 text-white/30">
-            Welcome
+            {copy.hero_welcome}
           </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 tracking-tight text-white">
-            How are you using ModelClone?
+            {copy.hero_title}
           </h1>
           <p className="text-sm max-w-md mx-auto text-white/40">
-            Select your path — we'll tailor the experience for you.
+            {copy.hero_subtitle}
           </p>
         </motion.div>
 
@@ -304,7 +421,7 @@ export default function SelectUserTypePage() {
 
             <div className="mb-6 relative">
               <p className="text-[10px] font-medium uppercase tracking-[0.18em] mb-3 text-white/30">
-                What you get
+                {copy.what_you_get}
               </p>
               <ul className="grid sm:grid-cols-2 gap-2">
                 {currentType.benefits.map((benefit) => (
@@ -337,7 +454,12 @@ export default function SelectUserTypePage() {
                 }}
               />
               <span className="relative z-10">
-                {selectedType === 'createModel' ? 'Learn More' : `Continue as ${currentType.type === 'creator' ? 'Creator' : 'Agency'}`}
+                {selectedType === 'createModel'
+                  ? copy.cta_learn_more
+                  : copy.cta_continue_as.replace(
+                      '{{role}}',
+                      currentType.type === 'creator' ? copy.role_creator : copy.role_agency,
+                    )}
               </span>
               <ArrowRight className="w-4 h-4 relative z-10" />
             </button>
@@ -351,7 +473,7 @@ export default function SelectUserTypePage() {
           className="text-center space-y-3"
         >
           <p className="text-xs text-white/50">
-            Not sure? Pick one to explore — you can always switch later.
+            {copy.not_sure_text}
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm"
             style={{
@@ -359,14 +481,14 @@ export default function SelectUserTypePage() {
               border: '1px solid rgba(255,255,255,0.1)',
             }}
           >
-            <span className="text-white/70">Already a member?</span>
+            <span className="text-white/70">{copy.already_member}</span>
             <a
               href="/login"
               className="font-semibold transition hover:text-white"
               style={{ color: '#e2d9ff' }}
               data-testid="link-login"
             >
-              Log in
+              {copy.log_in}
             </a>
           </div>
         </motion.div>

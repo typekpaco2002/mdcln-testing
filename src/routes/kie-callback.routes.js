@@ -263,7 +263,9 @@ router.post("/", express.raw({ type: () => true, limit: "1mb" }), async (req, re
         return;
       }
     } else if (process.env.NODE_ENV === "production") {
-      console.warn("[KIE Callback] WEBHOOK_HMAC_KEY not set — callback is unverified (set env for production)");
+      console.warn("[KIE Callback] WEBHOOK_HMAC_KEY missing in production — rejecting unverified callback");
+      if (!res.headersSent) return res.status(503).json({ error: "Webhook signing not configured" });
+      return;
     }
 
     const isSuccess = state === "success" || code === 200;

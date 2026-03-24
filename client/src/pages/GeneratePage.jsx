@@ -38,6 +38,357 @@ import {
 const VIDEO_RECREATE_CLASSIC_PER_SEC = 10; // kling-2.6 motion-control 1080p
 const VIDEO_RECREATE_ULTRA_PER_SEC = 20; // kling-3.0 motion-control 1080p
 
+const LOCALE_STORAGE_KEY = "app_locale";
+const GENERATE_COPY = {
+  en: {
+    title: "Generate Content",
+    subtitle: "Create stunning AI-powered images and videos",
+    tabImage: "Image",
+    tabImageSub: "AI Photos",
+    tabVideo: "Video",
+    tabVideoSub: "AI Videos",
+    retry: "Retry",
+    errorContentLoad:
+      "Couldn't load your content. You can still generate; history may be missing until refreshed.",
+    modelSelectorNoModels: "No models available",
+    modelSelectorChooseModel: "Choose a model",
+    modelSelectorLabel: "Select Model",
+    boundaryTitle: "Generator couldn't load",
+    boundaryMessageDefault: "An error occurred. Try refreshing the page.",
+    refresh: "Refresh",
+    identityReferenceImage: "Reference Image",
+    identityReferenceImageHint: "Upload the scene/pose you want to recreate",
+    identityClothingStyle: "Clothing Style",
+    identityClothingModel: "Model",
+    identityClothingSource: "Source",
+    identityExtraDirections: "Extra directions (optional)",
+    identityExtraDirectionsHint:
+      "Added after the built-in identity rules. Use for tweaks: colors, jewelry, makeup, small props — likeness still comes from your model photos.",
+    identityExtraDirectionsPlaceholder: "e.g. gold hoop earrings, deeper red lipstick",
+    getCredits: "Get Credits",
+    generating: "Generating...",
+    generateImage: "Generate Image",
+    faceswapTargetImage: "Target Image",
+    faceswapTargetImageHint: "The image where you want to replace the face",
+    faceswapSourceFace: "Source Face",
+    faceswapSourceFaceHint: "The face you want to swap in (your AI model or any face)",
+    faceswapSwapping: "Swapping Face...",
+    faceswapAction: "Swap Face",
+    videoRecreateStartingImage: "Starting Image",
+    videoRecreateReferenceVideo: "Reference Video",
+    videoRecreateUltraBadge: "ULTRA",
+    videoRecreateClassicBadge: "CLASSIC",
+    videoRecreateUltraDesc: "Motion Control Pro+ · 1080p",
+    videoRecreateClassicDesc: "Motion Control 2.6 · 1080p",
+    videoRecreateClassicInfoPrefix: "Classic (default):",
+    videoRecreateClassicInfoValue: "Motion Control 2.6 · 1080p",
+    videoRecreateUltraToggleTitle: "Ultra — Motion Control Pro+",
+    videoRecreateUltraToggleDesc: "1080p",
+    videoRecreatePromptLabel: "Prompt",
+    optional: "(Optional)",
+    videoRecreatePromptPlaceholder: "e.g., dancing energetically, smiling at camera...",
+    videoKeepAudio: "Keep audio",
+    on: "(ON)",
+    off: "(OFF)",
+    generateVideo: "Generate Video",
+    promptVideoStartFrame: "Start Frame",
+    promptVideoMotionPrompt: "Motion Prompt",
+    promptVideoMotionPromptPlaceholder: "Example: Camera slowly zooms in, person smiles and waves...",
+    promptVideoDuration: "Duration",
+    promptVideoDuration5: "5 seconds",
+    promptVideoDuration10: "10 seconds",
+    promptVideoAction: "Generate",
+    modeIdentityTitle: "Model + Reference Image",
+    modePromptTitle: "Model + Text Prompt",
+    modeFaceswapTitle: "Swap Face in Image",
+    sourceUpload: "Upload",
+    sourceGallery: "Gallery",
+    galleryEmpty: "No generated images yet for this model.",
+    modelHintTapToClose: "Tap to close",
+    modelHintTapToChange: "Tap to change",
+    modelHintCreateInModels: "Create one in Models tab",
+    modelHintAvailableCount: "{count} available",
+    advancedReferenceImages: "Reference Images",
+    advancedReferenceImagesHint: "Add one or more references (optional but recommended)",
+    advancedAddReference: "Add reference",
+    advancedMaxReferences: "Up to {count} images",
+    advancedPrompt: "Prompt",
+    advancedPromptPlaceholderNano:
+      "Describe the scene (AI will turn this into an NSFW Danbooru tag prompt)…",
+    advancedPromptPlaceholderSeedream:
+      "Describe the scene (AI will build a cinema-grade SFW superprompt)…",
+    advancedEnhancePrompt: "Enhance Prompt",
+    advancedEnhancingPrompt: "Enhancing...",
+    advancedGenerate: "Generate",
+    advancedNeedPromptFirst: "Please enter a prompt first",
+    advancedToastNeedModel: "Please select a model",
+    advancedToastNeedPrompt: "Please enter a prompt",
+    advancedToastEnhanceFailed: "Failed to enhance prompt",
+    advancedToastUploadFailed: "Failed to upload reference image",
+    advancedToastGenerateFailed: "Generation failed",
+    promptModePromptPlaceholder: "Describe the image you want to generate...",
+    promptModeAdvancedOptions: "Advanced options",
+    promptModeNegativePrompt: "Negative Prompt",
+    promptModeNegativePromptPlaceholder: "What to avoid...",
+    promptModeSeed: "Seed (optional)",
+    promptModeSeedPlaceholder: "Random by default",
+    promptModeStyle: "Style",
+    promptModeStyleRealistic: "Realistic",
+    promptModeStyleAnime: "Anime",
+    promptModeStyleCinematic: "Cinematic",
+    promptModeStyleFantasy: "Fantasy",
+    promptModeToastNeedModel: "Please select a model",
+    promptModeToastNeedPrompt: "Please enter a prompt",
+    promptModeToastGenerateFailed: "Failed to generate image",
+    videoTitle: "Generate Video",
+    videoSubtitle: "Create AI videos from images and prompts",
+    videoMethodRecreate: "Recreate Video",
+    videoMethodPrompt: "Prompt Video",
+    videoMethodFaceswap: "Face Swap Video",
+    videoMethodTalking: "Talking Head",
+    videoMethodRecreateDesc: "Recreate motion from a reference video",
+    videoMethodPromptDesc: "Animate from a start frame and prompt",
+    videoMethodFaceswapDesc: "Swap face in an existing video",
+    videoMethodTalkingDesc: "Make a portrait talk with text/voice",
+    faceswapVideoSourceVideo: "Source Video",
+    faceswapVideoTargetGender: "Target Gender",
+    faceswapVideoGenderFemale: "Female",
+    faceswapVideoGenderMale: "Male",
+    faceswapVideoAction: "Face Swap",
+    talkingHeadPortraitImage: "Portrait Image",
+    talkingHeadVoice: "Voice",
+    talkingHeadVoiceLoading: "Loading voices...",
+    talkingHeadVoiceEmpty: "No voices found",
+    talkingHeadVoiceRetry: "Retry",
+    talkingHeadInputModeText: "Text to Speech",
+    talkingHeadInputModeAudio: "Audio Upload",
+    talkingHeadTextLabel: "Speech Text",
+    talkingHeadTextPlaceholder: "Type what the avatar should say...",
+    talkingHeadAudioLabel: "Audio File",
+    talkingHeadAudioHint: "Upload WAV or MP3 (max {seconds}s)",
+    talkingHeadLanguageFilter: "Language",
+    talkingHeadLanguageAll: "All",
+    talkingHeadEmotion: "Emotion",
+    identityToastSelectModelAndTarget: "Please select model and upload target image",
+    identityToastLoginRequired: "Please log in to generate.",
+    identityToastQueued: "Queued! You can generate again while it processes.",
+    faceswapImageToastNeedBothImages: "Please upload both target image and source face",
+    faceswapImageToastStarted: "Face swap started! Check Live Preview.",
+    faceswapImageToastFailed: "Failed to swap face. Please try again.",
+    modeSelectLabel: "Select Mode",
+    modeAdvancedToggle: "Advanced",
+    modeIdentity: "Identity Recreation",
+    modePromptToImage: "Prompt to Image",
+    modeFaceSwap: "Face Swap",
+    advancedEngineLabel: "AI Engine",
+    advancedEngineUltraRealism: "Ultra Realism",
+    advancedEngineUncensoredPlus: "Uncensored+",
+    advancedToastNeedModelFirst: "Please select a model first",
+    advancedToastCreateModelFirst: "Create a model first!",
+    historyIdentityRecreations: "Identity Recreations",
+    historyAdvancedGenerations: "Advanced Generations",
+    historyFaceSwaps: "Face Swaps",
+    videoToastPromptRequired: "Please enter a prompt",
+    videoFaceswapToastStarted: "Face swap started! Check Live Preview",
+    videoMethodFaceSwapShort: "Face Swap",
+    videoNoticeAdvancedMotionTitle: "Advanced Motion Control AI:",
+    videoNoticeAdvancedMotionBody:
+      "Ideal for copying dances, movements, and poses into video. May take 15-20 minutes to complete.",
+    videoHistoryFaceSwapVideos: "Face Swap Videos",
+    talkingHeadOpenVoiceStudio: "Open Voice Studio…",
+    talkingHeadDefaultVoiceReady: "Default model voice ready",
+    talkingHeadLanguageSk: "Slovak",
+    talkingHeadLanguageCs: "Czech",
+    talkingHeadEnhanceWithAi: "Enhance with AI",
+    talkingHeadTutorialFaceswapVideo: "Face Swap Video Tutorial",
+  },
+  ru: {
+    title: "Создание контента",
+    subtitle: "Создавайте впечатляющие изображения и видео с помощью ИИ",
+    tabImage: "Изображение",
+    tabImageSub: "ИИ-фото",
+    tabVideo: "Видео",
+    tabVideoSub: "ИИ-видео",
+    retry: "Повторить",
+    errorContentLoad:
+      "Не удалось загрузить ваш контент. Вы всё равно можете генерировать; история может быть недоступна до обновления страницы.",
+    modelSelectorNoModels: "Нет доступных моделей",
+    modelSelectorChooseModel: "Выберите модель",
+    modelSelectorLabel: "Выбор модели",
+    boundaryTitle: "Генератор не загрузился",
+    boundaryMessageDefault: "Произошла ошибка. Попробуйте обновить страницу.",
+    refresh: "Обновить",
+    identityReferenceImage: "Референсное изображение",
+    identityReferenceImageHint: "Загрузите сцену или позу, которую хотите воспроизвести",
+    identityClothingStyle: "Стиль одежды",
+    identityClothingModel: "Модель",
+    identityClothingSource: "Источник",
+    identityExtraDirections: "Дополнительные указания (необязательно)",
+    identityExtraDirectionsHint:
+      "Добавляются после встроенных правил идентификации. Используйте для уточнений: цвета, украшения, макияж, мелкие аксессуары — сходство по-прежнему определяется фотографиями вашей модели.",
+    identityExtraDirectionsPlaceholder: "например, золотые серьги-кольца, насыщенная красная помада",
+    getCredits: "Получить кредиты",
+    generating: "Генерация...",
+    generateImage: "Создать изображение",
+    faceswapTargetImage: "Целевое изображение",
+    faceswapTargetImageHint: "Изображение, на котором нужно заменить лицо",
+    faceswapSourceFace: "Исходное лицо",
+    faceswapSourceFaceHint: "Лицо, которое нужно подставить (ваша ИИ-модель или любое другое лицо)",
+    faceswapSwapping: "Замена лица...",
+    faceswapAction: "Заменить лицо",
+    videoRecreateStartingImage: "Начальный кадр",
+    videoRecreateReferenceVideo: "Референсное видео",
+    videoRecreateUltraBadge: "ULTRA",
+    videoRecreateClassicBadge: "CLASSIC",
+    videoRecreateUltraDesc: "Motion Control Pro+ · 1080p",
+    videoRecreateClassicDesc: "Motion Control 2.6 · 1080p",
+    videoRecreateClassicInfoPrefix: "Classic (по умолчанию):",
+    videoRecreateClassicInfoValue: "Motion Control 2.6 · 1080p",
+    videoRecreateUltraToggleTitle: "Ultra — Motion Control Pro+",
+    videoRecreateUltraToggleDesc: "1080p",
+    videoRecreatePromptLabel: "Промпт",
+    optional: "(Необязательно)",
+    videoRecreatePromptPlaceholder: "например, энергично танцует, улыбается в камеру...",
+    videoKeepAudio: "Сохранить звук",
+    on: "(ВКЛ)",
+    off: "(ВЫКЛ)",
+    generateVideo: "Создать видео",
+    promptVideoStartFrame: "Начальный кадр",
+    promptVideoMotionPrompt: "Промпт движения",
+    promptVideoMotionPromptPlaceholder:
+      "Пример: Камера медленно приближается, человек улыбается и машет рукой...",
+    promptVideoDuration: "Длительность",
+    promptVideoDuration5: "5 секунд",
+    promptVideoDuration10: "10 секунд",
+    promptVideoAction: "Создать",
+    modeIdentityTitle: "Модель + Референсное изображение",
+    modePromptTitle: "Модель + Текстовый промпт",
+    modeFaceswapTitle: "Замена лица на изображении",
+    sourceUpload: "Загрузить",
+    sourceGallery: "Галерея",
+    galleryEmpty: "Нет сгенерированных изображений для этой модели.",
+    modelHintTapToClose: "Нажмите, чтобы закрыть",
+    modelHintTapToChange: "Нажмите, чтобы изменить",
+    modelHintCreateInModels: "Создайте во вкладке «Модели»",
+    modelHintAvailableCount: "Доступно: {count}",
+    advancedReferenceImages: "Референсные изображения",
+    advancedReferenceImagesHint: "Добавьте один или несколько референсов (необязательно, но рекомендуется)",
+    advancedAddReference: "Добавить референс",
+    advancedMaxReferences: "До {count} изображений",
+    advancedPrompt: "Промпт",
+    advancedPromptPlaceholderNano:
+      "Опишите сцену (ИИ преобразует это в NSFW-промпт в формате Danbooru)…",
+    advancedPromptPlaceholderSeedream:
+      "Опишите сцену (ИИ создаст профессиональный SFW-промпт кинематографического уровня)…",
+    advancedEnhancePrompt: "Улучшить промпт",
+    advancedEnhancingPrompt: "Улучшение...",
+    advancedGenerate: "Создать",
+    advancedNeedPromptFirst: "Пожалуйста, введите промпт",
+    advancedToastNeedModel: "Пожалуйста, выберите модель",
+    advancedToastNeedPrompt: "Пожалуйста, введите промпт",
+    advancedToastEnhanceFailed: "Не удалось улучшить промпт",
+    advancedToastUploadFailed: "Не удалось загрузить референсное изображение",
+    advancedToastGenerateFailed: "Ошибка генерации",
+    promptModePromptPlaceholder: "Опишите изображение, которое хотите создать...",
+    promptModeAdvancedOptions: "Расширенные настройки",
+    promptModeNegativePrompt: "Негативный промпт",
+    promptModeNegativePromptPlaceholder: "Что исключить...",
+    promptModeSeed: "Сид (необязательно)",
+    promptModeSeedPlaceholder: "По умолчанию случайный",
+    promptModeStyle: "Стиль",
+    promptModeStyleRealistic: "Реалистичный",
+    promptModeStyleAnime: "Аниме",
+    promptModeStyleCinematic: "Кинематографический",
+    promptModeStyleFantasy: "Фэнтези",
+    promptModeToastNeedModel: "Пожалуйста, выберите модель",
+    promptModeToastNeedPrompt: "Пожалуйста, введите промпт",
+    promptModeToastGenerateFailed: "Не удалось создать изображение",
+    videoTitle: "Создание видео",
+    videoSubtitle: "Создавайте ИИ-видео из изображений и промптов",
+    videoMethodRecreate: "Воссоздать видео",
+    videoMethodPrompt: "Видео по промпту",
+    videoMethodFaceswap: "Замена лица в видео",
+    videoMethodTalking: "Говорящий персонаж",
+    videoMethodRecreateDesc: "Воссоздайте движение из референсного видео",
+    videoMethodPromptDesc: "Анимируйте из начального кадра и промпта",
+    videoMethodFaceswapDesc: "Замените лицо в существующем видео",
+    videoMethodTalkingDesc: "Заставьте портрет говорить с помощью текста или голоса",
+    faceswapVideoSourceVideo: "Исходное видео",
+    faceswapVideoTargetGender: "Пол персонажа",
+    faceswapVideoGenderFemale: "Женский",
+    faceswapVideoGenderMale: "Мужской",
+    faceswapVideoAction: "Заменить лицо",
+    talkingHeadPortraitImage: "Портретное изображение",
+    talkingHeadVoice: "Голос",
+    talkingHeadVoiceLoading: "Загрузка голосов...",
+    talkingHeadVoiceEmpty: "Голоса не найдены",
+    talkingHeadVoiceRetry: "Повторить",
+    talkingHeadInputModeText: "Синтез речи из текста",
+    talkingHeadInputModeAudio: "Загрузка аудио",
+    talkingHeadTextLabel: "Текст речи",
+    talkingHeadTextPlaceholder: "Введите, что должен сказать аватар...",
+    talkingHeadAudioLabel: "Аудиофайл",
+    talkingHeadAudioHint: "Загрузите WAV или MP3 (макс. {seconds} сек.)",
+    talkingHeadLanguageFilter: "Язык",
+    talkingHeadLanguageAll: "Все",
+    talkingHeadEmotion: "Эмоция",
+    identityToastSelectModelAndTarget: "Пожалуйста, выберите модель и загрузите целевое изображение",
+    identityToastLoginRequired: "Пожалуйста, войдите в систему для генерации.",
+    identityToastQueued: "В очереди! Вы можете продолжать генерировать, пока идёт обработка.",
+    faceswapImageToastNeedBothImages: "Пожалуйста, загрузите целевое изображение и исходное лицо",
+    faceswapImageToastStarted: "Замена лица запущена! Проверьте раздел «Живой просмотр».",
+    faceswapImageToastFailed: "Не удалось заменить лицо. Пожалуйста, попробуйте ещё раз.",
+    modeSelectLabel: "Выбор режима",
+    modeAdvancedToggle: "Расширенный",
+    modeIdentity: "Воссоздание личности",
+    modePromptToImage: "Изображение по промпту",
+    modeFaceSwap: "Замена лица",
+    advancedEngineLabel: "ИИ-движок",
+    advancedEngineUltraRealism: "Ultra Realism",
+    advancedEngineUncensoredPlus: "Uncensored+",
+    advancedToastNeedModelFirst: "Пожалуйста, сначала выберите модель",
+    advancedToastCreateModelFirst: "Сначала создайте модель!",
+    historyIdentityRecreations: "Воссоздания личности",
+    historyAdvancedGenerations: "Расширенные генерации",
+    historyFaceSwaps: "Замены лица",
+    videoToastPromptRequired: "Пожалуйста, введите промпт",
+    videoFaceswapToastStarted: "Замена лица запущена! Проверьте раздел «Живой просмотр»",
+    videoMethodFaceSwapShort: "Замена лица",
+    videoNoticeAdvancedMotionTitle: "Продвинутый ИИ контроля движения:",
+    videoNoticeAdvancedMotionBody:
+      "Идеально подходит для копирования танцев, движений и поз в видео. Обработка может занять 15–20 минут.",
+    videoHistoryFaceSwapVideos: "Видео с заменой лица",
+    talkingHeadOpenVoiceStudio: "Открыть голосовую студию…",
+    talkingHeadDefaultVoiceReady: "Голос модели по умолчанию готов",
+    talkingHeadLanguageSk: "Словацкий",
+    talkingHeadLanguageCs: "Чешский",
+    talkingHeadEnhanceWithAi: "Улучшить с помощью ИИ",
+    talkingHeadTutorialFaceswapVideo: "Обучение: замена лица в видео",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+function getGenerateCopy() {
+  const locale = resolveLocale();
+  return GENERATE_COPY[locale] || GENERATE_COPY.en;
+}
+
 // Gallery Image Picker - lets user pick from previously generated images
 function GalleryImagePicker({ modelId, selectedImage, onSelect, accentColor = "purple" }) {
   const [page, setPage] = useState(1);
@@ -94,7 +445,7 @@ function GalleryImagePicker({ modelId, selectedImage, onSelect, accentColor = "p
   if (allImages.length === 0) {
     return (
       <p className="text-center text-slate-500 py-6 text-xs">
-        No generated images yet for this model.
+        {getGenerateCopy().galleryEmpty}
       </p>
     );
   }
@@ -195,7 +546,7 @@ function ImageSourceSelector({ modelId, onUpload, onGallerySelect, preview, sele
             <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
           )}
           <Upload className="w-3 h-3 inline mr-1" />
-          Upload
+          {getGenerateCopy().sourceUpload}
         </button>
         <button
           onClick={() => setMode("gallery")}
@@ -214,7 +565,7 @@ function ImageSourceSelector({ modelId, onUpload, onGallerySelect, preview, sele
             <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
           )}
           <Grid3X3 className="w-3 h-3 inline mr-1" />
-          Gallery
+          {getGenerateCopy().sourceGallery}
         </button>
       </div>
 
@@ -249,6 +600,7 @@ function ImageSourceSelector({ modelId, onUpload, onGallerySelect, preview, sele
 
 // Collapsible Model Selector Component - expands below the button
 function ModelSelector({ models, selectedModel, onSelect, accentColor = "purple", stepNumber, label = "Select Model" }) {
+  const copy = getGenerateCopy();
   const [isOpen, setIsOpen] = useState(false);
   const selectedModelData = models.find(m => m.id === selectedModel);
   
@@ -284,11 +636,11 @@ function ModelSelector({ models, selectedModel, onSelect, accentColor = "purple"
           >
             {stepNumber}
           </div>
-          <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{label}</label>
+          <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{label === "Select Model" ? copy.modelSelectorLabel : label}</label>
         </div>
       )}
       {!stepNumber && (
-        <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-3">{label}</label>
+        <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-3">{label === "Select Model" ? copy.modelSelectorLabel : label}</label>
       )}
       
       {/* Main container with connected styling */}
@@ -322,18 +674,18 @@ function ModelSelector({ models, selectedModel, onSelect, accentColor = "purple"
               </div>
               <div className="flex-1 text-left min-w-0">
                 <p className={`text-sm font-medium ${accents[accentColor].text} truncate`}>{selectedModelData.name}</p>
-                <p className="text-[10px] text-slate-500">{isOpen ? 'Tap to close' : 'Tap to change'}</p>
+                <p className="text-[10px] text-slate-500">{isOpen ? copy.modelHintTapToClose : copy.modelHintTapToChange}</p>
               </div>
             </>
           ) : models.length === 0 ? (
             <div className="flex-1 text-left">
-              <p className="text-sm text-white">No models available</p>
-              <p className="text-[10px] text-slate-500">Create one in Models tab</p>
+              <p className="text-sm text-white">{copy.modelSelectorNoModels}</p>
+              <p className="text-[10px] text-slate-500">{copy.modelHintCreateInModels}</p>
             </div>
           ) : (
             <div className="flex-1 text-left">
-              <p className="text-sm text-slate-400">Choose a model</p>
-              <p className="text-[10px] text-slate-500">{models.length} available</p>
+              <p className="text-sm text-slate-400">{copy.modelSelectorChooseModel}</p>
+              <p className="text-[10px] text-slate-500">{copy.modelHintAvailableCount.replace("{count}", String(models.length))}</p>
             </div>
           )}
           <ChevronDown className={`w-4 h-4 text-slate-500 group-hover:text-slate-300 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -408,13 +760,14 @@ class GenerateTabBoundary extends React.Component {
     console.error("[GenerateTabBoundary]", error?.message, errorInfo?.componentStack);
   }
   render() {
+    const copy = getGenerateCopy();
     if (this.state.hasError) {
       return (
         <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-8 text-center">
           <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold text-white mb-2">Generator couldn&apos;t load</h2>
+          <h2 className="text-lg font-semibold text-white mb-2">{copy.boundaryTitle}</h2>
           <p className="text-slate-400 text-sm mb-4">
-            {this.state.error?.message || "An error occurred. Try refreshing the page."}
+            {this.state.error?.message || copy.boundaryMessageDefault}
           </p>
           <button
             type="button"
@@ -422,7 +775,7 @@ class GenerateTabBoundary extends React.Component {
             className="px-6 py-2.5 rounded-xl bg-white/10 border border-white/20 hover:bg-white/15 font-medium text-white inline-flex items-center gap-2"
           >
             <RefreshCcw className="w-4 h-4" />
-            Try again
+            {copy.refresh}
           </button>
         </div>
       );
@@ -446,6 +799,7 @@ import CourseTipBanner from "../components/CourseTipBanner";
 import { useDraft } from "../hooks/useDraft";
 
 export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceStudioForModel }) {
+  const copy = getGenerateCopy();
   const [activeTab, setActiveTab] = useState("image");
   const [isTabDrawerOpen, setIsTabDrawerOpen] = useState(false);
   const [hasSelectedTopTab, setHasSelectedTopTab] = useState(false);
@@ -465,9 +819,9 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
       {/* Premium Header */}
       <div className="mb-6 sm:mb-10">
         <h1 className="text-2xl sm:text-4xl font-bold mb-2 text-white">
-          Generate Content
+          {copy.title}
         </h1>
-        <p className="text-sm text-slate-400">Create stunning AI-powered images and videos</p>
+        <p className="text-sm text-slate-400">{copy.subtitle}</p>
       </div>
 
       <CourseTipBanner type="sfw" onNavigateToCourse={() => setDashboardTab?.("course")} />
@@ -492,8 +846,8 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
               {activeTab === "image" ? <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" /> : <Video className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
             </div>
             <div className="text-left">
-              <span className="font-semibold text-sm sm:text-base block">{activeTab === "image" ? "Image" : "Video"}</span>
-              <span className="text-[10px] text-slate-400 hidden sm:block">{activeTab === "image" ? "AI Photos" : "AI Videos"}</span>
+              <span className="font-semibold text-sm sm:text-base block">{activeTab === "image" ? copy.tabImage : copy.tabVideo}</span>
+              <span className="text-[10px] text-slate-400 hidden sm:block">{activeTab === "image" ? copy.tabImageSub : copy.tabVideoSub}</span>
             </div>
           </div>
           <ChevronDown className={`relative w-4 h-4 text-slate-300 transition-transform ${isTabDrawerOpen ? "rotate-180" : ""}`} />
@@ -519,8 +873,8 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
                     <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <span className="font-semibold text-sm sm:text-base block">Image</span>
-                    <span className="text-[10px] text-slate-400 hidden sm:block">AI Photos</span>
+                    <span className="font-semibold text-sm sm:text-base block">{copy.tabImage}</span>
+                    <span className="text-[10px] text-slate-400 hidden sm:block">{copy.tabImageSub}</span>
                   </div>
                 </div>
               </button>
@@ -542,8 +896,8 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
                     <Video className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <span className="font-semibold text-sm sm:text-base block">Video</span>
-                    <span className="text-[10px] text-slate-400 hidden sm:block">AI Videos</span>
+                    <span className="font-semibold text-sm sm:text-base block">{copy.tabVideo}</span>
+                    <span className="text-[10px] text-slate-400 hidden sm:block">{copy.tabVideoSub}</span>
                   </div>
                 </div>
               </button>
@@ -562,6 +916,7 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
 }
 
 function ImageGeneration() {
+  const copy = getGenerateCopy();
   const { user, updateCredits, refreshUserCredits } = useAuthStore();
   const credits = user?.credits ?? 0;
 
@@ -726,7 +1081,7 @@ function ImageGeneration() {
   const enhanceAdvancedPrompt = async () => {
     const input = advancedPrompt.trim();
     if (!input) {
-      toast.error("Please enter a prompt first");
+      toast.error(copy.advancedNeedPromptFirst);
       return;
     }
 
@@ -779,7 +1134,7 @@ function ImageGeneration() {
       }
     } catch (error) {
       console.error("Advanced enhancement error:", error);
-      const msg = error.response?.data?.message || "Failed to enhance prompt";
+      const msg = error.response?.data?.message || copy.advancedToastEnhanceFailed;
       toast.error(msg);
     } finally {
       setAdvancedEnhancing(false);
@@ -799,7 +1154,7 @@ function ImageGeneration() {
     setTimeout(() => setIsCooldown(false), 500);
 
     if (!selectedModel || !targetImage) {
-      toast.error("Please select model and upload target image");
+      toast.error(copy.identityToastSelectModelAndTarget);
       return;
     }
 
@@ -807,7 +1162,7 @@ function ImageGeneration() {
     const creditsNeeded = 10; // 10 credits per image
 
     if (!user || credits < creditsNeeded) {
-      toast.error(!user ? "Please log in to generate." : `Need ${creditsNeeded} 🪙. You have ${credits} 🪙.`);
+      toast.error(!user ? copy.identityToastLoginRequired : `Need ${creditsNeeded} 🪙. You have ${credits} 🪙.`);
       return;
     }
 
@@ -833,7 +1188,7 @@ function ImageGeneration() {
         if (response.generation) {
           addOptimisticGeneration({ ...response.generation, modelId: model.id });
         }
-        toast.success("Queued! You can generate again while it processes.");
+        toast.success(copy.identityToastQueued);
         clearDraft();
       } else {
         toast.error(response.message || "Generation failed");
@@ -857,7 +1212,7 @@ function ImageGeneration() {
     setTimeout(() => setIsCooldown(false), 500);
 
     if (!faceSwapTargetImage || !faceSwapSourceImage) {
-      toast.error("Please upload both target image and source face");
+      toast.error(copy.faceswapImageToastNeedBothImages);
       return;
     }
 
@@ -881,7 +1236,7 @@ function ImageGeneration() {
         if (response.data.generation) {
           addOptimisticGeneration(response.data.generation);
         }
-        toast.success("Face swap started! Check Live Preview.");
+        toast.success(copy.faceswapImageToastStarted);
         setFaceSwapTargetImage(null);
         setFaceSwapSourceImage(null);
         clearDraft();
@@ -889,7 +1244,7 @@ function ImageGeneration() {
     } catch (error) {
       console.error("❌ Face swap error:", error);
       await refreshUserCredits();
-      toast.error(getApiErrorMessage(error, "Failed to swap face. Please try again."));
+      toast.error(getApiErrorMessage(error, copy.faceswapImageToastFailed));
     } finally {
       setFaceSwapImageGenerating(false);
     }
@@ -902,7 +1257,7 @@ function ImageGeneration() {
       {/* Premium Mode Selector */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-medium">Select Mode</p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-slate-500 font-medium">{copy.modeSelectLabel}</p>
           {/* Advanced Mode Toggle */}
           <button
             onClick={() => {
@@ -918,7 +1273,7 @@ function ImageGeneration() {
             data-testid="button-toggle-advanced"
           >
             <Zap className="w-3.5 h-3.5" />
-            Advanced
+            {copy.modeAdvancedToggle}
             <div className={`w-8 h-4 rounded-full transition-all flex items-center ${imageMode === "advanced" ? "bg-amber-500" : "bg-slate-600"}`}>
               <div className={`w-3 h-3 rounded-full bg-white shadow transition-transform ${imageMode === "advanced" ? "translate-x-[18px]" : "translate-x-0.5"}`} />
             </div>
@@ -948,10 +1303,10 @@ function ImageGeneration() {
             </div>
             <div>
               <p className="font-semibold text-sm">
-                {imageMode === "identity" ? "Identity Recreation" : imageMode === "prompt" ? "prompt to image" : "Face Swap"}
+                {imageMode === "identity" ? copy.modeIdentity : imageMode === "prompt" ? copy.modePromptToImage : copy.modeFaceSwap}
               </p>
               <p className="text-[11px] text-slate-400">
-                {imageMode === "identity" ? "Model + Reference Image" : imageMode === "prompt" ? "Model + Text Prompt" : "Swap Face in Image"}
+                {imageMode === "identity" ? copy.modeIdentityTitle : imageMode === "prompt" ? copy.modePromptTitle : copy.modeFaceswapTitle}
               </p>
             </div>
           </div>
@@ -988,10 +1343,10 @@ function ImageGeneration() {
                 <div className={`p-2 rounded-lg ${imageMode === "identity" ? "bg-white/10 border border-white/20" : "glass-card"}`}>
                   <User className={`w-4 h-4 ${imageMode === "identity" ? "text-white" : ""}`} />
                 </div>
-                <span className="font-semibold text-sm">Identity Recreation</span>
+                <span className="font-semibold text-sm">{copy.modeIdentity}</span>
                 <TutorialButton tutorial={TUTORIALS.image.identity} />
               </div>
-              <p className="text-[11px] text-slate-400">Model + Reference Image</p>
+              <p className="text-[11px] text-slate-400">{copy.modeIdentityTitle}</p>
               <div className="mt-2 flex items-center justify-center gap-1.5">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                   <span className="text-[10px] font-medium text-yellow-400 inline-flex items-center gap-0.5">10 <Coins className="w-2.5 h-2.5" /></span>
@@ -1030,10 +1385,10 @@ function ImageGeneration() {
                 <div className={`p-2 rounded-lg ${imageMode === "prompt" ? "bg-white/10 border border-white/20" : "glass-card"}`}>
                   <Sparkles className={`w-4 h-4 ${imageMode === "prompt" ? "text-white" : ""}`} />
                 </div>
-                <span className="font-semibold text-sm">prompt to image</span>
+                <span className="font-semibold text-sm">{copy.modePromptToImage}</span>
                 <TutorialButton tutorial={TUTORIALS.image.prompt} />
               </div>
-              <p className="text-[11px] text-slate-400">Model + Text Prompt</p>
+              <p className="text-[11px] text-slate-400">{copy.modePromptTitle}</p>
               <div className="mt-2 flex items-center justify-center gap-1.5">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                   <span className="text-[10px] font-medium text-yellow-400 inline-flex items-center gap-0.5">10-20 <Coins className="w-2.5 h-2.5" /></span>
@@ -1072,10 +1427,10 @@ function ImageGeneration() {
                 <div className={`p-2 rounded-lg ${imageMode === "faceswap" ? "bg-white/10 border border-white/20" : "glass-card"}`}>
                   <Users className={`w-4 h-4 ${imageMode === "faceswap" ? "text-white" : ""}`} />
                 </div>
-                <span className="font-semibold text-sm">Face Swap</span>
+                <span className="font-semibold text-sm">{copy.faceswapAction}</span>
                 <TutorialButton tutorial={TUTORIALS.image.faceswap} />
               </div>
-              <p className="text-[11px] text-slate-400">Swap Face in Image</p>
+              <p className="text-[11px] text-slate-400">{copy.modeFaceswapTitle}</p>
               <div className="mt-2 flex items-center justify-center gap-1.5">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
                   <span className="text-[10px] font-medium text-yellow-400 inline-flex items-center gap-0.5">10 <Coins className="w-2.5 h-2.5" /></span>
@@ -1091,9 +1446,9 @@ function ImageGeneration() {
 
       {generationsLoadError && (
         <div className="mb-4 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-4">
-          <p className="text-sm text-amber-200">Couldn&apos;t load your content. You can still generate; history may be missing until refreshed.</p>
+          <p className="text-sm text-amber-200">{copy.errorContentLoad}</p>
           <button type="button" onClick={() => triggerRefresh()} className="shrink-0 px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30 text-amber-100 font-medium text-sm">
-            Retry
+            {copy.retry}
           </button>
         </div>
       )}
@@ -1120,7 +1475,7 @@ function ImageGeneration() {
               Reference Image
             </label>
             <p className="text-[11px] text-slate-500 mb-3">
-              Upload the scene/pose you want to recreate
+              {copy.identityReferenceImageHint}
             </p>
             <FileUpload
               type="image"
@@ -1132,7 +1487,7 @@ function ImageGeneration() {
           {/* Clothes Mode Selector */}
           <div className="mb-6">
             <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-3">
-              Clothing Style
+              {copy.identityClothingStyle}
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -1152,7 +1507,7 @@ function ImageGeneration() {
                   <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
                 )}
                 <User className="w-4 h-4" />
-                Model
+                {copy.identityClothingModel}
               </button>
               <button
                 type="button"
@@ -1171,7 +1526,7 @@ function ImageGeneration() {
                   <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
                 )}
                 <Shirt className="w-4 h-4" />
-                Source
+                {copy.identityClothingSource}
               </button>
             </div>
           </div>
@@ -1180,17 +1535,17 @@ function ImageGeneration() {
           {clothesMode === "reference" && (
             <div className="mb-6">
               <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-2">
-                Extra directions (optional)
+                {copy.identityExtraDirections}
               </label>
               <p className="text-[11px] text-slate-500 mb-2">
-                Added after the built-in identity rules. Use for tweaks: colors, jewelry, makeup, small props — likeness still comes from your model photos.
+                {copy.identityExtraDirectionsHint}
               </p>
               <textarea
                 value={identityPromptEdit}
                 onChange={(e) => setIdentityPromptEdit(e.target.value)}
                 rows={2}
                 className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/15 text-sm text-slate-200 placeholder-slate-500 focus:border-white/30 focus:outline-none transition resize-none"
-                placeholder="e.g. gold hoop earrings, deeper red lipstick"
+                placeholder={copy.identityExtraDirectionsPlaceholder}
                 data-testid="textarea-identity-prompt-edit"
               />
             </div>
@@ -1204,7 +1559,7 @@ function ImageGeneration() {
               data-testid="button-get-credits-image"
             >
               <CreditCard className="w-5 h-5" />
-              Get Credits <span className="inline-flex items-center gap-0.5 text-red-500">(10 <Coins className="w-3.5 h-3.5" />)</span>
+              {copy.getCredits} <span className="inline-flex items-center gap-0.5 text-red-500">(10 <Coins className="w-3.5 h-3.5" />)</span>
             </button>
           ) : (
             <button
@@ -1223,12 +1578,12 @@ function ImageGeneration() {
               {identityGenerating ? (
                 <>
                   <Zap className="w-5 h-5 text-yellow-400" />
-                  <span>Generating...</span>
+                  <span>{copy.generating}</span>
                 </>
               ) : (
                 <>
                   <Zap className="w-5 h-5 text-yellow-400" />
-                  <span className="inline-flex items-center gap-1.5">Generate Image <span className="inline-flex items-center gap-0.5 text-yellow-400">10 <Coins className="w-3.5 h-3.5" /></span></span>
+                  <span className="inline-flex items-center gap-1.5">{copy.generateImage} <span className="inline-flex items-center gap-0.5 text-yellow-400">10 <Coins className="w-3.5 h-3.5" /></span></span>
                 </>
               )}
             </button>
@@ -1254,10 +1609,10 @@ function ImageGeneration() {
           {/* Target Image */}
           <div className="mb-6">
             <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-2">
-              Target Image
+              {copy.faceswapTargetImage}
             </label>
             <p className="text-[11px] text-slate-500 mb-3">
-              The image where you want to replace the face
+              {copy.faceswapTargetImageHint}
             </p>
             <FileUpload
               type="image"
@@ -1270,10 +1625,10 @@ function ImageGeneration() {
           {/* Source Face */}
           <div className="mb-6">
             <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-2">
-              Source Face
+              {copy.faceswapSourceFace}
             </label>
             <p className="text-[11px] text-slate-500 mb-3">
-              The face you want to swap in (your AI model or any face)
+              {copy.faceswapSourceFaceHint}
             </p>
             <FileUpload
               type="image"
@@ -1291,7 +1646,7 @@ function ImageGeneration() {
               data-testid="button-get-credits-faceswap"
             >
               <CreditCard className="w-5 h-5" />
-              Get Credits <span className="inline-flex items-center gap-0.5 text-red-500">(10 <Coins className="w-3.5 h-3.5" />)</span>
+              {copy.getCredits} <span className="inline-flex items-center gap-0.5 text-red-500">(10 <Coins className="w-3.5 h-3.5" />)</span>
             </button>
           ) : (
             <button
@@ -1313,12 +1668,12 @@ function ImageGeneration() {
               {faceSwapImageGenerating ? (
                 <>
                   <Zap className="w-5 h-5 text-yellow-400" />
-                  <span>Swapping Face...</span>
+                  <span>{copy.faceswapSwapping}</span>
                 </>
               ) : (
                 <>
                   <Zap className="w-5 h-5 text-white" />
-                  <span className="inline-flex items-center gap-1.5">Swap Face <span className="inline-flex items-center gap-0.5 text-yellow-400">10 <Coins className="w-3.5 h-3.5" /></span></span>
+                  <span className="inline-flex items-center gap-1.5">{copy.faceswapAction} <span className="inline-flex items-center gap-0.5 text-yellow-400">10 <Coins className="w-3.5 h-3.5" /></span></span>
                 </>
               )}
             </button>
@@ -1335,12 +1690,12 @@ function ImageGeneration() {
             onSelect={setSelectedModel}
             accentColor="purple"
             stepNumber={1}
-            label="Select Model"
+            label={copy.advancedStepSelectModel}
           />
           {/* AI Engine Selector */}
           <div className="mb-6">
             <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-3">
-              AI Engine
+              {copy.advancedEngineLabel}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -1361,7 +1716,7 @@ function ImageGeneration() {
                 {advancedModel === "nano-banana" && (
                   <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
                 )}
-                <div className="font-semibold">Ultra Realism</div>
+                <div className="font-semibold">{copy.advancedEngineUltraRealism}</div>
                 <div className="mt-2 inline-flex items-center px-1.5 py-[1px] rounded-full" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.20), rgba(22,163,74,0.10))', border: '1px solid rgba(34,197,94,0.28)' }}>
                   <span className="text-[7px] font-semibold tracking-wide" style={{ color: '#4ade80' }}>33% OFF</span>
                 </div>
@@ -1384,7 +1739,7 @@ function ImageGeneration() {
                 {advancedModel === "seedream" && (
                   <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
                 )}
-                <div className="font-semibold">Uncensored+</div>
+                <div className="font-semibold">{copy.advancedEngineUncensoredPlus}</div>
                 <div className="mt-2 inline-flex items-center px-1.5 py-[1px] rounded-full" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.20), rgba(22,163,74,0.10))', border: '1px solid rgba(34,197,94,0.28)' }}>
                   <span className="text-[7px] font-semibold tracking-wide" style={{ color: '#4ade80' }}>50% OFF</span>
                 </div>
@@ -1395,10 +1750,10 @@ function ImageGeneration() {
           {/* Reference Photos Upload */}
           <div className="mb-6">
             <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium mb-2">
-              Reference Photos <span className="text-slate-600">(Optional, max 10)</span>
+              {copy.advancedReferenceImages} <span className="text-slate-600">{copy.optional}, {copy.advancedMaxReferences.replace("{count}", "10")}</span>
             </label>
             <p className="text-[11px] text-slate-500 mb-3">
-              Upload custom reference photos or use your model photos
+              {copy.advancedReferenceImagesHint}
             </p>
             <div className="flex flex-wrap gap-2">
               {/* Show uploaded photos */}
@@ -1428,7 +1783,7 @@ function ImageGeneration() {
                 <label className="w-16 h-16 rounded-xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:border-white/30 hover:bg-white/5 transition-colors">
                   <Upload className="w-4 h-4 text-slate-500 mb-0.5" />
                   <span className="text-[8px] text-slate-500">
-                    {advancedReferencePhotos.length === 0 ? "Add" : `${advancedReferencePhotos.length}/10`}
+                    {advancedReferencePhotos.length === 0 ? copy.advancedAddReference : `${advancedReferencePhotos.length}/10`}
                   </span>
                   <input
                     type="file"
@@ -1458,7 +1813,7 @@ function ImageGeneration() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">
-                Prompt
+                {copy.advancedPrompt}
               </label>
               <button
                 onClick={enhanceAdvancedPrompt}
@@ -1470,13 +1825,13 @@ function ImageGeneration() {
                 {advancedEnhancing
                   ? <Loader2 className="w-3 h-3 animate-spin" />
                   : <Sparkles className="w-3 h-3" />}
-                {advancedEnhancing ? "Enhancing…" : "Enhance with AI · 10cr"}
+                {advancedEnhancing ? copy.advancedEnhancingPrompt : copy.advancedEnhancePrompt}
               </button>
             </div>
             <textarea
               value={advancedPrompt}
               onChange={(e) => setAdvancedPrompt(e.target.value)}
-              placeholder={advancedModel === "seedream" ? "Describe the scene (AI will turn this into an NSFW Danbooru tag prompt)…" : "Describe the scene (AI will build a cinema-grade SFW superprompt)…"}
+              placeholder={advancedModel === "seedream" ? copy.advancedPromptPlaceholderNano : copy.advancedPromptPlaceholderSeedream}
               className="w-full h-32 glass-card rounded-xl p-4 text-white placeholder:text-slate-400 focus:outline-none focus:border-white/20 resize-none"
               data-testid="input-advanced-prompt"
             />
@@ -1492,7 +1847,7 @@ function ImageGeneration() {
                 data-testid="button-get-credits-advanced"
               >
                 <CreditCard className="w-5 h-5" />
-                Get Credits <span className="inline-flex items-center gap-0.5 text-red-500">({advCredits} <Coins className="w-3.5 h-3.5" />)</span>
+                {copy.getCredits} <span className="inline-flex items-center gap-0.5 text-red-500">({advCredits} <Coins className="w-3.5 h-3.5" />)</span>
               </button>
             ) : (
               <button
@@ -1506,16 +1861,16 @@ function ImageGeneration() {
                   setTimeout(() => setIsCooldown(false), 500);
 
                   if (!models || models.length === 0) {
-                    window.alert("Create a model first!");
+                    window.alert(copy.advancedToastCreateModelFirst);
                     return;
                   }
 
                   if (!selectedModel) {
-                    toast.error("Please select a model");
+                    toast.error(copy.advancedToastNeedModel);
                     return;
                   }
                   if (!advancedPrompt.trim()) {
-                    toast.error("Please enter a prompt");
+                    toast.error(copy.advancedToastNeedPrompt);
                     return;
                   }
 
@@ -1593,7 +1948,7 @@ function ImageGeneration() {
                 {advancedGenerating ? (
                   <>
                     <Zap className="w-5 h-5 text-yellow-400" />
-                    <span>Generating...</span>
+                    <span>{copy.generating}</span>
                   </>
                 ) : (
                   <>
@@ -1630,10 +1985,10 @@ function ImageGeneration() {
             <GenerationHistory 
               type={imageMode === 'identity' ? 'image-identity' : imageMode === 'prompt' ? 'prompt-image' : imageMode === 'advanced' ? 'advanced-image' : 'face-swap-image'}
               title={
-                imageMode === 'identity' ? 'Identity Recreations' :
+                imageMode === 'identity' ? copy.historyIdentityRecreations :
                 imageMode === 'prompt' ? 'Prompt Images' :
-                imageMode === 'advanced' ? 'Advanced Generations' :
-                'Face Swaps'
+                imageMode === 'advanced' ? copy.historyAdvancedGenerations :
+                copy.historyFaceSwaps
               }
               limit={6}
             />
@@ -1649,11 +2004,12 @@ function ImageGeneration() {
 }
 
 function VideoGeneration() {
+  const copy = getGenerateCopy();
   const { user, updateCredits, refreshUserCredits } = useAuthStore();
   const { getTutorial } = useTutorialCatalog();
   const videoTutorialRecreate = getTutorial("generate.video.recreate", "Recreate Video Tutorial");
   const videoTutorialPrompt = getTutorial("generate.video.prompt", "Prompt Video Tutorial");
-  const videoTutorialFaceSwap = getTutorial("generate.video.faceswap", "Face Swap Video Tutorial");
+  const videoTutorialFaceSwap = getTutorial("generate.video.faceswap", copy.talkingHeadTutorialFaceswapVideo);
   const videoTutorialTalking = getTutorial("generate.video.talking", "Talking Video Tutorial");
   const credits = user?.credits ?? 0;
 
@@ -1961,7 +2317,7 @@ function VideoGeneration() {
     }
 
     if (!promptVideoPrompt.trim()) {
-      toast.error("Please enter a prompt");
+      toast.error(copy.videoToastPromptRequired);
       return;
     }
 
@@ -2079,7 +2435,7 @@ function VideoGeneration() {
     setTimeout(() => setIsCooldown(false), 500);
 
     if (!selectedModel) {
-      toast.error("Please select a model");
+      toast.error(copy.advancedToastNeedModelFirst);
       return;
     }
 
@@ -2120,7 +2476,7 @@ function VideoGeneration() {
         if (response.data.generation) {
           addOptimisticGeneration(response.data.generation);
         }
-        toast.success("Face swap started! Check Live Preview.");
+        toast.success(copy.videoFaceswapToastStarted);
         setSelectedModel("");
         setSourceVideo(null);
         setVideoDuration(0);
@@ -2310,7 +2666,7 @@ function VideoGeneration() {
         <div className="mb-4 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-between gap-4">
           <p className="text-sm text-amber-200">Couldn&apos;t load your content. You can still generate; history may be missing until refreshed.</p>
           <button type="button" onClick={() => triggerRefresh()} className="shrink-0 px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500/30 text-amber-100 font-medium text-sm">
-            Retry
+            {copy.retry}
           </button>
         </div>
       )}
@@ -2415,7 +2771,7 @@ function VideoGeneration() {
             {method === "face-swap" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(139,92,246,0.16), transparent 50%)' }} />}
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
-                <span className="font-semibold text-xs">Face Swap</span>
+                <span className="font-semibold text-xs">{copy.videoMethodFaceSwapShort}</span>
                 <TutorialButton tutorial={videoTutorialFaceSwap} showWhenMissing />
               </div>
               <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20">
@@ -2479,7 +2835,7 @@ function VideoGeneration() {
           {/* Advanced Model Notice */}
           <div className="mb-5 p-3 rounded-xl" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }}>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              <span className="text-white font-bold">Advanced Motion Control AI:</span> Ideal for copying dances, movements, and poses into video. May take 15-20 minutes to complete.
+              <span className="text-white font-bold">{copy.videoNoticeAdvancedMotionTitle}</span> {copy.videoNoticeAdvancedMotionBody}
             </p>
           </div>
 
@@ -2496,7 +2852,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>2</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Starting Image</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.videoRecreateStartingImage}</label>
             </div>
             <ImageSourceSelector
               modelId={selectedModel}
@@ -2512,7 +2868,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>3</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Reference Video</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.videoRecreateReferenceVideo}</label>
             </div>
             <FileUpload type="video" acceptOnlyMp4 onUpload={(file) => handleReferenceVideoUpload(file)} preview={referenceVideo} large />
             {referenceVideoDuration > 0 && (
@@ -2523,12 +2879,12 @@ function VideoGeneration() {
                   </span>
                 </span>
                 <span className="px-1.5 py-0.5 text-[8px] font-bold rounded-full tracking-wide" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(22,163,74,0.15))', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80' }}>
-                  {recreateUltraMode ? "ULTRA" : "CLASSIC"}
+                  {recreateUltraMode ? copy.videoRecreateUltraBadge : copy.videoRecreateClassicBadge}
                 </span>
                 <span className="text-[9px] text-slate-500">
                   {recreateUltraMode
-                    ? "Motion Control Pro+ · 1080p"
-                    : "Motion Control 2.6 · 1080p"}
+                    ? copy.videoRecreateUltraDesc
+                    : copy.videoRecreateClassicDesc}
                 </span>
               </div>
             )}
@@ -2536,7 +2892,7 @@ function VideoGeneration() {
 
           <div className="mb-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <p className="text-[10px] text-slate-400 leading-relaxed">
-              <span className="text-slate-200 font-medium">Classic (default):</span> Motion Control 2.6 · 1080p · ~{VIDEO_RECREATE_CLASSIC_PER_SEC}{" "}
+              <span className="text-slate-200 font-medium">{copy.videoRecreateClassicInfoPrefix}</span> {copy.videoRecreateClassicInfoValue} · ~{VIDEO_RECREATE_CLASSIC_PER_SEC}{" "}
               <Coins className="w-2.5 h-2.5 inline" />
               /sec
             </p>
@@ -2553,9 +2909,9 @@ function VideoGeneration() {
               <div className={`w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${recreateUltraMode ? "translate-x-[22px]" : "translate-x-0.5"}`} />
             </button>
             <div className="min-w-0">
-              <p className="text-[11px] text-slate-300 font-medium">Ultra — Motion Control Pro+</p>
+              <p className="text-[11px] text-slate-300 font-medium">{copy.videoRecreateUltraToggleTitle}</p>
               <p className="text-[10px] text-slate-500 leading-snug">
-                1080p · ~{VIDEO_RECREATE_ULTRA_PER_SEC} <Coins className="w-2.5 h-2.5 inline" />/sec
+                {copy.videoRecreateUltraToggleDesc} · ~{VIDEO_RECREATE_ULTRA_PER_SEC} <Coins className="w-2.5 h-2.5 inline" />/sec
               </p>
             </div>
           </div>
@@ -2564,12 +2920,12 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>4</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Prompt <span className="text-slate-600">(Optional)</span></label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.videoRecreatePromptLabel} <span className="text-slate-600">{copy.optional}</span></label>
             </div>
             <textarea
               value={videoPrompt}
               onChange={(e) => setVideoPrompt(e.target.value)}
-              placeholder="e.g., dancing energetically, smiling at camera..."
+              placeholder={copy.videoRecreatePromptPlaceholder}
               className="w-full px-4 py-3 rounded-xl text-sm resize-none focus:outline-none transition-colors"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
               rows={2}
@@ -2585,7 +2941,7 @@ function VideoGeneration() {
             >
               <div className={`w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${keepAudioFromVideo ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
             </button>
-            <span className="text-[11px] text-slate-400">Keep audio {keepAudioFromVideo ? <span className="text-green-400 font-bold">(ON)</span> : <span className="text-slate-500 font-bold">(OFF)</span>}</span>
+            <span className="text-[11px] text-slate-400">{copy.videoKeepAudio} {keepAudioFromVideo ? <span className="text-green-400 font-bold">{copy.on}</span> : <span className="text-slate-500 font-bold">{copy.off}</span>}</span>
           </div>
 
           {/* Generate Button */}
@@ -2596,7 +2952,7 @@ function VideoGeneration() {
               data-testid="button-get-credits-recreate-video"
             >
               <CreditCard className="w-4 h-4" />
-              Get Credits <span className="inline-flex items-center gap-0.5 text-red-500">({Math.ceil(referenceVideoDuration * recreateCreditsPerSec)} <Coins className="w-3.5 h-3.5" />)</span>
+              {copy.getCredits} <span className="inline-flex items-center gap-0.5 text-red-500">({Math.ceil(referenceVideoDuration * recreateCreditsPerSec)} <Coins className="w-3.5 h-3.5" />)</span>
             </button>
           ) : (
             <button
@@ -2608,12 +2964,12 @@ function VideoGeneration() {
               {recreateVideoGenerating ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  Generating...
+                  {copy.generating}
                 </>
               ) : (
                 <>
                   <Video className="w-5 h-5" />
-                  Generate Video <span className="inline-flex items-center gap-0.5 text-yellow-400">{referenceVideoDuration > 0
+                  {copy.generateVideo} <span className="inline-flex items-center gap-0.5 text-yellow-400">{referenceVideoDuration > 0
                     ? <>{Math.ceil(referenceVideoDuration * recreateCreditsPerSec)} <Coins className="w-3.5 h-3.5" /></>
                     : <>~ <Coins className="w-3.5 h-3.5" /></>}</span>
                 </>
@@ -2630,7 +2986,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>1</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Start Frame</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.promptVideoStartFrame}</label>
             </div>
             <ImageSourceSelector
               modelId={selectedModel}
@@ -2646,12 +3002,12 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>2</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Motion Prompt</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.promptVideoMotionPrompt}</label>
             </div>
             <textarea
               value={promptVideoPrompt}
               onChange={(e) => setPromptVideoPrompt(e.target.value)}
-              placeholder="Example: Camera slowly zooms in, person smiles and waves..."
+              placeholder={copy.promptVideoMotionPromptPlaceholder}
               className="w-full px-4 py-3 rounded-xl text-sm resize-none focus:outline-none transition-colors"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
               rows={3}
@@ -2667,7 +3023,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>3</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Duration</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.promptVideoDuration}</label>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -2680,7 +3036,7 @@ function VideoGeneration() {
                 {promptVideoDuration === 5 && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
                 <div className="relative flex items-center justify-between">
                   <div>
-                    <span className="font-semibold text-sm text-slate-200">5 seconds</span>
+                    <span className="font-semibold text-sm text-slate-200">{copy.promptVideoDuration5}</span>
                   </div>
                   {promptVideoDuration === 5 && (
                     <div className="w-4 h-4 rounded-full flex items-center justify-center bg-white">
@@ -2699,7 +3055,7 @@ function VideoGeneration() {
                 {promptVideoDuration === 10 && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
                 <div className="relative flex items-center justify-between">
                   <div>
-                    <span className="font-semibold text-sm text-slate-200">10 seconds</span>
+                    <span className="font-semibold text-sm text-slate-200">{copy.promptVideoDuration10}</span>
                   </div>
                   {promptVideoDuration === 10 && (
                     <div className="w-4 h-4 rounded-full flex items-center justify-center bg-white">
@@ -2719,7 +3075,7 @@ function VideoGeneration() {
               data-testid="button-get-credits-prompt-video"
             >
               <CreditCard className="w-4 h-4" />
-              Get Credits <span className="inline-flex items-center gap-0.5 text-red-500">({promptVideoDuration === 5 ? 60 : 100} <Coins className="w-3.5 h-3.5" />)</span>
+              {copy.getCredits} <span className="inline-flex items-center gap-0.5 text-red-500">({promptVideoDuration === 5 ? 60 : 100} <Coins className="w-3.5 h-3.5" />)</span>
             </button>
           ) : (
             <button
@@ -2731,12 +3087,12 @@ function VideoGeneration() {
               {promptVideoGenerating ? (
                 <>
                   <Zap className="w-4 h-4 text-yellow-400" />
-                  Generating...
+                  {copy.generating}
                 </>
               ) : (
                 <>
                   <Zap className="w-4 h-4 text-white" />
-                  Generate <span className="inline-flex items-center gap-0.5 text-yellow-400">{promptVideoDuration === 5 ? 60 : 100} <Coins className="w-3.5 h-3.5" /></span>
+                  {copy.promptVideoAction} <span className="inline-flex items-center gap-0.5 text-yellow-400">{promptVideoDuration === 5 ? 60 : 100} <Coins className="w-3.5 h-3.5" /></span>
                 </>
               )}
             </button>
@@ -2760,7 +3116,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>2</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Source Video</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.faceswapVideoSourceVideo}</label>
             </div>
             <FileUpload type="video" onUpload={handleVideoUpload} preview={sourceVideo} large />
             {videoDuration > 0 && (
@@ -2776,7 +3132,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>3</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Target Gender</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.faceswapVideoTargetGender}</label>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {["all", "male", "female"].map((gender) => (
@@ -2790,7 +3146,7 @@ function VideoGeneration() {
                   {targetGender === gender && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />}
                   {targetGender === gender && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
                   <span className={`relative text-xs font-medium ${targetGender === gender ? 'text-white' : 'text-slate-400'}`}>
-                    {gender.charAt(0).toUpperCase() + gender.slice(1)}
+                    {gender === "female" ? copy.faceswapVideoGenderFemale : gender === "male" ? copy.faceswapVideoGenderMale : copy.talkingHeadLanguageAll}
                   </span>
                 </button>
               ))}
@@ -2805,7 +3161,7 @@ function VideoGeneration() {
               data-testid="button-get-credits-faceswap-video"
             >
               <CreditCard className="w-4 h-4" />
-              Get Credits <span className="inline-flex items-center gap-0.5 text-red-500">({Math.ceil(videoDuration * 10)} <Coins className="w-3.5 h-3.5" />)</span>
+              {copy.getCredits} <span className="inline-flex items-center gap-0.5 text-red-500">({Math.ceil(videoDuration * 10)} <Coins className="w-3.5 h-3.5" />)</span>
             </button>
           ) : (
             <button
@@ -2817,12 +3173,12 @@ function VideoGeneration() {
               {faceSwapGenerating ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  Generating...
+                  {copy.generating}
                 </>
               ) : (
                 <>
                   <RefreshCcw className="w-4 h-4" />
-                  Face Swap <span className="inline-flex items-center gap-0.5 text-yellow-400">{videoDuration > 0 ? <>{Math.ceil(videoDuration * 10)} <Coins className="w-3.5 h-3.5" /></> : <>~ <Coins className="w-3.5 h-3.5" /></>}</span>
+                  {copy.faceswapVideoAction || copy.faceswapAction} <span className="inline-flex items-center gap-0.5 text-yellow-400">{videoDuration > 0 ? <>{Math.ceil(videoDuration * 10)} <Coins className="w-3.5 h-3.5" /></> : <>~ <Coins className="w-3.5 h-3.5" /></>}</span>
                 </>
               )}
             </button>
@@ -2837,7 +3193,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>1</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Portrait Image</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.talkingHeadPortraitImage}</label>
             </div>
             <ImageSourceSelector
               modelId={selectedModel}
@@ -2853,7 +3209,7 @@ function VideoGeneration() {
           <div className="mb-5">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold" style={{ background: 'rgba(203, 213, 225, 0.9)', color: '#0f172a', border: '1px solid rgba(255,255,255,0.2)' }}>2</div>
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Voice</label>
+              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.talkingHeadVoice}</label>
             </div>
 
             {selectedModel ? (
@@ -2863,10 +3219,10 @@ function VideoGeneration() {
                   onClick={() => openVoiceStudioForModel?.(selectedModel)}
                   className="text-[10px] px-2.5 py-1.5 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-200 hover:bg-violet-600/30 transition-colors"
                 >
-                  Open Voice Studio…
+                  {copy.talkingHeadOpenVoiceStudio}
                 </button>
                 {models.find((m) => m.id === selectedModel)?.elevenLabsVoiceId ? (
-                  <span className="text-[10px] text-emerald-400/90">Default model voice ready</span>
+                  <span className="text-[10px] text-emerald-400/90">{copy.talkingHeadDefaultVoiceReady}</span>
                 ) : null}
               </div>
             ) : null}
@@ -2875,8 +3231,8 @@ function VideoGeneration() {
             <div className="mb-3 grid grid-cols-3 gap-2">
               {[
                 { id: "en", label: "English" },
-                { id: "sk", label: "Slovak" },
-                { id: "cs", label: "Czech" },
+                { id: "sk", label: copy.talkingHeadLanguageSk },
+                { id: "cs", label: copy.talkingHeadLanguageCs },
               ].map((lang) => (
                 <button
                   key={lang.id}
@@ -2895,12 +3251,12 @@ function VideoGeneration() {
             {loadingVoices ? (
               <div className="flex items-center justify-center py-4">
                 <div className="w-4 h-4 border-2 border-white/20 border-t-orange-400 rounded-full animate-spin" />
-                <span className="ml-2 text-[11px] text-slate-400">Loading voices...</span>
+                <span className="ml-2 text-[11px] text-slate-400">{copy.talkingHeadVoiceLoading}</span>
               </div>
             ) : sortedVoices.length === 0 ? (
               <div className="text-center py-4">
-                <p className="text-[11px] text-slate-400">{voices.length === 0 ? "No voices available" : "No voices match"}</p>
-                {voices.length === 0 && <button onClick={loadVoices} className="mt-2 text-[10px] text-orange-400 hover:underline">Retry</button>}
+                <p className="text-[11px] text-slate-400">{voices.length === 0 ? copy.talkingHeadVoiceEmpty : copy.talkingHeadVoiceEmpty}</p>
+                {voices.length === 0 && <button onClick={loadVoices} className="mt-2 text-[10px] text-orange-400 hover:underline">{copy.retry}</button>}
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
@@ -3063,7 +3419,7 @@ function VideoGeneration() {
                 method === '2-step' ? 'Recreate Videos' :
                 method === 'prompt' ? 'Prompt Videos' :
                 method === 'talking-head' ? 'Talking Head Videos' :
-                'Face Swap Videos'
+                copy.videoHistoryFaceSwapVideos
               }
               limit={6}
             />
@@ -3534,7 +3890,7 @@ function PromptImageContent({ onGenerationUpdate, models, selectedModel, setSele
               >
                 {enhancing
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Enhancing with AI…</>
-                  : <><Zap className="w-4 h-4" /> Enhance with AI · <span>10</span> <Coins className="w-3.5 h-3.5" /></>
+                  : <><Zap className="w-4 h-4" /> {copy.talkingHeadEnhanceWithAi} · <span>10</span> <Coins className="w-3.5 h-3.5" /></>
                 }
               </button>
             </div>

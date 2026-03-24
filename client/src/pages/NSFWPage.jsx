@@ -95,6 +95,457 @@ const PREVIEW_BADGE_STYLE = {
   color: "#E5E7EB",
 };
 
+const LOCALE_STORAGE_KEY = "app_locale";
+const NSFW_COPY = {
+  en: {
+    galleryEmptyModel: "No images in gallery for this model",
+    galleryPaginationPrev: "Previous",
+    galleryPaginationNext: "Next",
+    galleryLoading: "Loading...",
+    galleryEmpty: "No generations yet",
+    previewClose: "Close preview",
+    previewDownload: "Download",
+    previewDownloadAll: "Download all",
+    previewDownloadSingle: "Download",
+    generationPromptLabel: "Prompt",
+    generationNegativePromptLabel: "Negative prompt",
+    generationBuiltPromptLabel: "Built prompt",
+    badgeLoraName: "LoRA",
+    badgeTriggerWord: "Trigger",
+    badgeLoraStrength: "LoRA strength",
+    badgeClipStrength: "CLIP strength",
+    badgePose: "Pose",
+    badgeMakeup: "Makeup",
+    badgeCum: "Cum",
+    badgeSeed: "Seed",
+    badgeSteps: "Steps",
+    badgeCfg: "CFG",
+    badgeResolution: "Resolution",
+    title: "NSFW Studio",
+    subtitle: "Create adult content with your AI models",
+    tabImages: "Images",
+    tabVideos: "Videos",
+    tabFaceswap: "Face Swap",
+    tabLora: "LoRA Training",
+    sectionSelectModel: "Select Model",
+    sectionMode: "Mode",
+    sectionPrompt: "Prompt",
+    sectionNegativePrompt: "Negative Prompt",
+    sectionResolution: "Resolution",
+    sectionQuantity: "Quantity",
+    modeQuality: "Quality",
+    modeSpeed: "Speed",
+    modeCustom: "Custom",
+    promptPlaceholder: "Describe what you want to generate...",
+    negativePromptPlaceholder: "What to avoid...",
+    buttonGenerate: "Generate",
+    buttonGenerating: "Generating...",
+    toastSelectModel: "Please select a model",
+    toastEnterPrompt: "Please enter a prompt",
+    toastNotEnoughCredits: "Not enough credits",
+    toastGenerationFailed: "Generation failed",
+    toastGenerationStarted: "Generation started!",
+    videoSectionSourceImage: "Source Image",
+    videoSectionPrompt: "Motion Prompt",
+    videoSectionDuration: "Duration",
+    videoButtonGenerate: "Generate Video",
+    videoButtonGenerating: "Generating...",
+    videoToastSelectModel: "Please select a model",
+    videoToastUploadSource: "Please upload a source image",
+    videoToastEnterPrompt: "Please enter a motion prompt",
+    videoToastNotEnoughCredits: "Not enough credits",
+    videoToastFailed: "Failed to generate video",
+    faceswapSectionTarget: "Target Image",
+    faceswapSectionSource: "Source Face",
+    faceswapButtonGenerate: "Swap Face",
+    faceswapButtonGenerating: "Swapping...",
+    faceswapToastMissingImages: "Please upload both target and source images",
+    faceswapToastFailed: "Face swap failed",
+    faceswapToastStarted: "Face swap started!",
+    loraSectionTitle: "Train LoRA",
+    loraSectionModelName: "Model Name",
+    loraSectionImages: "Training Images",
+    loraSectionTriggerWord: "Trigger Word",
+    loraSectionSteps: "Steps",
+    loraSectionCaptioning: "Auto Captioning",
+    loraPlaceholderModelName: "Enter LoRA model name",
+    loraPlaceholderTriggerWord: "e.g. mymodel",
+    loraButtonTrain: "Start Training",
+    loraButtonTraining: "Training...",
+    loraToastMissingFields: "Please fill required fields",
+    loraToastNeedImages: "Please upload training images",
+    loraToastFailed: "LoRA training failed",
+    loraToastStarted: "LoRA training started!",
+    historyTitle: "Generation History",
+    historyEmpty: "No history yet",
+    historyLoading: "Loading...",
+    historyRetry: "Retry",
+    historyRefresh: "Refresh",
+    filterAll: "All",
+    filterImages: "Images",
+    filterVideos: "Videos",
+    filterFaceswap: "Face Swap",
+    filterLora: "LoRA",
+    buttonGetCredits: "Get Credits",
+    labelCredits: "Credits",
+    labelCost: "Cost",
+    labelEstimatedTime: "Estimated time",
+    needAccess: "Need Access?",
+    phaseTrainModel: "Train Model",
+    phaseCreateLora: "Create LoRA",
+    phaseGenerate: "Generate",
+    phaseNsfwReady: "NSFW Ready",
+    phaseTrainFirst: "Train first",
+    phaseVideo: "Video",
+    phaseImageToVideo: "Image to Video",
+    phaseImg2img: "Img2Img",
+    phasePhotoSwap: "Photo swap",
+    manageLoras: "Manage LoRAs",
+    modelSelectorCount: "models",
+    loadingModelsTitle: "Loading your models...",
+    loadingModelsWait: "Please wait",
+    loadModelsFailedTitle: "Couldn't load your models",
+    loadModelsFailedBody: "This can happen if the connection dropped. Please try again.",
+    loadModelsRetry: "Retry loading models",
+    noVerifiedModelsTitle: "No Verified Models Available",
+    noVerifiedModelsBody: "Create an AI model or verify a real person model to use NSFW features",
+    noVerifiedModelsCta: "Learn about verification options ->",
+    creditsPanelTitle: "Credit Costs",
+    creditsPanelLoraTraining: "LoRA Training",
+    creditsPanelNsfwImage: "NSFW Image",
+    creditsPanelFaceSwap: "+ Face Swap",
+    creditsPanelNsfwVideo: "NSFW Video",
+    creditsPanelRetryFailed: "Retry Failed",
+    yourVideos: "Your Videos",
+    loraCreateAction: "Create LoRA",
+    loraEmptyTitle: "No LoRAs yet",
+    loraEmptyBody: "Create a new LoRA to start training",
+    trainingStatusChecking: "Checking training status...",
+    trainingHintCreateLora: "Click \"New LoRA\" above to start training",
+    trainingHintAwaitingImages: "Or click an existing LoRA in \"Awaiting Images\" status to add images",
+    faceSwapGalleryHint: "Generate images first, then select one for face swap",
+    faceSwapSelectSource: "Select source image for face swap:",
+    galleryGenerateFirstAbove: "Generate your first image above",
+    videoAnimateHint: "Choose an NSFW image to animate",
+    trainingInProgressTitle: "Training in Progress",
+    trainingCompleteTitle: "LoRA Training Complete!",
+    trainingCompleteBody: "Switch to Generate tab to create NSFW content",
+    trainingFailedTitle: "Training Failed",
+    trainingFailedBody: "Please try again or contact support",
+    i2iSourcePhoto: "Source Photo",
+    sourceGallery: "Gallery",
+    sourceUpload: "Upload",
+    i2iPickPhoto: "Click to pick a photo",
+    i2iImageLoaded: "Image loaded",
+    i2iGalleryLoading: "Loading gallery...",
+    i2iNoGeneratedYet: "No generated images yet - generate some on the Generate tab first.",
+    i2iSelectedFromGallery: "Selected from gallery",
+    i2iAnalyzePhoto: "Analyze Photo",
+    i2iReanalyze: "Re-analyze",
+    i2iAnalyzing: "Analyzing...",
+    i2iEditPrompt: "Edit Prompt",
+    i2iModifyHint: "modify before generation",
+    i2iInjectedPromptPlaceholder: "Injected prompt will appear here...",
+    i2iEditFreelyHint: "Edit freely - trigger word, pose, scene, attire, anatomy.",
+    i2iProcessingQueue: "Processing Queue",
+    i2iView: "View",
+    i2iResult: "Result",
+    i2iProcessing: "Processing...",
+    loraLoading: "Loading LoRAs...",
+    loraListTitle: "Your LoRAs",
+    loraNew: "New LoRA",
+    loraNamePlaceholder: "LoRA name (e.g., v2-lingerie)",
+    loraTrainingMode: "Training Mode",
+    loraStandard: "Standard",
+    loraTime1h: "~1h to finish",
+    loraTime2h: "~2h to finish",
+    loraDefaultAppearance: "Default Appearance",
+    loraAppearanceHint: "Pre-filled from model looks. Edit or add Custom per category.",
+    custom: "Custom",
+    customTypePlaceholder: "Type custom...",
+    loraStatusActive: "Active",
+    loraStatusSettingUp: "Setting Up",
+    loraLegacyHint: "Old model - please train a new one",
+    loraTrainedOn: "Trained",
+    loraSetActive: "Set Active",
+    loraEditLook: "Edit Look",
+    loraSetLook: "Set Look",
+    loraDetecting: "Detecting...",
+    loraAutoDetect: "Auto-detect",
+    loraAppearanceSaved: "LoRA appearance saved",
+    loraSaveFailedPrefix: "Failed to save:",
+    loraDetectCouldNot: "Could not detect appearance",
+    loraDetectFailedPrefix: "Auto-detect failed:",
+    trainingNeedNewLora: "Please create a New LoRA first before training.",
+    trainingRetry: "Retry Training",
+    trainingProModeTitle: "Pro Training Mode - 30 Curated Images",
+    trainingProDurationHint: "Pro LoRA training takes about 2 hours to finish.",
+    trainingBasicDurationHint: "Basic LoRA training takes about 1 hour to finish.",
+    toastNoActiveLoraTrigger: "No active LoRA with a trigger word found.",
+    toastImageAnalysisTimedOut: "Image analysis timed out",
+    toastAnalysisFailedPrefix: "Analysis failed:",
+    toastActiveLoraNoFile: "Active LoRA has no file URL.",
+    toastGenerationQueued: "Generation queued - you can generate again while it processes.",
+    toastSubmitFailedPrefix: "Submit failed:",
+    toastSelectOrCreateLora: "Select or create a LoRA first",
+    toastMaxImagesSelected: "Maximum images already selected",
+    toastEnterLoraName: "Enter a name for your LoRA",
+    toastAppearanceSaved: "Appearance saved",
+    toastFailedSaveAppearance: "Failed to save appearance",
+    toastSettingsSaved: "Settings saved!",
+    toastFailedSaveSettings: "Failed to save settings",
+    toastSettingsReset: "Settings reset to defaults",
+    toastActiveLoraUpdated: "Active LoRA updated!",
+    toastLoraDeleted: "LoRA deleted",
+    toastImagesAssignedTraining: "Images assigned! Starting LoRA training...",
+    toastNoLoraSelectedTraining: "No LoRA selected for training",
+    toastDescribeSceneFirst: "Describe what you want or pick a preset first",
+    toastSceneReady: "Scene ready - choose resolution and generate",
+    toastPromptGenerated: "Prompt generated!",
+    toastTypeSceneFirst: "Type a scene description first",
+    toastCompleteLoraTrainingFirst: "Please complete LoRA training first",
+    toastSelectModelAndPose: "Select a model and at least one pose",
+    labelGenerate: "Generate",
+    labelFree: "FREE",
+    labelLoraStrength: "LoRA Strength",
+    labelDenoise: "Denoise",
+    labelTrainingImages: "Training Images",
+    labelQuantity: "Quantity:",
+  },
+  ru: {
+    galleryEmptyModel: "Нет изображений в галерее для этой модели",
+    galleryPaginationPrev: "Назад",
+    galleryPaginationNext: "Вперёд",
+    galleryLoading: "Загрузка...",
+    galleryEmpty: "Генераций пока нет",
+    previewClose: "Закрыть просмотр",
+    previewDownload: "Скачать",
+    previewDownloadAll: "Скачать все",
+    previewDownloadSingle: "Скачать",
+    generationPromptLabel: "Промпт",
+    generationNegativePromptLabel: "Негативный промпт",
+    generationBuiltPromptLabel: "Собранный промпт",
+    badgeLoraName: "LoRA",
+    badgeTriggerWord: "Триггер",
+    badgeLoraStrength: "Сила LoRA",
+    badgeClipStrength: "Сила CLIP",
+    badgePose: "Поза",
+    badgeMakeup: "Макияж",
+    badgeCum: "Сперма",
+    badgeSeed: "Сид",
+    badgeSteps: "Шаги",
+    badgeCfg: "CFG",
+    badgeResolution: "Разрешение",
+    title: "NSFW-студия",
+    subtitle: "Создавайте контент для взрослых с вашими ИИ-моделями",
+    tabImages: "Изображения",
+    tabVideos: "Видео",
+    tabFaceswap: "Замена лица",
+    tabLora: "Обучение LoRA",
+    sectionSelectModel: "Выбор модели",
+    sectionMode: "Режим",
+    sectionPrompt: "Промпт",
+    sectionNegativePrompt: "Негативный промпт",
+    sectionResolution: "Разрешение",
+    sectionQuantity: "Количество",
+    modeQuality: "Качество",
+    modeSpeed: "Скорость",
+    modeCustom: "Пользовательский",
+    promptPlaceholder: "Опишите, что хотите создать...",
+    negativePromptPlaceholder: "Что исключить...",
+    buttonGenerate: "Создать",
+    buttonGenerating: "Генерация...",
+    toastSelectModel: "Пожалуйста, выберите модель",
+    toastEnterPrompt: "Пожалуйста, введите промпт",
+    toastNotEnoughCredits: "Недостаточно кредитов",
+    toastGenerationFailed: "Ошибка генерации",
+    toastGenerationStarted: "Генерация запущена!",
+    videoSectionSourceImage: "Исходное изображение",
+    videoSectionPrompt: "Промпт движения",
+    videoSectionDuration: "Длительность",
+    videoButtonGenerate: "Создать видео",
+    videoButtonGenerating: "Генерация...",
+    videoToastSelectModel: "Пожалуйста, выберите модель",
+    videoToastUploadSource: "Пожалуйста, загрузите исходное изображение",
+    videoToastEnterPrompt: "Пожалуйста, введите промпт движения",
+    videoToastNotEnoughCredits: "Недостаточно кредитов",
+    videoToastFailed: "Не удалось создать видео",
+    faceswapSectionTarget: "Целевое изображение",
+    faceswapSectionSource: "Исходное лицо",
+    faceswapButtonGenerate: "Заменить лицо",
+    faceswapButtonGenerating: "Замена...",
+    faceswapToastMissingImages: "Пожалуйста, загрузите целевое и исходное изображения",
+    faceswapToastFailed: "Ошибка замены лица",
+    faceswapToastStarted: "Замена лица запущена!",
+    loraSectionTitle: "Обучить LoRA",
+    loraSectionModelName: "Название модели",
+    loraSectionImages: "Обучающие изображения",
+    loraSectionTriggerWord: "Триггерное слово",
+    loraSectionSteps: "Шаги",
+    loraSectionCaptioning: "Автоматические подписи",
+    loraPlaceholderModelName: "Введите название LoRA-модели",
+    loraPlaceholderTriggerWord: "например, mymodel",
+    loraButtonTrain: "Начать обучение",
+    loraButtonTraining: "Обучение...",
+    loraToastMissingFields: "Пожалуйста, заполните обязательные поля",
+    loraToastNeedImages: "Пожалуйста, загрузите обучающие изображения",
+    loraToastFailed: "Ошибка обучения LoRA",
+    loraToastStarted: "Обучение LoRA запущено!",
+    historyTitle: "История генераций",
+    historyEmpty: "История пока пуста",
+    historyLoading: "Загрузка...",
+    historyRetry: "Повторить",
+    historyRefresh: "Обновить",
+    filterAll: "Все",
+    filterImages: "Изображения",
+    filterVideos: "Видео",
+    filterFaceswap: "Замена лица",
+    filterLora: "LoRA",
+    buttonGetCredits: "Получить кредиты",
+    labelCredits: "Кредиты",
+    labelCost: "Стоимость",
+    labelEstimatedTime: "Примерное время",
+    needAccess: "Нужен доступ?",
+    phaseTrainModel: "Обучение модели",
+    phaseCreateLora: "Создать LoRA",
+    phaseGenerate: "Генерация",
+    phaseNsfwReady: "NSFW готово",
+    phaseTrainFirst: "Сначала обучите",
+    phaseVideo: "Видео",
+    phaseImageToVideo: "Изображение в видео",
+    phaseImg2img: "Img2Img",
+    phasePhotoSwap: "Замена по фото",
+    manageLoras: "Управление LoRA",
+    modelSelectorCount: "моделей",
+    loadingModelsTitle: "Загружаем ваши модели...",
+    loadingModelsWait: "Пожалуйста, подождите",
+    loadModelsFailedTitle: "Не удалось загрузить ваши модели",
+    loadModelsFailedBody: "Такое бывает при обрыве соединения. Попробуйте снова.",
+    loadModelsRetry: "Повторить загрузку моделей",
+    noVerifiedModelsTitle: "Нет верифицированных моделей",
+    noVerifiedModelsBody: "Создайте ИИ-модель или верифицируйте реальную модель, чтобы использовать NSFW-функции",
+    noVerifiedModelsCta: "Подробнее о вариантах верификации ->",
+    creditsPanelTitle: "Стоимость в кредитах",
+    creditsPanelLoraTraining: "Обучение LoRA",
+    creditsPanelNsfwImage: "NSFW изображение",
+    creditsPanelFaceSwap: "+ Замена лица",
+    creditsPanelNsfwVideo: "NSFW видео",
+    creditsPanelRetryFailed: "Повтор ошибки",
+    yourVideos: "Ваши видео",
+    loraCreateAction: "Создать LoRA",
+    loraEmptyTitle: "Пока нет LoRA",
+    loraEmptyBody: "Создайте новую LoRA, чтобы начать обучение",
+    trainingStatusChecking: "Проверяем статус обучения...",
+    trainingHintCreateLora: "Нажмите \"New LoRA\" выше, чтобы начать обучение",
+    trainingHintAwaitingImages: "Или выберите существующую LoRA в статусе \"Awaiting Images\", чтобы добавить изображения",
+    faceSwapGalleryHint: "Сначала сгенерируйте изображения, затем выберите одно для замены лица",
+    faceSwapSelectSource: "Выберите исходное изображение для замены лица:",
+    galleryGenerateFirstAbove: "Сначала сгенерируйте первое изображение выше",
+    videoAnimateHint: "Выберите NSFW-изображение для анимации",
+    trainingInProgressTitle: "Обучение в процессе",
+    trainingCompleteTitle: "Обучение LoRA завершено!",
+    trainingCompleteBody: "Переключитесь на вкладку генерации, чтобы создавать NSFW-контент",
+    trainingFailedTitle: "Обучение не удалось",
+    trainingFailedBody: "Пожалуйста, попробуйте снова или обратитесь в поддержку",
+    i2iSourcePhoto: "Исходное фото",
+    sourceGallery: "Галерея",
+    sourceUpload: "Загрузить",
+    i2iPickPhoto: "Нажмите, чтобы выбрать фото",
+    i2iImageLoaded: "Изображение загружено",
+    i2iGalleryLoading: "Загрузка галереи...",
+    i2iNoGeneratedYet: "Пока нет сгенерированных изображений - сначала создайте их во вкладке генерации.",
+    i2iSelectedFromGallery: "Выбрано из галереи",
+    i2iAnalyzePhoto: "Анализ фото",
+    i2iReanalyze: "Повторный анализ",
+    i2iAnalyzing: "Анализ...",
+    i2iEditPrompt: "Редактировать промпт",
+    i2iModifyHint: "измените перед генерацией",
+    i2iInjectedPromptPlaceholder: "Здесь появится встроенный промпт...",
+    i2iEditFreelyHint: "Редактируйте свободно - триггер, поза, сцена, одежда, анатомия.",
+    i2iProcessingQueue: "Очередь обработки",
+    i2iView: "Открыть",
+    i2iResult: "Результат",
+    i2iProcessing: "Обработка...",
+    loraLoading: "Загрузка LoRA...",
+    loraListTitle: "Ваши LoRA",
+    loraNew: "Новая LoRA",
+    loraNamePlaceholder: "Название LoRA (напр., v2-lingerie)",
+    loraTrainingMode: "Режим обучения",
+    loraStandard: "Стандарт",
+    loraTime1h: "~1ч до готовности",
+    loraTime2h: "~2ч до готовности",
+    loraDefaultAppearance: "Базовая внешность",
+    loraAppearanceHint: "Предзаполнено из внешности модели. Измените или добавьте \"Другое\" по категориям.",
+    custom: "Другое",
+    customTypePlaceholder: "Введите свой вариант...",
+    loraStatusActive: "Активна",
+    loraStatusSettingUp: "Настройка",
+    loraLegacyHint: "Старая модель - пожалуйста, обучите новую",
+    loraTrainedOn: "Обучена",
+    loraSetActive: "Сделать активной",
+    loraEditLook: "Изменить внешность",
+    loraSetLook: "Задать внешность",
+    loraDetecting: "Определение...",
+    loraAutoDetect: "Автоопределение",
+    loraAppearanceSaved: "Внешность LoRA сохранена",
+    loraSaveFailedPrefix: "Не удалось сохранить:",
+    loraDetectCouldNot: "Не удалось определить внешность",
+    loraDetectFailedPrefix: "Ошибка автоопределения:",
+    trainingNeedNewLora: "Пожалуйста, сначала создайте новую LoRA перед обучением.",
+    trainingRetry: "Повторить обучение",
+    trainingProModeTitle: "Режим Pro - 30 отобранных изображений",
+    trainingProDurationHint: "Обучение Pro LoRA занимает около 2 часов.",
+    trainingBasicDurationHint: "Обучение базовой LoRA занимает около 1 часа.",
+    toastNoActiveLoraTrigger: "Не найдена активная LoRA с триггерным словом.",
+    toastImageAnalysisTimedOut: "Время анализа изображения истекло",
+    toastAnalysisFailedPrefix: "Ошибка анализа:",
+    toastActiveLoraNoFile: "У активной LoRA нет URL файла.",
+    toastGenerationQueued: "Генерация поставлена в очередь - можно запускать следующую.",
+    toastSubmitFailedPrefix: "Ошибка отправки:",
+    toastSelectOrCreateLora: "Выберите или создайте LoRA",
+    toastMaxImagesSelected: "Достигнут максимум выбранных изображений",
+    toastEnterLoraName: "Введите название LoRA",
+    toastAppearanceSaved: "Внешность сохранена",
+    toastFailedSaveAppearance: "Не удалось сохранить внешность",
+    toastSettingsSaved: "Настройки сохранены!",
+    toastFailedSaveSettings: "Не удалось сохранить настройки",
+    toastSettingsReset: "Настройки сброшены к значениям по умолчанию",
+    toastActiveLoraUpdated: "Активная LoRA обновлена!",
+    toastLoraDeleted: "LoRA удалена",
+    toastImagesAssignedTraining: "Изображения назначены! Запускаем обучение LoRA...",
+    toastNoLoraSelectedTraining: "Для обучения не выбрана LoRA",
+    toastDescribeSceneFirst: "Опишите сцену или выберите пресет",
+    toastSceneReady: "Сцена готова - выберите разрешение и запустите генерацию",
+    toastPromptGenerated: "Промпт сгенерирован!",
+    toastTypeSceneFirst: "Сначала опишите сцену",
+    toastCompleteLoraTrainingFirst: "Сначала завершите обучение LoRA",
+    toastSelectModelAndPose: "Выберите модель и хотя бы одну позу",
+    labelGenerate: "Создать",
+    labelFree: "БЕСПЛАТНО",
+    labelLoraStrength: "Сила LoRA",
+    labelDenoise: "Шумоподавление",
+    labelTrainingImages: "Обучающие изображения",
+    labelQuantity: "Количество:",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 function useMainViewportBounds() {
   const [bounds, setBounds] = useState({ left: 0, width: null });
 
@@ -146,6 +597,7 @@ function useMainViewportBounds() {
 // SECURITY: Only shows images generated for the selected model
 // ============================================
 function NsfwFaceSwapGalleryPicker({ modelId, selectedImage, onSelect }) {
+  const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
   const { all: allGenerations } = useGenerations("all");
   
   const modelImages = allGenerations.filter(g => 
@@ -159,15 +611,15 @@ function NsfwFaceSwapGalleryPicker({ modelId, selectedImage, onSelect }) {
     return (
       <div className="mt-3 p-4 rounded-lg text-center" style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.1)' }}>
         <ImageIcon className="w-6 h-6 text-slate-600 mx-auto mb-2" />
-        <p className="text-xs text-slate-500">No images in gallery for this model</p>
-        <p className="text-[10px] text-slate-600 mt-1">Generate images first, then select one for face swap</p>
+        <p className="text-xs text-slate-500">{copy.galleryEmptyModel}</p>
+        <p className="text-[10px] text-slate-600 mt-1">{copy.faceSwapGalleryHint}</p>
       </div>
     );
   }
 
   return (
     <div className="mt-3">
-      <p className="text-[10px] text-slate-500 mb-2">Select source image for face swap:</p>
+      <p className="text-[10px] text-slate-500 mb-2">{copy.faceSwapSelectSource}</p>
       <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5">
         {modelImages.slice(0, 18).map((gen) => (
           <button
@@ -211,6 +663,7 @@ function NsfwFaceSwapGalleryPicker({ modelId, selectedImage, onSelect }) {
 // NSFW Gallery - Full image gallery with grid, preview, download, pagination
 // ============================================
 function NsfwGallery({ modelId }) {
+  const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
   const [page, setPage] = useState(1);
   const pageSize = 24;
   const { data, isLoading, processingCount } = useNsfwGallery(modelId, page, pageSize);
@@ -276,6 +729,8 @@ function NsfwGallery({ modelId }) {
               className="p-1.5 rounded-lg text-slate-400 disabled:opacity-30 transition-colors"
               style={{ background: "rgba(255,255,255,0.05)" }}
               data-testid="button-gallery-prev"
+              aria-label={copy.galleryPaginationPrev}
+              title={copy.galleryPaginationPrev}
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -288,6 +743,8 @@ function NsfwGallery({ modelId }) {
               className="p-1.5 rounded-lg text-slate-400 disabled:opacity-30 transition-colors"
               style={{ background: "rgba(255,255,255,0.05)" }}
               data-testid="button-gallery-next"
+              aria-label={copy.galleryPaginationNext}
+              title={copy.galleryPaginationNext}
             >
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
@@ -320,8 +777,8 @@ function NsfwGallery({ modelId }) {
           >
             <ImageIcon className="w-6 h-6 text-slate-600" />
           </div>
-          <p className="text-[12px] text-slate-500">No images generated yet</p>
-          <p className="text-[10px] text-slate-600 mt-1">Generate your first image above</p>
+          <p className="text-[12px] text-slate-500">{copy.galleryEmpty}</p>
+          <p className="text-[10px] text-slate-600 mt-1">{copy.galleryGenerateFirstAbove}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
@@ -392,6 +849,8 @@ function NsfwGallery({ modelId }) {
               className="absolute top-3 right-3 z-10 p-2 rounded-full transition-all"
               style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.2)" }}
               data-testid="button-close-preview"
+              aria-label={copy.previewClose}
+              title={copy.previewClose}
             >
               <X className="w-5 h-5 text-white" />
             </button>
@@ -456,7 +915,7 @@ function NsfwGallery({ modelId }) {
                   <>
                     {previewGen.prompt && (
                       <div className="mb-2">
-                        <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Prompt</p>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">{copy.generationPromptLabel}</p>
                         <p className="text-[11px] text-slate-300 leading-relaxed" data-testid="text-preview-prompt">
                           {previewGen.prompt}
                         </p>
@@ -468,48 +927,49 @@ function NsfwGallery({ modelId }) {
                           {(loraInfo.loraName || loraInfo.triggerWord) && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-lora-name">
                               <Layers className="w-3 h-3" />
+                              {copy.badgeLoraName}:
                               {loraInfo.loraName || loraInfo.triggerWord}
                             </span>
                           )}
                           {loraInfo.triggerWord && loraInfo.loraName && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-trigger-word">
-                              {loraInfo.triggerWord}
+                              {copy.badgeTriggerWord}: {loraInfo.triggerWord}
                             </span>
                           )}
                           {(loraInfo.girlLoraStrength != null || loraInfo.loraStrength != null) && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-lora-strength">
                               <Zap className="w-3 h-3" />
-                              Girl {loraInfo.girlLoraStrength ?? loraInfo.loraStrength}
+                              {copy.badgeLoraStrength} {loraInfo.girlLoraStrength ?? loraInfo.loraStrength}
                             </span>
                           )}
                           {loraInfo.clipStrength != null && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-clip-strength">
-                              CLIP {loraInfo.clipStrength}
+                              {copy.badgeClipStrength} {loraInfo.clipStrength}
                             </span>
                           )}
                           {loraInfo.activePose && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-pose">
-                              Pose: {loraInfo.activePose.replace(/_/g, " ")} @ {loraInfo.activePoseStrength}
+                              {copy.badgePose}: {loraInfo.activePose.replace(/_/g, " ")} @ {loraInfo.activePoseStrength}
                             </span>
                           )}
                           {loraInfo.runningMakeup && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-makeup">
-                              Makeup @ {loraInfo.runningMakeupStrength}
+                              {copy.badgeMakeup} @ {loraInfo.runningMakeupStrength}
                             </span>
                           )}
                           {loraInfo.cumEffect && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-cum">
-                              Cum FX
+                              {copy.badgeCum}
                             </span>
                           )}
                           {loraInfo.seed != null && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-seed">
-                              Seed {loraInfo.seed}
+                              {copy.badgeSeed} {loraInfo.seed}
                             </span>
                           )}
                           {loraInfo.steps != null && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-steps">
-                              {loraInfo.steps} steps
+                              {loraInfo.steps} {copy.badgeSteps}
                             </span>
                           )}
                           {loraInfo.cfg != null && (
@@ -519,14 +979,14 @@ function NsfwGallery({ modelId }) {
                           )}
                           {loraInfo.width && loraInfo.height && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium" style={PREVIEW_BADGE_STYLE} data-testid="badge-resolution">
-                              {loraInfo.width}x{loraInfo.height}
+                              {copy.badgeResolution} {loraInfo.width}x{loraInfo.height}
                             </span>
                           )}
                         </div>
                         {loraInfo.negativePrompt && (
                           <details className="mb-2">
                             <summary className="text-[10px] uppercase tracking-wider text-slate-500 cursor-pointer select-none">
-                              Negative Prompt
+                              {copy.generationNegativePromptLabel}
                             </summary>
                             <p className="text-[10px] text-slate-400 leading-relaxed mt-1" data-testid="text-negative-prompt">
                               {loraInfo.negativePrompt}
@@ -536,7 +996,7 @@ function NsfwGallery({ modelId }) {
                         {loraInfo.builtPrompt && (
                           <details className="mb-2">
                             <summary className="text-[10px] uppercase tracking-wider text-slate-500 cursor-pointer select-none">
-                              Full Built Prompt
+                              {copy.generationBuiltPromptLabel}
                             </summary>
                             <p className="text-[10px] text-slate-400 leading-relaxed mt-1" data-testid="text-built-prompt">
                               {loraInfo.builtPrompt}
@@ -562,7 +1022,7 @@ function NsfwGallery({ modelId }) {
                             data-testid="button-download-all"
                           >
                             <Download className="w-3.5 h-3.5" />
-                            All
+                            {copy.previewDownloadAll}
                           </button>
                         )}
                         <button
@@ -571,7 +1031,7 @@ function NsfwGallery({ modelId }) {
                           data-testid="button-download-single"
                         >
                           <Download className="w-3.5 h-3.5 text-black" />
-                          Download
+                          {copy.previewDownloadSingle}
                         </button>
                       </div>
                     </div>
@@ -591,6 +1051,7 @@ function NsfwGallery({ modelId }) {
 // NSFW Img2Img Tab — Photo-to-Photo with LoRA
 // ============================================
 function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
+  const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
   const { refreshUserCredits } = useAuthStore();
   const { draft: i2iDraft, isLoading: i2iDraftLoading, saveDraft: saveI2iDraft, clearDraft: clearI2iDraft } = useDraft("nsfw-img2img");
   const i2iDraftRestoredRef = useRef(false);
@@ -715,7 +1176,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
   const handleAnalyze = async () => {
     if (!hasSource) return;
     if (!activeLoraObj?.triggerWord && !activeLoraObj?.loraTriggerWord) {
-      toast.error("No active LoRA with a trigger word found.");
+      toast.error(copy.toastNoActiveLoraTrigger);
       return;
     }
     setIsAnalyzing(true);
@@ -778,7 +1239,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
           if (attempts > maxPolls) {
             setIsAnalyzing(false);
             setAnalyzeError("Analysis timed out. Please try again.");
-            toast.error("Image analysis timed out");
+            toast.error(copy.toastImageAnalysisTimedOut);
             return;
           }
           try {
@@ -790,7 +1251,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
             } else if (status === "failed") {
               setIsAnalyzing(false);
               setAnalyzeError(error || "Analysis failed");
-              toast.error("Analysis failed: " + (error || "Unknown error"));
+              toast.error(`${copy.toastAnalysisFailedPrefix} ${error || "Unknown error"}`);
             } else {
               setTimeout(pollDescribe, 3000);
             }
@@ -813,7 +1274,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
         ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
         : (errData?.error || err.message);
       setAnalyzeError(msg);
-      toast.error("Analysis failed: " + msg);
+      toast.error(`${copy.toastAnalysisFailedPrefix} ${msg}`);
       setIsAnalyzing(false);
     }
   };
@@ -891,7 +1352,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
           refreshUserCredits();
         } else if (status === "failed") {
           clearInterval(pollRef.current);
-          setGenError(error || "Generation failed");
+          setGenError(error || copy.toastGenerationFailed);
           setIsGenerating(false);
         }
       } catch (err) {
@@ -913,7 +1374,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
   const handleGenerate = async () => {
     if (!hasSource || !editablePrompt.trim()) return;
     if (!activeLoraObj?.loraUrl) {
-      toast.error("Active LoRA has no file URL.");
+      toast.error(copy.toastActiveLoraNoFile);
       return;
     }
     setIsGenerating(true);
@@ -942,7 +1403,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
       setOutputUrl(null);
       setJobStatus(null);
       setIsGenerating(false);
-      toast.success("Generation queued — you can generate again while it processes.");
+      toast.success(copy.toastGenerationQueued);
     } catch (err) {
       const errData = err.response?.data;
       const msg = errData?.errors?.length
@@ -951,7 +1412,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
       setGenError(msg);
       setIsGenerating(false);
       setJobStatus(null);
-      toast.error("Submit failed: " + msg);
+      toast.error(`${copy.toastSubmitFailedPrefix} ${msg}`);
     }
   };
 
@@ -987,19 +1448,19 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
         {/* Mode tabs */}
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-white">Source Photo</span>
+          <span className="text-sm font-medium text-white">{copy.i2iSourcePhoto}</span>
           <div className="flex gap-1 bg-white/[0.04] rounded-lg p-0.5">
             <button
               onClick={() => { setSourceMode("gallery"); setUploadedBase64(null); setUploadedPreview(null); }}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${sourceMode === "gallery" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}`}
             >
-              Gallery
+              {copy.sourceGallery}
             </button>
             <button
               onClick={() => { setSourceMode("upload"); setSourceImageUrl(null); }}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${sourceMode === "upload" ? "bg-white/10 text-white" : "text-slate-400 hover:text-white"}`}
             >
-              Upload
+              {copy.sourceUpload}
             </button>
           </div>
         </div>
@@ -1031,12 +1492,12 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
                 data-testid="button-i2i-pick-file"
               >
                 <ImageIcon className="w-8 h-8" />
-                <span className="text-sm">Click to pick a photo</span>
+                <span className="text-sm">{copy.i2iPickPhoto}</span>
                 <span className="text-xs text-slate-500">JPG · PNG · WebP</span>
               </button>
             )}
             {uploadedBase64 && !uploadedPreview && (
-              <p className="text-xs text-emerald-400">Image loaded</p>
+              <p className="text-xs text-emerald-400">{copy.i2iImageLoaded}</p>
             )}
           </div>
         ) : (
@@ -1044,10 +1505,10 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
             {imagesLoading ? (
               <div className="flex items-center gap-2 text-slate-400 text-sm py-3">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Loading gallery…</span>
+                <span>{copy.i2iGalleryLoading}</span>
               </div>
             ) : sourceImages.length === 0 ? (
-              <p className="text-slate-500 text-sm py-2">No generated images yet — generate some on the Generate tab first.</p>
+              <p className="text-slate-500 text-sm py-2">{copy.i2iNoGeneratedYet}</p>
             ) : (
               <>
                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
@@ -1091,7 +1552,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
               <div className="flex items-center gap-3 pt-1">
                 <img src={sourceImageUrl} alt="source" className="w-14 h-14 object-cover rounded-lg flex-shrink-0 border border-white/10" />
                 <div className="text-xs text-slate-400 min-w-0">
-                  <p className="text-slate-300 font-medium">Selected from gallery</p>
+                  <p className="text-slate-300 font-medium">{copy.i2iSelectedFromGallery}</p>
                   <p className="truncate">{sourceImageUrl.split("/").pop()}</p>
                 </div>
               </div>
@@ -1106,8 +1567,8 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
           <div className="w-5 h-5 rounded-full bg-white/90 flex items-center justify-center flex-shrink-0">
             <span className="text-black text-[10px] font-bold">1</span>
           </div>
-          <span className="text-sm font-medium text-white">Analyze Photo</span>
-          <span className="text-xs text-slate-400 ml-1">FREE</span>
+          <span className="text-sm font-medium text-white">{copy.i2iAnalyzePhoto}</span>
+          <span className="text-xs text-slate-400 ml-1">{copy.labelFree}</span>
         </div>
 
         <button
@@ -1123,9 +1584,9 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
           }}
         >
           {isAnalyzing ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /><span>Analyzing…</span></>
+            <><Loader2 className="w-4 h-4 animate-spin" /><span>{copy.i2iAnalyzing}</span></>
           ) : (
-            <><ScanSearch className="w-4 h-4" /><span>{editablePrompt ? "Re-analyze" : "Analyze Photo"}</span></>
+            <><ScanSearch className="w-4 h-4" /><span>{editablePrompt ? copy.i2iReanalyze : copy.i2iAnalyzePhoto}</span></>
           )}
         </button>
 
@@ -1142,8 +1603,8 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
             <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
               <span className="text-emerald-400 text-[10px] font-bold">2</span>
             </div>
-            <span className="text-sm font-medium text-white">Edit Prompt</span>
-            <span className="text-xs text-slate-500 ml-1">— modify before generation</span>
+            <span className="text-sm font-medium text-white">{copy.i2iEditPrompt}</span>
+            <span className="text-xs text-slate-500 ml-1">- {copy.i2iModifyHint}</span>
           </div>
 
           <textarea
@@ -1152,12 +1613,12 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
             rows={6}
             data-testid="textarea-i2i-prompt"
             className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/40 resize-y leading-relaxed"
-            placeholder="Injected prompt will appear here…"
+            placeholder={copy.i2iInjectedPromptPlaceholder}
           />
 
           <div className="flex items-center gap-2">
             <Edit3 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-            <p className="text-xs text-slate-500">Edit freely — trigger word, pose, scene, attire, anatomy.</p>
+            <p className="text-xs text-slate-500">{copy.i2iEditFreelyHint}</p>
           </div>
         </div>
       )}
@@ -1169,13 +1630,13 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
             <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
               <span className="text-red-400 text-[10px] font-bold">3</span>
             </div>
-            <span className="text-sm font-medium text-white">Generate</span>
+            <span className="text-sm font-medium text-white">{copy.labelGenerate}</span>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">LoRA Strength</span>
+                <span className="text-xs text-slate-400">{copy.labelLoraStrength}</span>
                 <span className="text-xs text-white font-mono">{loraStrength.toFixed(2)}</span>
               </div>
               <input
@@ -1188,7 +1649,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Denoise</span>
+                <span className="text-xs text-slate-400">{copy.labelDenoise}</span>
                 <span className="text-xs text-white font-mono">{denoise.toFixed(2)}</span>
               </div>
               <input
@@ -1229,9 +1690,9 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
             }}
           >
             {isGenerating ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /><span>{statusLabel || "Processing…"}</span></>
+              <><Loader2 className="w-4 h-4 animate-spin" /><span>{statusLabel || copy.i2iProcessing}</span></>
             ) : (
-              <><Flame className="w-4 h-4 text-white/70" /><span>Generate</span><span className="inline-flex items-center gap-0.5 text-yellow-400">30 <Coins className="w-3.5 h-3.5" /></span></>
+              <><Flame className="w-4 h-4 text-white/70" /><span>{copy.labelGenerate}</span><span className="inline-flex items-center gap-0.5 text-yellow-400">30 <Coins className="w-3.5 h-3.5" /></span></>
             )}
           </button>
 
@@ -1242,7 +1703,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
           {/* Background generation queue */}
           {bgJobs.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">Processing Queue</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">{copy.i2iProcessingQueue}</p>
               {bgJobs.map((job) => (
                 <div key={job.jobId} className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs ${
                   job.status === 'completed' ? 'border-emerald-500/20 bg-emerald-500/[0.06]'
@@ -1263,7 +1724,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-emerald-400 hover:text-emerald-300 font-medium flex-shrink-0"
-                    >View</a>
+                    >{copy.i2iView}</a>
                   )}
                   {(job.status === 'completed' || job.status === 'failed') && (
                     <button
@@ -1280,7 +1741,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
           {outputUrl && (
             <div className="pt-4 border-t border-white/[0.06] space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-white">Result</span>
+                <span className="text-sm font-medium text-white">{copy.i2iResult}</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handleDownload(parseUrls(outputUrl)[0], jobId || "img2img", 0)}
@@ -1331,6 +1792,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {} }) {
 // NSFW Video Tab - Image-to-Video generation
 // ============================================
 function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, videoPrompt, setVideoPrompt, videoDuration, setVideoDuration, isSubmittingVideo, setIsSubmittingVideo }) {
+  const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
   const { user, refreshUserCredits } = useAuthStore();
   const [videoGalleryPage, setVideoGalleryPage] = useState(1);
   const [extendingVideoId, setExtendingVideoId] = useState(null);
@@ -1461,13 +1923,13 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
         sound.playSuccess();
         await refreshUserCredits();
       } else {
-        toast.error(response.data.message || "Failed to submit video");
+        toast.error(response.data.message || copy.videoToastFailed);
       }
     } catch (err) {
       const errData = err.response?.data;
       const msg = errData?.errors?.length
         ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
-        : (errData?.message || "Video generation failed");
+        : (errData?.message || copy.videoToastFailed);
       toast.error(msg);
     } finally {
       setIsSubmittingVideo(false);
@@ -1525,8 +1987,8 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
           <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
             <span className="text-[10px] font-bold text-white">1</span>
           </div>
-          <span className="text-sm font-medium text-white">Select Source Image</span>
-          <span className="text-[10px] text-slate-500">Choose an NSFW image to animate</span>
+          <span className="text-sm font-medium text-white">{copy.videoSectionSourceImage}</span>
+          <span className="text-[10px] text-slate-500">{copy.videoAnimateHint}</span>
         </div>
         <div className="p-3 rounded-xl border border-white/[0.06] bg-white/[0.02]">
           {imagesLoading ? (
@@ -1595,11 +2057,11 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
         <div className="flex items-start gap-4 p-3 rounded-xl border border-red-500/20 bg-red-500/5">
           <img src={videoSelectedImage} alt="" className="w-20 h-28 object-cover rounded-lg flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-red-400 font-medium mb-2">Selected image</p>
+            <p className="text-xs text-red-400 font-medium mb-2">{copy.videoSectionSourceImage}</p>
             <textarea
               value={videoPrompt}
               onChange={(e) => setVideoPrompt(e.target.value)}
-              placeholder="Optional: describe motion (e.g. 'slow hip movement', 'moaning softly')..."
+              placeholder={copy.videoSectionPrompt}
               className="w-full h-16 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-red-500/50 resize-none text-sm"
               data-testid="input-video-prompt"
             />
@@ -1613,7 +2075,7 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
           <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
             <span className="text-[10px] font-bold text-white">2</span>
           </div>
-          <span className="text-sm font-medium text-white">Duration & Generate</span>
+          <span className="text-sm font-medium text-white">{copy.videoSectionDuration}</span>
         </div>
         <div className="flex items-center gap-3 mb-4">
           {[5, 8].map((dur) => (
@@ -1652,12 +2114,12 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
           {isSubmittingVideo ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Submitting...
+              {copy.videoButtonGenerating}
             </>
           ) : (
             <>
               <Video className="w-5 h-5" />
-              Generate {videoDuration}s Video
+              {copy.videoButtonGenerate} {videoDuration}s
               <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1.5">
                 <Coins className="w-3 h-3 text-yellow-400" />
                 <span>{creditsNeeded}</span>
@@ -1684,7 +2146,7 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Video className="w-4 h-4 text-red-400" />
-            <h3 className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">Your Videos</h3>
+            <h3 className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.yourVideos}</h3>
             <span className="px-2 py-0.5 rounded-full text-[9px] font-medium" style={{ background: "rgba(239,68,68,0.15)", color: "#F87171" }}>
               {videoChains.length}
             </span>
@@ -2166,6 +2628,7 @@ function NsfwUnlockModal({ isOpen, onClose, sidebarCollapsed = false }) {
 // NSFW Model Selector - Searchable with shadcn/Phosphor
 // ============================================
 function NSFWModelSelector({ models, selectedModel, onSelect, onShowUnlockModal, modelsLoadError, onRetry, isLoading: modelsLoading = false }) {
+  const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef(null);
@@ -2210,9 +2673,9 @@ function NSFWModelSelector({ models, selectedModel, onSelect, onShowUnlockModal,
         <div className="w-6 h-6 rounded-full flex items-center justify-center bg-rose-500">
           <span className="text-[10px] font-bold text-white">1</span>
         </div>
-        <span className="text-sm font-medium text-white tracking-wide">SELECT MODEL</span>
+        <span className="text-sm font-medium text-white tracking-wide">{copy.sectionSelectModel}</span>
         {aiModels.length > 0 && (
-          <Badge variant="secondary" className="ml-auto">{aiModels.length} models</Badge>
+          <Badge variant="secondary" className="ml-auto">{aiModels.length} {copy.modelSelectorCount}</Badge>
         )}
       </div>
 
@@ -2221,8 +2684,8 @@ function NSFWModelSelector({ models, selectedModel, onSelect, onShowUnlockModal,
           <div className="flex items-center gap-3">
             <Loader2 className="w-5 h-5 text-slate-400 animate-spin shrink-0" weight="duotone" />
             <div>
-              <p className="text-sm font-medium text-slate-200">Loading your models...</p>
-              <p className="text-xs text-slate-500">Please wait</p>
+              <p className="text-sm font-medium text-slate-200">{copy.loadingModelsTitle}</p>
+              <p className="text-xs text-slate-500">{copy.loadingModelsWait}</p>
             </div>
           </div>
         </div>
@@ -2231,15 +2694,15 @@ function NSFWModelSelector({ models, selectedModel, onSelect, onShowUnlockModal,
           <div className="flex items-center gap-3">
             <Warning className="w-5 h-5 text-red-400 shrink-0" weight="duotone" />
             <div>
-              <p className="text-sm font-medium text-red-200">Couldn&apos;t load your models</p>
-              <p className="text-xs text-red-300/70 mb-2">This can happen if the connection dropped. Please try again.</p>
+              <p className="text-sm font-medium text-red-200">{copy.loadModelsFailedTitle}</p>
+              <p className="text-xs text-red-300/70 mb-2">{copy.loadModelsFailedBody}</p>
               {typeof onRetry === "function" && (
                 <button
                   type="button"
                   onClick={() => onRetry()}
                   className="text-xs font-medium text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg border border-white/20 transition-colors"
                 >
-                  Retry loading models
+                  {copy.loadModelsRetry}
                 </button>
               )}
             </div>
@@ -2250,10 +2713,10 @@ function NSFWModelSelector({ models, selectedModel, onSelect, onShowUnlockModal,
           <div className="flex items-center gap-3">
             <Warning className="w-5 h-5 text-amber-400" weight="duotone" />
             <div>
-              <p className="text-sm font-medium text-amber-200">No Verified Models Available</p>
-              <p className="text-xs text-amber-300/60 mb-2">Create an AI model or verify a real person model to use NSFW features</p>
+              <p className="text-sm font-medium text-amber-200">{copy.noVerifiedModelsTitle}</p>
+              <p className="text-xs text-amber-300/60 mb-2">{copy.noVerifiedModelsBody}</p>
               <button onClick={onShowUnlockModal} className="text-xs text-white hover:text-white/70 transition-colors">
-                Learn about verification options →
+                {copy.noVerifiedModelsCta}
               </button>
             </div>
           </div>
@@ -2483,12 +2946,12 @@ function TrainingImagePool({ modelId, loraId, selectedImages, onToggle, onPrevie
     if (!files.length || !modelId) return;
     const targetLoraId = loraId;
     if (!targetLoraId) {
-      toast.error("Select or create a LoRA first");
+      toast.error(copy.toastSelectOrCreateLora);
       return;
     }
     const remaining = maxImages - count;
     if (remaining <= 0) {
-      toast.error("Maximum images already selected");
+      toast.error(copy.toastMaxImagesSelected);
       return;
     }
     const toUpload = files.slice(0, remaining);
@@ -2567,7 +3030,7 @@ function TrainingImagePool({ modelId, loraId, selectedImages, onToggle, onPrevie
             <ImageIcon className="w-4 h-4" />
           </div>
           <div>
-            <span className="text-sm font-medium text-white">Training Images</span>
+            <span className="text-sm font-medium text-white">{copy.labelTrainingImages}</span>
             <span className="text-[10px] text-slate-500 ml-2">Different angles, poses & expressions</span>
           </div>
         </div>
@@ -2652,7 +3115,7 @@ function TrainingImagePool({ modelId, loraId, selectedImages, onToggle, onPrevie
       {modelImages.length === 0 && !allowCustomUpload ? (
         <div className="p-5 rounded-xl text-center bg-white/[0.02] border border-dashed border-white/10">
           <ImageIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-          <p className="text-xs text-slate-400">No images in gallery for this model</p>
+          <p className="text-xs text-slate-400">{(NSFW_COPY[resolveLocale()] || NSFW_COPY.en).galleryEmptyModel}</p>
           <p className="text-[10px] text-slate-500 mt-1">Generate images first using the Generate tab</p>
         </div>
       ) : available.length > 0 && (
@@ -2723,7 +3186,7 @@ function TrainingImagePool({ modelId, loraId, selectedImages, onToggle, onPrevie
             <div className="px-4 py-3">
               {isGalleryLoading ? (
                 <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading gallery...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> {copy.i2iGalleryLoading}
                 </div>
               ) : galleryItems.length === 0 ? (
                 <p className="text-xs text-slate-400">No gallery images found yet.</p>
@@ -2801,6 +3264,7 @@ function TrainingImagePool({ modelId, loraId, selectedImages, onToggle, onPrevie
 // LoRA Manager - Create, switch, delete LoRAs
 // ============================================
 function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, onDeleteLora, onSelectLora, currentLoraId, isLoading, onRefreshLoras, modelSavedAppearance }) {
+  const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newLoraName, setNewLoraName] = useState("");
   const [newLoraAppearance, setNewLoraAppearance] = useState({});
@@ -2853,7 +3317,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
 
   const handleCreate = async () => {
     if (!newLoraName.trim()) {
-      toast.error("Enter a name for your LoRA");
+      toast.error(copy.toastEnterLoraName);
       return;
     }
     setIsCreating(true);
@@ -2887,11 +3351,11 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
     try {
       const hasAny = Object.values(editAppearance).some(Boolean);
       await api.put(`/nsfw/lora/${loraId}/appearance`, { appearance: hasAny ? editAppearance : null });
-      toast.success("LoRA appearance saved");
+      toast.success(copy.loraAppearanceSaved);
       setEditingLoraId(null);
       if (onRefreshLoras) onRefreshLoras();
     } catch (err) {
-      toast.error("Failed to save: " + (err.response?.data?.message || err.message));
+      toast.error(`${copy.loraSaveFailedPrefix} ${err.response?.data?.message || err.message}`);
     } finally {
       setIsSavingAppearance(false);
     }
@@ -2918,10 +3382,10 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
         toast.success(`Detected ${Object.keys(res.data.defaultAppearance).length} features`);
         if (onRefreshLoras) onRefreshLoras();
       } else {
-        toast.error(res.data.message || "Could not detect appearance");
+        toast.error(res.data.message || copy.loraDetectCouldNot);
       }
     } catch (err) {
-      toast.error("Auto-detect failed: " + (err.response?.data?.message || err.message));
+      toast.error(`${copy.loraDetectFailedPrefix} ${err.response?.data?.message || err.message}`);
     } finally {
       setIsAutoDetecting(false);
     }
@@ -2933,7 +3397,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
     return (
       <div className="flex items-center gap-2 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
         <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
-        <span className="text-xs text-slate-400">Loading LoRAs...</span>
+        <span className="text-xs text-slate-400">{copy.loraLoading}</span>
       </div>
     );
   }
@@ -2943,7 +3407,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <StackSimple className="w-4 h-4 text-rose-400" weight="duotone" />
-          <span className="text-sm font-medium text-white tracking-wide">Your LoRAs</span>
+          <span className="text-sm font-medium text-white tracking-wide">{copy.loraListTitle}</span>
           <Badge variant="secondary">{loras.length}</Badge>
         </div>
         <button
@@ -2952,7 +3416,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
           data-testid="button-create-lora"
         >
           <Plus className="w-3 h-3" />
-          New LoRA
+          {copy.loraNew}
         </button>
       </div>
 
@@ -2962,13 +3426,13 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
             type="text"
             value={newLoraName}
             onChange={(e) => setNewLoraName(e.target.value)}
-            placeholder="LoRA name (e.g., v2-lingerie)"
+            placeholder={copy.loraNamePlaceholder}
             className="w-full px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-white/30"
             data-testid="input-lora-name"
           />
 
           <div>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">Training Mode</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">{copy.loraTrainingMode}</p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -2980,9 +3444,9 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                 }`}
                 data-testid="button-mode-standard"
               >
-                <span className="text-xs font-medium text-white">Standard</span>
+                <span className="text-xs font-medium text-white">{copy.loraStandard}</span>
                 <p className="text-[10px] text-slate-400 mt-0.5 inline-flex items-center gap-1">15 images, 750 <Coins className="w-3 h-3 text-yellow-400" /></p>
-                <p className="text-[10px] text-slate-500 mt-0.5">~1h to finish</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{copy.loraTime1h}</p>
               </button>
               <button
                 type="button"
@@ -2999,7 +3463,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                   Pro
                 </span>
                 <p className="text-[10px] text-slate-400 mt-0.5 inline-flex items-center gap-1">30 curated images, 1500 <Coins className="w-3 h-3 text-yellow-400" /></p>
-                <p className="text-[10px] text-slate-500 mt-0.5">~2h to finish</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{copy.loraTime2h}</p>
               </button>
             </div>
           </div>
@@ -3012,7 +3476,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
             >
               <span className="flex items-center gap-2 text-xs text-slate-300">
                 <User className="w-3.5 h-3.5" />
-                Default Appearance
+                {copy.loraDefaultAppearance}
                 {appearanceCount > 0 && (
                   <span className="px-1.5 py-0.5 rounded-full bg-white/[0.08] border border-white/[0.15] text-white text-[10px]">{appearanceCount}</span>
                 )}
@@ -3022,7 +3486,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
 
             {showAppearancePanel && (
               <div className="mt-2 space-y-2.5 pl-1 max-h-[40vh] overflow-y-auto">
-                <p className="text-[10px] text-slate-500">Pre-filled from model looks. Edit or add Custom per category.</p>
+                <p className="text-[10px] text-slate-500">{copy.loraAppearanceHint}</p>
                 {appearanceGroups.map(g => {
                   const value = newLoraAppearance[g.key] || "";
                   const isCustom = value && !g.options.includes(value);
@@ -3055,7 +3519,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                             isCustom ? "bg-white border border-white/35 text-black" : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
                           }`}
                         >
-                          Custom
+                          {copy.custom}
                         </button>
                       </div>
                       {(isCustom || value === " ") && (
@@ -3063,7 +3527,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                           type="text"
                           value={value === " " ? "" : value}
                           onChange={(e) => setNewLoraAppearance(prev => ({ ...prev, [g.key]: e.target.value }))}
-                          placeholder="Type custom…"
+                          placeholder={copy.customTypePlaceholder}
                           className="mt-1 w-full px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white text-[10px] placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
                         />
                       )}
@@ -3081,7 +3545,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
             data-testid="button-confirm-create-lora"
           >
             {isCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-            Create LoRA
+            {copy.loraCreateAction}
           </button>
         </div>
       )}
@@ -3089,8 +3553,8 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
       {loras.length === 0 ? (
         <div className="p-4 rounded-xl text-center bg-white/[0.02] border border-dashed border-white/10">
           <Layers className="w-6 h-6 text-slate-600 mx-auto mb-2" />
-          <p className="text-xs text-slate-400">No LoRAs yet</p>
-          <p className="text-[10px] text-slate-500 mt-1">Create a new LoRA to start training</p>
+          <p className="text-xs text-slate-400">{copy.loraEmptyTitle}</p>
+          <p className="text-[10px] text-slate-500 mt-1">{copy.loraEmptyBody}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -3138,20 +3602,20 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                           </span>
                         )}
                         {isActive && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">Active</span>
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">{copy.loraStatusActive}</span>
                         )}
                         {isSelected && (
-                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-white/20 bg-white/[0.08] text-white">Setting Up</span>
+                          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border border-white/20 bg-white/[0.08] text-white">{copy.loraStatusSettingUp}</span>
                         )}
                       </div>
                       {isLegacy && (
                         <span className="text-[10px] text-orange-400/80 mt-0.5">
-                          Old model - please train a new one
+                          {copy.loraLegacyHint}
                         </span>
                       )}
                       {!isLegacy && lora.trainedAt && (
                         <span className="text-[10px] text-slate-500 mt-0.5">
-                          Trained {new Date(lora.trainedAt).toLocaleDateString()}
+                          {copy.loraTrainedOn} {new Date(lora.trainedAt).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -3163,7 +3627,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                         className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 text-[10px] font-medium hover:bg-emerald-500/25 transition-colors"
                         data-testid={`button-set-active-${lora.id}`}
                       >
-                        Set Active
+                        {copy.loraSetActive}
                       </button>
                     )}
                     <button
@@ -3176,7 +3640,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                       )}
                     >
                       <PencilSimple className="w-3 h-3" weight="bold" />
-                      {lora.defaultAppearance ? "Edit Look" : "Set Look"}
+                      {lora.defaultAppearance ? copy.loraEditLook : copy.loraSetLook}
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onDeleteLora(lora.id); }}
@@ -3200,7 +3664,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
                         className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-white/35 text-[10px] font-medium text-black hover:bg-white/90 transition-all disabled:opacity-50"
                       >
                         {isAutoDetecting ? <ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> : <Sparkle className="w-3 h-3" weight="fill" />}
-                        {isAutoDetecting ? "Detecting..." : "Auto-detect"}
+                        {isAutoDetecting ? copy.loraDetecting : copy.loraAutoDetect}
                       </button>
                     </div>
                     {appearanceGroups.map(g => (
@@ -3249,6 +3713,7 @@ function LoRAManager({ modelId, loras, activeLora, onCreateLora, onSetActive, on
 // Main NSFW Page Component
 // ============================================
 export default function NSFWPage({ embedded = false, sidebarCollapsed = false, setDashboardTab }) {
+  const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
   const navigate = useNavigate();
   const { user, refreshUserCredits, logout } = useAuthStore();
   const {
@@ -3407,10 +3872,10 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
       const res = await api.post("/nsfw/appearance/save", { modelId: selectedModel, appearance });
       if (res.data?.success) {
         setHasSavedAppearance(Object.keys(appearance).length > 0);
-        toast.success("Appearance saved");
+        toast.success(copy.toastAppearanceSaved);
       }
     } catch (err) {
-      toast.error("Failed to save appearance");
+      toast.error(copy.toastFailedSaveAppearance);
     }
     setIsSavingAppearance(false);
   };
@@ -3497,17 +3962,17 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     try {
       localStorage.setItem(GENERATION_CONFIG_KEY, JSON.stringify(genConfig));
       setConfigSaved(true);
-      toast.success("Settings saved!");
+      toast.success(copy.toastSettingsSaved);
       setTimeout(() => setConfigSaved(false), 2000);
     } catch (e) {
-      toast.error("Failed to save settings");
+      toast.error(copy.toastFailedSaveSettings);
     }
   };
 
   const handleResetConfig = () => {
     setGenConfig(DEFAULT_CONFIG);
     localStorage.removeItem(GENERATION_CONFIG_KEY);
-    toast.success("Settings reset to defaults");
+    toast.success(copy.toastSettingsReset);
   };
 
   useEffect(() => {
@@ -3725,7 +4190,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     try {
       const response = await api.post("/nsfw/lora/set-active", { modelId: selectedModel, loraId });
       if (response.data.success) {
-        toast.success("Active LoRA updated!");
+        toast.success(copy.toastActiveLoraUpdated);
         setActiveLora(loraId);
         await loadModelLoras();
         refetchModels();
@@ -3741,7 +4206,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     try {
       const response = await api.delete(`/nsfw/lora/${loraId}`);
       if (response.data.success) {
-        toast.success("LoRA deleted");
+        toast.success(copy.toastLoraDeleted);
         await loadModelLoras();
         refetchModels();
       }
@@ -3852,7 +4317,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
 
     const loraId = currentLoraId;
     if (!loraId) {
-      toast.error("Please create a New LoRA first before training.");
+      toast.error(copy.trainingNeedNewLora);
       return;
     }
 
@@ -3882,7 +4347,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
         return;
       }
 
-      toast.success("Images assigned! Starting LoRA training...");
+      toast.success(copy.toastImagesAssignedTraining);
 
       // Lock UI immediately before long-running preprocessing on backend
       // (captioning + ZIP creation) to prevent accidental resubmits.
@@ -3908,13 +4373,13 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
         // Backend failed before job start — unlock UI and clear optimistic lock.
         clearTrainingState(selectedModel);
         await checkTrainingStatus();
-        toast.error(trainResponse.data.message || "Failed to start training");
+        toast.error(trainResponse.data.message || copy.loraToastFailed);
       }
     } catch (error) {
       clearTrainingState(selectedModel);
       await checkTrainingStatus();
       console.error("Assign and train error:", error);
-      toast.error(error.response?.data?.message || "Failed to start training");
+      toast.error(error.response?.data?.message || copy.loraToastFailed);
     } finally {
       setIsAssigningImages(false);
     }
@@ -3925,7 +4390,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     if (!selectedModel) return;
     let loraId = currentLoraId;
     if (!loraId) {
-      toast.error("No LoRA selected for training");
+      toast.error(copy.toastNoLoraSelectedTraining);
       return;
     }
 
@@ -3951,13 +4416,13 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
       } else {
         clearTrainingState(selectedModel);
         await checkTrainingStatus();
-        toast.error(response.data.message || "Failed to start training");
+        toast.error(response.data.message || copy.loraToastFailed);
       }
     } catch (error) {
       clearTrainingState(selectedModel);
       await checkTrainingStatus();
       console.error("Start training error:", error);
-      toast.error(error.response?.data?.message || "Failed to start training");
+      toast.error(error.response?.data?.message || copy.loraToastFailed);
     } finally {
       setIsTraining(false);
     }
@@ -3967,11 +4432,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
   const handleConfirmSimplePlan = async () => {
     const desc = sceneDescription.trim();
     if (!desc) {
-      toast.error("Describe what you want or pick a preset first");
+      toast.error(copy.toastDescribeSceneFirst);
       return;
     }
     if (!selectedModel) {
-      toast.error("Select a model first");
+      toast.error(copy.toastSelectModel);
       return;
     }
     setIsPlanning(true);
@@ -3984,7 +4449,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
         setChipSelections(applyChipConstraints(response.data.selections || {}, lockedAppearance));
         setGeneratedPrompt(response.data.prompt);
         setSimplePlanReady(true);
-        toast.success("Scene ready — choose resolution and generate");
+        toast.success(copy.toastSceneReady);
       } else {
         toast.error(response.data.message || "Plan failed");
       }
@@ -4019,7 +4484,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
           if (v) keep[k] = v;
         }
         setChipSelections(applyChipConstraints(keep, lockedAppearance));
-        toast.success("Prompt generated!");
+        toast.success(copy.toastPromptGenerated);
       } else {
         toast.error(response.data.message || "Failed to generate prompt");
       }
@@ -4036,11 +4501,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
   const handleAutoSelect = async () => {
     const desc = sceneDescription.trim();
     if (!desc) {
-      toast.error("Type a scene description first");
+      toast.error(copy.toastTypeSceneFirst);
       return;
     }
     if (!selectedModel) {
-      toast.error("Select a model first");
+      toast.error(copy.toastSelectModel);
       return;
     }
     setIsAutoSelecting(true);
@@ -4076,7 +4541,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
 
   const handlePresetSelect = (preset) => {
     if (!selectedModel) {
-      toast.error("Select a model first");
+      toast.error(copy.toastSelectModel);
       return;
     }
     setSelectedPreset(preset.id);
@@ -4108,7 +4573,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     }
 
     if (!isLoraReady) {
-      toast.error("Please complete LoRA training first");
+      toast.error(copy.toastCompleteLoraTrainingFirst);
       setActivePhase("training");
       return;
     }
@@ -4185,14 +4650,14 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
           }
         }
       } else {
-        toast.error(response.data.message || "Failed to generate");
+        toast.error(response.data.message || copy.toastGenerationFailed);
       }
     } catch (error) {
       console.error("Generate NSFW error:", error);
       const errData = error.response?.data;
       const msg = errData?.errors?.length
         ? errData.errors.map(e => e.field ? `${e.field}: ${e.message}` : e.message).join('; ')
-        : (errData?.message || "Failed to generate");
+        : (errData?.message || copy.toastGenerationFailed);
       toast.error(msg);
     } finally {
       setIsGeneratingNsfw(false);
@@ -4201,11 +4666,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
 
   const handleNudesPackApprove = async (poseIds) => {
     if (!selectedModel || !poseIds?.length) {
-      toast.error("Select a model and at least one pose");
+      toast.error(copy.toastSelectModelAndPose);
       return;
     }
     if (!isLoraReady) {
-      toast.error("Please complete LoRA training first");
+      toast.error(copy.toastCompleteLoraTrainingFirst);
       setActivePhase("training");
       return;
     }
@@ -4324,7 +4789,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
         }
 
         if (generation?.status === "failed") {
-          toast.error(generation.errorMessage || "Generation failed");
+          toast.error(generation.errorMessage || copy.toastGenerationFailed);
           return;
         }
 
@@ -4402,7 +4867,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
             <div className="p-1.5 sm:p-2 rounded-xl border border-white/20 bg-white/[0.08] backdrop-blur-xl">
               <Flame className="w-5 h-5 sm:w-6 sm:h-6 text-rose-400" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-white">NSFW Studio</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white">{copy.title}</h1>
             <span className="px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.15] text-rose-400 text-[10px] sm:text-xs font-medium">
               Verified Models
             </span>
@@ -4413,13 +4878,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                 data-testid="button-nsfw-unlock-info"
               >
                 <Lock className="w-3 h-3" />
-                Need Access?
+                {copy.needAccess}
               </button>
             )}
         </div>
-        <p className="text-xs sm:text-sm text-slate-400">
-          Train custom LoRA models and generate NSFW content with verified models
-        </p>
+        <p className="text-xs sm:text-sm text-slate-400">{copy.subtitle}</p>
         <TutorialInfoLink className="mt-2" tutorialUrl={activeNsfwTutorialUrl} />
       </div>
 
@@ -4430,10 +4893,10 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
         className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6 p-1.5 rounded-2xl glass-card"
       >
         {[
-          { key: "training", label: "Train Model", sub: "Create LoRA", Icon: Wand2, locked: false },
-          { key: "generate", label: "Generate", sub: isLoraReady ? "NSFW Ready" : "Train first", Icon: Flame, locked: !isLoraReady },
-          { key: "video", label: "Video", sub: isLoraReady ? "Image to Video" : "Train first", Icon: Video, locked: !isLoraReady, testId: "button-video-tab" },
-          { key: "img2img", label: "Img2Img", sub: isLoraReady ? "Photo swap" : "Train first", Icon: ScanSearch, locked: !isLoraReady, testId: "button-img2img-tab" },
+          { key: "training", label: copy.phaseTrainModel, sub: copy.phaseCreateLora, Icon: Wand2, locked: false },
+          { key: "generate", label: copy.phaseGenerate, sub: isLoraReady ? copy.phaseNsfwReady : copy.phaseTrainFirst, Icon: Flame, locked: !isLoraReady },
+          { key: "video", label: copy.phaseVideo, sub: isLoraReady ? copy.phaseImageToVideo : copy.phaseTrainFirst, Icon: Video, locked: !isLoraReady, testId: "button-video-tab" },
+          { key: "img2img", label: copy.phaseImg2img, sub: isLoraReady ? copy.phasePhotoSwap : copy.phaseTrainFirst, Icon: ScanSearch, locked: !isLoraReady, testId: "button-img2img-tab" },
         ].map(({ key, label, sub, Icon, locked, testId }) => {
           const active = activePhase === key;
           return (
@@ -4490,7 +4953,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                       <span className="text-[10px] font-bold text-white">2</span>
                     </div>
                     <span className="text-sm font-medium text-white">
-                      MANAGE LoRAs
+                      {copy.manageLoras}
                     </span>
                   </div>
                   <div className="p-2.5 sm:p-4 rounded-xl border border-white/[0.10] bg-white/[0.03]">
@@ -4527,8 +4990,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     return (
                       <div className="mt-6 p-4 rounded-xl border border-dashed border-white/10 bg-white/[0.02] text-center">
                         <Layers className="w-6 h-6 text-slate-600 mx-auto mb-2" />
-                        <p className="text-sm text-slate-400">Click "New LoRA" above to start training</p>
-                        <p className="text-[11px] text-slate-500 mt-1">Or click an existing LoRA in "Awaiting Images" status to add images</p>
+                        <p className="text-sm text-slate-400">{copy.trainingHintCreateLora}</p>
+                        <p className="text-[11px] text-slate-500 mt-1">{copy.trainingHintAwaitingImages}</p>
                       </div>
                     );
                   }
@@ -4540,8 +5003,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                           <div className="flex items-center gap-3">
                             <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
                             <div>
-                              <p className="text-sm font-medium text-slate-200">Checking training status...</p>
-                              <p className="text-xs text-slate-400">Please wait</p>
+                              <p className="text-sm font-medium text-slate-200">{copy.trainingStatusChecking}</p>
+                              <p className="text-xs text-slate-400">{copy.loadingModelsWait}</p>
                             </div>
                           </div>
                         </div>
@@ -4565,7 +5028,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                             <div className="flex items-center gap-3">
                               <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
                               <div>
-                                <p className="text-sm font-medium text-amber-200">Training in Progress</p>
+                                <p className="text-sm font-medium text-amber-200">{copy.trainingInProgressTitle}</p>
                                 <p className="text-xs text-amber-300/70">
                                   {selectedLora?.trainingMode === "pro"
                                     ? "This may take about 2 hours. You can leave this page and come back later."
@@ -4579,8 +5042,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                             <div className="flex items-center gap-3">
                               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                               <div>
-                                <p className="text-sm font-medium text-emerald-200">LoRA Training Complete!</p>
-                                <p className="text-xs text-emerald-300/70">Switch to Generate tab to create NSFW content</p>
+                                <p className="text-sm font-medium text-emerald-200">{copy.trainingCompleteTitle}</p>
+                                <p className="text-xs text-emerald-300/70">{copy.trainingCompleteBody}</p>
                               </div>
                             </div>
                           </div>
@@ -4589,8 +5052,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                             <div className="flex items-center gap-3">
                               <XCircle className="w-5 h-5 text-red-400" />
                               <div>
-                                <p className="text-sm font-medium text-red-200">Training Failed</p>
-                                <p className="text-xs text-red-300/70">Please try again or contact support</p>
+                                <p className="text-sm font-medium text-red-200">{copy.trainingFailedTitle}</p>
+                                <p className="text-xs text-red-300/70">{copy.trainingFailedBody}</p>
                               </div>
                             </div>
                             <button
@@ -4600,7 +5063,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                               data-testid="button-retry-training"
                             >
                               <RefreshCcw className="w-4 h-4" />
-                              Retry Training
+                              {copy.trainingRetry}
                               <span className="text-xs opacity-70 inline-flex items-center gap-0.5">({trainingCreditCost} <Coins className="w-3 h-3" />)</span>
                             </button>
                           </div>
@@ -4640,11 +5103,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                               <div className="flex items-start gap-2 mb-3">
                                 <Flame className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
                                 <div>
-                                  <p className="text-xs text-rose-200 font-medium mb-1">Pro Training Mode — 30 Curated Images</p>
+                                  <p className="text-xs text-rose-200 font-medium mb-1">{copy.trainingProModeTitle}</p>
                                   <p className="text-[11px] text-slate-400">
                                     For best results, follow the category guide below. Select images that match each category to train a higher-quality model with better likeness and pose accuracy.
                                   </p>
-                                  <p className="text-[11px] text-slate-500 mt-1.5">Pro LoRA training takes about 2 hours to finish.</p>
+                                  <p className="text-[11px] text-slate-500 mt-1.5">{copy.trainingProDurationHint}</p>
                                 </div>
                               </div>
                               <div className="space-y-2">
@@ -4682,7 +5145,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                               <p className="text-xs text-slate-300 mb-1">
                                 Select exactly 15 images showing different angles, poses, and expressions. Include face close-ups, half-body, and full-body shots for best results.
                               </p>
-                              <p className="text-[11px] text-slate-500 mt-1.5">Basic LoRA training takes about 1 hour to finish.</p>
+                              <p className="text-[11px] text-slate-500 mt-1.5">{copy.trainingBasicDurationHint}</p>
                             </div>
                           )}
 
@@ -5132,7 +5595,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                                               : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
                                           }`}
                                         >
-                                          Custom
+                                          {copy.custom}
                                         </button>
                                       )}
                                     </div>
@@ -5144,7 +5607,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                                           setGeneratedPrompt("");
                                           setChipSelections(prev => applyChipConstraints({ ...prev, [g.key]: e.target.value }, lockedAppearance));
                                         }}
-                                        placeholder="Type custom…"
+                                        placeholder={copy.customTypePlaceholder}
                                         className="mt-1.5 w-full px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-rose-500/50"
                                       />
                                     )}
@@ -5565,7 +6028,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
 
                 {/* Image Quantity Selector */}
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-sm text-slate-300">Quantity:</span>
+                  <span className="text-sm text-slate-300">{copy.labelQuantity}</span>
                   <div className="flex gap-2">
                     <button
                       data-testid="button-quantity-1"
@@ -5682,29 +6145,29 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
           }}
         >
           <h3 className="text-sm font-medium text-yellow-400 mb-3 inline-flex items-center gap-1.5">
-            Credit Costs
+            {copy.creditsPanelTitle}
             <Coins className="w-4 h-4 text-yellow-400" />
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
               <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">750 <Coins className="w-4 h-4" /></span>
-              <span className="text-slate-400">LoRA Training</span>
+              <span className="text-slate-400">{copy.creditsPanelLoraTraining}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
               <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">30 <Coins className="w-4 h-4" /></span>
-              <span className="text-slate-400">NSFW Image</span>
+              <span className="text-slate-400">{copy.creditsPanelNsfwImage}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
               <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">40 <Coins className="w-4 h-4" /></span>
-              <span className="text-slate-400">+ Face Swap</span>
+              <span className="text-slate-400">{copy.creditsPanelFaceSwap}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
               <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">50-80 <Coins className="w-4 h-4" /></span>
-              <span className="text-slate-400">NSFW Video</span>
+              <span className="text-slate-400">{copy.creditsPanelNsfwVideo}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
               <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">0 <Coins className="w-4 h-4" /></span>
-              <span className="text-slate-400">Retry Failed</span>
+              <span className="text-slate-400">{copy.creditsPanelRetryFailed}</span>
             </div>
           </div>
         </div>

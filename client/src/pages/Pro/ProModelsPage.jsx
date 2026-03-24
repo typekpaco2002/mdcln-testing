@@ -5,7 +5,55 @@ import { getThumbnailUrl } from "../../utils/imageUtils";
 import CreateModelModal from "../../components/CreateModelModal";
 import toast from "react-hot-toast";
 
+const LOCALE_STORAGE_KEY = "app_locale";
+
+const COPY = {
+  en: {
+    title: "Models",
+    subtitle: "Create and manage your models.",
+    addModel: "Add model",
+    loading: "Loading models…",
+    emptyTitle: "No models yet",
+    emptySubtitle: "Create your first model to get started.",
+    emptyCta: "Create your first model",
+    statusProcessing: "Processing…",
+    statusReady: "Ready",
+    toastNotEnoughCredits: "Not enough credits",
+  },
+  ru: {
+    title: "Модели",
+    subtitle: "Создавайте и управляйте своими моделями.",
+    addModel: "Добавить модель",
+    loading: "Загрузка моделей…",
+    emptyTitle: "Моделей пока нет",
+    emptySubtitle: "Создайте свою первую модель, чтобы начать работу.",
+    emptyCta: "Создать первую модель",
+    statusProcessing: "Обработка…",
+    statusReady: "Готово",
+    toastNotEnoughCredits: "Недостаточно кредитов",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
 export default function ProModelsPage() {
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const { models, isLoading, refetch, invalidateModels } = useCachedModels();
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -14,10 +62,10 @@ export default function ProModelsPage() {
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight mb-1" data-pro-heading style={{ color: "var(--pro-text)" }}>
-            Models
+            {copy.title}
           </h1>
           <p className="text-sm" style={{ color: "var(--pro-text-muted)" }}>
-            Create and manage your models.
+            {copy.subtitle}
           </p>
         </div>
         <button
@@ -30,13 +78,13 @@ export default function ProModelsPage() {
           }}
         >
           <Plus className="w-4 h-4 shrink-0" aria-hidden />
-          Add model
+          {copy.addModel}
         </button>
       </header>
 
       {isLoading ? (
         <p className="text-sm" style={{ color: "var(--pro-text-muted)" }}>
-          Loading models…
+          {copy.loading}
         </p>
       ) : models.length === 0 ? (
         <div
@@ -53,10 +101,10 @@ export default function ProModelsPage() {
             <User className="w-7 h-7" style={{ color: "var(--pro-text-muted)" }} aria-hidden />
           </div>
           <p className="font-medium mb-1" style={{ color: "var(--pro-text)" }}>
-            No models yet
+            {copy.emptyTitle}
           </p>
           <p className="text-sm mb-6" style={{ color: "var(--pro-text-muted)" }}>
-            Create your first model to get started.
+            {copy.emptySubtitle}
           </p>
           <button
             type="button"
@@ -68,7 +116,7 @@ export default function ProModelsPage() {
             }}
           >
             <Plus className="w-4 h-4" aria-hidden />
-            Create your first model
+            {copy.emptyCta}
           </button>
         </div>
       ) : (
@@ -94,7 +142,7 @@ export default function ProModelsPage() {
                   {m.name}
                 </p>
                 <p className="text-xs" style={{ color: "var(--pro-text-muted)" }}>
-                  {m.status === "processing" ? "Processing…" : "Ready"}
+                  {m.status === "processing" ? copy.statusProcessing : copy.statusReady}
                 </p>
               </div>
             </div>
@@ -110,7 +158,7 @@ export default function ProModelsPage() {
           refetch();
           setShowCreateModal(false);
         }}
-        onNeedCredits={() => toast.error("Not enough credits")}
+        onNeedCredits={() => toast.error(copy.toastNotEnoughCredits)}
       />
     </div>
   );

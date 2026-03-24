@@ -697,6 +697,7 @@ async function generateTextToImage(prompt, options = {}) {
  * @param {string} params.referencePrompt - Optional custom prompt for reference (must be non-explicit)
  * @param {string} params.gender - 'male' or 'female'
  * @param {number} params.age - e.g., 25
+ * @param {object} params.savedAppearance - Optional full appearance object from selector chips
  * @param {string} params.hairColor - e.g., 'blonde', 'brown', 'black'
  * @param {string} params.eyeColor - e.g., 'blue', 'brown', 'green'
  * @param {string} params.style - e.g., 'glamour', 'fitness', 'elegant'
@@ -719,6 +720,7 @@ async function generateReferenceImage(params) {
       referencePrompt,
       gender,
       age,
+      savedAppearance,
       hairColor,
       hairLength,
       hairTexture,
@@ -733,6 +735,12 @@ async function generateReferenceImage(params) {
     // Build comprehensive prompt for reference image (NON-EXPLICIT)
     const genderText = gender === "male" ? "man" : "woman";
     const { article, subject } = portraitSubjectAgeGender(age, genderText);
+    const savedAppearanceText =
+      savedAppearance && typeof savedAppearance === "object"
+        ? Object.values(savedAppearance)
+            .filter((value) => typeof value === "string" && value.trim())
+            .join(", ")
+        : "";
 
     // Style mappings for reference (kept tasteful/non-explicit)
     const stylePrompts = {
@@ -787,6 +795,7 @@ async function generateReferenceImage(params) {
       lipText,
       bodyTypeText,
       styleText,
+      savedAppearanceText,
       referencePrompt ? referencePrompt : "",
       "high quality, detailed face, clear features, photorealistic, attractive",
       skinTexture,

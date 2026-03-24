@@ -4,17 +4,74 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowRight, Zap, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
+const LOCALE_STORAGE_KEY = 'app_locale';
+
+const COPY = {
+  en: {
+    enterEmail: 'Please enter your email',
+    resetSent: 'Reset code sent! Check your email.',
+    resetFailed: 'Failed to send reset code',
+    title: 'Forgot Password?',
+    subtitle: "We'll send you a reset code",
+    labelEmail: 'Email',
+    buttonSending: 'Sending...',
+    buttonSendCode: 'Send Reset Code',
+    checkEmailTitle: 'Check Your Email',
+    checkEmailSubtitlePrefix: 'We sent a 6-digit reset code to',
+    buttonEnterCode: 'Enter Reset Code',
+    buttonTryDifferent: 'Try Different Email',
+    rememberPassword: 'Remember your password?',
+    backSignIn: 'Back to Sign In',
+    backHome: '← Back to Home',
+  },
+  ru: {
+    enterEmail: 'Введите свой адрес электронной почты',
+    resetSent: 'Код для сброса пароля отправлен! Проверьте свою почту.',
+    resetFailed: 'Не удалось отправить код сброса',
+    title: 'Забыли пароль?',
+    subtitle: 'Мы вышлем вам код сброса',
+    labelEmail: 'Электронная почта',
+    buttonSending: 'Отправляется...',
+    buttonSendCode: 'Отправить код сброса',
+    checkEmailTitle: 'Проверьте свою электронную почту',
+    checkEmailSubtitlePrefix: 'Мы отправили 6-значный код сброса на',
+    buttonEnterCode: 'Введите код сброса',
+    buttonTryDifferent: 'Попробуйте другой адрес электронной почты',
+    rememberPassword: 'Запомнить пароль?',
+    backSignIn: 'Вернуться к входу',
+    backHome: '← Вернуться на главную',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
 
   const handleRequestReset = async (e) => {
     e.preventDefault();
     
     if (!email) {
-      toast.error('Please enter your email');
+      toast.error(copy.enterEmail);
       return;
     }
 
@@ -25,12 +82,12 @@ export default function ForgotPasswordPage() {
       
       if (data.success) {
         setCodeSent(true);
-        toast.success('Reset code sent! Check your email.');
+        toast.success(copy.resetSent);
       } else {
-        toast.error(data.message || 'Failed to send reset code');
+        toast.error(data.message || copy.resetFailed);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to send reset code');
+      toast.error(error.response?.data?.message || copy.resetFailed);
     } finally {
       setLoading(false);
     }
@@ -60,15 +117,15 @@ export default function ForgotPasswordPage() {
           {!codeSent ? (
             <>
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-2">Forgot Password?</h1>
-                <p className="text-gray-400">We'll send you a reset code</p>
+                <h1 className="text-3xl font-bold mb-2">{copy.title}</h1>
+                <p className="text-gray-400">{copy.subtitle}</p>
               </div>
 
               <form onSubmit={handleRequestReset} className="space-y-6">
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-300">
-                    Email
+                    {copy.labelEmail}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -94,11 +151,11 @@ export default function ForgotPasswordPage() {
                   {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                      <span>Sending...</span>
+                      <span>{copy.buttonSending}</span>
                     </div>
                   ) : (
                     <>
-                      Send Reset Code
+                      {copy.buttonSendCode}
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
@@ -111,9 +168,9 @@ export default function ForgotPasswordPage() {
                 <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
                   <CheckCircle className="w-8 h-8 text-green-500" />
                 </div>
-                <h1 className="text-3xl font-bold mb-2">Check Your Email</h1>
+                <h1 className="text-3xl font-bold mb-2">{copy.checkEmailTitle}</h1>
                 <p className="text-gray-400">
-                  We sent a 6-digit reset code to <span className="text-white font-medium">{email}</span>
+                  {copy.checkEmailSubtitlePrefix} <span className="text-white font-medium">{email}</span>
                 </p>
               </div>
 
@@ -123,7 +180,7 @@ export default function ForgotPasswordPage() {
                 className="block w-full py-3 rounded-xl bg-white text-black hover:bg-white/90 transition font-semibold text-center"
                 data-testid="link-reset-password"
               >
-                Enter Reset Code
+                {copy.buttonEnterCode}
               </Link>
 
               <button
@@ -131,7 +188,7 @@ export default function ForgotPasswordPage() {
                 className="w-full mt-4 py-3 rounded-xl glass hover:bg-white/10 transition font-semibold"
                 data-testid="button-try-again"
               >
-                Try Different Email
+                {copy.buttonTryDifferent}
               </button>
             </>
           )}
@@ -142,7 +199,7 @@ export default function ForgotPasswordPage() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-400">Remember your password?</span>
+              <span className="px-4 bg-black text-gray-400">{copy.rememberPassword}</span>
             </div>
           </div>
 
@@ -152,14 +209,14 @@ export default function ForgotPasswordPage() {
             className="block w-full py-3 rounded-xl glass hover:bg-white/10 transition font-semibold text-center"
             data-testid="link-login"
           >
-            Back to Sign In
+            {copy.backSignIn}
           </Link>
         </div>
 
         {/* Back to Home */}
         <div className="text-center mt-6">
           <Link to="/" className="text-gray-400 hover:text-white transition">
-            ← Back to Home
+            {copy.backHome}
           </Link>
         </div>
       </motion.div>

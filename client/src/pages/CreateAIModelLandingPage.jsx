@@ -6,30 +6,231 @@ import {
   User, Settings, Menu, X, Volume2, VolumeX, TrendingUp
 } from 'lucide-react';
 import { SiDiscord } from 'react-icons/si';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import OptimizedGalleryImage from '../components/OptimizedGalleryImage';
 import CursorGlow from '../components/CursorGlow';
 import { referralAPI } from '../services/api';
 import { generateFingerprint } from '../utils/fingerprint';
 
-const socialProofMessages = [
-  { name: 'Sarah', city: 'Miami', flag: '🇺🇸', action: 'just started making money with AI Influencers', time: '2 seconds ago' },
-  { name: 'Jake', city: 'Los Angeles', flag: '🇺🇸', action: 'earned $950 this week', time: '15 seconds ago' },
-  { name: 'Emily', city: 'New York', flag: '🇺🇸', action: 'created her first AI influencer', time: '30 seconds ago' },
-  { name: 'Mike', city: 'Austin', flag: '🇺🇸', action: 'just signed up', time: '45 seconds ago' },
-  { name: 'Jessica', city: 'Chicago', flag: '🇺🇸', action: 'got her first 10 subscribers', time: '1 minute ago' },
-  { name: 'David', city: 'Denver', flag: '🇺🇸', action: 'earned $1,400 in 2 weeks', time: '2 minutes ago' },
-  { name: 'Ashley', city: 'Seattle', flag: '🇺🇸', action: 'just started making money with AI Influencers', time: '3 minutes ago' },
-  { name: 'Chris', city: 'Phoenix', flag: '🇺🇸', action: 'earned $2,800 this month', time: '5 minutes ago' },
-  { name: 'Brittany', city: 'San Diego', flag: '🇺🇸', action: 'just got verified', time: '6 minutes ago' },
-  { name: 'Tyler', city: 'Nashville', flag: '🇺🇸', action: 'earned $720 in his first week', time: '7 minutes ago' },
-  { name: 'Amanda', city: 'Portland', flag: '🇺🇸', action: 'created 3 AI influencers', time: '8 minutes ago' },
-  { name: 'Brandon', city: 'Atlanta', flag: '🇺🇸', action: 'just signed up', time: '9 minutes ago' },
-  { name: 'Nicole', city: 'Boston', flag: '🇺🇸', action: 'earned $1,850 this week', time: '10 minutes ago' },
-  { name: 'Justin', city: 'Las Vegas', flag: '🇺🇸', action: 'got 50 new subscribers today', time: '11 minutes ago' },
-  { name: 'Samantha', city: 'San Francisco', flag: '🇺🇸', action: 'just started making money with AI Influencers', time: '12 minutes ago' },
-  { name: 'Ryan', city: 'Dallas', flag: '🇺🇸', action: 'earned $3,200 this month', time: '13 minutes ago' },
-];
+const LOCALE_STORAGE_KEY = 'app_locale';
+
+const COPY = {
+  en: {
+    socialProofFrom: 'from',
+    socialProofCta: 'Start Now',
+    socialProofActionStartedMoney: 'just started making money with AI Influencers',
+    socialProofActionEarned950Week: 'earned $950 this week',
+    socialProofActionCreatedFirstInfluencer: 'created her first AI influencer',
+    socialProofActionJustSignedUp: 'just signed up',
+    socialProofActionFirst10Subscribers: 'got her first 10 subscribers',
+    socialProofActionEarned1400TwoWeeks: 'earned $1,400 in 2 weeks',
+    socialProofActionEarned2800Month: 'earned $2,800 this month',
+    socialProofActionJustVerified: 'just got verified',
+    socialProofActionEarned720FirstWeek: 'earned $720 in his first week',
+    socialProofActionCreated3Influencers: 'created 3 AI influencers',
+    socialProofActionEarned1850Week: 'earned $1,850 this week',
+    socialProofAction50SubscribersToday: 'got 50 new subscribers today',
+    socialProofActionEarned3200Month: 'earned $3,200 this month',
+    socialProofTime2Seconds: '2 seconds ago',
+    socialProofTime15Seconds: '15 seconds ago',
+    socialProofTime30Seconds: '30 seconds ago',
+    socialProofTime45Seconds: '45 seconds ago',
+    socialProofTime1Minute: '1 minute ago',
+    socialProofTime2Minutes: '2 minutes ago',
+    socialProofTime3Minutes: '3 minutes ago',
+    socialProofTime5Minutes: '5 minutes ago',
+    socialProofTime6Minutes: '6 minutes ago',
+    socialProofTime7Minutes: '7 minutes ago',
+    socialProofTime8Minutes: '8 minutes ago',
+    socialProofTime9Minutes: '9 minutes ago',
+    socialProofTime10Minutes: '10 minutes ago',
+    socialProofTime11Minutes: '11 minutes ago',
+    socialProofTime12Minutes: '12 minutes ago',
+    socialProofTime13Minutes: '13 minutes ago',
+    earningsMonth1: 'Month 1',
+    earningsMonth2: 'Month 2',
+    earningsMonth3: 'Month 3',
+    earningsMonth4: 'Month 4',
+    earningsMonth5: 'Month 5',
+    earningsMonth6: 'Month 6',
+    earningsHeader: 'Projected Monthly Earnings',
+    earningsPerMonthSuffix: '/mo',
+    earningsChartHint: 'Tap any month to explore projected earnings growth',
+    testimonial1: 'Created my AI model in 5 minutes. Now I earn passively while I sleep.',
+    testimonial2: 'The Discord community taught me everything for free. Game changer!',
+    testimonial3: 'Best investment of my time. The AI looks super realistic.',
+    testimonial4: 'Started a month ago, already have paying subscribers.',
+    testimonial5: 'Zero technical skills needed. The platform does everything.',
+    testimonial6: 'ModelClone + Discord = perfect combo for beginners.',
+    testimonial7: 'I run 3 AI models now. Each one earns independently.',
+    testimonial8: 'Was skeptical at first, but the results speak for themselves.',
+    navLogin: 'Login',
+    navStartFree: 'Start Free',
+    badgeJoinedWeek: 'joined this week',
+    heroTitle: 'Create Your AI Model',
+    heroSubtitle: 'Earn $10K+ Monthly',
+    heroDescription: 'Design your perfect AI influencer in 60 seconds.',
+    heroDescriptionHighlight: '100% free to start.',
+    trustNoCard: 'No credit card',
+    trustReady60s: 'Ready in 60s',
+    realResultsLabel: 'Real Results',
+    realResultsTitle: 'Average Client Earnings Over 6 Months',
+    statsModelsCreated: 'Models Created',
+    statsImagesMade: 'Images Made',
+    statsSatisfaction: 'Satisfaction',
+    galleryLabel: 'AI-Generated',
+    galleryMeetAshley: 'Meet Ashley',
+    galleryAshleyCaption: 'Every photo generated with ModelClone',
+    galleryMeetLaura: 'Meet Laura',
+    galleryMeetNatasha: 'Meet Natasha',
+    howItWorksTitle: 'How It Works',
+    howItWorksSubtitle: '3 simple steps, no skills needed',
+    step1Title: 'Choose a Name',
+    step1Desc: 'Give your AI a unique identity',
+    step2Title: 'Select Features',
+    step2Desc: 'Pick age, hair, eyes, body type',
+    step3Title: 'Generate',
+    step3Desc: 'Click and your AI is ready',
+    whyTitle: 'Why AI Models?',
+    whySubtitle: 'The smarter way to create content',
+    benefit1Title: '100% Profits',
+    benefit1Desc: 'Keep everything you earn',
+    benefit2Title: 'Work 24/7',
+    benefit2Desc: 'Content while you sleep',
+    benefit3Title: 'No Drama',
+    benefit3Desc: 'Always reliable, always ready',
+    benefit4Title: 'Unlimited',
+    benefit4Desc: 'Generate as much as you want',
+    successStoriesLabel: 'Success Stories',
+    successStoriesTitle: 'Real Earnings',
+    discordTitle: 'Free Training Community',
+    discordSubtitle: 'Join 2,000+ creators learning how to earn with AI',
+    discordButton: 'Join Discord Free',
+    finalCtaTitle: 'Ready to Start?',
+    finalCtaSubtitle: 'Create your first AI model in under 60 seconds',
+    finalCtaPrimary: 'Create Free AI Model',
+    finalCtaSecondary: 'Already have an account? Login',
+    footerTerms: 'Terms',
+    footerPrivacy: 'Privacy',
+    footerCookies: 'Cookies',
+  },
+  ru: {
+    socialProofFrom: 'из',
+    socialProofCta: 'Начать',
+    socialProofActionStartedMoney: 'только что начала зарабатывать с ИИ-инфлюенсерами',
+    socialProofActionEarned950Week: 'заработала $950 за эту неделю',
+    socialProofActionCreatedFirstInfluencer: 'создала своего первого ИИ-инфлюенсера',
+    socialProofActionJustSignedUp: 'только что зарегистрировалась',
+    socialProofActionFirst10Subscribers: 'получила первых 10 подписчиков',
+    socialProofActionEarned1400TwoWeeks: 'заработала $1 400 за 2 недели',
+    socialProofActionEarned2800Month: 'заработала $2 800 за этот месяц',
+    socialProofActionJustVerified: 'только что прошла верификацию',
+    socialProofActionEarned720FirstWeek: 'заработал $720 за первую неделю',
+    socialProofActionCreated3Influencers: 'создал 3 ИИ-инфлюенсера',
+    socialProofActionEarned1850Week: 'заработала $1 850 за эту неделю',
+    socialProofAction50SubscribersToday: 'получила 50 новых подписчиков сегодня',
+    socialProofActionEarned3200Month: 'заработала $3 200 за этот месяц',
+    socialProofTime2Seconds: '2 секунды назад',
+    socialProofTime15Seconds: '15 секунд назад',
+    socialProofTime30Seconds: '30 секунд назад',
+    socialProofTime45Seconds: '45 секунд назад',
+    socialProofTime1Minute: '1 минуту назад',
+    socialProofTime2Minutes: '2 минуты назад',
+    socialProofTime3Minutes: '3 минуты назад',
+    socialProofTime5Minutes: '5 минут назад',
+    socialProofTime6Minutes: '6 минут назад',
+    socialProofTime7Minutes: '7 минут назад',
+    socialProofTime8Minutes: '8 минут назад',
+    socialProofTime9Minutes: '9 минут назад',
+    socialProofTime10Minutes: '10 минут назад',
+    socialProofTime11Minutes: '11 минут назад',
+    socialProofTime12Minutes: '12 минут назад',
+    socialProofTime13Minutes: '13 минут назад',
+    earningsMonth1: 'Месяц 1',
+    earningsMonth2: 'Месяц 2',
+    earningsMonth3: 'Месяц 3',
+    earningsMonth4: 'Месяц 4',
+    earningsMonth5: 'Месяц 5',
+    earningsMonth6: 'Месяц 6',
+    earningsHeader: 'Прогнозируемый ежемесячный доход',
+    earningsPerMonthSuffix: '/мес',
+    earningsChartHint: 'Нажмите на любой месяц, чтобы увидеть прогноз роста доходов',
+    testimonial1: 'Создала ИИ-модель за 5 минут. Теперь зарабатываю пассивно, пока сплю.',
+    testimonial2: 'Сообщество в Discord научило меня всему бесплатно. Это меняет всё!',
+    testimonial3: 'Лучшее вложение времени. ИИ выглядит очень реалистично.',
+    testimonial4: 'Начал месяц назад — уже есть платные подписчики.',
+    testimonial5: 'Никаких технических навыков не нужно. Платформа делает всё сама.',
+    testimonial6: 'ModelClone + Discord = идеальное сочетание для новичков.',
+    testimonial7: 'Сейчас веду 3 ИИ-модели. Каждая зарабатывает самостоятельно.',
+    testimonial8: 'Сначала сомневался, но результаты говорят сами за себя.',
+    navLogin: 'Войти',
+    navStartFree: 'Начать бесплатно',
+    badgeJoinedWeek: 'присоединились на этой неделе',
+    heroTitle: 'Создайте свою ИИ-модель',
+    heroSubtitle: 'Зарабатывайте $10 000+ в месяц',
+    heroDescription: 'Создайте идеального ИИ-инфлюенсера за 60 секунд.',
+    heroDescriptionHighlight: 'Старт полностью бесплатный.',
+    trustNoCard: 'Без кредитной карты',
+    trustReady60s: 'Готово за 60 сек',
+    realResultsLabel: 'Реальные результаты',
+    realResultsTitle: 'Средний доход клиентов за 6 месяцев',
+    statsModelsCreated: 'Создано моделей',
+    statsImagesMade: 'Создано изображений',
+    statsSatisfaction: 'Удовлетворённость',
+    galleryLabel: 'Сгенерировано ИИ',
+    galleryMeetAshley: 'Познакомьтесь с Эшли',
+    galleryAshleyCaption: 'Каждое фото создано с помощью ModelClone',
+    galleryMeetLaura: 'Познакомьтесь с Лорой',
+    galleryMeetNatasha: 'Познакомьтесь с Наташей',
+    howItWorksTitle: 'Как это работает',
+    howItWorksSubtitle: '3 простых шага — без специальных навыков',
+    step1Title: 'Выберите имя',
+    step1Desc: 'Дайте своему ИИ уникальную личность',
+    step2Title: 'Задайте параметры',
+    step2Desc: 'Выберите возраст, цвет волос, глаз и тип фигуры',
+    step3Title: 'Генерировать',
+    step3Desc: 'Нажмите — и ваш ИИ готов',
+    whyTitle: 'Зачем ИИ-модели?',
+    whySubtitle: 'Умный способ создавать контент',
+    benefit1Title: '100% прибыли',
+    benefit1Desc: 'Весь заработок остаётся вам',
+    benefit2Title: 'Работа 24/7',
+    benefit2Desc: 'Контент создаётся, пока вы спите',
+    benefit3Title: 'Без проблем',
+    benefit3Desc: 'Всегда надёжно, всегда готово',
+    benefit4Title: 'Без ограничений',
+    benefit4Desc: 'Генерируйте столько, сколько хотите',
+    successStoriesLabel: 'Истории успеха',
+    successStoriesTitle: 'Реальные доходы',
+    discordTitle: 'Бесплатное обучающее сообщество',
+    discordSubtitle: 'Присоединяйтесь к 2 000+ авторам, которые учатся зарабатывать с ИИ',
+    discordButton: 'Вступить в Discord бесплатно',
+    finalCtaTitle: 'Готовы начать?',
+    finalCtaSubtitle: 'Создайте свою первую ИИ-модель менее чем за 60 секунд',
+    finalCtaPrimary: 'Создать ИИ-модель бесплатно',
+    finalCtaSecondary: 'Уже есть аккаунт? Войти',
+    footerTerms: 'Условия использования',
+    footerPrivacy: 'Конфиденциальность',
+    footerCookies: 'Файлы cookie',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 // Neutral monochrome avatar tints — no rainbow colours
 const avatarTints = [
@@ -87,7 +288,7 @@ function DemoVideo() {
   );
 }
 
-function SocialProofPopup() {
+function SocialProofPopup({ messages, copy }) {
   const [isVisible, setIsVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
@@ -108,7 +309,7 @@ function SocialProofPopup() {
       setTimeout(() => {
         setIsExiting(false);
         setIsVisible(false);
-        setCurrentIndex((prev) => (prev + 1) % socialProofMessages.length);
+        setCurrentIndex((prev) => (prev + 1) % messages.length);
         
         setTimeout(() => {
           setIsVisible(true);
@@ -119,7 +320,7 @@ function SocialProofPopup() {
     return () => clearTimeout(hideTimeout);
   }, [isVisible, currentIndex]);
 
-  const message = socialProofMessages[currentIndex];
+  const message = messages[currentIndex];
   const avatarBg = avatarTints[currentIndex % avatarTints.length];
 
   if (!isVisible && !isExiting) return null;
@@ -165,7 +366,7 @@ function SocialProofPopup() {
           <div className="flex-1 min-w-0">
             <p className="text-white/85 text-xs leading-snug">
               <span className="font-semibold text-white">{message.name}</span>
-              {' '}<span style={{ color: 'rgba(255,255,255,0.4)' }}>from {message.flag} {message.city}</span>
+              {' '}<span style={{ color: 'rgba(255,255,255,0.4)' }}>{copy.socialProofFrom} {message.flag} {message.city}</span>
               {' '}{message.action}
             </p>
             <div className="flex items-center justify-between mt-2">
@@ -181,7 +382,7 @@ function SocialProofPopup() {
                   background: 'rgba(255,255,255,0.04)',
                 }}
               >
-                Start Now →
+                {copy.socialProofCta} →
               </Link>
             </div>
           </div>
@@ -275,7 +476,7 @@ const E_GRID = [0.25, 0.5, 0.75, 1].map(r => ({
 // Slow, heavy spring — silky glide for point, rings & tooltip
 const SP = { stiffness: 38, damping: 14, mass: 2.2 };
 
-function EarningsGrowthSlider({ currency = '$' }) {
+function EarningsGrowthSlider({ currency = '$', copy }) {
   const [selected, setSelected]           = useState(1);
   const [visible, setVisible]             = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -326,7 +527,7 @@ function EarningsGrowthSlider({ currency = '$' }) {
       <div className="flex items-start justify-between mb-4 px-1">
         <div>
           <p className="text-[9px] uppercase tracking-[0.18em] mb-1.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
-            Projected Monthly Earnings
+            {copy.earningsHeader}
           </p>
           <AnimatePresence mode="wait">
             <motion.div
@@ -339,10 +540,12 @@ function EarningsGrowthSlider({ currency = '$' }) {
               style={{ textShadow: '0 0 28px rgba(74,222,128,0.2)' }}
             >
               {currency}{cur.earnings.toLocaleString()}
-              <span className="text-base font-normal ml-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>/mo</span>
+              <span className="text-base font-normal ml-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>{copy.earningsPerMonthSuffix}</span>
             </motion.div>
           </AnimatePresence>
-          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>{cur.label}</p>
+          <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
+            {[copy.earningsMonth1, copy.earningsMonth2, copy.earningsMonth3, copy.earningsMonth4, copy.earningsMonth5, copy.earningsMonth6][selected - 1]}
+          </p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -505,7 +708,7 @@ function EarningsGrowthSlider({ currency = '$' }) {
       </div>
 
       <p className="text-center text-[10px] mt-2" style={{ color: 'rgba(255,255,255,0.2)' }}>
-        Tap any month to explore projected earnings growth
+        {copy.earningsChartHint}
       </p>
     </div>
   );
@@ -542,6 +745,8 @@ const natashaYoga4 = 'https://pub-deb24e74d34c49a3a2e474e11dbf5a64.r2.dev/galler
 const natashaMirror = 'https://pub-deb24e74d34c49a3a2e474e11dbf5a64.r2.dev/gallery/natashaMirror.jpg';
 
 export default function CreateAIModelLandingPage() {
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -570,16 +775,35 @@ export default function CreateAIModelLandingPage() {
     })();
   }, [location.search]);
 
-  const testimonials = [
-    { name: 'James', earnings: '$2,800/mo', text: 'Created my AI model in 5 minutes. Now I earn passively while I sleep.' },
-    { name: 'Michael', earnings: '$2,100/mo', text: 'The Discord community taught me everything for free. Game changer!' },
-    { name: 'David', earnings: '$3,500/mo', text: 'Best investment of my time. The AI looks super realistic.' },
-    { name: 'Chris', earnings: '$1,100/mo', text: 'Started a month ago, already have paying subscribers.' },
-    { name: 'Alex', earnings: '$2,400/mo', text: 'Zero technical skills needed. The platform does everything.' },
-    { name: 'Ryan', earnings: '$1,700/mo', text: 'ModelClone + Discord = perfect combo for beginners.' },
-    { name: 'Jake', earnings: '$4,600/mo', text: 'I run 3 AI models now. Each one earns independently.' },
-    { name: 'Tyler', earnings: '$1,300/mo', text: 'Was skeptical at first, but the results speak for themselves.' },
-  ];
+  const socialProofMessages = useMemo(() => [
+    { name: 'Sarah', city: 'Miami', flag: '🇺🇸', action: copy.socialProofActionStartedMoney, time: copy.socialProofTime2Seconds },
+    { name: 'Jake', city: 'Los Angeles', flag: '🇺🇸', action: copy.socialProofActionEarned950Week, time: copy.socialProofTime15Seconds },
+    { name: 'Emily', city: 'New York', flag: '🇺🇸', action: copy.socialProofActionCreatedFirstInfluencer, time: copy.socialProofTime30Seconds },
+    { name: 'Mike', city: 'Austin', flag: '🇺🇸', action: copy.socialProofActionJustSignedUp, time: copy.socialProofTime45Seconds },
+    { name: 'Jessica', city: 'Chicago', flag: '🇺🇸', action: copy.socialProofActionFirst10Subscribers, time: copy.socialProofTime1Minute },
+    { name: 'David', city: 'Denver', flag: '🇺🇸', action: copy.socialProofActionEarned1400TwoWeeks, time: copy.socialProofTime2Minutes },
+    { name: 'Ashley', city: 'Seattle', flag: '🇺🇸', action: copy.socialProofActionStartedMoney, time: copy.socialProofTime3Minutes },
+    { name: 'Chris', city: 'Phoenix', flag: '🇺🇸', action: copy.socialProofActionEarned2800Month, time: copy.socialProofTime5Minutes },
+    { name: 'Brittany', city: 'San Diego', flag: '🇺🇸', action: copy.socialProofActionJustVerified, time: copy.socialProofTime6Minutes },
+    { name: 'Tyler', city: 'Nashville', flag: '🇺🇸', action: copy.socialProofActionEarned720FirstWeek, time: copy.socialProofTime7Minutes },
+    { name: 'Amanda', city: 'Portland', flag: '🇺🇸', action: copy.socialProofActionCreated3Influencers, time: copy.socialProofTime8Minutes },
+    { name: 'Brandon', city: 'Atlanta', flag: '🇺🇸', action: copy.socialProofActionJustSignedUp, time: copy.socialProofTime9Minutes },
+    { name: 'Nicole', city: 'Boston', flag: '🇺🇸', action: copy.socialProofActionEarned1850Week, time: copy.socialProofTime10Minutes },
+    { name: 'Justin', city: 'Las Vegas', flag: '🇺🇸', action: copy.socialProofAction50SubscribersToday, time: copy.socialProofTime11Minutes },
+    { name: 'Samantha', city: 'San Francisco', flag: '🇺🇸', action: copy.socialProofActionStartedMoney, time: copy.socialProofTime12Minutes },
+    { name: 'Ryan', city: 'Dallas', flag: '🇺🇸', action: copy.socialProofActionEarned3200Month, time: copy.socialProofTime13Minutes },
+  ], [copy]);
+
+  const testimonials = useMemo(() => [
+    { name: 'James', earnings: '$2,800/mo', text: copy.testimonial1 },
+    { name: 'Michael', earnings: '$2,100/mo', text: copy.testimonial2 },
+    { name: 'David', earnings: '$3,500/mo', text: copy.testimonial3 },
+    { name: 'Chris', earnings: '$1,100/mo', text: copy.testimonial4 },
+    { name: 'Alex', earnings: '$2,400/mo', text: copy.testimonial5 },
+    { name: 'Ryan', earnings: '$1,700/mo', text: copy.testimonial6 },
+    { name: 'Jake', earnings: '$4,600/mo', text: copy.testimonial7 },
+    { name: 'Tyler', earnings: '$1,300/mo', text: copy.testimonial8 },
+  ], [copy]);
 
   return (
     <div className="min-h-screen bg-black text-white" data-testid="page-create-ai-model">
@@ -599,7 +823,7 @@ export default function CreateAIModelLandingPage() {
                 className="text-slate-400 hover:text-white transition-colors px-4 py-2 text-sm"
                 data-testid="link-login-nav"
               >
-                Login
+                {copy.navLogin}
               </Link>
               <Link 
                 to="/signup" 
@@ -608,7 +832,7 @@ export default function CreateAIModelLandingPage() {
                 data-testid="link-signup-nav"
               >
                 <span className="pointer-events-none absolute top-0 left-0 w-10 h-10 rounded-full bg-purple-400/30 blur-xl -translate-x-3 -translate-y-3" />
-                <span className="relative z-10">Start Free</span>
+                <span className="relative z-10">{copy.navStartFree}</span>
               </Link>
             </div>
 
@@ -634,7 +858,7 @@ export default function CreateAIModelLandingPage() {
                 className="text-gray-400 hover:text-white transition-colors py-2 text-center"
                 data-testid="link-login-mobile"
               >
-                Login
+                {copy.navLogin}
               </Link>
               <Link 
                 to="/signup" 
@@ -643,7 +867,7 @@ export default function CreateAIModelLandingPage() {
                 data-testid="link-signup-mobile"
               >
                 <span className="pointer-events-none absolute top-0 left-0 w-10 h-10 rounded-full bg-purple-400/30 blur-xl -translate-x-3 -translate-y-3" />
-                <span className="relative z-10">Start Free</span>
+                <span className="relative z-10">{copy.navStartFree}</span>
               </Link>
             </div>
           </motion.div>
@@ -670,20 +894,20 @@ export default function CreateAIModelLandingPage() {
                 <div className="w-4 h-4 rounded-full bg-white/15 border border-white/10" />
                 <div className="w-4 h-4 rounded-full bg-white/10 border border-white/10" />
               </div>
-              <span className="text-slate-400"><strong className="text-white">2,847</strong> joined this week</span>
+              <span className="text-slate-400"><strong className="text-white">2,847</strong> {copy.badgeJoinedWeek}</span>
             </div>
 
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-4xl font-bold mb-3 leading-tight tracking-tight">
-              Create Your AI Model
+              {copy.heroTitle}
               <span className="block text-slate-300 font-semibold text-2xl sm:text-3xl mt-1">
-                Earn $10K+ Monthly
+                {copy.heroSubtitle}
               </span>
             </h1>
 
             <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto leading-relaxed">
-              Design your perfect AI influencer in 60 seconds.{' '}
-              <span className="text-slate-300">100% free to start.</span>
+              {copy.heroDescription}{' '}
+              <span className="text-slate-300">{copy.heroDescriptionHighlight}</span>
             </p>
 
             {/* CTA Button */}
@@ -694,7 +918,7 @@ export default function CreateAIModelLandingPage() {
               data-testid="button-hero-signup"
             >
               <span className="pointer-events-none absolute top-0 left-0 w-16 h-16 rounded-full bg-purple-400/30 blur-xl -translate-x-5 -translate-y-5" />
-              <span className="relative z-10">Start Free</span>
+              <span className="relative z-10">{copy.navStartFree}</span>
               <ArrowRight className="w-4 h-4 relative z-10" />
             </Link>
 
@@ -702,11 +926,11 @@ export default function CreateAIModelLandingPage() {
             <div className="flex items-center justify-center gap-5 mt-4 text-xs text-slate-600">
               <span className="flex items-center gap-1.5">
                 <Check className="w-3 h-3 text-slate-400" />
-                No credit card
+                {copy.trustNoCard}
               </span>
               <span className="flex items-center gap-1.5">
                 <Zap className="w-3 h-3 text-slate-400" />
-                Ready in 60s
+                {copy.trustReady60s}
               </span>
             </div>
           </motion.div>
@@ -726,11 +950,11 @@ export default function CreateAIModelLandingPage() {
           >
             <div className="text-center mb-5">
               <p className="text-[9px] font-semibold uppercase tracking-[0.2em] mb-1" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                Real Results
+                {copy.realResultsLabel}
               </p>
-              <h2 className="text-xl font-bold text-white">Average Client Earnings Over 6 Months</h2>
+              <h2 className="text-xl font-bold text-white">{copy.realResultsTitle}</h2>
             </div>
-            <EarningsGrowthSlider currency="$" />
+            <EarningsGrowthSlider currency="$" copy={copy} />
           </motion.div>
         </div>
       </section>
@@ -743,19 +967,19 @@ export default function CreateAIModelLandingPage() {
               <div className="text-xl font-bold text-white">
                 <AnimatedCounter end={2500} suffix="+" />
               </div>
-              <p className="text-slate-600 text-[10px] mt-0.5">Models Created</p>
+              <p className="text-slate-600 text-[10px] mt-0.5">{copy.statsModelsCreated}</p>
             </div>
             <div>
               <div className="text-xl font-bold text-white">
                 <AnimatedCounter end={50} suffix="K+" />
               </div>
-              <p className="text-slate-600 text-[10px] mt-0.5">Images Made</p>
+              <p className="text-slate-600 text-[10px] mt-0.5">{copy.statsImagesMade}</p>
             </div>
             <div>
               <div className="text-xl font-bold text-white">
                 <AnimatedCounter end={98} suffix="%" />
               </div>
-              <p className="text-slate-600 text-[10px] mt-0.5">Satisfaction</p>
+              <p className="text-slate-600 text-[10px] mt-0.5">{copy.statsSatisfaction}</p>
             </div>
           </div>
         </div>
@@ -765,9 +989,9 @@ export default function CreateAIModelLandingPage() {
       <section className="py-8 px-4 overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-5">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">AI-Generated</p>
-            <h2 className="text-2xl font-bold tracking-tight">Meet Ashley</h2>
-            <p className="text-slate-600 text-sm mt-1">Every photo generated with ModelClone</p>
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">{copy.galleryLabel}</p>
+            <h2 className="text-2xl font-bold tracking-tight">{copy.galleryMeetAshley}</h2>
+            <p className="text-slate-600 text-sm mt-1">{copy.galleryAshleyCaption}</p>
           </div>
 
           <div className="relative overflow-hidden">
@@ -827,7 +1051,7 @@ export default function CreateAIModelLandingPage() {
       <section className="py-6 overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-5 px-4">
-            <h2 className="text-2xl font-bold tracking-tight">Meet Laura</h2>
+            <h2 className="text-2xl font-bold tracking-tight">{copy.galleryMeetLaura}</h2>
           </div>
 
           <div className="relative overflow-hidden">
@@ -887,7 +1111,7 @@ export default function CreateAIModelLandingPage() {
       <section className="py-6 overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-5 px-4">
-            <h2 className="text-2xl font-bold tracking-tight">Meet Natasha</h2>
+            <h2 className="text-2xl font-bold tracking-tight">{copy.galleryMeetNatasha}</h2>
           </div>
 
           <div className="relative overflow-hidden">
@@ -947,15 +1171,15 @@ export default function CreateAIModelLandingPage() {
       <section className="py-10 px-4" id="how-it-works">
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">How It Works</h2>
-            <p className="text-gray-500 text-sm">3 simple steps, no skills needed</p>
+            <h2 className="text-2xl font-bold mb-2">{copy.howItWorksTitle}</h2>
+            <p className="text-gray-500 text-sm">{copy.howItWorksSubtitle}</p>
           </div>
 
           <div className="space-y-4">
             {[
-              { num: '1', icon: User, title: 'Choose a Name', desc: 'Give your AI a unique identity' },
-              { num: '2', icon: Settings, title: 'Select Features', desc: 'Pick age, hair, eyes, body type' },
-              { num: '3', icon: Zap, title: 'Generate', desc: 'Click and your AI is ready' },
+              { num: '1', icon: User, title: copy.step1Title, desc: copy.step1Desc },
+              { num: '2', icon: Settings, title: copy.step2Title, desc: copy.step2Desc },
+              { num: '3', icon: Zap, title: copy.step3Title, desc: copy.step3Desc },
             ].map((step, i) => (
               <motion.div
                 key={step.num}
@@ -982,16 +1206,16 @@ export default function CreateAIModelLandingPage() {
       <section className="py-10 px-4">
         <div className="max-w-lg mx-auto">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">Why AI Models?</h2>
-            <p className="text-gray-500 text-sm">The smarter way to create content</p>
+            <h2 className="text-2xl font-bold mb-2">{copy.whyTitle}</h2>
+            <p className="text-gray-500 text-sm">{copy.whySubtitle}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: Zap, title: '100% Profits', desc: 'Keep everything you earn' },
-              { icon: Clock, title: 'Work 24/7', desc: 'Content while you sleep' },
-              { icon: Shield, title: 'No Drama', desc: 'Always reliable, always ready' },
-              { icon: Palette, title: 'Unlimited', desc: 'Generate as much as you want' },
+              { icon: Zap, title: copy.benefit1Title, desc: copy.benefit1Desc },
+              { icon: Clock, title: copy.benefit2Title, desc: copy.benefit2Desc },
+              { icon: Shield, title: copy.benefit3Title, desc: copy.benefit3Desc },
+              { icon: Palette, title: copy.benefit4Title, desc: copy.benefit4Desc },
             ].map((benefit, i) => (
               <motion.div
                 key={benefit.title}
@@ -1014,8 +1238,8 @@ export default function CreateAIModelLandingPage() {
       <section className="py-10 px-4 overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-6">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">Success Stories</p>
-            <h2 className="text-2xl font-bold tracking-tight">Real Earnings</h2>
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">{copy.successStoriesLabel}</p>
+            <h2 className="text-2xl font-bold tracking-tight">{copy.successStoriesTitle}</h2>
           </div>
 
           <div className="relative overflow-hidden">
@@ -1069,8 +1293,8 @@ export default function CreateAIModelLandingPage() {
               <div className="w-10 h-10 rounded-xl border border-white/[0.08] flex items-center justify-center mx-auto mb-3" style={{ background: 'rgba(88,101,242,0.12)' }}>
                 <SiDiscord className="w-5 h-5 text-[#7289da]" />
               </div>
-              <h3 className="font-bold text-base mb-1 tracking-tight">Free Training Community</h3>
-              <p className="text-slate-500 text-sm mb-4">Join 2,000+ creators learning how to earn with AI</p>
+              <h3 className="font-bold text-base mb-1 tracking-tight">{copy.discordTitle}</h3>
+              <p className="text-slate-500 text-sm mb-4">{copy.discordSubtitle}</p>
               <a
                 href="https://discord.gg/vpwGygjEaB"
                 target="_blank"
@@ -1080,7 +1304,7 @@ export default function CreateAIModelLandingPage() {
                 data-testid="button-discord"
               >
                 <SiDiscord className="w-4 h-4 text-[#7289da]" />
-                Join Discord Free
+                {copy.discordButton}
               </a>
             </div>
           </div>
@@ -1100,8 +1324,8 @@ export default function CreateAIModelLandingPage() {
               <div className="w-10 h-10 rounded-xl border border-white/10 flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(255,255,255,0.06)' }}>
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-2xl font-bold mb-2 tracking-tight">Ready to Start?</h2>
-              <p className="text-slate-400 text-sm mb-5">Create your first AI model in under 60 seconds</p>
+              <h2 className="text-2xl font-bold mb-2 tracking-tight">{copy.finalCtaTitle}</h2>
+              <p className="text-slate-400 text-sm mb-5">{copy.finalCtaSubtitle}</p>
 
               <Link
                 to="/signup"
@@ -1110,7 +1334,7 @@ export default function CreateAIModelLandingPage() {
                 data-testid="button-cta-signup"
               >
                 <span className="pointer-events-none absolute top-0 left-0 w-16 h-16 rounded-full bg-purple-400/30 blur-xl -translate-x-5 -translate-y-5" />
-                <span className="relative z-10">Create Free AI Model</span>
+                <span className="relative z-10">{copy.finalCtaPrimary}</span>
                 <ArrowRight className="w-4 h-4 relative z-10" />
               </Link>
 
@@ -1119,7 +1343,7 @@ export default function CreateAIModelLandingPage() {
                 className="block text-slate-600 hover:text-slate-300 mt-3 text-sm transition-colors"
                 data-testid="button-cta-login"
               >
-                Already have an account? Login
+                {copy.finalCtaSecondary}
               </Link>
             </div>
           </div>
@@ -1134,9 +1358,9 @@ export default function CreateAIModelLandingPage() {
             <span>ModelClone</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/terms" className="hover:text-white transition-colors" data-testid="link-terms">Terms</Link>
-            <Link to="/privacy" className="hover:text-white transition-colors" data-testid="link-privacy">Privacy</Link>
-            <Link to="/cookies" className="hover:text-white transition-colors" data-testid="link-cookies">Cookies</Link>
+            <Link to="/terms" className="hover:text-white transition-colors" data-testid="link-terms">{copy.footerTerms}</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors" data-testid="link-privacy">{copy.footerPrivacy}</Link>
+            <Link to="/cookies" className="hover:text-white transition-colors" data-testid="link-cookies">{copy.footerCookies}</Link>
           </div>
         </div>
       </footer>
@@ -1150,13 +1374,13 @@ export default function CreateAIModelLandingPage() {
           data-testid="button-sticky-cta"
         >
           <span className="pointer-events-none absolute top-0 left-0 w-14 h-14 rounded-full bg-purple-400/30 blur-xl -translate-x-4 -translate-y-4" />
-          <span className="relative z-10">Start Free</span>
+          <span className="relative z-10">{copy.navStartFree}</span>
           <ArrowRight className="w-4 h-4 relative z-10" />
         </Link>
       </div>
 
       {/* Social Proof Popup */}
-      <SocialProofPopup />
+      <SocialProofPopup messages={socialProofMessages} copy={copy} />
     </div>
   );
 }

@@ -104,13 +104,14 @@ async function falWebhookMiddleware(req, res, next) {
   req.body = parsed;
 
   const sigResult = await verifyFalSignature(raw, req.headers).catch(() => null);
-  if (sigResult === false) {
-    if (process.env.NODE_ENV === "production") {
-      console.warn("[fal webhook] ❌ invalid signature — logging but continuing");
-      // Don't reject: prefer logging over missing webhooks due to key rotation
-    } else {
-      console.warn("[fal webhook] signature invalid (dev mode — continuing)");
+  if (process.env.NODE_ENV === "production") {
+    // Fail closed in production: never process unsigned/unverifiable webhook payloads.
+    if (sigResult !== true) {
+      console.warn("[fal webhook] ❌ rejected webhook: signature verification failed");
+      return res.status(401).json({ ok: false, reason: "invalid_signature" });
     }
+  } else if (sigResult !== true) {
+    console.warn("[fal webhook] signature invalid/unverified (dev mode — continuing)");
   }
   next();
 }

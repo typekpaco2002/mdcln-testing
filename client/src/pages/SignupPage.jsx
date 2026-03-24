@@ -9,7 +9,95 @@ import { useAuthStore } from '../store';
 import { signInWithGoogle } from '../lib/firebase';
 import { generateFingerprint } from '../utils/fingerprint';
 
+const LOCALE_STORAGE_KEY = 'app_locale';
+
+const COPY = {
+  en: {
+    toastGoogleFailed: 'Google sign-in failed',
+    toastAccountCreated: 'Account created!',
+    toastWelcomeBack: 'Welcome back!',
+    toastSignupFailed: 'Signup failed',
+    toastFillAllFields: 'Please fill in all fields',
+    toastPasswordsMismatch: 'Passwords do not match',
+    toastPasswordMin: 'Password must be at least 8 characters',
+    toastVerifyEmailSent: 'Account created! Check your email for verification code',
+    toastSignupFailedRetry: 'Signup failed. Please try again.',
+    title: 'Create Account',
+    subtitle: 'Start creating AI content today',
+    benefit1: 'One-click signup with Google',
+    benefit2: 'No password to remember',
+    benefit3: 'Secure authentication by Google',
+    googleButtonLoading: 'Creating account...',
+    googleButtonContinue: 'Continue with Google',
+    or: 'or',
+    emailButton: 'Sign up with Email',
+    placeholderName: 'Full Name',
+    placeholderEmail: 'Email Address',
+    placeholderPassword: 'Password (min. 8 characters)',
+    placeholderConfirmPassword: 'Confirm Password',
+    emailSubmitLoading: 'Creating account...',
+    emailSubmit: 'Create Account',
+    backToGoogle: '← Back to Google signup',
+    legalNotice:
+      'By signing up, you agree to our Terms of Service and Privacy Policy. We use device verification for fraud prevention.',
+    alreadyHaveAccount: 'Already have an account?',
+    signIn: 'Sign In',
+    backHome: 'Back to Home',
+  },
+  ru: {
+    toastGoogleFailed: 'Ошибка входа через Google',
+    toastAccountCreated: 'Учётная запись создана!',
+    toastWelcomeBack: 'С возвращением!',
+    toastSignupFailed: 'Ошибка регистрации',
+    toastFillAllFields: 'Пожалуйста, заполните все поля',
+    toastPasswordsMismatch: 'Пароли не совпадают',
+    toastPasswordMin: 'Пароль должен содержать не менее 8 символов',
+    toastVerifyEmailSent: 'Учётная запись создана! Проверьте почту — мы отправили код подтверждения',
+    toastSignupFailedRetry: 'Ошибка регистрации. Пожалуйста, попробуйте ещё раз.',
+    title: 'Создать учётную запись',
+    subtitle: 'Начните создавать ИИ-контент уже сегодня',
+    benefit1: 'Быстрая регистрация через Google',
+    benefit2: 'Не нужно запоминать пароль',
+    benefit3: 'Безопасная аутентификация через Google',
+    googleButtonLoading: 'Создание учётной записи...',
+    googleButtonContinue: 'Продолжить через Google',
+    or: 'или',
+    emailButton: 'Зарегистрироваться по email',
+    placeholderName: 'Полное имя',
+    placeholderEmail: 'Адрес электронной почты',
+    placeholderPassword: 'Пароль (мин. 8 символов)',
+    placeholderConfirmPassword: 'Подтвердите пароль',
+    emailSubmitLoading: 'Создание учётной записи...',
+    emailSubmit: 'Создать учётную запись',
+    backToGoogle: '← Вернуться к регистрации через Google',
+    legalNotice:
+      'Регистрируясь, вы соглашаетесь с нашими Условиями использования и Политикой конфиденциальности. Мы используем верификацию устройства для защиты от мошенничества.',
+    alreadyHaveAccount: 'Уже есть учётная запись?',
+    signIn: 'Войти',
+    backHome: 'На главную',
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get('lang');
+    const normalizedQs = String(qsLang || '').toLowerCase();
+    if (normalizedQs === 'ru' || normalizedQs === 'en') {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || '').toLowerCase();
+    if (saved === 'ru' || saved === 'en') return saved;
+    const browser = String(navigator.language || '').toLowerCase();
+    return browser.startsWith('ru') ? 'ru' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 export default function SignupPage() {
+  const [locale] = useState(resolveLocale);
+  const copy = COPY[locale] || COPY.en;
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -53,7 +141,7 @@ export default function SignupPage() {
     try {
       const googleResult = await signInWithGoogle();
       if (!googleResult.success) {
-        toast.error(googleResult.error || 'Google sign-in failed');
+        toast.error(googleResult.error || copy.toastGoogleFailed);
         return;
       }
 
@@ -81,7 +169,7 @@ export default function SignupPage() {
           localStorage.removeItem("pendingReferralCode");
         }
         setAuth(data.user, data.token);
-        toast.success(data.isNewUser ? 'Account created!' : 'Welcome back!');
+        toast.success(data.isNewUser ? copy.toastAccountCreated : copy.toastWelcomeBack);
         const redirectTo = localStorage.getItem("redirectAfterLogin");
         if (redirectTo) {
           localStorage.removeItem("redirectAfterLogin");
@@ -92,11 +180,11 @@ export default function SignupPage() {
           navigate('/dashboard');
         }
       } else {
-        toast.error(data.message || 'Signup failed');
+        toast.error(data.message || copy.toastSignupFailed);
       }
     } catch (error) {
       console.error('Google signup error:', error);
-      toast.error(error.response?.data?.message || 'Google sign-in failed');
+      toast.error(error.response?.data?.message || copy.toastGoogleFailed);
     } finally {
       setGoogleLoading(false);
     }
@@ -106,17 +194,17 @@ export default function SignupPage() {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      toast.error('Please fill in all fields');
+      toast.error(copy.toastFillAllFields);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(copy.toastPasswordsMismatch);
       return;
     }
 
     if (formData.password.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error(copy.toastPasswordMin);
       return;
     }
 
@@ -142,15 +230,15 @@ export default function SignupPage() {
       
       if (data.success) {
         localStorage.removeItem("pendingReferralCode");
-        toast.success('Account created! Check your email for verification code');
+        toast.success(copy.toastVerifyEmailSent);
         navigate('/verify', { state: { email: formData.email } });
       } else {
-        toast.error(data.message || 'Signup failed');
+        toast.error(data.message || copy.toastSignupFailed);
       }
     } catch (error) {
       console.error('Signup error:', error);
       const errorData = error.response?.data;
-      toast.error(errorData?.message || 'Signup failed. Please try again.');
+      toast.error(errorData?.message || copy.toastSignupFailedRetry);
     } finally {
       setLoading(false);
     }
@@ -175,8 +263,8 @@ export default function SignupPage() {
 
         <div className="glass rounded-3xl p-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold mb-2">Create Account</h1>
-            <p className="text-gray-400">Start creating AI content today</p>
+            <h1 className="text-3xl font-bold mb-2">{copy.title}</h1>
+            <p className="text-gray-400">{copy.subtitle}</p>
           </div>
 
           {!showEmailForm ? (
@@ -184,15 +272,15 @@ export default function SignupPage() {
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3 text-sm text-gray-300">
                   <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span>One-click signup with Google</span>
+                  <span>{copy.benefit1}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-300">
                   <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span>No password to remember</span>
+                  <span>{copy.benefit2}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-300">
                   <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span>Secure authentication by Google</span>
+                  <span>{copy.benefit3}</span>
                 </div>
               </div>
 
@@ -206,12 +294,12 @@ export default function SignupPage() {
                 {googleLoading ? (
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 border-2 border-gray-400 border-t-gray-900 rounded-full animate-spin" />
-                    <span>Creating account...</span>
+                    <span>{copy.googleButtonLoading}</span>
                   </div>
                 ) : (
                   <>
                     <SiGoogle className="w-5 h-5" />
-                    Continue with Google
+                    {copy.googleButtonContinue}
                   </>
                 )}
               </button>
@@ -221,7 +309,7 @@ export default function SignupPage() {
                   <div className="w-full border-t border-white/10" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-black text-gray-400">or</span>
+                  <span className="px-4 bg-black text-gray-400">{copy.or}</span>
                 </div>
               </div>
 
@@ -232,7 +320,7 @@ export default function SignupPage() {
                 data-testid="button-show-email-form"
               >
                 <Mail className="w-5 h-5" />
-                Sign up with Email
+                {copy.emailButton}
               </button>
             </>
           ) : (
@@ -242,7 +330,7 @@ export default function SignupPage() {
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Full Name"
+                    placeholder={copy.placeholderName}
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
@@ -254,7 +342,7 @@ export default function SignupPage() {
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="email"
-                    placeholder="Email Address"
+                    placeholder={copy.placeholderEmail}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
@@ -266,7 +354,7 @@ export default function SignupPage() {
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password (min. 8 characters)"
+                    placeholder={copy.placeholderPassword}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     className="w-full pl-12 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
@@ -285,7 +373,7 @@ export default function SignupPage() {
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm Password"
+                    placeholder={copy.placeholderConfirmPassword}
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                     className="w-full pl-12 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-white/40 transition"
@@ -309,11 +397,11 @@ export default function SignupPage() {
                   {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                      <span>Creating account...</span>
+                      <span>{copy.emailSubmitLoading}</span>
                     </div>
                   ) : (
                     <>
-                      Create Account
+                      {copy.emailSubmit}
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
@@ -325,7 +413,7 @@ export default function SignupPage() {
                 onClick={() => setShowEmailForm(false)}
                 className="w-full mt-4 py-2 text-gray-400 hover:text-white transition text-sm"
               >
-                ← Back to Google signup
+                {copy.backToGoogle}
               </button>
             </>
           )}
@@ -333,8 +421,7 @@ export default function SignupPage() {
           <div className="flex items-start gap-3 p-4 rounded-xl bg-white/5 border border-white/10 mt-6">
             <Shield className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-gray-400">
-              By signing up, you agree to our Terms of Service and Privacy Policy. 
-              We use device verification for fraud prevention.
+              {copy.legalNotice}
             </p>
           </div>
 
@@ -343,7 +430,7 @@ export default function SignupPage() {
               <div className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-black text-gray-400">Already have an account?</span>
+              <span className="px-4 bg-black text-gray-400">{copy.alreadyHaveAccount}</span>
             </div>
           </div>
 
@@ -351,13 +438,13 @@ export default function SignupPage() {
             to="/login"
             className="block w-full py-3 rounded-xl glass hover:bg-white/10 transition font-semibold text-center"
           >
-            Sign In
+            {copy.signIn}
           </Link>
         </div>
 
         <div className="text-center mt-6">
           <Link to="/" className="text-gray-400 hover:text-white transition">
-            Back to Home
+            {copy.backHome}
           </Link>
         </div>
       </motion.div>
