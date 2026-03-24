@@ -14,6 +14,185 @@ import CreatorStudioVoiceTab from "../components/CreatorStudioVoiceTab";
 import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
 import TutorialInfoLink from "../components/TutorialInfoLink";
 
+const LOCALE_STORAGE_KEY = "app_locale";
+const PAGE_COPY = {
+  en: {
+    generating: "Generating…",
+    failed: "Failed",
+    save: "Save",
+    makeVideo: "Make Video",
+    enterPrompt: "Enter a prompt",
+    generationFailed: "Generation failed",
+    done: "Done!",
+    generationFailedRefunded: "Generation failed — credits refunded",
+    promptPlaceholder: "Describe the scene you imagine",
+    refs: "Refs",
+    aspect: "Aspect",
+    res: "Res",
+    buttonGenerating: "Generating…",
+    buttonGenerateCost: "Generate · {cost}",
+    creditsAvailable: "{credits} credits available",
+    imageGeneration: "Image Generation",
+    imageGenerationSubtitle: "No model required · generate anything",
+    tutorialImage: "click to view tutorial - image generation",
+    tutorialVoice: "click to view tutorial - voice studio",
+    tutorialAvatars: "click to view tutorial - real avatars",
+    emptyState: "Your creations will appear here",
+    errorEnterAvatarName: "Enter a name for the avatar",
+    errorUploadPhoto: "Upload a photo",
+    errorNoDefaultVoice: "This model has no default voice. Create one in Voice Studio first.",
+    avatarSubmitted: "Avatar submitted! Processing started — check back in a few minutes.",
+    errorCreateAvatar: "Failed to create avatar",
+    avatarDeleted: "Avatar deleted",
+    newAvatar: "New Avatar",
+    slotsUsed: "{used}/{max} slots used",
+    portraitPhoto: "Portrait Photo",
+    uploadPortraitPhoto: "Upload portrait photo",
+    avatarName: "Avatar Name",
+    avatarNamePlaceholder: "e.g. Studio Look, Casual Outdoor…",
+    voiceNoteHas: "All avatars on this model use the current default voice.",
+    voiceNoteMissing: "Open Voice Studio to create and select a default voice first.",
+    oneTimeCreationFee: "One-time creation fee",
+    insufficientCredits: "Insufficient credits ({credits} available, {required} required)",
+    submitting: "Submitting…",
+    createAvatarCost: "Create Avatar · {cost} cr",
+    writeScript: "Write a script",
+    scriptTooLong: "Script is too long (max {minutes} min)",
+    videoGenerationStarted: "Video generation started!",
+    failedStartVideoGeneration: "Failed to start video generation",
+    script: "Script",
+    scriptLinePlaceholder: "Write what the avatar will say…",
+    estimated: "~{duration} estimated",
+    chargedAt: "Charged at {perSec} credits/second. Max {maxMinutes} minutes. Refunded if generation fails.",
+    starting: "Starting…",
+    generateVideo: "Generate Video",
+    generateVideoCost: "Generate Video · {cost} cr",
+    generatingVideo: "Generating video…",
+    videoReady: "Video ready!",
+    videoFailedRefunded: "Video generation failed — credits refunded",
+    realAvatars: "Real Avatars",
+    realAvatarsSub: "Photo avatar generation · up to {max} per model",
+    model: "Model",
+    loadingModels: "Loading models…",
+    noModelsYet: "No models yet. Create a model first.",
+    selectModel: "Select model",
+    noVoice: "No voice",
+    voiceRequired: "Voice required",
+    voiceRequiredNote: "All avatars use this model's default voice. Open Voice Studio to create or select one.",
+    avatars: "Avatars ({count}/{max})",
+    loadingAvatars: "Loading avatars…",
+    newAvatarShort: "New Avatar",
+    limitReached: "Limit reached",
+    deleteToAdd: "Delete an avatar to add a new one",
+    recentVideos: "Recent Videos",
+    billingNote: "Active avatars are billed 500 credits/month to keep them live. Suspended avatars cannot generate videos.",
+    tabGenerate: "Generate",
+    tabVoices: "Voice Studio",
+    tabAvatars: "Real Avatars",
+    uploadFailedPrefix: "Upload failed: ",
+    unknownError: "Unknown error",
+  },
+  ru: {
+    generating: "Генерация…",
+    failed: "Ошибка",
+    save: "Сохранить",
+    makeVideo: "Создать видео",
+    enterPrompt: "Введите промпт",
+    generationFailed: "Ошибка генерации",
+    done: "Готово!",
+    generationFailedRefunded: "Ошибка генерации — кредиты возвращены",
+    promptPlaceholder: "Опишите сцену, которую вы представляете",
+    refs: "Референсы",
+    aspect: "Соотношение",
+    res: "Разрешение",
+    buttonGenerating: "Генерация…",
+    buttonGenerateCost: "Создать · {cost}",
+    creditsAvailable: "Доступно {credits} кредитов",
+    imageGeneration: "Генерация изображений",
+    imageGenerationSubtitle: "Модель не требуется · создавайте что угодно",
+    tutorialImage: "нажмите для просмотра обучения — генерация изображений",
+    tutorialVoice: "нажмите для просмотра обучения — голосовая студия",
+    tutorialAvatars: "нажмите для просмотра обучения — реальные аватары",
+    emptyState: "Ваши работы появятся здесь",
+    errorEnterAvatarName: "Введите имя для аватара",
+    errorUploadPhoto: "Загрузите фотографию",
+    errorNoDefaultVoice: "У этой модели нет голоса по умолчанию. Сначала создайте его в Голосовой студии.",
+    avatarSubmitted: "Аватар отправлен! Обработка начата — проверьте через несколько минут.",
+    errorCreateAvatar: "Не удалось создать аватар",
+    avatarDeleted: "Аватар удалён",
+    newAvatar: "Новый аватар",
+    slotsUsed: "Использовано {used}/{max} слотов",
+    portraitPhoto: "Портретное фото",
+    uploadPortraitPhoto: "Загрузить портретное фото",
+    avatarName: "Имя аватара",
+    avatarNamePlaceholder: "например, Студийный образ, Casual на улице…",
+    voiceNoteHas: "Все аватары этой модели используют текущий голос по умолчанию.",
+    voiceNoteMissing: "Откройте Голосовую студию, чтобы сначала создать и выбрать голос по умолчанию.",
+    oneTimeCreationFee: "Единовременная плата за создание",
+    insufficientCredits: "Недостаточно кредитов (доступно {credits}, требуется {required})",
+    submitting: "Отправка…",
+    createAvatarCost: "Создать аватар · {cost} кр",
+    writeScript: "Напишите сценарий",
+    scriptTooLong: "Сценарий слишком длинный (макс. {minutes} мин)",
+    videoGenerationStarted: "Генерация видео запущена!",
+    failedStartVideoGeneration: "Не удалось запустить генерацию видео",
+    script: "Сценарий",
+    scriptLinePlaceholder: "Напишите, что скажет аватар…",
+    estimated: "~{duration} ориентировочно",
+    chargedAt: "Списывается {perSec} кредитов/секунду. Макс. {maxMinutes} минут. Возвращается при ошибке генерации.",
+    starting: "Запуск…",
+    generateVideo: "Создать видео",
+    generateVideoCost: "Создать видео · {cost} кр",
+    generatingVideo: "Создание видео…",
+    videoReady: "Видео готово!",
+    videoFailedRefunded: "Ошибка создания видео — кредиты возвращены",
+    realAvatars: "Реальные аватары",
+    realAvatarsSub: "Создание фотоаватаров · до {max} на модель",
+    model: "Модель",
+    loadingModels: "Загрузка моделей…",
+    noModelsYet: "Моделей пока нет. Сначала создайте модель.",
+    selectModel: "Выбрать модель",
+    noVoice: "Без голоса",
+    voiceRequired: "Требуется голос",
+    voiceRequiredNote: "Все аватары используют голос по умолчанию этой модели. Откройте Голосовую студию, чтобы создать или выбрать его.",
+    avatars: "Аватары ({count}/{max})",
+    loadingAvatars: "Загрузка аватаров…",
+    newAvatarShort: "Новый аватар",
+    limitReached: "Лимит достигнут",
+    deleteToAdd: "Удалите аватар, чтобы добавить новый",
+    recentVideos: "Последние видео",
+    billingNote: "За активные аватары списывается 500 кредитов/месяц для поддержания работы. Приостановленные аватары не могут создавать видео.",
+    tabGenerate: "Создать",
+    tabVoices: "Голосовая студия",
+    tabAvatars: "Реальные аватары",
+    uploadFailedPrefix: "Ошибка загрузки: ",
+    unknownError: "Неизвестная ошибка",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+function formatCopy(text, vars = {}) {
+  return String(text).replace(/\{(\w+)\}/g, (_, key) =>
+    vars[key] == null ? `{${key}}` : String(vars[key]),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -96,6 +275,7 @@ function RefSlot({ url, onRemove, onAdd, uploading }) {
 }
 
 function ResultCard({ gen, onExpand }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const isProcessing = gen.status === "processing" || gen.status === "pending";
   const isFailed     = gen.status === "failed";
   return (
@@ -127,12 +307,12 @@ function ResultCard({ gen, onExpand }) {
       ) : isProcessing ? (
         <div className="w-full h-full flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
-          <p className="text-xs text-slate-400">Generating…</p>
+          <p className="text-xs text-slate-400">{copy.generating}</p>
         </div>
       ) : (
         <div className="w-full h-full flex flex-col items-center justify-center gap-2">
           <AlertCircle className="w-6 h-6 text-red-400/60" />
-          <p className="text-[11px] text-red-400/70">{gen.errorMessage || "Failed"}</p>
+          <p className="text-[11px] text-red-400/70">{gen.errorMessage || copy.failed}</p>
         </div>
       )}
     </motion.div>
@@ -140,6 +320,7 @@ function ResultCard({ gen, onExpand }) {
 }
 
 function Lightbox({ gen, onClose }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   if (!gen) return null;
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -154,7 +335,7 @@ function Lightbox({ gen, onClose }) {
         <a href={`/api/download?url=${encodeURIComponent(gen.outputUrl)}&filename=creator-${gen.id}.jpg`}
           download className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
           onClick={(e) => e.stopPropagation()}>
-          <Download className="w-3.5 h-3.5" /> Save
+          <Download className="w-3.5 h-3.5" /> {copy.save}
         </a>
       </motion.div>
     </motion.div>
@@ -183,6 +364,7 @@ function StatusBadge({ status }) {
 }
 
 function AvatarCard({ avatar, onDelete, onMakeVideo, deleting }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -230,7 +412,7 @@ function AvatarCard({ avatar, onDelete, onMakeVideo, deleting }) {
           }}
         >
           <Video className="w-3.5 h-3.5" />
-          Make Video
+          {copy.makeVideo}
         </button>
       </div>
     </motion.div>
@@ -257,9 +439,9 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim())  return toast.error("Enter a name for the avatar");
-    if (!photo)        return toast.error("Upload a photo");
-    if (!model?.elevenLabsVoiceId) return toast.error("This model has no default voice. Create one in Voice Studio first.");
+    if (!name.trim())  return toast.error(copy.errorEnterAvatarName);
+    if (!photo)        return toast.error(copy.errorUploadPhoto);
+    if (!model?.elevenLabsVoiceId) return toast.error(copy.errorNoDefaultVoice);
 
     setSubmitting(true);
     try {
@@ -268,12 +450,12 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
       fd.append("name", name.trim());
       fd.append("photo", photo);
       const data = await avatarAPI.create(fd);
-      toast.success("Avatar submitted! Processing started — check back in a few minutes.");
+      toast.success(copy.avatarSubmitted);
       reset();
       onCreated(data.avatar);
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.error || err.message || "Failed to create avatar");
+      toast.error(err.response?.data?.error || err.message || copy.errorCreateAvatar);
     } finally {
       setSubmitting(false);
     }
@@ -299,8 +481,8 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
               <User className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">New Avatar</h3>
-              <p className="text-[11px] text-slate-500">{avatarCount}/{MAX_AVATARS} slots used</p>
+              <h3 className="text-sm font-bold text-white">{copy.newAvatar}</h3>
+              <p className="text-[11px] text-slate-500">{formatCopy(copy.slotsUsed, { used: avatarCount, max: MAX_AVATARS })}</p>
             </div>
           </div>
           <button onClick={() => { reset(); onClose(); }}
@@ -313,7 +495,7 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
           {/* Photo upload */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 block">
-              Portrait Photo
+              {copy.portraitPhoto}
             </label>
             {photoPreview ? (
               <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4", maxHeight: 180 }}>
@@ -327,7 +509,7 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
               <button onClick={() => fileRef.current?.click()}
                 className="w-full py-8 rounded-xl border-2 border-dashed border-white/10 flex flex-col items-center gap-2 text-slate-500 hover:border-purple-500/40 hover:text-purple-400 transition-colors">
                 <Plus className="w-6 h-6" />
-                <span className="text-xs">Upload portrait photo</span>
+                <span className="text-xs">{copy.uploadPortraitPhoto}</span>
               </button>
             )}
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
@@ -336,11 +518,11 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
           {/* Name */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 block">
-              Avatar Name
+              {copy.avatarName}
             </label>
             <input
               value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Studio Look, Casual Outdoor…"
+              placeholder={copy.avatarNamePlaceholder}
               className="w-full px-3 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder-slate-600 outline-none focus:border-purple-500/50"
             />
           </div>
@@ -355,22 +537,22 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
                 {hasVoice
-                  ? "All avatars on this model use the current default voice."
-                  : "Open Voice Studio to create and select a default voice first."}
+                  ? copy.voiceNoteHas
+                  : copy.voiceNoteMissing}
               </p>
             </div>
           </div>
 
           {/* Cost */}
           <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-            <span className="text-xs text-slate-400">One-time creation fee</span>
+            <span className="text-xs text-slate-400">{copy.oneTimeCreationFee}</span>
             <span className="flex items-center gap-1 text-sm font-bold text-white">
               {COST} <Coins className="w-3.5 h-3.5 text-yellow-400" />
             </span>
           </div>
           {credits < COST && (
             <p className="text-xs text-red-400 text-center">
-              Insufficient credits ({credits} available, {COST} required)
+              {formatCopy(copy.insufficientCredits, { credits, required: COST })}
             </p>
           )}
         </div>
@@ -388,8 +570,8 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
             }}
           >
             {submitting
-              ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Submitting…</span>
-              : `Create Avatar · ${COST} cr`}
+              ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{copy.submitting}</span>
+              : formatCopy(copy.createAvatarCost, { cost: COST })}
           </button>
         </div>
       </motion.div>
@@ -398,6 +580,7 @@ function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
 }
 
 function GenerateVideoModal({ isOpen, avatar, model, onClose, onGenerated }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const user = useAuthStore(s => s.user);
   const [script, setScript] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -409,18 +592,18 @@ function GenerateVideoModal({ isOpen, avatar, model, onClose, onGenerated }) {
   const credits = user?.credits ?? 0;
 
   const handleSubmit = async () => {
-    if (!script.trim()) return toast.error("Write a script");
-    if (tooLong) return toast.error(`Script is too long (max ${MAX_VIDEO_SECONDS / 60} min)`);
+    if (!script.trim()) return toast.error(copy.writeScript);
+    if (tooLong) return toast.error(formatCopy(copy.scriptTooLong, { minutes: MAX_VIDEO_SECONDS / 60 }));
 
     setSubmitting(true);
     try {
       const data = await avatarAPI.generateVideo(avatar.id, { script: script.trim() });
-      toast.success("Video generation started!");
+      toast.success(copy.videoGenerationStarted);
       setScript("");
       onGenerated(data.video);
       onClose();
     } catch (err) {
-      toast.error(err.response?.data?.error || err.message || "Failed to start video generation");
+      toast.error(err.response?.data?.error || err.message || copy.failedStartVideoGeneration);
     } finally {
       setSubmitting(false);
     }
@@ -457,11 +640,11 @@ function GenerateVideoModal({ isOpen, avatar, model, onClose, onGenerated }) {
           {/* Script input */}
           <div>
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 block">
-              Script
+              {copy.script}
             </label>
             <textarea
               value={script} onChange={(e) => setScript(e.target.value)}
-              placeholder="Write what the avatar will say…"
+              placeholder={copy.scriptLinePlaceholder}
               rows={5}
               className="w-full px-3 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.08] text-sm text-white placeholder-slate-600 outline-none focus:border-purple-500/50 resize-none"
             />
@@ -474,7 +657,7 @@ function GenerateVideoModal({ isOpen, avatar, model, onClose, onGenerated }) {
               <div className="flex items-center gap-1.5">
                 <Clock className={`w-3.5 h-3.5 ${tooLong ? "text-red-400" : "text-slate-500"}`} />
                 <span className={`text-xs ${tooLong ? "text-red-400" : "text-slate-400"}`}>
-                  ~{secs < 60 ? `${secs}s` : `${(secs / 60).toFixed(1)}m`} estimated
+                  {formatCopy(copy.estimated, { duration: secs < 60 ? `${secs}s` : `${(secs / 60).toFixed(1)}m` })}
                   {tooLong && ` (max ${MAX_VIDEO_SECONDS / 60}m)`}
                 </span>
               </div>
@@ -487,12 +670,12 @@ function GenerateVideoModal({ isOpen, avatar, model, onClose, onGenerated }) {
           {/* Info pill */}
           <div className="flex items-start gap-2 text-[11px] text-slate-500">
             <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <span>Charged at {PER_SEC} credits/second. Max {MAX_VIDEO_SECONDS / 60} minutes. Refunded if generation fails.</span>
+            <span>{formatCopy(copy.chargedAt, { perSec: PER_SEC, maxMinutes: MAX_VIDEO_SECONDS / 60 })}</span>
           </div>
 
           {credits < cost && script.trim() && (
             <p className="text-xs text-red-400 text-center">
-              Insufficient credits ({credits} available, ~{cost} required)
+              {formatCopy(copy.insufficientCredits, { credits, required: `~${cost}` })}
             </p>
           )}
         </div>
@@ -510,8 +693,8 @@ function GenerateVideoModal({ isOpen, avatar, model, onClose, onGenerated }) {
             }}
           >
             {submitting
-              ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />Starting…</span>
-              : `Generate Video${script.trim() ? ` · ${cost} cr` : ""}`}
+              ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />{copy.starting}</span>
+              : (script.trim() ? formatCopy(copy.generateVideoCost, { cost }) : copy.generateVideo)}
           </button>
         </div>
       </motion.div>
@@ -541,7 +724,7 @@ function VideoCard({ video }) {
           {isProcessing ? (
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="w-7 h-7 animate-spin text-purple-400" />
-              <p className="text-xs text-slate-500">Generating video…</p>
+              <p className="text-xs text-slate-500">{copy.generatingVideo}</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2">
@@ -573,6 +756,7 @@ function VideoCard({ video }) {
 // Real Avatars tab content
 // ---------------------------------------------------------------------------
 function RealAvatarsTab({ sidebarCollapsed }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const queryClient = useQueryClient();
   const [selectedModelId, setSelectedModelId] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -632,9 +816,9 @@ function RealAvatarsTab({ sidebarCollapsed }) {
           if (updated.status !== vid.status) {
             setVideos(prev => prev.map(v => v.id === updated.id ? updated : v));
             if (updated.status === "completed") {
-              toast.success("Video ready!");
+              toast.success(copy.videoReady);
             } else if (updated.status === "failed") {
-              toast.error("Video generation failed — credits refunded");
+              toast.error(copy.videoFailedRefunded);
             }
           }
         } catch { /* ignore */ }
@@ -649,7 +833,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
     setDeletingId(avatar.id);
     try {
       await avatarAPI.delete(avatar.id);
-      toast.success("Avatar deleted");
+      toast.success(copy.avatarDeleted);
       queryClient.invalidateQueries({ queryKey: ["avatars", selectedModelId] });
     } catch (err) {
       toast.error(err.response?.data?.error || "Delete failed");
@@ -692,8 +876,8 @@ function RealAvatarsTab({ sidebarCollapsed }) {
           <User className="w-4 h-4 text-white" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white">Real Avatars</h2>
-          <p className="text-[11px] text-slate-500">Photo avatar generation · up to {MAX_AVATARS} per model</p>
+          <h2 className="text-sm font-bold text-white">{copy.realAvatars}</h2>
+          <p className="text-[11px] text-slate-500">{formatCopy(copy.realAvatarsSub, { max: MAX_AVATARS })}</p>
           <TutorialInfoLink
             className="mt-1"
             tutorialUrl={byKey?.["creator.real-avatars"]?.url || null}
@@ -703,13 +887,13 @@ function RealAvatarsTab({ sidebarCollapsed }) {
 
       {/* Model picker */}
       <div className="mb-6">
-        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Model</p>
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">{copy.model}</p>
         {modelsLoading ? (
           <div className="flex items-center gap-2 text-slate-500 text-sm">
-            <Loader2 className="w-4 h-4 animate-spin" /> Loading models…
+            <Loader2 className="w-4 h-4 animate-spin" /> {copy.loadingModels}
           </div>
         ) : models.length === 0 ? (
-          <p className="text-sm text-slate-500">No models yet. Create a model first.</p>
+          <p className="text-sm text-slate-500">{copy.noModelsYet}</p>
         ) : (
           <div className="relative w-64">
             <button
@@ -720,7 +904,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
                 {selectedModel?.thumbnail && (
                   <img src={selectedModel.thumbnail} alt="" className="w-6 h-6 rounded-lg object-cover" />
                 )}
-                <span className="truncate">{selectedModel?.name || "Select model"}</span>
+                <span className="truncate">{selectedModel?.name || copy.selectModel}</span>
               </span>
               <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${modelDropOpen ? "rotate-180" : ""}`} />
             </button>
@@ -735,7 +919,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
                     {m.thumbnail && <img src={m.thumbnail} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />}
                     <div>
                       <p className="text-white font-medium truncate">{m.name}</p>
-                      <p className="text-[10px] text-slate-500">{m.elevenLabsVoiceId ? `Voice: ${m.elevenLabsVoiceName || "Custom"}` : "No voice"}</p>
+                      <p className="text-[10px] text-slate-500">{m.elevenLabsVoiceId ? `Voice: ${m.elevenLabsVoiceName || "Custom"}` : copy.noVoice}</p>
                     </div>
                   </button>
                 ))}
@@ -750,9 +934,9 @@ function RealAvatarsTab({ sidebarCollapsed }) {
         <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl mb-6 bg-amber-400/5 border border-amber-400/20">
           <Mic className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-amber-300">Voice required</p>
+            <p className="text-xs font-semibold text-amber-300">{copy.voiceRequired}</p>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              All avatars use this model&apos;s default voice. Open <strong className="text-slate-400">Voice Studio</strong> to create or select one.
+              {copy.voiceRequiredNote}
             </p>
           </div>
         </div>
@@ -762,12 +946,12 @@ function RealAvatarsTab({ sidebarCollapsed }) {
       {selectedModelId && (
         <div>
           <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Avatars ({avatars.length}/{MAX_AVATARS})
+            {formatCopy(copy.avatars, { count: avatars.length, max: MAX_AVATARS })}
           </p>
 
           {avatarsLoading ? (
             <div className="flex items-center gap-2 text-slate-500 text-sm mb-6">
-              <Loader2 className="w-4 h-4 animate-spin" /> Loading avatars…
+              <Loader2 className="w-4 h-4 animate-spin" /> {copy.loadingAvatars}
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-6" style={{ maxWidth: 680 }}>
@@ -794,7 +978,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
                 >
                   <Plus className="w-6 h-6 text-slate-600 group-hover:text-purple-400 transition-colors mb-1" />
                   <span className="text-[11px] text-slate-600 group-hover:text-purple-400 transition-colors font-medium">
-                    New Avatar
+                    {copy.newAvatarShort}
                   </span>
                   <span className="text-[10px] text-slate-700 mt-0.5 flex items-center gap-1">
                     1000 <Coins className="w-2.5 h-2.5 text-yellow-500/60" />
@@ -805,8 +989,8 @@ function RealAvatarsTab({ sidebarCollapsed }) {
               {!canCreate && avatars.length >= MAX_AVATARS && (
                 <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-white/[0.02] p-3 text-center"
                   style={{ aspectRatio: "3/4" }}>
-                  <span className="text-[11px] text-slate-600">Limit reached</span>
-                  <span className="text-[10px] text-slate-700 mt-1">Delete an avatar to add a new one</span>
+                  <span className="text-[11px] text-slate-600">{copy.limitReached}</span>
+                  <span className="text-[10px] text-slate-700 mt-1">{copy.deleteToAdd}</span>
                 </div>
               )}
             </div>
@@ -816,7 +1000,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
           {avatars.filter(a => a.status !== "failed").length > 0 && (
             <div className="flex items-start gap-2 mb-6 text-[11px] text-slate-600">
               <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-slate-700" />
-              <span>Active avatars are billed 500 credits/month to keep them live. Suspended avatars cannot generate videos.</span>
+              <span>{copy.billingNote}</span>
             </div>
           )}
         </div>
@@ -826,7 +1010,7 @@ function RealAvatarsTab({ sidebarCollapsed }) {
       {videos.length > 0 && (
         <div>
           <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">
-            Recent Videos
+            {copy.recentVideos}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ maxWidth: 900 }}>
             <AnimatePresence>
@@ -871,6 +1055,7 @@ const TABS = [
 ];
 
 export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab = "generate", initialModelId = null }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const [activeTab, setActiveTab] = useState(initialTab);
   const user        = useAuthStore((s) => s.user);
   const refreshUser = useAuthStore((s) => s.refreshUser);
@@ -916,7 +1101,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
       if (!url) throw new Error("No URL returned");
       setRefs((prev) => { const next = [...prev]; next[slotIdx] = url; return next; });
     } catch (err) {
-      toast.error("Upload failed: " + (err.message || "Unknown error"));
+      toast.error(copy.uploadFailedPrefix + (err.message || copy.unknownError));
     } finally {
       setUploadingIdx(null);
     }
@@ -926,24 +1111,24 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
     setRefs((prev) => { const next = [...prev]; next[idx] = null; return next; });
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) { toast.error("Enter a prompt"); return; }
+    if (!prompt.trim()) { toast.error(copy.enterPrompt); return; }
     const filledRefs = refs.filter(Boolean);
     startGeneration({ status: "processing", type: "creator-studio", prompt: prompt.trim() });
     try {
       const data = await creatorStudioAPI.generate({ prompt: prompt.trim(), referencePhotos: filledRefs, aspectRatio, resolution });
-      if (!data.success) throw new Error(data.message || "Generation failed");
+      if (!data.success) throw new Error(data.message || copy.generationFailed);
       startGeneration({ ...data.generation, prompt: prompt.trim() });
       pollForCompletion(data.generation.id, {
         onSuccess: (gen) => {
-          toast.success("Done!");
+          toast.success(copy.done);
           refreshUser?.();
           setHistory((prev) => [{ ...gen, prompt: prompt.trim() }, ...prev.filter((g) => g.id !== gen.id)]);
         },
-        onFailure: (gen) => toast.error(gen.errorMessage || "Generation failed — credits refunded"),
+        onFailure: (gen) => toast.error(gen.errorMessage || copy.generationFailedRefunded),
       });
     } catch (err) {
       reset();
-      toast.error(err.response?.data?.message || err.message || "Generation failed");
+      toast.error(err.response?.data?.message || err.message || copy.generationFailed);
     }
   };
 
@@ -986,7 +1171,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 />
               )}
               <Icon className="w-4 h-4" />
-              {tab.label}
+              {tab.id === "generate" ? copy.tabGenerate : tab.id === "voices" ? copy.tabVoices : copy.tabAvatars}
             </button>
           );
         })}
@@ -999,20 +1184,20 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
           <div className="flex-1 px-6 pt-4 pb-64 min-h-screen">
             <div className="flex items-center gap-3 mb-8">
               <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Image Generation</h1>
-                <p className="text-sm text-slate-400 mt-0.5">No model required · generate anything</p>
+                <h1 className="text-2xl font-bold text-white tracking-tight">{copy.imageGeneration}</h1>
+                <p className="text-sm text-slate-400 mt-0.5">{copy.imageGenerationSubtitle}</p>
                 <div className="mt-2 flex flex-wrap items-center gap-3">
                   <TutorialInfoLink
                     tutorialUrl={byKey?.["creator.nanobanana-pro"]?.url || null}
-                    label="click to view tutorial - image generation"
+                    label={copy.tutorialImage}
                   />
                   <TutorialInfoLink
                     tutorialUrl={byKey?.["creator.voice-studio"]?.url || null}
-                    label="click to view tutorial - voice studio"
+                    label={copy.tutorialVoice}
                   />
                   <TutorialInfoLink
                     tutorialUrl={byKey?.["creator.real-avatars"]?.url || null}
-                    label="click to view tutorial - real avatars"
+                    label={copy.tutorialAvatars}
                   />
                 </div>
               </div>
@@ -1024,7 +1209,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                   style={{ background: "rgba(124,58,237,0.08)", border: "1px solid rgba(124,58,237,0.15)" }}>
                   <Sparkles className="w-8 h-8 text-purple-400/60" />
                 </div>
-                <p className="text-slate-500 text-sm">Your creations will appear here</p>
+                <p className="text-slate-500 text-sm">{copy.emptyState}</p>
               </div>
             )}
 
@@ -1081,13 +1266,13 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
               <textarea
                 value={prompt} onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
-                placeholder="Describe the scene you imagine"
+                placeholder={copy.promptPlaceholder}
                 rows={2}
                 className="w-full bg-transparent text-sm text-white placeholder-slate-500 resize-none outline-none px-1 py-1 leading-relaxed"
               />
               <div className="flex items-center gap-3 mt-2 flex-wrap">
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-0.5">Refs</span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-0.5">{copy.refs}</span>
                   {refs.map((url, i) => (
                     <RefSlot key={i} url={url} uploading={uploadingIdx === i}
                       onRemove={() => removeRef(i)} onAdd={(file) => handleAddRef(file, i)} />
@@ -1095,7 +1280,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 </div>
                 <div className="w-px h-6 bg-white/[0.08] flex-shrink-0" />
                 <div className="flex items-center gap-1 flex-shrink-0 flex-wrap">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-0.5">Aspect</span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-0.5">{copy.aspect}</span>
                   {ASPECT_RATIOS.map((ar) => (
                     <Chip key={ar.value} active={aspectRatio === ar.value} onClick={() => setAspectRatio(ar.value)}>
                       {ar.hint ?? ar.label}
@@ -1104,7 +1289,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 </div>
                 <div className="w-px h-6 bg-white/[0.08] flex-shrink-0" />
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-0.5">Res</span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-0.5">{copy.res}</span>
                   {RESOLUTIONS.map((r) => (
                     <Chip key={r} active={resolution === r} onClick={() => setResolution(r)}>{r}</Chip>
                   ))}
@@ -1131,14 +1316,14 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                       ? <Loader2 className="w-4 h-4 animate-spin relative z-10" />
                       : <Zap className="w-4 h-4 relative z-10" />}
                     <span className="relative z-10 flex items-center gap-1.5">
-                      {isGenerating ? "Generating…" : (
-                        <>Generate · {COST} <Coins className="w-3.5 h-3.5 text-yellow-400" /></>
+                      {isGenerating ? copy.buttonGenerating : (
+                        <>{formatCopy(copy.buttonGenerateCost, { cost: COST })} <Coins className="w-3.5 h-3.5 text-yellow-400" /></>
                       )}
                     </span>
                   </button>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-600 mt-1.5 text-right pr-1">{creditsLeft} credits available</p>
+              <p className="text-[10px] text-slate-600 mt-1.5 text-right pr-1">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
             </div>{/* /inner card */}
             </div>{/* /spinning-border outer */}
           </div>{/* /fixed positioner */}
@@ -1146,17 +1331,17 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
           {/* Mobile bar */}
           <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 p-3" style={{ background: BAR_BG }}>
             <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe the scene you imagine" rows={2}
+              placeholder={copy.promptPlaceholder} rows={2}
               className="w-full bg-transparent text-sm text-white placeholder-slate-500 resize-none outline-none px-1 mb-2"
             />
             <div className="flex gap-2 flex-wrap mb-2">
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest self-center">Aspect</span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest self-center">{copy.aspect}</span>
               {ASPECT_RATIOS.map((ar) => (
                 <Chip key={ar.value} active={aspectRatio === ar.value} onClick={() => setAspectRatio(ar.value)}>{ar.hint ?? ar.label}</Chip>
               ))}
             </div>
             <div className="flex gap-2 items-center mb-3">
-              <span className="text-[10px] text-slate-500 uppercase tracking-widest">Res</span>
+              <span className="text-[10px] text-slate-500 uppercase tracking-widest">{copy.res}</span>
               {RESOLUTIONS.map((r) => (
                 <Chip key={r} active={resolution === r} onClick={() => setResolution(r)}>{r}</Chip>
               ))}
@@ -1166,7 +1351,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" }}>
                 {isGenerating
                   ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <span className="flex items-center gap-1">Generate · {COST} <Coins className="w-3.5 h-3.5 text-yellow-400" /></span>
+                  : <span className="flex items-center gap-1">{formatCopy(copy.buttonGenerateCost, { cost: COST })} <Coins className="w-3.5 h-3.5 text-yellow-400" /></span>
                 }
               </button>
             </div>

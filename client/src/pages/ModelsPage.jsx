@@ -41,7 +41,157 @@ import { cn } from "../lib/utils";
 import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
 import TutorialInfoLink from "../components/TutorialInfoLink";
 
+const LOCALE_STORAGE_KEY = "app_locale";
+const PAGE_COPY = {
+  en: {
+    title: "My Models",
+    subtitle: "Create and manage your AI face models",
+    createModel: "Create Model",
+    searchPlaceholder: "Search models by name...",
+    photo: "Photo",
+    modelAge: "Model Age",
+    notSet: "Not set",
+    usedInPrompts: "Used in AI generation prompts.",
+    modelLooks: "Model Looks",
+    saveLooks: "Save Looks",
+    saving: "Saving...",
+    voiceStudio: "Voice Studio",
+    voiceStudioDesc: "Manage up to 3 model voices, pick the default, and generate audio in the full Voice Studio.",
+    noModelVoice: "No model voice yet.",
+    createVoiceInStudio: "Create voice in studio...",
+    openVoiceStudio: "Open full voice studio...",
+    hoverPhotoHint: "Hover any photo to preview or replace. Changes save automatically.",
+    custom: "Custom",
+    typeCustom: "Type custom...",
+    detecting: "Detecting...",
+    autoAssign: "AI Auto-Assign",
+    noPhotosFound: "No photos found on this model",
+    looksDetectedCost: "Looks detected! · 10 🪙 used",
+    detectionFailed: "Detection failed",
+    detectLooksFailed: "Failed to detect looks",
+    gender: "Gender",
+    loadModelsFailed: "Failed to load models",
+    confirmDeleteModel: 'Delete model "{name}"?',
+    modelDeleted: "Model deleted",
+    deleteModelFailed: "Failed to delete model",
+    photoUpdated: "Photo updated",
+    updatePhotoFailed: "Failed to update photo",
+    ageRangeError: "Age must be between 1 and 85 (models under 18 cannot use NSFW or LoRA)",
+    ageUpdated: "Age updated",
+    updateAgeFailed: "Failed to update age",
+    lookSettingsSaved: "Look settings saved",
+    saveLookSettingsFailed: "Failed to save look settings",
+    emptyTitle: "No models yet",
+    emptySubtitle: "Create your first AI model by uploading 3 photos or generating one with AI",
+    emptyCta: "Create First Model",
+    noMatch: 'No models match "{query}"',
+    clearSearch: "Clear search",
+    statusGenerating: "Generating…",
+    generatingPhotos: "Generating photos…",
+    viewEditPhotos: "View & edit photos",
+    lockedTitle: "Photos locked (unlock via admin if user needs to change photos)",
+    previewAlt: "Photo preview",
+    clickAnywhereClose: "Click anywhere to close",
+    viewOrUpdatePhotos: "View or update model photos",
+    viewFullSize: "View full size",
+    replacePhoto: "Replace photo",
+    save: "Save",
+    clear: "Clear",
+    countSet: "{count} set",
+    defaultVoiceOnFile: "Default voice on file ({type}).",
+    voiceTypeClone: "clone",
+    voiceTypeDesign: "design",
+    infoLocked: "Photos locked — NSFW access is enabled. Hover & click the eye icon to view.",
+    photosLockedNsfwEnabled: "Photos locked (NSFW enabled)",
+  },
+  ru: {
+    title: "Мои модели",
+    subtitle: "Создавайте и управляйте своими ИИ-моделями лица",
+    createModel: "Создать модель",
+    searchPlaceholder: "Поиск моделей по имени...",
+    photo: "Фото",
+    modelAge: "Возраст модели",
+    notSet: "Не задано",
+    usedInPrompts: "Используется в промптах генерации ИИ.",
+    modelLooks: "Внешность модели",
+    saveLooks: "Сохранить внешность",
+    saving: "Сохранение...",
+    voiceStudio: "Голосовая студия",
+    voiceStudioDesc: "Управляйте до 3 голосами модели, выбирайте голос по умолчанию и генерируйте аудио в полной голосовой студии.",
+    noModelVoice: "Голос модели пока не задан.",
+    createVoiceInStudio: "Создать голос в студии...",
+    openVoiceStudio: "Открыть полную голосовую студию...",
+    hoverPhotoHint: "Наведите на фото, чтобы просмотреть или заменить. Изменения сохраняются автоматически.",
+    custom: "Другое",
+    typeCustom: "Введите свой вариант...",
+    detecting: "Определение...",
+    autoAssign: "AI Автоназначение",
+    noPhotosFound: "Фотографии на этой модели не найдены",
+    looksDetectedCost: "Внешность определена! · использовано 10 🪙",
+    detectionFailed: "Ошибка определения",
+    detectLooksFailed: "Не удалось определить внешность",
+    gender: "Пол",
+    loadModelsFailed: "Не удалось загрузить модели",
+    confirmDeleteModel: "Удалить модель «{name}»?",
+    modelDeleted: "Модель удалена",
+    deleteModelFailed: "Не удалось удалить",
+    photoUpdated: "Фото обновлено",
+    updatePhotoFailed: "Не удалось обновить фото",
+    ageRangeError: "Возраст должен быть от 1 до 85 (модели до 18 лет не могут использовать NSFW или LoRA)",
+    ageUpdated: "Возраст обновлён",
+    updateAgeFailed: "Не удалось обновить возраст",
+    lookSettingsSaved: "Настройки внешности сохранены",
+    saveLookSettingsFailed: "Не удалось сохранить настройки внешности",
+    emptyTitle: "Моделей пока нет",
+    emptySubtitle: "Создайте свою первую ИИ-модель, загрузив 3 фотографии или сгенерировав её с помощью ИИ",
+    emptyCta: "Создать первую модель",
+    noMatch: "Модели по запросу «{query}» не найдены",
+    clearSearch: "Очистить поиск",
+    statusGenerating: "Генерация…",
+    generatingPhotos: "Создание фотографий…",
+    viewEditPhotos: "Просмотр и редактирование фотографий",
+    lockedTitle: "Фотографии заблокированы (разблокировка через администратора, если пользователю нужно изменить фото)",
+    previewAlt: "Превью фото",
+    clickAnywhereClose: "Нажмите в любом месте, чтобы закрыть",
+    viewOrUpdatePhotos: "Просмотр или обновление фотографий модели",
+    viewFullSize: "Просмотр в полном размере",
+    replacePhoto: "Заменить фото",
+    save: "Сохранить",
+    clear: "Очистить",
+    countSet: "Задано: {count}",
+    defaultVoiceOnFile: "Голос по умолчанию сохранён ({type}).",
+    voiceTypeClone: "клон",
+    voiceTypeDesign: "создан",
+    infoLocked: "Фотографии заблокированы — включён доступ к NSFW. Наведите курсор и нажмите на иконку глаза для просмотра.",
+    photosLockedNsfwEnabled: "Фотографии заблокированы (NSFW включён)",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+function formatCopy(text, vars = {}) {
+  return String(text).replace(/\{(\w+)\}/g, (_, key) =>
+    vars[key] == null ? `{${key}}` : String(vars[key]),
+  );
+}
+
 export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioForModel }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const [models, setModels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -63,7 +213,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
     if (!editingModel) return;
     const imageUrls = [editingModel.photo1Url, editingModel.photo2Url, editingModel.photo3Url].filter(Boolean);
     if (imageUrls.length === 0) {
-      toast.error("No photos found on this model");
+      toast.error(copy.noPhotosFound);
       return;
     }
     setAutoDetectingLooks(true);
@@ -74,12 +224,12 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
         setEditLooks(prev => ({ ...prev, ...chipLooks }));
         // Auto-fill age input if detected and not already set
         if (age) setEditAge(String(age));
-        toast.success("Looks detected! · 10 🪙 used");
+        toast.success(copy.looksDetectedCost);
       } else {
-        toast.error(response.data.message || "Detection failed");
+        toast.error(response.data.message || copy.detectionFailed);
       }
     } catch (error) {
-      const msg = error.response?.data?.message || "Failed to detect looks";
+      const msg = error.response?.data?.message || copy.detectLooksFailed;
       toast.error(msg);
     } finally {
       setAutoDetectingLooks(false);
@@ -89,7 +239,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
   // Single source of truth: LoRA-style appearance groups + gender (same chips used everywhere)
   const appearanceGroups = selectorCategories.find(c => c.id === "appearance")?.groups || [];
   const modelLooksGroups = [
-    { key: "gender", label: "Gender", options: ["female", "male"] },
+    { key: "gender", label: copy.gender, options: ["female", "male"] },
     ...appearanceGroups,
   ];
 
@@ -174,23 +324,23 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
         });
       }
     } catch (error) {
-      toast.error("Failed to load models");
+      toast.error(copy.loadModelsFailed);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id, name) => {
-    if (!confirm(`Delete model "${name}"?`)) return;
+    if (!confirm(formatCopy(copy.confirmDeleteModel, { name }))) return;
 
     try {
       const response = await api.delete(`/models/${id}`);
       if (response.data.success) {
-        toast.success("Model deleted");
+        toast.success(copy.modelDeleted);
         loadModels();
       }
     } catch (error) {
-      toast.error("Failed to delete model");
+      toast.error(copy.deleteModelFailed);
     }
   };
 
@@ -209,12 +359,12 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
       });
 
       if (response.data.success) {
-        toast.success("Photo updated");
+        toast.success(copy.photoUpdated);
         loadModels();
         setEditingModel(response.data.model);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update photo");
+      toast.error(error.response?.data?.message || copy.updatePhotoFailed);
     } finally {
       setUploading(null);
     }
@@ -224,7 +374,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
     if (!editingModel) return;
     const ageVal = editAge.trim();
     if (ageVal && (parseInt(ageVal) < 1 || parseInt(ageVal) > 85)) {
-      toast.error("Age must be between 1 and 85 (models under 18 cannot use NSFW or LoRA)");
+      toast.error(copy.ageRangeError);
       return;
     }
     setSavingAge(true);
@@ -233,12 +383,12 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
         age: ageVal ? parseInt(ageVal) : null,
       });
       if (response.data.success) {
-        toast.success("Age updated");
+        toast.success(copy.ageUpdated);
         loadModels();
         setEditingModel({ ...editingModel, age: ageVal ? parseInt(ageVal) : null });
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to update age");
+      toast.error(error.response?.data?.message || copy.updateAgeFailed);
     } finally {
       setSavingAge(false);
     }
@@ -256,13 +406,13 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
         appearance: Object.keys(appearance).length > 0 ? appearance : {},
       });
       if (response.data.success) {
-        toast.success("Look settings saved");
+        toast.success(copy.lookSettingsSaved);
         const saved = response.data.savedAppearance || {};
         setEditingModel(prev => prev ? { ...prev, savedAppearance: saved } : null);
         setModels(prev => prev.map(m => m.id === editingModel.id ? { ...m, savedAppearance: saved } : m));
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to save look settings");
+      toast.error(error.response?.data?.message || copy.saveLookSettingsFailed);
     } finally {
       setSavingLooks(false);
     }
@@ -292,10 +442,10 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
         <div className="flex items-center gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              My Models
+              {copy.title}
             </h1>
             <p className="text-slate-400 text-sm">
-              Create and manage your AI face models
+              {copy.subtitle}
             </p>
             <TutorialInfoLink
               className="mt-1"
@@ -312,7 +462,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
           data-testid="button-create-model"
         >
           <Plus className="w-5 h-5" />
-          <span>Create Model</span>
+          <span>{copy.createModel}</span>
         </button>
       </div>
 
@@ -323,7 +473,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search models by name..."
+            placeholder={copy.searchPlaceholder}
             className="pl-9 h-10 bg-white/[0.03] border-white/[0.08] text-sm"
           />
           {searchQuery && (
@@ -373,10 +523,9 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
             }}
           />
           <div className="relative">
-            <h2 className="text-xl font-bold text-white mb-2">No models yet</h2>
+            <h2 className="text-xl font-bold text-white mb-2">{copy.emptyTitle}</h2>
             <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
-              Create your first AI model by uploading 3 photos or generating one
-              with AI
+              {copy.emptySubtitle}
             </p>
             <button
               onClick={() => {
@@ -386,7 +535,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
               data-testid="button-create-first-model"
             >
               <Plus className="w-5 h-5" />
-              Create First Model
+              {copy.emptyCta}
             </button>
           </div>
         </div>
@@ -397,8 +546,8 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
         return filteredModels.length === 0 && searchQuery ? (
           <div className="py-12 text-center">
             <MagnifyingGlass className="w-8 h-8 text-slate-600 mx-auto mb-2" weight="duotone" />
-            <p className="text-sm text-slate-500">No models match "{searchQuery}"</p>
-            <button onClick={() => setSearchQuery("")} className="text-xs text-purple-400 hover:text-purple-300 mt-2 transition-colors">Clear search</button>
+            <p className="text-sm text-slate-500">{formatCopy(copy.noMatch, { query: searchQuery })}</p>
+            <button onClick={() => setSearchQuery("")} className="text-xs text-purple-400 hover:text-purple-300 mt-2 transition-colors">{copy.clearSearch}</button>
           </div>
         ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -417,7 +566,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                 {model.status === "processing" ? (
                   <div className="w-full h-full bg-slate-800/80 flex flex-col items-center justify-center gap-1.5">
                     <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
-                    <span className="text-[9px] text-slate-400 text-center leading-tight px-1">Generating…</span>
+                    <span className="text-[9px] text-slate-400 text-center leading-tight px-1">{copy.statusGenerating}</span>
                   </div>
                 ) : (
                   <img
@@ -443,7 +592,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                         "linear-gradient(135deg, rgba(59,130,246,0.4), rgba(59,130,246,0.3))",
                     }}
                     data-testid={`button-edit-model-${model.id}`}
-                    title="View & edit photos"
+                    title={copy.viewEditPhotos}
                   >
                     <PencilSimple className="w-4 h-4 text-blue-300" weight="bold" />
                   </button>
@@ -455,7 +604,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                         background:
                           "linear-gradient(135deg, rgba(100,100,100,0.4), rgba(100,100,100,0.3))",
                       }}
-                      title="Photos locked (unlock via admin if user needs to change photos)"
+                      title={copy.lockedTitle}
                     >
                       <Lock className="w-4 h-4 text-slate-400" />
                     </div>
@@ -488,7 +637,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
               <div className="flex items-center gap-1.5 mt-1.5">
                 {model.status === "processing" ? (
                   <span className="text-[9px] text-purple-400 flex items-center gap-1">
-                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Generating photos…
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> {copy.generatingPhotos}
                   </span>
                 ) : (
                   <>
@@ -555,13 +704,13 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
             {/* Main image */}
             <img
               src={previewPhotoUrl}
-              alt="Photo preview"
+              alt={copy.previewAlt}
               className="max-h-[78vh] max-w-full object-contain rounded-xl"
             />
 
             {/* Hint */}
             <p className="text-slate-500 text-sm mt-4">
-              Click anywhere to close
+              {copy.clickAnywhereClose}
             </p>
           </div>
         </div>
@@ -594,7 +743,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                   {editingModel.name}
                 </h2>
                 <p className="text-[11px] text-slate-500 leading-tight">
-                  {isPhotosLocked ? "Photos locked (NSFW enabled)" : "View or update model photos"}
+                  {isPhotosLocked ? copy.photosLockedNsfwEnabled : copy.viewOrUpdatePhotos}
                 </p>
               </div>
 
@@ -617,14 +766,14 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                             setPreviewPhotoUrl(editingModel[`photo${num}Url`]);
                           }}
                           className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                          title="View full size"
+                          title={copy.viewFullSize}
                         >
                           <Eye className="w-4 h-4 text-white" />
                         </button>
                         {!isPhotosLocked && (
                           <label
                             className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors cursor-pointer"
-                            title="Replace photo"
+                            title={copy.replacePhoto}
                           >
                             <input
                               type="file"
@@ -646,7 +795,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                       </div>
                     </div>
                     <p className="text-[9px] uppercase tracking-wider text-slate-600 text-center font-medium">
-                      Photo {num}
+                      {copy.photo} {num}
                     </p>
                   </div>
                 ))}
@@ -654,7 +803,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
 
               {/* Age Setting */}
               <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Model Age</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">{copy.modelAge}</p>
                 <div className="flex items-center gap-2 flex-wrap">
                   <input
                     type="number"
@@ -662,7 +811,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                     max="85"
                     value={editAge}
                     onChange={(e) => setEditAge(e.target.value)}
-                    placeholder="Not set"
+                    placeholder={copy.notSet}
                     className="w-20 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white text-xs placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
                     data-testid="input-model-age"
                   />
@@ -678,7 +827,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                     }}
                     data-testid="button-save-age"
                   >
-                    {savingAge ? "Saving..." : "Save"}
+                    {savingAge ? copy.saving : copy.save}
                   </button>
                   {editAge && (
                     <button
@@ -686,10 +835,10 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                       className="px-2 py-1.5 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                       data-testid="button-clear-age"
                     >
-                      Clear
+                      {copy.clear}
                     </button>
                   )}
-                  <p className="text-[10px] text-slate-600 mt-0.5 w-full">Used in AI generation prompts.</p>
+                  <p className="text-[10px] text-slate-600 mt-0.5 w-full">{copy.usedInPrompts}</p>
                 </div>
               </div>
 
@@ -698,12 +847,12 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
                   <p className="text-xs font-medium text-white flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-cyan-400" />
-                    Model Looks
+                    {copy.modelLooks}
                   </p>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {Object.values(editLooks).filter(Boolean).length > 0 && (
                       <span className="text-[10px] text-slate-500">
-                        {Object.values(editLooks).filter(Boolean).length} set
+                        {formatCopy(copy.countSet, { count: Object.values(editLooks).filter(Boolean).length })}
                       </span>
                     )}
                     <button
@@ -712,8 +861,8 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                       className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-500/15 border border-violet-500/30 text-[10px] font-medium text-violet-300 hover:bg-violet-500/25 transition-all disabled:opacity-50"
                     >
                       {(autoDetectingLooks
-                        ? <><ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> Detecting…</>
-                        : <><Sparkle className="w-3 h-3" weight="fill" /> AI Auto-Assign · 10 <Coins className="w-3 h-3 text-yellow-400" /></>
+                        ? <><ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> {copy.detecting}</>
+                        : <><Sparkle className="w-3 h-3" weight="fill" /> {copy.autoAssign} · 10 <Coins className="w-3 h-3 text-yellow-400" /></>
                       )}
                     </button>
                   </div>
@@ -751,7 +900,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                               isCustom ? "bg-white/15 border border-white/30 text-white" : "bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:bg-white/[0.08] hover:text-white"
                             }`}
                           >
-                            Custom
+                            {copy.custom}
                           </button>
                         </div>
                         {(isCustom || (value === " ")) && (
@@ -759,7 +908,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                             type="text"
                             value={value === " " ? "" : value}
                             onChange={(e) => setEditLooks(prev => ({ ...prev, [g.key]: e.target.value }))}
-                            placeholder="Type custom…"
+                            placeholder={copy.typeCustom}
                             className="mt-1 w-full px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white text-[10px] placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
                           />
                         )}
@@ -774,8 +923,8 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                   className="mt-3 w-full py-1.5 rounded-lg bg-white/10 border border-white/15 text-white text-xs font-semibold hover:bg-white/15 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
                 >
                   {(savingLooks
-                    ? <><ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> Saving...</>
-                    : <><FloppyDisk className="w-3 h-3" weight="bold" /> Save Looks</>
+                    ? <><ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> {copy.saving}</>
+                    : <><FloppyDisk className="w-3 h-3" weight="bold" /> {copy.saveLooks}</>
                   )}
                 </button>
               </div>
@@ -784,17 +933,19 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
               <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                 <p className="text-xs font-medium text-white flex items-center gap-1.5">
                   <Mic className="w-3.5 h-3.5 text-violet-400" />
-                  Voice Studio
+                  {copy.voiceStudio}
                 </p>
                 <p className="text-[10px] text-slate-500 mt-1">
-                  Manage up to 3 model voices, pick the default, and generate audio in the full Voice Studio.
+                  {copy.voiceStudioDesc}
                 </p>
                 {editingModel.elevenLabsVoiceId ? (
                   <p className="text-[11px] text-emerald-400/90 mt-2">
-                    Default voice on file ({editingModel.elevenLabsVoiceType === "clone" ? "clone" : "design"}).
+                    {formatCopy(copy.defaultVoiceOnFile, {
+                      type: editingModel.elevenLabsVoiceType === "clone" ? copy.voiceTypeClone : copy.voiceTypeDesign,
+                    })}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-slate-500 mt-2">No model voice yet.</p>
+                  <p className="text-[11px] text-slate-500 mt-2">{copy.noModelVoice}</p>
                 )}
                 <button
                   type="button"
@@ -803,7 +954,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                   className="mt-2 w-full py-2 rounded-lg text-xs font-semibold backdrop-blur-sm text-violet-200 hover:text-white disabled:opacity-40 transition-all border border-violet-500/25 hover:border-violet-400/40"
           style={{ background: "rgba(109,40,217,0.12)" }}
                 >
-                  {editingModel.elevenLabsVoiceId ? "Open full voice studio…" : "Create voice in studio…"}
+                  {editingModel.elevenLabsVoiceId ? copy.openVoiceStudio : copy.createVoiceInStudio}
                 </button>
               </div>
 
@@ -814,14 +965,14 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                     <>
                       <Lock className="w-3.5 h-3.5 text-red-400 mt-0.5 flex-shrink-0" />
                       <p className="text-xs text-slate-400 leading-relaxed">
-                        Photos locked — NSFW access is enabled. Hover &amp; click the eye icon to view.
+                        {copy.infoLocked}
                       </p>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
                       <p className="text-xs text-slate-400 leading-relaxed">
-                        Hover any photo to preview or replace. Changes save automatically.
+                        {copy.hoverPhotoHint}
                       </p>
                     </>
                   )}

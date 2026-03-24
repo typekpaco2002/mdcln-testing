@@ -48,6 +48,118 @@ const PREVIEW_BADGE_STYLE = {
   border: "1px solid rgba(255,255,255,0.18)",
   color: "#E5E7EB",
 };
+const LOCALE_STORAGE_KEY = "app_locale";
+const PAGE_COPY = {
+  en: {
+    title: "History",
+    subtitle: "View and manage your generated content",
+    retry: "Retry",
+    filterByContentType: "Filter by content type",
+    filterByModel: "Filter by model",
+    all: "All",
+    allModels: "All Models",
+    lookupPlaceholder: "Lookup model by name...",
+    unnamed: "Unnamed",
+    noModelsFound: "No models found for this lookup.",
+    errorLoadGenerations: "Failed to load generations",
+    errorLoadMore: "Failed to load more generations",
+    confirmDeleteSelected: "Delete {count} generation(s)?",
+    toastDeleted: "Deleted {count} generation(s)",
+    toastDeleteFailed: "Failed to delete",
+    toastPreparingZip: "Preparing ZIP ({count} images)...",
+    toastDownloaded: "Downloaded",
+    toastNoCompleted: "No completed generations to download",
+    toastDownloadingProgress: "Downloading {current}/{total}...",
+    toastCreatingZip: "Creating ZIP file...",
+    toastDownloadedCount: "Downloaded {count} generation(s)",
+    toastDownloadFailed: "Failed to download",
+    viewShowing: "Showing {shown} of {total}",
+    batchSelected: "{count} selected",
+    cleanupDisabled:
+      "Automatic history cleanup is currently disabled. Content is kept unless you delete it manually.",
+    cleanupEnabled:
+      "We store up to {max} generations per model. Older content is automatically removed when the limit is reached. Download anything you want to keep!",
+    emptyTitle: "No generations found",
+    emptySubtitle: "Try adjusting your filters or create new content",
+    buttonLoading: "Loading…",
+    buttonLoadMore: "Load more ({remaining} remaining)",
+    statusQueued: "Queued…",
+    statusProcessing: "Processing…",
+    statusFailed: "Failed",
+    previewTitle: "Preview",
+    previewPrev: "Prev",
+    previewNext: "Next",
+    previewPrompt: "Prompt",
+    previewNegativePrompt: "Negative Prompt",
+    previewFullBuiltPrompt: "Full Built Prompt",
+  },
+  ru: {
+    title: "История",
+    subtitle: "Просмотр и управление сгенерированным контентом",
+    retry: "Повторить",
+    filterByContentType: "Фильтр по типу контента",
+    filterByModel: "Фильтр по модели",
+    all: "Все",
+    allModels: "Все модели",
+    lookupPlaceholder: "Поиск модели по имени...",
+    unnamed: "Без названия",
+    noModelsFound: "Для этого поиска модели не найдены.",
+    errorLoadGenerations: "Не удалось загрузить генерации",
+    errorLoadMore: "Не удалось загрузить дополнительные генерации",
+    confirmDeleteSelected: "Удалить {count} генерацию(-ий)?",
+    toastDeleted: "Удалено {count} генерацию(-ий)",
+    toastDeleteFailed: "Не удалось удалить",
+    toastPreparingZip: "Подготовка ZIP ({count} изображений)...",
+    toastDownloaded: "Скачано",
+    toastNoCompleted: "Нет завершённых генераций для скачивания",
+    toastDownloadingProgress: "Скачивание {current}/{total}...",
+    toastCreatingZip: "Создание ZIP-файла...",
+    toastDownloadedCount: "Скачано {count} генерацию(-ий)",
+    toastDownloadFailed: "Не удалось скачать",
+    viewShowing: "Показано {shown} из {total}",
+    batchSelected: "Выбрано: {count}",
+    cleanupDisabled:
+      "Автоматическая очистка истории отключена. Контент хранится до тех пор, пока вы не удалите его вручную.",
+    cleanupEnabled:
+      "Мы храним до {max} генераций на модель. Старый контент автоматически удаляется при достижении лимита. Скачайте всё, что хотите сохранить!",
+    emptyTitle: "Генерации не найдены",
+    emptySubtitle: "Попробуйте изменить фильтры или создайте новый контент",
+    buttonLoading: "Загрузка…",
+    buttonLoadMore: "Загрузить ещё (осталось {remaining})",
+    statusQueued: "В очереди…",
+    statusProcessing: "Обработка…",
+    statusFailed: "Ошибка",
+    previewTitle: "Просмотр",
+    previewPrev: "Назад",
+    previewNext: "Вперёд",
+    previewPrompt: "Промпт",
+    previewNegativePrompt: "Негативный промпт",
+    previewFullBuiltPrompt: "Полный собранный промпт",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+function formatCopy(text, vars = {}) {
+  return String(text).replace(/\{(\w+)\}/g, (_, key) =>
+    vars[key] == null ? `{${key}}` : String(vars[key]),
+  );
+}
 
 function useMainViewportBounds() {
   const [bounds, setBounds] = useState({ left: 0, width: null });
@@ -146,6 +258,7 @@ function matchesType(genType, selectedType) {
 }
 
 export default function HistoryPage() {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const isPageVisibility = usePageVisibility();
   const [models, setModels] = useState([]);
   const [generations, setGenerations] = useState([]);
@@ -241,7 +354,7 @@ export default function HistoryPage() {
     } catch (error) {
       console.error("Error loading history:", error);
       if (!refreshLatest) {
-        setLoadError(error?.response?.data?.message || error?.message || "Failed to load generations");
+        setLoadError(error?.response?.data?.message || error?.message || copy.errorLoadGenerations);
       }
     } finally {
       setLoading(false);
@@ -275,7 +388,7 @@ export default function HistoryPage() {
       }
     } catch (e) {
       console.error("Error loading more history:", e);
-      setLoadError(e?.response?.data?.message || e?.message || "Failed to load more generations");
+      setLoadError(e?.response?.data?.message || e?.message || copy.errorLoadMore);
     } finally {
       setLoadingMore(false);
     }
@@ -308,7 +421,7 @@ export default function HistoryPage() {
 
   const handleBatchDelete = async () => {
     if (selectedGenerations.length === 0) return;
-    if (!confirm(`Delete ${selectedGenerations.length} generation(s)?`)) return;
+    if (!confirm(formatCopy(copy.confirmDeleteSelected, { count: selectedGenerations.length }))) return;
 
     setBatchDeleting(true);
     try {
@@ -316,14 +429,14 @@ export default function HistoryPage() {
         generationIds: selectedGenerations,
       });
       if (response.data.success) {
-        toast.success(`Deleted ${selectedGenerations.length} generation(s)`);
+        toast.success(formatCopy(copy.toastDeleted, { count: selectedGenerations.length }));
         setSelectedGenerations([]);
         loadHistory();
       } else {
-        toast.error(response.data.message || "Failed to delete");
+        toast.error(response.data.message || copy.toastDeleteFailed);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to delete");
+      toast.error(error.response?.data?.message || copy.toastDeleteFailed);
     } finally {
       setBatchDeleting(false);
     }
@@ -355,7 +468,7 @@ export default function HistoryPage() {
     }
 
     // Multiple images: bundle into a zip so users don't miss "hidden" outputs
-    toast.loading(`Preparing ZIP (${urls.length} images)...`, { id: "download-progress" });
+    toast.loading(formatCopy(copy.toastPreparingZip, { count: urls.length }), { id: "download-progress" });
     const zip = new JSZip();
     for (let i = 0; i < urls.length; i++) {
       const url = urls[i];
@@ -379,7 +492,7 @@ export default function HistoryPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(zipUrl);
-    toast.success("Downloaded", { id: "download-progress" });
+    toast.success(copy.toastDownloaded, { id: "download-progress" });
   };
 
   const handleBatchDownload = async () => {
@@ -391,7 +504,7 @@ export default function HistoryPage() {
       const completedGens = selectedGens.filter((g) => g.status === "completed" && g.outputUrl);
 
       if (completedGens.length === 0) {
-        toast.error("No completed generations to download");
+        toast.error(copy.toastNoCompleted);
         setBatchDownloading(false);
         return;
       }
@@ -400,7 +513,7 @@ export default function HistoryPage() {
 
       for (let i = 0; i < completedGens.length; i++) {
         const gen = completedGens[i];
-        toast.loading(`Downloading ${i + 1}/${completedGens.length}...`, { id: "download-progress" });
+        toast.loading(formatCopy(copy.toastDownloadingProgress, { current: i + 1, total: completedGens.length }), { id: "download-progress" });
 
         try {
           const urls = parseOutputUrls(gen.outputUrl);
@@ -424,7 +537,7 @@ export default function HistoryPage() {
         }
       }
 
-      toast.loading("Creating ZIP file...", { id: "download-progress" });
+      toast.loading(copy.toastCreatingZip, { id: "download-progress" });
       const zipBlob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
@@ -435,9 +548,9 @@ export default function HistoryPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      toast.success(`Downloaded ${completedGens.length} generation(s)`, { id: "download-progress" });
+      toast.success(formatCopy(copy.toastDownloadedCount, { count: completedGens.length }), { id: "download-progress" });
     } catch (error) {
-      toast.error("Failed to download", { id: "download-progress" });
+      toast.error(copy.toastDownloadFailed, { id: "download-progress" });
     } finally {
       setBatchDownloading(false);
     }
@@ -448,8 +561,8 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">History</h1>
-          <p className="text-slate-400 text-sm">View and manage your generated content</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">{copy.title}</h1>
+          <p className="text-slate-400 text-sm">{copy.subtitle}</p>
         </div>
       </div>
 
@@ -476,7 +589,7 @@ export default function HistoryPage() {
                 className="px-3 py-1.5 rounded-md text-xs font-medium text-amber-100 border border-amber-500/40 bg-amber-500/20 hover:bg-amber-500/30"
                 data-testid="history-retry-load"
               >
-                Retry
+                {copy.retry}
               </button>
             </div>
           )}
@@ -490,7 +603,7 @@ export default function HistoryPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                    <div className="text-xs uppercase tracking-wider text-slate-400">Filter by content type</div>
+                    <div className="text-xs uppercase tracking-wider text-slate-400">{copy.filterByContentType}</div>
                   </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {CONTENT_TYPE_OPTIONS.map((type) => (
@@ -511,7 +624,7 @@ export default function HistoryPage() {
                         {selectedType === type && (
                           <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
                         )}
-                        {type === "all" ? "All" : type.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                        {type === "all" ? copy.all : type.replace("-", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
                       </button>
                     ))}
                   </div>
@@ -519,7 +632,7 @@ export default function HistoryPage() {
 
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                    <div className="text-xs uppercase tracking-wider text-slate-400">Filter by model</div>
+                    <div className="text-xs uppercase tracking-wider text-slate-400">{copy.filterByModel}</div>
                     <div className="flex-1" />
                     <button
                       onClick={() => { setSelectedModelId("all"); setSelectedGenerations([]); }}
@@ -537,7 +650,7 @@ export default function HistoryPage() {
                       {selectedModelId === "all" && (
                         <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
                       )}
-                      All Models
+                      {copy.allModels}
                     </button>
                   </div>
 
@@ -545,7 +658,7 @@ export default function HistoryPage() {
                     type="text"
                     value={modelLookup}
                     onChange={(e) => setModelLookup(e.target.value)}
-                    placeholder="Lookup model by name..."
+                    placeholder={copy.lookupPlaceholder}
                     className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-white/20"
                     data-testid="input-model-lookup"
                   />
@@ -570,11 +683,11 @@ export default function HistoryPage() {
                           <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
                         )}
                         <LazyImage src={getThumbnailUrl(model.photo1Url)} alt="" className="w-5 h-5 rounded-full object-cover" />
-                        <span className="truncate">{model.name || "Unnamed"}</span>
+                        <span className="truncate">{model.name || copy.unnamed}</span>
                       </button>
                     ))}
                     {lookupModels.length === 0 && (
-                      <p className="text-xs text-slate-500 px-1 py-1">No models found for this lookup.</p>
+                      <p className="text-xs text-slate-500 px-1 py-1">{copy.noModelsFound}</p>
                     )}
                   </div>
                 </div>
@@ -610,8 +723,10 @@ export default function HistoryPage() {
 
           <div className="flex items-center justify-end mb-5">
             <div className="text-[11px] text-slate-500">
-              Showing <span className="text-slate-300 font-medium">{filteredGenerations.length}</span> of{" "}
-              <span className="text-slate-300 font-medium">{pagination.total || generations.length}</span>
+              {formatCopy(copy.viewShowing, {
+                shown: filteredGenerations.length,
+                total: pagination.total || generations.length,
+              })}
             </div>
           </div>
 
@@ -634,7 +749,7 @@ export default function HistoryPage() {
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
-                  {selectedGenerations.length} selected
+                  {formatCopy(copy.batchSelected, { count: selectedGenerations.length })}
                 </button>
 
                 <div className="flex-1" />
@@ -667,9 +782,9 @@ export default function HistoryPage() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.1)' }}>
             <Info className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             {retentionMaxPerModel == null ? (
-              <span>Automatic history cleanup is currently <strong className="text-slate-300">disabled</strong>. Content is kept unless you delete it manually.</span>
+              <span>{copy.cleanupDisabled}</span>
             ) : (
-              <span>We store up to <strong className="text-slate-300">{retentionMaxPerModel} generations per model</strong>. Older content is automatically removed when the limit is reached. Download anything you want to keep!</span>
+              <span>{formatCopy(copy.cleanupEnabled, { max: retentionMaxPerModel })}</span>
             )}
           </div>
 
@@ -680,8 +795,8 @@ export default function HistoryPage() {
               style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.04))', border: '1px solid rgba(139,92,246,0.15)' }}
             >
               <Clock className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-              <h3 className="text-lg font-semibold text-white mb-1">No generations found</h3>
-              <p className="text-slate-500 text-sm">Try adjusting your filters or create new content</p>
+              <h3 className="text-lg font-semibold text-white mb-1">{copy.emptyTitle}</h3>
+              <p className="text-slate-500 text-sm">{copy.emptySubtitle}</p>
             </div>
           ) : viewMode === "grid" ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -728,7 +843,7 @@ export default function HistoryPage() {
                 data-testid="history-load-more"
               >
                 {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {loadingMore ? "Loading…" : `Load more (${Math.max(0, (pagination.total || 0) - generations.length)} remaining)`}
+                {loadingMore ? copy.buttonLoading : formatCopy(copy.buttonLoadMore, { remaining: Math.max(0, (pagination.total || 0) - generations.length) })}
               </button>
             </div>
           )}
@@ -744,6 +859,7 @@ export default function HistoryPage() {
 }
 
 const GenerationCard = memo(function GenerationCard({ generation, models, isSelected, onToggleSelect, onPreview, onDownload, onDelete, index }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const model = models.find((m) => m.id === generation.modelId);
   const urls = parseOutputUrls(generation.outputUrl);
   const primaryUrl = urls[0] || "";
@@ -784,11 +900,11 @@ const GenerationCard = memo(function GenerationCard({ generation, models, isSele
         ) : generation.status === "processing" || generation.status === "pending" ? (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2">
             <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
-            <p className="text-xs text-slate-400">{generation.status === "pending" ? "Queued…" : "Processing…"}</p>
+            <p className="text-xs text-slate-400">{generation.status === "pending" ? copy.statusQueued : copy.statusProcessing}</p>
           </div>
         ) : generation.status === "failed" ? (
           <div className="w-full h-full flex items-center justify-center">
-            <p className="text-xs text-red-400">Failed</p>
+            <p className="text-xs text-red-400">{copy.statusFailed || "Failed"}</p>
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -848,6 +964,7 @@ const GenerationCard = memo(function GenerationCard({ generation, models, isSele
 });
 
 const GenerationListItem = memo(function GenerationListItem({ generation, models, isSelected, onToggleSelect, onPreview, onDownload, onDelete, index }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const model = models.find((m) => m.id === generation.modelId);
   const urls = parseOutputUrls(generation.outputUrl);
   const primaryUrl = urls[0] || "";
@@ -871,7 +988,7 @@ const GenerationListItem = memo(function GenerationListItem({ generation, models
             <LazyImage src={getThumbnailUrl(primaryUrl)} alt="Generated" className="w-full h-full object-cover" />
           )
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[10px] text-red-400">Failed</div>
+          <div className="w-full h-full flex items-center justify-center text-[10px] text-red-400">{copy.statusFailed || "Failed"}</div>
         )}
       </div>
 
@@ -920,6 +1037,7 @@ const GenerationListItem = memo(function GenerationListItem({ generation, models
 });
 
 const PreviewModal = memo(function PreviewModal({ item, onClose, onDownload }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const urls = parseOutputUrls(item.outputUrl);
   const [activeIndex, setActiveIndex] = useState(0);
   const activeUrl = urls[activeIndex] || "";
@@ -953,7 +1071,7 @@ const PreviewModal = memo(function PreviewModal({ item, onClose, onDownload }) {
       >
         <div className="flex-shrink-0 p-3 sm:p-4 flex items-center justify-between gap-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.2)' }}>
           <div className="flex items-center gap-2">
-            <h3 className="text-base sm:text-lg font-semibold text-white">Preview</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-white">{copy.previewTitle}</h3>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 transition-all" data-testid="close-preview">
             <X className="w-5 h-5 text-slate-400" />
@@ -975,7 +1093,7 @@ const PreviewModal = memo(function PreviewModal({ item, onClose, onDownload }) {
                       className="px-2.5 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white text-xs"
                       data-testid="history-prev"
                     >
-                      Prev
+                      {copy.previewPrev}
                     </button>
                     <span className="px-2 py-1 rounded-lg bg-black/60 border border-white/10 text-white text-xs">
                       {activeIndex + 1}/{urls.length}
@@ -985,7 +1103,7 @@ const PreviewModal = memo(function PreviewModal({ item, onClose, onDownload }) {
                       className="px-2.5 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white text-xs"
                       data-testid="history-next"
                     >
-                      Next
+                      {copy.previewNext}
                     </button>
                   </div>
                 )}
@@ -995,7 +1113,7 @@ const PreviewModal = memo(function PreviewModal({ item, onClose, onDownload }) {
 
           {item.prompt && (
             <div className="mt-3">
-              <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Prompt</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">{copy.previewPrompt}</p>
               <p className="text-[11px] text-slate-300 leading-relaxed" data-testid="text-history-prompt">
                 {item.prompt}
               </p>
@@ -1066,7 +1184,7 @@ const PreviewModal = memo(function PreviewModal({ item, onClose, onDownload }) {
               {loraInfo.negativePrompt && (
                 <details className="mt-2">
                   <summary className="text-[10px] uppercase tracking-wider text-slate-500 cursor-pointer select-none">
-                    Negative Prompt
+                    {copy.previewNegativePrompt}
                   </summary>
                   <p className="text-[10px] text-slate-400 leading-relaxed mt-1" data-testid="text-negative-prompt">
                     {loraInfo.negativePrompt}
@@ -1076,7 +1194,7 @@ const PreviewModal = memo(function PreviewModal({ item, onClose, onDownload }) {
               {loraInfo.builtPrompt && (
                 <details className="mt-2">
                   <summary className="text-[10px] uppercase tracking-wider text-slate-500 cursor-pointer select-none">
-                    Full Built Prompt
+                    {copy.previewFullBuiltPrompt}
                   </summary>
                   <p className="text-[10px] text-slate-400 leading-relaxed mt-1" data-testid="text-built-prompt">
                     {loraInfo.builtPrompt}

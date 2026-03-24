@@ -23,6 +23,267 @@ import { hasPremiumAccess } from "../utils/premiumAccess";
 import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
 import TutorialInfoLink from "./TutorialInfoLink";
 
+const LOCALE_STORAGE_KEY = "app_locale";
+const PAGE_COPY = {
+  en: {
+    genderFemale: "Female",
+    genderMale: "Male",
+    genderNeutral: "Neutral",
+    errorLoadStudio: "Failed to load Voice Studio for this model.",
+    errorLoadModels: "Failed to load your models.",
+    errorDescriptionMin: "Description must be at least 20 characters.",
+    successPreviewsReady: "Previews ready. Pick one and save it.",
+    errorPreviewsFailed: "Failed to generate design previews",
+    errorPickPreview: "Pick a preview first.",
+    errorConfirmConsent: "Confirm consent first.",
+    successDesignedSaved: "Designed voice saved.",
+    errorSaveDesignedFailed: "Failed to save designed voice",
+    errorUploadMp3First: "Upload an MP3 sample first.",
+    successClonedSaved: "Cloned voice saved.",
+    errorCloneFailed: "Voice clone failed",
+    successDefaultUpdated: "Default model voice updated.",
+    errorSelectVoiceFailed: "Failed to select voice",
+    confirmDeleteVoice: 'Delete voice "{name}"?',
+    successVoiceDeleted: "Voice deleted.",
+    errorDeleteVoiceFailed: "Failed to delete voice",
+    errorSelectVoiceFirst: "Select a voice first.",
+    errorScriptEmpty: "Script is empty.",
+    errorInsufficientRegenCredits: "Insufficient credits for regeneration.",
+    successRegenerated: "Audio regenerated — same history entry updated.",
+    errorRegenFailed: "Regeneration failed",
+    errorWriteScriptFirst: "Write a script first.",
+    successAudioGenerated: "Audio generated.",
+    errorGenerateAudioFailed: "Failed to generate audio",
+    gateTitle: "Voice Studio",
+    gateSubtitle: "Available for paid subscription users only.",
+    gateBody:
+      "Create up to 3 saved voices per model, generate high-quality multilingual audio, and keep a per-model history of generated clips once your subscription is active.",
+    title: "Voice Studio",
+    subtitle:
+      "Multilingual v3 audio generation, up to {max} saved voices per model.",
+    creditsAvailable: "Credits available:",
+    loadingModels: "Loading models...",
+    emptyModels: "Create a model first to use Voice Studio.",
+    modelLabel: "Model",
+    loadingStudio: "Loading voice studio...",
+    selectModelToContinue: "Select a model to continue.",
+    savedVoices: "Saved Voices",
+    savedCount: "{count}/{max} saved",
+    typeClone: "Voice clone",
+    typeDesigned: "Designed voice",
+    defaultBadge: "Default",
+    noPreview: "No preview available.",
+    useForAudio: "Use for audio",
+    buttonSaving: "Saving...",
+    buttonMakeDefault: "Make default",
+    buttonDeleting: "Deleting...",
+    buttonDelete: "Delete",
+    noVoicesYet:
+      "No voices yet. Create one below to unlock audio generation for this model.",
+    generateAudioSection: "Generate Audio",
+    finalVoiceOutput: "Final voice output",
+    needSavedVoice: "Create at least one saved voice to generate audio.",
+    selectedVoice: "Selected voice:",
+    selectedVoiceNone: "None",
+    scriptPlaceholder:
+      "Write the script you want this model voice to speak...",
+    charsCount: "{count}/{max} chars",
+    newAudioPricing:
+      "New audio: {newCost} credits / 1K chars. Regeneration (from history modal): {regenCost} credits / 1K chars.",
+    buttonGenerating: "Generating...",
+    buttonGenerateAudio: "Generate Audio",
+    errorInsufficientCreditsRequest: "Insufficient credits for this request.",
+    createVoice: "Create Voice",
+    designOrClone: "Design or clone",
+    modeDesign: "Design",
+    modeClone: "Clone",
+    languageHint: "Language hint",
+    languageAuto: "Auto / not specified",
+    genderOptional: "Gender (optional)",
+    genderAuto: "Auto",
+    descriptionLabel: "Voice description",
+    descriptionPlaceholder:
+      "Describe the voice style, tone, pacing, accent, emotion, and personality...",
+    buttonGeneratePreviews: "Generate previews",
+    previewCandidate: "Preview candidate",
+    consentDesign:
+      "I confirm I have permission to create and save this voice.",
+    buttonSaveDesigned: "Save designed voice",
+    cloneUploadHint:
+      "Upload one MP3 sample to create an instant voice clone.",
+    cloneChooseSample: "Choose MP3 sample",
+    consentClone:
+      "I confirm I own this sample or have permission to clone it.",
+    buttonSaveCloned: "Save cloned voice",
+    limitReached:
+      "You have reached the maximum saved voices for this model. Delete one to create another.",
+    historyTitle: "History",
+    historyGeneratedAudio: "Generated audio",
+    historyEmpty: "No generated audio yet.",
+    historyItemDefaultName: "Voice audio",
+    historyRegenerated: "Regenerated",
+    historyOpen: "Open ->",
+    modalRegeneratingTitle: "Regenerating audio…",
+    modalRegeneratingBody:
+      "Replacing this history entry with the new render. This can take a little while.",
+    modalTitle: "Generated audio",
+    modalStatusProcessing: "Processing",
+    modalCloseAria: "Close",
+    modalLoading: "Loading…",
+    modalVoiceLabel: "Voice",
+    modalScriptLabel: "Script",
+    modalRegenerationCost: "Regeneration:",
+    modalCredits: "credits",
+    modalProcessing: "Processing…",
+    modalOpenFile: "Open file",
+    modalRegenerateSameRow: "Regenerate (same history row)",
+    voiceTypeCloneShort: "(clone)",
+    voiceTypeDesignShort: "(design)",
+  },
+  ru: {
+    genderFemale: "Женский",
+    genderMale: "Мужской",
+    genderNeutral: "Нейтральный",
+    errorLoadStudio: "Не удалось загрузить Голосовую студию для этой модели.",
+    errorLoadModels: "Не удалось загрузить ваши модели.",
+    errorDescriptionMin: "Описание должно содержать не менее 20 символов.",
+    successPreviewsReady: "Превью готовы. Выберите одно и сохраните.",
+    errorPreviewsFailed: "Не удалось создать превью голоса",
+    errorPickPreview: "Сначала выберите превью.",
+    errorConfirmConsent: "Сначала подтвердите согласие.",
+    successDesignedSaved: "Созданный голос сохранён.",
+    errorSaveDesignedFailed: "Не удалось сохранить созданный голос",
+    errorUploadMp3First: "Сначала загрузите MP3-образец.",
+    successClonedSaved: "Клонированный голос сохранён.",
+    errorCloneFailed: "Ошибка клонирования голоса",
+    successDefaultUpdated: "Голос модели по умолчанию обновлён.",
+    errorSelectVoiceFailed: "Не удалось выбрать голос",
+    confirmDeleteVoice: 'Удалить голос «{name}»?',
+    successVoiceDeleted: "Голос удалён.",
+    errorDeleteVoiceFailed: "Не удалось удалить голос",
+    errorSelectVoiceFirst: "Сначала выберите голос.",
+    errorScriptEmpty: "Сценарий пуст.",
+    errorInsufficientRegenCredits:
+      "Недостаточно кредитов для повторной генерации.",
+    successRegenerated:
+      "Аудио перегенерировано — запись в истории обновлена.",
+    errorRegenFailed: "Ошибка повторной генерации",
+    errorWriteScriptFirst: "Сначала напишите сценарий.",
+    successAudioGenerated: "Аудио создано.",
+    errorGenerateAudioFailed: "Не удалось создать аудио",
+    gateTitle: "Голосовая студия",
+    gateSubtitle: "Доступно только для пользователей с платной подпиской.",
+    gateBody:
+      "Создавайте до 3 сохранённых голосов на модель, генерируйте многоязычное аудио высокого качества и храните историю сгенерированных клипов по каждой модели после активации подписки.",
+    title: "Голосовая студия",
+    subtitle:
+      "Многоязычная генерация аудио v3, до {max} сохранённых голосов на модель.",
+    creditsAvailable: "Доступно кредитов:",
+    loadingModels: "Загрузка моделей...",
+    emptyModels: "Сначала создайте модель, чтобы использовать Голосовую студию.",
+    modelLabel: "Модель",
+    loadingStudio: "Загрузка голосовой студии...",
+    selectModelToContinue: "Выберите модель, чтобы продолжить.",
+    savedVoices: "Сохранённые голоса",
+    savedCount: "Сохранено {count}/{max}",
+    typeClone: "Клон голоса",
+    typeDesigned: "Созданный голос",
+    defaultBadge: "По умолчанию",
+    noPreview: "Превью недоступно.",
+    useForAudio: "Использовать для аудио",
+    buttonSaving: "Сохранение...",
+    buttonMakeDefault: "Сделать по умолчанию",
+    buttonDeleting: "Удаление...",
+    buttonDelete: "Удалить",
+    noVoicesYet:
+      "Голосов пока нет. Создайте один ниже, чтобы разблокировать генерацию аудио для этой модели.",
+    generateAudioSection: "Создать аудио",
+    finalVoiceOutput: "Финальный голосовой вывод",
+    needSavedVoice:
+      "Создайте хотя бы один сохранённый голос для генерации аудио.",
+    selectedVoice: "Выбранный голос:",
+    selectedVoiceNone: "Не выбран",
+    scriptPlaceholder:
+      "Напишите сценарий, который должен озвучить голос модели...",
+    charsCount: "{count}/{max} симв.",
+    newAudioPricing:
+      "Новое аудио: {newCost} кредитов / 1К симв. Повторная генерация (из модального окна истории): {regenCost} кредитов / 1К симв.",
+    buttonGenerating: "Генерация...",
+    buttonGenerateAudio: "Создать аудио",
+    errorInsufficientCreditsRequest:
+      "Недостаточно кредитов для этого запроса.",
+    createVoice: "Создать голос",
+    designOrClone: "Создать или клонировать",
+    modeDesign: "Создать",
+    modeClone: "Клонировать",
+    languageHint: "Подсказка языка",
+    languageAuto: "Авто / не указано",
+    genderOptional: "Пол (необязательно)",
+    genderAuto: "Авто",
+    descriptionLabel: "Описание голоса",
+    descriptionPlaceholder:
+      "Опишите стиль, тон, темп, акцент, эмоцию и характер голоса...",
+    buttonGeneratePreviews: "Создать превью",
+    previewCandidate: "Вариант превью",
+    consentDesign:
+      "Я подтверждаю, что имею разрешение на создание и сохранение этого голоса.",
+    buttonSaveDesigned: "Сохранить созданный голос",
+    cloneUploadHint:
+      "Загрузите один MP3-образец для мгновенного клонирования голоса.",
+    cloneChooseSample: "Выбрать MP3-образец",
+    consentClone:
+      "Я подтверждаю, что являюсь владельцем этого образца или имею разрешение на его клонирование.",
+    buttonSaveCloned: "Сохранить клонированный голос",
+    limitReached:
+      "Достигнут максимум сохранённых голосов для этой модели. Удалите один, чтобы создать новый.",
+    historyTitle: "История",
+    historyGeneratedAudio: "Сгенерированное аудио",
+    historyEmpty: "Сгенерированного аудио пока нет.",
+    historyItemDefaultName: "Голосовое аудио",
+    historyRegenerated: "Перегенерировано",
+    historyOpen: "Открыть ->",
+    modalRegeneratingTitle: "Повторная генерация аудио…",
+    modalRegeneratingBody:
+      "Замена этой записи в истории новым рендером. Это может занять некоторое время.",
+    modalTitle: "Сгенерированное аудио",
+    modalStatusProcessing: "Обработка",
+    modalCloseAria: "Закрыть",
+    modalLoading: "Загрузка…",
+    modalVoiceLabel: "Голос",
+    modalScriptLabel: "Сценарий",
+    modalRegenerationCost: "Повторная генерация:",
+    modalCredits: "кредитов",
+    modalProcessing: "Обработка…",
+    modalOpenFile: "Открыть файл",
+    modalRegenerateSameRow: "Перегенерировать (та же строка истории)",
+    voiceTypeCloneShort: "(клон)",
+    voiceTypeDesignShort: "(создан)",
+  },
+};
+
+function resolveLocale() {
+  try {
+    const qsLang = new URLSearchParams(window.location.search).get("lang");
+    const normalizedQs = String(qsLang || "").toLowerCase();
+    if (normalizedQs === "ru" || normalizedQs === "en") {
+      localStorage.setItem(LOCALE_STORAGE_KEY, normalizedQs);
+      return normalizedQs;
+    }
+    const saved = String(localStorage.getItem(LOCALE_STORAGE_KEY) || "").toLowerCase();
+    if (saved === "ru" || saved === "en") return saved;
+    const browser = String(navigator.language || "").toLowerCase();
+    return browser.startsWith("ru") ? "ru" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+function formatCopy(text, vars = {}) {
+  return String(text).replace(/\{(\w+)\}/g, (_, key) =>
+    vars[key] == null ? `{${key}}` : String(vars[key]),
+  );
+}
+
 function estimateSecsFromChars(chars) {
   if (!chars) return 0;
   return Math.max(5, Math.ceil(chars / 15));
@@ -46,9 +307,9 @@ function prettyDate(value) {
 function genderLabel(g) {
   if (!g) return null;
   const x = String(g).toLowerCase();
-  if (x === "female") return "Female";
-  if (x === "male") return "Male";
-  if (x === "neutral") return "Neutral";
+  if (x === "female") return "female";
+  if (x === "male") return "male";
+  if (x === "neutral") return "neutral";
   return g;
 }
 
@@ -62,6 +323,7 @@ function getApiErrorMessage(error, fallback) {
 }
 
 export default function CreatorStudioVoiceTab({ initialModelId = null }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const user = useAuthStore((state) => state.user);
   const refreshUser = useAuthStore((state) => state.refreshUser);
   const canUseVoiceStudio = hasPremiumAccess(user);
@@ -121,11 +383,11 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
   const creditsAvailable = voiceStudio.creditsAvailable ?? user?.credits ?? 0;
   const voiceStudioErrorMessage = getApiErrorMessage(
     voiceStudioQuery.error,
-    "Failed to load Voice Studio for this model.",
+    copy.errorLoadStudio,
   );
   const modelsErrorMessage = getApiErrorMessage(
     modelsQuery.error,
-    "Failed to load your models.",
+    copy.errorLoadModels,
   );
   const selectedVoice = voices.find((voice) => voice.id === selectedVoiceId) || voices[0] || null;
   const estimatedChars = audioScript.trim().length;
@@ -173,7 +435,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
     if (!selectedModelId) return;
     const trimmed = description.trim();
     if (trimmed.length < 20) {
-      toast.error("Description must be at least 20 characters.");
+      toast.error(copy.errorDescriptionMin);
       return;
     }
     setBusyAction("design-previews");
@@ -189,9 +451,9 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
       if (data.previews?.[0]?.generatedVoiceId) {
         setPickedPreviewId(data.previews[0].generatedVoiceId);
       }
-      toast.success("Previews ready. Pick one and save it.");
+      toast.success(copy.successPreviewsReady);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to generate design previews");
+      toast.error(error.response?.data?.message || copy.errorPreviewsFailed);
     } finally {
       setBusyAction("");
     }
@@ -199,8 +461,8 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
 
   const handleConfirmDesignedVoice = async () => {
     if (!selectedModelId) return;
-    if (!pickedPreviewId) return toast.error("Pick a preview first.");
-    if (!consent) return toast.error("Confirm consent first.");
+    if (!pickedPreviewId) return toast.error(copy.errorPickPreview);
+    if (!consent) return toast.error(copy.errorConfirmConsent);
     setBusyAction("design-confirm");
     try {
       await modelAPI.confirmDesignedVoice(selectedModelId, {
@@ -210,14 +472,14 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
         ...(language ? { language } : {}),
         ...(gender ? { gender } : {}),
       });
-      toast.success("Designed voice saved.");
+      toast.success(copy.successDesignedSaved);
       setDescription("");
       setPreviews([]);
       setPickedPreviewId("");
       setConsent(false);
       await refreshStudio();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to save designed voice");
+      toast.error(error.response?.data?.message || copy.errorSaveDesignedFailed);
     } finally {
       setBusyAction("");
     }
@@ -225,8 +487,8 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
 
   const handleCloneVoice = async () => {
     if (!selectedModelId) return;
-    if (!cloneFile) return toast.error("Upload an MP3 sample first.");
-    if (!consent) return toast.error("Confirm consent first.");
+    if (!cloneFile) return toast.error(copy.errorUploadMp3First);
+    if (!consent) return toast.error(copy.errorConfirmConsent);
     const formData = new FormData();
     formData.append("audio", cloneFile);
     formData.append("consent", "true");
@@ -235,12 +497,12 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
     setBusyAction("clone");
     try {
       await modelAPI.cloneVoice(selectedModelId, formData);
-      toast.success("Cloned voice saved.");
+      toast.success(copy.successClonedSaved);
       setCloneFile(null);
       setConsent(false);
       await refreshStudio();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Voice clone failed");
+      toast.error(error.response?.data?.message || copy.errorCloneFailed);
     } finally {
       setBusyAction("");
     }
@@ -252,10 +514,10 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
     try {
       await modelAPI.selectVoice(selectedModelId, voiceId);
       setSelectedVoiceId(voiceId);
-      toast.success("Default model voice updated.");
+      toast.success(copy.successDefaultUpdated);
       await refreshStudio();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to select voice");
+      toast.error(error.response?.data?.message || copy.errorSelectVoiceFailed);
     } finally {
       setBusyAction("");
     }
@@ -263,14 +525,14 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
 
   const handleDeleteVoice = async (voice) => {
     if (!selectedModelId) return;
-    if (!window.confirm(`Delete voice "${voice.name}"?`)) return;
+    if (!window.confirm(formatCopy(copy.confirmDeleteVoice, { name: voice.name }))) return;
     setBusyAction(`delete:${voice.id}`);
     try {
       await modelAPI.deleteVoice(selectedModelId, voice.id);
-      toast.success("Voice deleted.");
+      toast.success(copy.successVoiceDeleted);
       await refreshStudio();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to delete voice");
+      toast.error(error.response?.data?.message || copy.errorDeleteVoiceFailed);
     } finally {
       setBusyAction("");
     }
@@ -311,15 +573,15 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
   const handleRegenerateInModal = async () => {
     if (!selectedModelId || !audioDetailId) return;
     const vid = modalVoiceId || selectedVoice?.id;
-    if (!vid) return toast.error("Select a voice first.");
+    if (!vid) return toast.error(copy.errorSelectVoiceFirst);
     const script = modalScript.trim();
-    if (!script) return toast.error("Script is empty.");
+    if (!script) return toast.error(copy.errorScriptEmpty);
     const regenCost = Math.max(
       0,
       Math.ceil((script.length / 1000) * (pricing.audioRegenPer1kChars || 36)),
     );
     if (creditsAvailable < regenCost) {
-      toast.error("Insufficient credits for regeneration.");
+      toast.error(copy.errorInsufficientRegenCredits);
       return;
     }
     setBusyRegenAudioId(audioDetailId);
@@ -329,10 +591,10 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
         script,
         regenerateFromId: audioDetailId,
       });
-      toast.success("Audio regenerated — same history entry updated.");
+      toast.success(copy.successRegenerated);
       await refreshStudio();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Regeneration failed");
+      toast.error(error.response?.data?.message || copy.errorRegenFailed);
     } finally {
       setBusyRegenAudioId(null);
     }
@@ -340,19 +602,19 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
 
   const handleGenerateAudio = async () => {
     if (!selectedModelId) return;
-    if (!selectedVoice?.id) return toast.error("Select a voice first.");
-    if (!audioScript.trim()) return toast.error("Write a script first.");
+    if (!selectedVoice?.id) return toast.error(copy.errorSelectVoiceFirst);
+    if (!audioScript.trim()) return toast.error(copy.errorWriteScriptFirst);
     setBusyAction("generate-audio");
     try {
       await modelAPI.generateVoiceAudio(selectedModelId, {
         voiceId: selectedVoice.id,
         script: audioScript.trim(),
       });
-      toast.success("Audio generated.");
+      toast.success(copy.successAudioGenerated);
       setAudioScript("");
       await refreshStudio();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to generate audio");
+      toast.error(error.response?.data?.message || copy.errorGenerateAudioFailed);
     } finally {
       setBusyAction("");
     }
@@ -367,13 +629,12 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
               <Mic className="h-6 w-6 text-violet-300" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-white">Voice Studio</h2>
-              <p className="text-sm text-slate-400">Available for paid subscription users only.</p>
+              <h2 className="text-xl font-bold text-white">{copy.gateTitle}</h2>
+              <p className="text-sm text-slate-400">{copy.gateSubtitle}</p>
             </div>
           </div>
           <p className="mt-4 text-sm leading-6 text-slate-300">
-            Create up to 3 saved voices per model, generate high-quality multilingual audio,
-            and keep a per-model history of generated clips once your subscription is active.
+            {copy.gateBody}
           </p>
         </div>
       </div>
@@ -384,9 +645,9 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
     <div className="px-6 py-6 space-y-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Voice Studio</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">{copy.title}</h1>
           <p className="text-sm text-slate-400">
-            Multilingual v3 audio generation, up to {limits.maxSavedVoicesPerModel || 3} saved voices per model.
+            {formatCopy(copy.subtitle, { max: limits.maxSavedVoicesPerModel || 3 })}
           </p>
           <TutorialInfoLink
             className="mt-2"
@@ -394,7 +655,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
           />
         </div>
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
-          <span className="text-slate-500">Credits available:</span>{" "}
+          <span className="text-slate-500">{copy.creditsAvailable}</span>{" "}
           <span className="font-semibold text-white">{creditsAvailable}</span>
         </div>
       </div>
@@ -403,7 +664,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
         <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4">
           {modelsQuery.isLoading ? (
             <div className="flex items-center gap-2 text-sm text-slate-400">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading models...
+              <Loader2 className="h-4 w-4 animate-spin" /> {copy.loadingModels}
             </div>
           ) : modelsQuery.isError ? (
             <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-4 text-sm text-red-200">
@@ -411,14 +672,14 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
             </div>
           ) : models.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-slate-400">
-              Create a model first to use Voice Studio.
+              {copy.emptyModels}
             </div>
           ) : (
             <ModelSelectorCollapsible
               models={models}
               selectedModelId={selectedModelId}
               onSelect={setSelectedModelId}
-              label="Model"
+              label={copy.modelLabel}
               accentColor="violet"
             />
           )}
@@ -427,7 +688,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
         <div className="space-y-6">
           {!selectedModelId ? null : voiceStudioQuery.isLoading ? (
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-sm text-slate-400 flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading voice studio...
+              <Loader2 className="h-4 w-4 animate-spin" /> {copy.loadingStudio}
             </div>
           ) : voiceStudioQuery.isError ? (
             <div className="rounded-3xl border border-red-400/20 bg-red-500/5 p-8 text-sm text-red-200">
@@ -435,7 +696,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
             </div>
           ) : !model ? (
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-sm text-slate-400">
-              Select a model to continue.
+              {copy.selectModelToContinue}
             </div>
           ) : (
             <>
@@ -443,11 +704,14 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                 <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Saved Voices</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{copy.savedVoices}</p>
                       <h2 className="mt-1 text-lg font-semibold text-white">{model.name}</h2>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-400">
-                      {voices.length}/{limits.maxSavedVoicesPerModel || 3} saved
+                      {formatCopy(copy.savedCount, {
+                        count: voices.length,
+                        max: limits.maxSavedVoicesPerModel || 3,
+                      })}
                     </div>
                   </div>
 
@@ -465,9 +729,9 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                           <div>
                             <p className="text-sm font-semibold text-white">{voice.name}</p>
                             <p className="mt-1 text-xs text-slate-400">
-                              {voice.type === "clone" ? "Voice clone" : "Designed voice"}
-                              {genderLabel(voice.gender) ? ` · ${genderLabel(voice.gender)}` : ""}
-                              {voice.isDefault ? " · Default" : ""}
+                              {voice.type === "clone" ? copy.typeClone : copy.typeDesigned}
+                              {genderLabel(voice.gender) ? ` · ${copy[`gender${genderLabel(voice.gender).charAt(0).toUpperCase()}${genderLabel(voice.gender).slice(1)}`] || genderLabel(voice.gender)}` : ""}
+                              {voice.isDefault ? ` · ${copy.defaultBadge}` : ""}
                             </p>
                           </div>
                           {voice.isDefault && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
@@ -476,7 +740,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                         {voice.previewUrl ? (
                           <audio className="mt-3 w-full" controls src={voice.previewUrl} preload="none" />
                         ) : (
-                          <p className="mt-3 text-xs text-slate-500">No preview available.</p>
+                          <p className="mt-3 text-xs text-slate-500">{copy.noPreview}</p>
                         )}
 
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -485,7 +749,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                             onClick={() => setSelectedVoiceId(voice.id)}
                             className="rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-white hover:border-white/20"
                           >
-                            Use for audio
+                            {copy.useForAudio}
                           </button>
                           {!voice.isDefault && (
                             <button
@@ -494,7 +758,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                               disabled={busyAction === `select:${voice.id}`}
                               className="rounded-xl border border-violet-400/30 px-3 py-2 text-xs font-medium text-violet-200 hover:border-violet-300/50 disabled:opacity-50"
                             >
-                              {busyAction === `select:${voice.id}` ? "Saving..." : "Make default"}
+                              {busyAction === `select:${voice.id}` ? copy.buttonSaving : copy.buttonMakeDefault}
                             </button>
                           )}
                           <button
@@ -503,7 +767,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                             disabled={busyAction === `delete:${voice.id}`}
                             className="rounded-xl border border-red-400/20 px-3 py-2 text-xs font-medium text-red-300 hover:border-red-300/40 disabled:opacity-50"
                           >
-                            {busyAction === `delete:${voice.id}` ? "Deleting..." : "Delete"}
+                            {busyAction === `delete:${voice.id}` ? copy.buttonDeleting : copy.buttonDelete}
                           </button>
                         </div>
                       </div>
@@ -511,7 +775,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
 
                     {voices.length === 0 && (
                       <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-5 text-sm text-slate-400">
-                        No voices yet. Create one below to unlock audio generation for this model.
+                        {copy.noVoicesYet}
                       </div>
                     )}
                   </div>
@@ -521,32 +785,32 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                   <div className="flex items-center gap-2">
                     <Music4 className="h-5 w-5 text-violet-300" />
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Generate Audio</p>
-                      <h3 className="text-lg font-semibold text-white">Final voice output</h3>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{copy.generateAudioSection}</p>
+                      <h3 className="text-lg font-semibold text-white">{copy.finalVoiceOutput}</h3>
                     </div>
                   </div>
 
                   {voices.length === 0 ? (
                     <div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/5 p-4 text-sm text-amber-200">
-                      Create at least one saved voice to generate audio.
+                      {copy.needSavedVoice}
                     </div>
                   ) : (
                     <>
                       <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
                         <p className="text-xs text-slate-400">
-                          Selected voice: <span className="font-semibold text-white">{selectedVoice?.name || "None"}</span>
+                          {copy.selectedVoice} <span className="font-semibold text-white">{selectedVoice?.name || copy.selectedVoiceNone}</span>
                         </p>
                         <textarea
                           value={audioScript}
                           onChange={(event) => setAudioScript(event.target.value)}
                           rows={8}
                           maxLength={limits.maxChars || 5000}
-                          placeholder="Write the script you want this model voice to speak..."
+                          placeholder={copy.scriptPlaceholder}
                           className="mt-4 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none focus:border-violet-400/30"
                         />
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
                           <div className="flex items-center gap-3">
-                            <span>{estimatedChars}/{limits.maxChars || 5000} chars</span>
+                            <span>{formatCopy(copy.charsCount, { count: estimatedChars, max: limits.maxChars || 5000 })}</span>
                             <span>~{formatDuration(estimatedSecs)}</span>
                           </div>
                           <div className="flex items-center gap-1 font-semibold text-white">
@@ -554,8 +818,10 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                           </div>
                         </div>
                         <p className="mt-2 text-[11px] text-slate-500">
-                          New audio: {pricing.audioPer1kChars || 72} credits / 1K chars. Regeneration (from history
-                          modal): {pricing.audioRegenPer1kChars || 36} credits / 1K chars.
+                          {formatCopy(copy.newAudioPricing, {
+                            newCost: pricing.audioPer1kChars || 72,
+                            regenCost: pricing.audioRegenPer1kChars || 36,
+                          })}
                         </p>
                         <button
                           type="button"
@@ -565,17 +831,17 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                         >
                           {busyAction === "generate-audio" ? (
                             <>
-                              <Loader2 className="h-4 w-4 animate-spin" /> Generating...
+                              <Loader2 className="h-4 w-4 animate-spin" /> {copy.buttonGenerating}
                             </>
                           ) : (
                             <>
-                              <Volume2 className="h-4 w-4" /> Generate Audio
+                              <Volume2 className="h-4 w-4" /> {copy.buttonGenerateAudio}
                             </>
                           )}
                         </button>
                         {audioScript.trim() && creditsAvailable < estimatedCost && (
                           <p className="mt-3 text-xs text-red-400">
-                            Insufficient credits for this request.
+                            {copy.errorInsufficientCreditsRequest}
                           </p>
                         )}
                       </div>
@@ -588,8 +854,8 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                 <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Create Voice</p>
-                      <h3 className="text-lg font-semibold text-white">Design or clone</h3>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{copy.createVoice}</p>
+                      <h3 className="text-lg font-semibold text-white">{copy.designOrClone}</h3>
                     </div>
                     <div className="flex rounded-2xl border border-white/10 bg-black/20 p-1">
                       <button
@@ -597,27 +863,27 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                         onClick={() => setCreationMode("design")}
                         className={`rounded-xl px-3 py-2 text-xs font-medium ${creationMode === "design" ? "bg-violet-600 text-white" : "text-slate-400"}`}
                       >
-                        <Wand2 className="mr-1 inline h-3.5 w-3.5" /> Design
+                        <Wand2 className="mr-1 inline h-3.5 w-3.5" /> {copy.modeDesign}
                       </button>
                       <button
                         type="button"
                         onClick={() => setCreationMode("clone")}
                         className={`rounded-xl px-3 py-2 text-xs font-medium ${creationMode === "clone" ? "bg-violet-600 text-white" : "text-slate-400"}`}
                       >
-                        <Upload className="mr-1 inline h-3.5 w-3.5" /> Clone
+                        <Upload className="mr-1 inline h-3.5 w-3.5" /> {copy.modeClone}
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-4 space-y-4">
                     <label className="block">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Language hint</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{copy.languageHint}</span>
                       <select
                         value={language}
                         onChange={(event) => setLanguage(event.target.value)}
                         className="mt-2 w-full rounded-2xl border border-white/15 bg-slate-800/90 px-4 py-3 text-sm text-slate-100 outline-none focus:border-violet-400/40 [&>option]:bg-slate-900 [&>option]:text-slate-100"
                       >
-                        <option value="">Auto / not specified</option>
+                        <option value="">{copy.languageAuto}</option>
                         {(voiceStudio.languageOptions || []).map((option) => (
                           <option key={option.code || "auto"} value={option.code}>
                             {option.label}
@@ -628,14 +894,14 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
 
                     <div>
                       <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                        Gender (optional)
+                        {copy.genderOptional}
                       </span>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {[
-                          { id: "", label: "Auto" },
-                          { id: "female", label: "Female" },
-                          { id: "male", label: "Male" },
-                          { id: "neutral", label: "Neutral" },
+                          { id: "", label: copy.genderAuto },
+                          { id: "female", label: copy.genderFemale },
+                          { id: "male", label: copy.genderMale },
+                          { id: "neutral", label: copy.genderNeutral },
                         ].map((opt) => (
                           <button
                             key={opt.id || "auto"}
@@ -656,13 +922,13 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                     {creationMode === "design" ? (
                       <>
                         <label className="block">
-                          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Voice description</span>
+                          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{copy.descriptionLabel}</span>
                           <textarea
                             value={description}
                             onChange={(event) => setDescription(event.target.value)}
                             rows={6}
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none"
-                            placeholder="Describe the voice style, tone, pacing, accent, emotion, and personality..."
+                            placeholder={copy.descriptionPlaceholder}
                           />
                         </label>
                         <div className="flex items-center justify-between text-xs text-slate-500">
@@ -676,7 +942,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                           className="inline-flex items-center gap-2 rounded-2xl border border-violet-400/30 px-4 py-3 text-sm font-semibold text-violet-200 disabled:opacity-50"
                         >
                           {busyAction === "design-previews" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                          Generate previews
+                          {copy.buttonGeneratePreviews}
                         </button>
                         {previews.length > 0 && (
                           <div className="grid gap-3">
@@ -691,7 +957,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                                     : "border-white/10 bg-black/20"
                                 }`}
                               >
-                                <p className="text-xs font-semibold text-white">Preview candidate</p>
+                                <p className="text-xs font-semibold text-white">{copy.previewCandidate}</p>
                                 <audio
                                   className="mt-3 w-full"
                                   controls
@@ -704,7 +970,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                         )}
                         <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 text-sm text-slate-300">
                           <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1" />
-                          <span>I confirm I have permission to create and save this voice.</span>
+                          <span>{copy.consentDesign}</span>
                         </label>
                         <button
                           type="button"
@@ -713,20 +979,20 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                           className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
                         >
                           {busyAction === "design-confirm" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-                          Save designed voice
+                          {copy.buttonSaveDesigned}
                         </button>
                       </>
                     ) : (
                       <>
                         <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                          <p className="text-sm text-slate-300">Upload one MP3 sample to create an instant voice clone.</p>
+                          <p className="text-sm text-slate-300">{copy.cloneUploadHint}</p>
                           <button
                             type="button"
                             onClick={() => cloneInputRef.current?.click()}
                             className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-medium text-white hover:border-white/20"
                           >
                             <Upload className="h-4 w-4" />
-                            {cloneFile ? cloneFile.name : "Choose MP3 sample"}
+                            {cloneFile ? cloneFile.name : copy.cloneChooseSample}
                           </button>
                           <input
                             ref={cloneInputRef}
@@ -741,7 +1007,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                         </div>
                         <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 text-sm text-slate-300">
                           <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1" />
-                          <span>I confirm I own this sample or have permission to clone it.</span>
+                          <span>{copy.consentClone}</span>
                         </label>
                         <button
                           type="button"
@@ -750,14 +1016,14 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                           className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
                         >
                           {busyAction === "clone" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          Save cloned voice
+                          {copy.buttonSaveCloned}
                         </button>
                       </>
                     )}
 
                     {voices.length >= (limits.maxSavedVoicesPerModel || 3) && (
                       <div className="rounded-2xl border border-amber-400/20 bg-amber-500/5 p-3 text-sm text-amber-100">
-                        You have reached the maximum saved voices for this model. Delete one to create another.
+                        {copy.limitReached}
                       </div>
                     )}
                   </div>
@@ -766,14 +1032,14 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                 <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">History</p>
-                      <h3 className="text-lg font-semibold text-white">Generated audio</h3>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{copy.historyTitle}</p>
+                      <h3 className="text-lg font-semibold text-white">{copy.historyGeneratedAudio}</h3>
                     </div>
                   </div>
 
                   {history.length === 0 ? (
                     <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-black/20 p-5 text-sm text-slate-400">
-                      No generated audio yet.
+                      {copy.historyEmpty}
                     </div>
                   ) : (
                     <div className="mt-4 space-y-3">
@@ -786,10 +1052,10 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div>
-                              <p className="text-sm font-semibold text-white">{item.voiceName || "Voice audio"}</p>
+                              <p className="text-sm font-semibold text-white">{item.voiceName || copy.historyItemDefaultName}</p>
                               <p className="mt-1 text-xs text-slate-400">
-                                {item.voiceType === "clone" ? "Voice clone" : "Designed voice"}
-                                {item.isRegeneration ? " · Regenerated" : ""}
+                                {item.voiceType === "clone" ? copy.typeClone : copy.typeDesigned}
+                                {item.isRegeneration ? ` · ${copy.historyRegenerated}` : ""}
                                 {" · "}
                                 {prettyDate(item.createdAt)}
                               </p>
@@ -813,7 +1079,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                             >
                               {item.status}
                             </span>
-                            <span className="text-violet-300">Open →</span>
+                            <span className="text-violet-300">{copy.historyOpen}</span>
                           </div>
                         </button>
                       ))}
@@ -837,9 +1103,9 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
             {busyRegenAudioId && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-3xl bg-black/60">
                 <Loader2 className="h-10 w-10 animate-spin text-violet-300" />
-                <p className="text-sm font-semibold text-white">Regenerating audio…</p>
+                <p className="text-sm font-semibold text-white">{copy.modalRegeneratingTitle}</p>
                 <p className="max-w-xs text-center text-xs text-slate-400">
-                  Replacing this history entry with the new render. This can take a little while.
+                  {copy.modalRegeneratingBody}
                 </p>
               </div>
             )}
@@ -847,29 +1113,29 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p id="voice-audio-modal-title" className="text-lg font-semibold text-white">
-                  Generated audio
+                  {copy.modalTitle}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
                   {audioModalItem ? prettyDate(audioModalItem.createdAt) : ""}
-                  {audioModalItem?.status === "processing" ? " · Processing" : ""}
+                  {audioModalItem?.status === "processing" ? ` · ${copy.modalStatusProcessing}` : ""}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closeGeneratedAudioModal}
                 className="rounded-xl border border-white/10 p-2 text-slate-400 hover:border-white/20 hover:text-white"
-                aria-label="Close"
+                aria-label={copy.modalCloseAria}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             {!audioModalItem ? (
-              <p className="mt-6 text-sm text-slate-400">Loading…</p>
+              <p className="mt-6 text-sm text-slate-400">{copy.modalLoading}</p>
             ) : (
               <>
                 <label className="mt-5 block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Voice
+                  {copy.modalVoiceLabel}
                 </label>
                 <select
                   value={modalVoiceId || ""}
@@ -878,13 +1144,13 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                 >
                   {voices.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.name} {v.type === "clone" ? "(clone)" : "(design)"}
+                      {v.name} {v.type === "clone" ? copy.voiceTypeCloneShort : copy.voiceTypeDesignShort}
                     </option>
                   ))}
                 </select>
 
                 <label className="mt-4 block text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Script
+                  {copy.modalScriptLabel}
                 </label>
                 <textarea
                   value={modalScript}
@@ -896,12 +1162,12 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                   <span>
-                    Regeneration:{" "}
+                    {copy.modalRegenerationCost}{" "}
                     {Math.max(
                       0,
                       Math.ceil((modalScript.trim().length / 1000) * (pricing.audioRegenPer1kChars || 36)),
                     )}{" "}
-                    credits
+                    {copy.modalCredits}
                   </span>
                   <span>
                     {modalScript.trim().length}/{limits.maxChars || 5000} chars
@@ -911,7 +1177,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                 {audioModalItem.status === "processing" && !busyRegenAudioId ? (
                   <div className="mt-4 flex items-center gap-2 rounded-2xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                     <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-                    Processing…
+                    {copy.modalProcessing}
                   </div>
                 ) : null}
 
@@ -938,7 +1204,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                       rel="noreferrer"
                       className="rounded-xl border border-white/10 px-4 py-2 text-xs font-medium text-white hover:border-white/20"
                     >
-                      Open file
+                      {copy.modalOpenFile}
                     </a>
                   ) : null}
                   <button
@@ -953,7 +1219,7 @@ export default function CreatorStudioVoiceTab({ initialModelId = null }) {
                     className="inline-flex items-center gap-2 rounded-xl border border-violet-400/40 bg-violet-600/20 px-4 py-2 text-xs font-semibold text-violet-100 hover:border-violet-300/60 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <RefreshCcw className="h-3.5 w-3.5" />
-                    Regenerate (same history row)
+                    {copy.modalRegenerateSameRow}
                   </button>
                 </div>
               </>

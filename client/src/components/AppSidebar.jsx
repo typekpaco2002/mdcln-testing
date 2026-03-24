@@ -35,6 +35,62 @@ import { hasPremiumAccess } from "../utils/premiumAccess";
 
 const LOCALE_STORAGE_KEY = "app_locale";
 const SUPPORTED_LOCALES = ["en", "ru"];
+const SIDEBAR_COPY = {
+  en: {
+    dashboard: "Dashboard",
+    myModels: "My Models",
+    generate: "Generate",
+    creatorStudio: "Creator Studio",
+    voiceStudio: "Voice Studio",
+    reformatter: "Reformatter",
+    history: "History",
+    settings: "Settings",
+    courses: "Courses",
+    repurposer: "Photo/Video Repurposer",
+    reelFinder: "Reel Finder",
+    earnWithAi: "Earn With AI",
+    referAndEarn: "Refer And Earn",
+    addCredits: "Add Credits",
+    changePassword: "Change Password",
+    referralProgram: "Referral Program",
+    logout: "Logout",
+    navigation: "Navigation",
+    monetize: "Monetize",
+    socials: "Socials",
+    soon: "Soon",
+    jobBoard: "Job Board",
+    adminPanel: "Admin Panel",
+    collapse: "Collapse",
+    proStudio: "Pro Studio",
+  },
+  ru: {
+    dashboard: "Панель",
+    myModels: "Мои модели",
+    generate: "Создать",
+    creatorStudio: "Creator Studio",
+    voiceStudio: "Голосовая студия",
+    reformatter: "Конвертер",
+    history: "История",
+    settings: "Настройки",
+    courses: "Курсы",
+    repurposer: "Переработка фото/видео",
+    reelFinder: "Поиск рилс",
+    earnWithAi: "Заработок с ИИ",
+    referAndEarn: "Приглашай и зарабатывай",
+    addCredits: "Пополнить кредиты",
+    changePassword: "Сменить пароль",
+    referralProgram: "Реферальная программа",
+    logout: "Выйти",
+    navigation: "Навигация",
+    monetize: "Монетизация",
+    socials: "Соцсети",
+    soon: "Скоро",
+    jobBoard: "Биржа заказов",
+    adminPanel: "Админ панель",
+    collapse: "Свернуть",
+    proStudio: "Pro Studio",
+  },
+};
 
 function getCurrentLocale() {
   try {
@@ -71,6 +127,7 @@ export default function AppSidebar({
   const setCollapsed = setCollapsedProp || setLocalCollapsed;
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [locale, setLocale] = useState(getCurrentLocale);
+  const copy = SIDEBAR_COPY[locale] || SIDEBAR_COPY.en;
   const collapsedRow = collapsed ? "justify-center px-0 gap-0 min-h-[44px]" : "";
   const collapsedProfileRow = collapsed ? "justify-center px-0 gap-0 min-h-[48px]" : "";
 
@@ -92,30 +149,30 @@ export default function AppSidebar({
   };
 
   const mainNavItems = [
-    { id: "home", label: "Dashboard", icon: Home },
-    { id: "models", label: "My Models", icon: Users },
-    { id: "generate", label: "Generate", icon: Zap },
-    { id: "creator-studio", label: "Creator Studio", icon: Wand2, isCreatorStudio: true },
-    { id: "voice-studio", label: "Voice Studio", icon: Mic, premium: true },
-    { id: "reformatter", label: "Reformatter", icon: FileType2 },
-    { id: "history", label: "History", icon: Clock },
-    { id: "settings", label: "Settings", icon: SettingsIcon },
-    { id: "course", label: "Courses", icon: BookOpen, premium: true },
+    { id: "home", label: copy.dashboard, icon: Home },
+    { id: "models", label: copy.myModels, icon: Users },
+    { id: "generate", label: copy.generate, icon: Zap },
+    { id: "creator-studio", label: copy.creatorStudio, icon: Wand2, isCreatorStudio: true },
+    { id: "voice-studio", label: copy.voiceStudio, icon: Mic, premium: true },
+    { id: "reformatter", label: copy.reformatter, icon: FileType2 },
+    { id: "history", label: copy.history, icon: Clock },
+    { id: "settings", label: copy.settings, icon: SettingsIcon },
+    { id: "course", label: copy.courses, icon: BookOpen, premium: true },
     { id: "nsfw", label: "NSFW", icon: Flame, isNsfw: true },
-    { id: "repurposer", label: "Photo/Video Repurposer", icon: Shuffle, premium: true },
-    { id: "reelfinder", label: "Reel Finder", icon: SiInstagram, premium: true },
+    { id: "repurposer", label: copy.repurposer, icon: Shuffle, premium: true },
+    { id: "reelfinder", label: copy.reelFinder, icon: SiInstagram, premium: true },
   ];
 
   const promoItems = [
     {
       id: "earn",
-      label: "Earn With AI",
+      label: copy.earnWithAi,
       icon: DollarSign,
       action: onOpenEarn,
     },
     {
       id: "share",
-      label: "Refer And Earn",
+      label: copy.referAndEarn,
       icon: Share2,
       action: onOpenReferral,
     },
@@ -256,7 +313,7 @@ export default function AppSidebar({
                       data-testid="menu-add-credits"
                     >
                       <CreditCard className="w-4 h-4 text-slate-400" />
-                      Add Credits
+                      {copy.addCredits}
                     </button>
                     <button
                       onClick={() => {
@@ -267,7 +324,7 @@ export default function AppSidebar({
                       data-testid="menu-change-password"
                     >
                       <Lock className="w-4 h-4 text-slate-400" />
-                      Change Password
+                      {copy.changePassword}
                     </button>
                     <button
                       onClick={() => {
@@ -278,7 +335,7 @@ export default function AppSidebar({
                       data-testid="menu-settings"
                     >
                       <SettingsIcon className="w-4 h-4 text-slate-400" />
-                      Settings
+                      {copy.settings}
                     </button>
                     <button
                       onClick={() => {
@@ -289,7 +346,7 @@ export default function AppSidebar({
                       data-testid="menu-referral-program"
                     >
                       <Share2 className="w-4 h-4 text-slate-400" />
-                      Referral Program
+                      {copy.referralProgram}
                     </button>
                   </div>
                   <div className="py-2 border-t border-white/10">
@@ -302,7 +359,7 @@ export default function AppSidebar({
                       data-testid="menu-logout"
                     >
                       <LogOut className="w-4 h-4" />
-                      Logout
+                      {copy.logout}
                     </button>
                   </div>
                 </motion.div>
@@ -322,7 +379,7 @@ export default function AppSidebar({
               exit={{ opacity: 0 }}
               className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-medium px-3 mb-3"
             >
-              Navigation
+              {copy.navigation}
             </motion.p>
           )}
         </AnimatePresence>
@@ -381,7 +438,7 @@ export default function AppSidebar({
                     )}
                     {item.comingSoon && (
                       <span className="ml-auto px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-gradient-to-r from-rose-500/20 to-orange-500/20 text-rose-300 border border-rose-500/30">
-                        Soon
+                        {copy.soon}
                       </span>
                     )}
                   </motion.div>
@@ -403,7 +460,7 @@ export default function AppSidebar({
               <AnimatePresence>
                 {!collapsed && (
                   <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm font-medium text-purple-300">
-                    Pro Studio
+                    {copy.proStudio}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -423,7 +480,7 @@ export default function AppSidebar({
               exit={{ opacity: 0 }}
               className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-medium px-3 mb-3"
             >
-              Monetize
+              {copy.monetize}
             </motion.p>
           )}
         </AnimatePresence>
@@ -465,7 +522,7 @@ export default function AppSidebar({
                 exit={{ opacity: 0 }}
                 className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-medium px-3 mt-4 mb-3"
               >
-                Socials
+                {copy.socials}
               </motion.p>
             )}
           </AnimatePresence>
@@ -538,9 +595,9 @@ export default function AppSidebar({
                   exit={{ opacity: 0 }}
                   className="flex items-center gap-2"
                 >
-                  <span className="text-sm">Job Board</span>
+                  <span className="text-sm">{copy.jobBoard}</span>
                   <span className="px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-white/5 text-slate-400 border border-white/10">
-                    Soon
+                    {copy.soon}
                   </span>
                 </motion.div>
               )}
@@ -570,7 +627,7 @@ export default function AppSidebar({
                     exit={{ opacity: 0 }}
                     className="text-sm"
                   >
-                    Admin Panel
+                    {copy.adminPanel}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -594,7 +651,7 @@ export default function AppSidebar({
           ) : (
             <>
               <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">Collapse</span>
+              <span className="text-sm font-medium">{copy.collapse}</span>
             </>
           )}
         </button>
@@ -618,7 +675,7 @@ export default function AppSidebar({
                 exit={{ opacity: 0 }}
                 className="text-sm font-medium"
               >
-                Logout
+                {copy.logout}
               </motion.span>
             )}
           </AnimatePresence>
