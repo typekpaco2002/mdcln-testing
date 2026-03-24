@@ -420,6 +420,7 @@ function AvatarCard({ avatar, onDelete, onMakeVideo, deleting }) {
 }
 
 function CreateAvatarModal({ isOpen, onClose, model, avatarCount, onCreated }) {
+  const copy = PAGE_COPY[resolveLocale()] || PAGE_COPY.en;
   const user = useAuthStore(s => s.user);
   const [name, setName] = useState("");
   const [photo, setPhoto] = useState(null);
