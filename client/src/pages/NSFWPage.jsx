@@ -546,6 +546,10 @@ function resolveLocale() {
   }
 }
 
+// Fallback to prevent runtime crashes if any nested scope
+// references `copy` without a local declaration.
+const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
+
 function useMainViewportBounds() {
   const [bounds, setBounds] = useState({ left: 0, width: null });
 
