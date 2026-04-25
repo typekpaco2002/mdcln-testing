@@ -16,6 +16,15 @@ export const ZIT62_NSFW_PROMPT_BUILDER_MODULE = readFileSync(
   "utf8",
 );
 
+/** For **text** Grok paths only — removes \`\`\`json examples so the model is not primed to echo JSON. */
+export function zitModuleMarkdownForTextPrompts(md) {
+  return String(md || "")
+    .replace(/```\s*json\s*[\s\S]*?```/gi, "\n")
+    .replace(/\n{3,}/g, "\n\n");
+}
+
+const ZIT62_NSFW_FOR_TEXT = zitModuleMarkdownForTextPrompts(ZIT62_NSFW_PROMPT_BUILDER_MODULE);
+
 export const ZIT62_NSFW_CANONICAL_QUALITY_CLAUSE =
   "photorealistic, sharp focus, natural skin texture";
 
@@ -108,7 +117,7 @@ The user message has (1) a **scene / request** and (2) a **Model appearance** bl
 
 ---
 
-${ZIT62_NSFW_PROMPT_BUILDER_MODULE}
+${ZIT62_NSFW_FOR_TEXT}
 
 ---
 
@@ -212,7 +221,7 @@ export function buildEnhancePromptNsfwZit62System() {
 
 ---
 
-${ZIT62_NSFW_PROMPT_BUILDER_MODULE}
+${ZIT62_NSFW_FOR_TEXT}
 
 ---
 
@@ -242,7 +251,7 @@ Assemble one ZiT 6.2 positive prompt. Follow the module + Addenda below. lora_tr
 
 ---
 
-${ZIT62_NSFW_PROMPT_BUILDER_MODULE}
+${ZIT62_NSFW_FOR_TEXT}
 
 ---
 

@@ -300,15 +300,56 @@ function summarizeAttributes(attrs = {}, fallbackString = "") {
   return lines.length ? lines.join("\n") : "- None provided";
 }
 
+/** Only the exact value `structured` enables legacy JSON in/out. `1` / `true` are ignored (prevents production accidents). */
 function isNsfwGrokJsonPromptsEnabled() {
-  const v = String(process.env.NSFW_GROK_JSON_PROMPTS || "").trim().toLowerCase();
+  return String(process.env.NSFW_GROK_JSON_PROMPTS || "").trim() === "structured";
+}
+
+function isNsfwGrokUseAdminTextTemplate() {
+  const v = String(process.env.NSFW_GROK_USE_ADMIN_TEXT_TEMPLATE || "").trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes" || v === "on";
 }
 
-/** If Grok still returns JSON while text mode is on, build a one-line prompt from string fields. */
+/** If Grok still returns JSON while text mode is on, build sampler plain text (ordered when possible). */
 function flattenNsfwGrokJsonToProseFallback(obj) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return "";
   if (typeof obj.error === "string" && obj.error.trim()) return obj.error.trim();
+  const tw = obj.trigger_word != null ? String(obj.trigger_word).trim() : "";
+  const parts = [];
+  if (tw) parts.push(tw);
+  const ms = obj.main_subject;
+  if (ms && typeof ms === "object") {
+    const hair = ms.hair && typeof ms.hair === "object" ? ms.hair : null;
+    const idBits = [
+      ms.gender_presentation,
+      ms.ethnicity || ms.heritage,
+      hair
+        ? [hair.color, hair.length, hair.texture, hair.style].filter(Boolean).join(" ")
+        : "",
+      ms.face?.eyes?.color ? `${ms.face.eyes.color} eyes` : "",
+      ms.body?.type,
+    ]
+      .map((x) => (typeof x === "string" ? x.trim() : ""))
+      .filter(Boolean);
+    if (idBits.length) parts.push(idBits.join(", "));
+  }
+  const sc = obj.scene;
+  if (sc && typeof sc === "object") {
+    for (const k of ["pose", "wardrobe", "user_request", "setting", "lighting", "expression", "gaze"]) {
+      const v = sc[k];
+      if (typeof v === "string" && v.trim()) parts.push(v.trim());
+    }
+  }
+  const comp = obj.composition;
+  if (comp && typeof comp === "object") {
+    for (const k of ["framing", "camera_angle", "camera_lens"]) {
+      const v = comp[k];
+      if (typeof v === "string" && v.trim()) parts.push(v.trim());
+    }
+  }
+  if (parts.length > (tw ? 1 : 0)) {
+    return parts.join(", ");
+  }
   const buf = [];
   function walk(x, depth) {
     if (depth > 6) return;
@@ -324,7 +365,6 @@ function flattenNsfwGrokJsonToProseFallback(obj) {
     }
   }
   walk(obj, 0);
-  const tw = obj.trigger_word && String(obj.trigger_word).trim();
   const seen = new Set();
   const deduped = buf.filter((s) => {
     if (seen.has(s)) return false;
@@ -333,6 +373,49 @@ function flattenNsfwGrokJsonToProseFallback(obj) {
   });
   const rest = tw ? deduped.filter((s) => s !== tw) : deduped;
   return (tw ? `${tw}, ` : "") + rest.join(", ");
+}
+
+function stripGrokThinkingAndMarkdownFences(raw) {
+  let s = String(raw || "");
+  s = s.replace(/<think>[\s\S]*?<\/redacted_thinking>/gi, "");
+  s = s.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  s = s.trim();
+  for (let n = 0; n < 12 && s.includes("```"); n++) {
+    s = s.replace(/```[a-z0-9]*\s*[\s\S]*?```/i, " ").replace(/\s+/g, " ").trim();
+  }
+  return s;
+}
+
+function tryParseJsonLoose(s) {
+  const t = String(s || "").trim();
+  if (!t) return null;
+  try {
+    return JSON.parse(t);
+  } catch {
+    const i = t.indexOf("{");
+    if (i === -1) return null;
+    const j = t.lastIndexOf("}");
+    if (j <= i) return null;
+    try {
+      return JSON.parse(t.slice(i, j + 1));
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** Always returns a single plain string for the image sampler — never pretty-printed JSON (unless legacy `structured` path handled above). */
+function coerceGrokNsfwOutputToSamplerPlainText(content) {
+  let s = stripGrokThinkingAndMarkdownFences(content);
+  s = s.replace(/^['"]{1,2}\s*|\s*['"]{1,2}$/g, "").trim();
+  const parsed = tryParseJsonLoose(s);
+  if (parsed == null) return s;
+  if (Array.isArray(parsed)) return String(parsed[0] || "").trim() || s;
+  if (typeof parsed === "object") {
+    const flat = flattenNsfwGrokJsonToProseFallback(parsed);
+    return (flat && flat.length > 8 ? flat : s).trim();
+  }
+  return s;
 }
 
 function buildDifferentiatingFeatures(attrs = {}) {
@@ -3754,15 +3837,18 @@ ${buildGrokNsfwZit62JsonSystemBody(zit62Ctx)}`;
 
     const systemPromptText = buildGrokNsfwZit62TextSystemBlock(zit62Ctx);
 
-    // Default: text prompts. Set NSFW_GROK_JSON_PROMPTS=1 for structured JSON on non–nudes-pack flows only.
-    const systemTemplateKey = jsonGrokOutput ? "nsfwPromptGenerator" : "nsfwTextPromptGenerator";
-    let systemPrompt = await getPromptTemplateValue(
-      systemTemplateKey,
-      jsonGrokOutput ? systemPromptJson : systemPromptText,
-    );
-
-    if (jsonGrokOutput && !systemPrompt.includes("STRUCTURED JSON INPUT")) {
-      systemPrompt = `${systemPrompt}\n\n${STRUCTURED_INPUT_CONTRACT}`;
+    // Text path uses in-code ZiT + POV (admin override only with NSFW_GROK_USE_ADMIN_TEXT_TEMPLATE=1).
+    // JSON path is opt-in: NSFW_GROK_JSON_PROMPTS=structured (not "1" — prevents accidental JSON in production).
+    let systemPrompt;
+    if (jsonGrokOutput) {
+      systemPrompt = await getPromptTemplateValue("nsfwPromptGenerator", systemPromptJson);
+      if (!systemPrompt.includes("STRUCTURED JSON INPUT")) {
+        systemPrompt = `${systemPrompt}\n\n${STRUCTURED_INPUT_CONTRACT}`;
+      }
+    } else {
+      systemPrompt = isNsfwGrokUseAdminTextTemplate()
+        ? await getPromptTemplateValue("nsfwTextPromptGenerator", systemPromptText)
+        : systemPromptText;
     }
 
     let userMessage;
@@ -3848,39 +3934,22 @@ ${buildGrokNsfwZit62JsonSystemBody(zit62Ctx)}`;
 
     const result = await response.json();
     const rawContent = result.choices?.[0]?.message?.content || "";
-    let content = rawContent.includes("<think>")
-      ? rawContent.replace(/<think>[\s\S]*?<\/think>/g, "").trim()
-      : rawContent.trim();
-
-    // Strip any accidental ```json fences; JSON path keeps structured output; text path is plain prose.
-    content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+    let content = stripGrokThinkingAndMarkdownFences(rawContent);
 
     if (jsonGrokOutput) {
       try {
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed)) {
-          return String(parsed[0] || "").trim();
+        const parsed = tryParseJsonLoose(content);
+        if (parsed != null) {
+          if (Array.isArray(parsed)) return String(parsed[0] || "").trim();
+          if (typeof parsed === "object") return JSON.stringify(parsed, null, 2);
         }
-        return JSON.stringify(parsed, null, 2);
       } catch {
-        return content;
+        // fall through
       }
+      return content;
     }
 
-    // Text default: return Grok's paragraph. If the model still emitted JSON, flatten to a single line of prose.
-    try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        return String(parsed[0] || "").trim();
-      }
-      if (parsed && typeof parsed === "object") {
-        const flat = flattenNsfwGrokJsonToProseFallback(parsed);
-        return flat || content;
-      }
-    } catch {
-      // keep prose
-    }
-    return content;
+    return coerceGrokNsfwOutputToSamplerPlainText(content);
 }
 
 export async function generateNsfwPrompt(req, res) {
