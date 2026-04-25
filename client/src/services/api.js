@@ -876,6 +876,11 @@ export const adminAPI = {
     const response = await api.post("/admin/disaster-recovery", body);
     return response.data;
   },
+  /** Whether VERCEL_* env is set for server-side Vercel log fetch (no secrets). */
+  getDisasterRecoveryVercelLogFetchConfig: async () => {
+    const response = await api.get("/admin/disaster-recovery/vercel-log-fetch-config");
+    return response.data;
+  },
   getVoiceHostingDue: async () => {
     const response = await api.get("/admin/voice-hosting/due");
     return response.data;

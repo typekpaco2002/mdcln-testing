@@ -3039,9 +3039,30 @@ router.delete("/discount-codes/:id", async (req, res) => {
 });
 
 /**
+ * GET /api/admin/disaster-recovery/vercel-log-fetch-config
+ * Whether Vercel API log pull is configured (no secrets returned).
+ */
+router.get("/disaster-recovery/vercel-log-fetch-config", async (req, res) => {
+  try {
+    return res.json({
+      success: true,
+      data: {
+        tokenConfigured: Boolean(process.env.VERCEL_API_TOKEN || process.env.VERCEL_TOKEN),
+        projectIdConfigured: Boolean(process.env.VERCEL_PROJECT_ID),
+        teamIdConfigured: Boolean(process.env.VERCEL_TEAM_ID),
+      },
+    });
+  } catch (error) {
+    console.error("vercel-log-fetch-config error:", error);
+    return res.status(500).json({ success: false, error: error?.message || "Failed" });
+  }
+});
+
+/**
  * POST /api/admin/disaster-recovery
  * Replays Stripe payments / subs (new + legacy), recreates missing users (metadata.userId + email), emails reset codes.
  * Optional `vercelLogRows` (array) to extract extra cs_/sub_/pi_ ids. Default dryRun: true.
+ * `fetchVercelLogs: true` — server calls Vercel REST API (VERCEL_API_TOKEN + VERCEL_PROJECT_ID); ignores body vercelLogRows.
  * `catastropheUserRestore: true` — first phase: list Stripe customers + scan Vercel JSON for email-like strings;
  * for emails not in DB, create user with temporary password and `sendCatastropheAccountEmail` (or `temporaryPasswordStyle: "create_only"` to skip email).
  * Then existing checkout replay, optional log-correlation generation restore, KIE reconcile.

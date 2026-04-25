@@ -214,7 +214,8 @@ app.use('/api/runpod', runpodCallbackRoutes);
 
 // Request size limits (prevent DOS attacks)
 // NOTE: This comes AFTER webhooks to preserve raw body for signature verification
-const BODY_LIMIT = process.env.BODY_LIMIT || "50mb";
+/** Default raised so admin disaster recovery can POST compacted Vercel exports; override with BODY_LIMIT if needed. */
+const BODY_LIMIT = process.env.BODY_LIMIT || "128mb";
 app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 

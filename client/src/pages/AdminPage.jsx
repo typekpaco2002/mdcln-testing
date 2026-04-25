@@ -14,6 +14,10 @@ import AddCreditsAdminModal from '../components/AddCreditsAdminModal';
 import EditUserSettingsModal from '../components/EditUserSettingsModal';
 import NsfwOverrideModal from '../components/NsfwOverrideModal';
 import { copyTextToClipboard, selectElementContents } from '../utils/clipboard.js';
+import {
+  compactVercelLogRowsForDisaster,
+  jsonUtf8ByteLength,
+} from '../utils/vercelLogDisasterCompact.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,8 +33,15 @@ const fmtDurationMs = (ms) => {
   return `${(n / 60_000).toFixed(1)}m`;
 };
 
-/** Vercel log JSON POST body must stay under server `BODY_LIMIT` (default 50mb) and browser limits. */
-const DISASTER_VERCEL_LOG_MAX_BYTES = 48 * 1024 * 1024;
+const _MB = 1024 * 1024;
+/** Max export file size on disk before JSON.parse (browser RAM). */
+const DISASTER_VERCEL_LOG_RAW_MAX_BYTES = 400 * _MB;
+/**
+ * Max UTF-8 size of JSON.stringify(compacted rows) sent in the disaster POST.
+ * Must stay under API `BODY_LIMIT` (see server default). Override with VITE_DISASTER_VERCEL_PAYLOAD_MAX_MB.
+ */
+const DISASTER_VERCEL_PAYLOAD_MAX_BYTES =
+  Math.max(8, Math.min(500, Number(import.meta.env.VITE_DISASTER_VERCEL_PAYLOAD_MAX_MB) || 110)) * _MB;
 const PROVIDER_NAME_RE = /\b(heygen|elevenlabs?|kling|nanobanana|nano\s*banana|replicate|fal(?:\.ai)?|wavespeed|openrouter|apify|kie)\b/ig;
 const redactProviderText = (value, fallback = '—') => {
   const raw = String(value ?? '').trim();
@@ -662,9 +673,12 @@ export default function AdminPage() {
     kieLimit: 500,
     rebuildLogCorrelation: false,
     catastropheUserRestore: false,
+    fetchVercelLogs: false,
+    vercelMaxDeploymentsToFetch: 32,
   });
   const [disasterLoading, setDisasterLoading] = useState(false);
   const [disasterResult, setDisasterResult] = useState(null);
+  const [disasterVercelFetchConfig, setDisasterVercelFetchConfig] = useState(null);
   /** Parsed Vercel export rows (kept in ref so multi‑MB JSON does not live in React state). */
   const disasterVercelLogRowsRef = useRef(null);
   const disasterLogFileInputRef = useRef(null);
@@ -766,7 +780,9 @@ export default function AdminPage() {
   const requestIdRef = useRef(0);
 
   const hasDisasterVercelLogs =
-    Boolean(disasterForm.vercelLogJson?.trim()) || disasterLogFileMeta != null;
+    Boolean(disasterForm.vercelLogJson?.trim()) ||
+    disasterLogFileMeta != null ||
+    Boolean(disasterForm.fetchVercelLogs);
 
   const clearDisasterVercelLogFile = () => {
     disasterVercelLogRowsRef.current = null;
@@ -778,9 +794,9 @@ export default function AdminPage() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > DISASTER_VERCEL_LOG_MAX_BYTES) {
+    if (file.size > DISASTER_VERCEL_LOG_RAW_MAX_BYTES) {
       toast.error(
-        `Log file too large (${(file.size / 1024 / 1024).toFixed(0)} MB). Max ~48 MB per request — export a shorter window from Vercel or run in batches.`,
+        `Log file too large (${(file.size / 1024 / 1024).toFixed(0)} MB). Max ~${Math.round(DISASTER_VERCEL_LOG_RAW_MAX_BYTES / _MB)} MB on disk — export a shorter window or split the export.`,
       );
       return;
     }
@@ -794,14 +810,26 @@ export default function AdminPage() {
         clearDisasterVercelLogFile();
         return;
       }
-      disasterVercelLogRowsRef.current = rows;
+      const compacted = compactVercelLogRowsForDisaster(rows);
+      const payloadBytes = jsonUtf8ByteLength(compacted);
+      if (payloadBytes > DISASTER_VERCEL_PAYLOAD_MAX_BYTES) {
+        clearDisasterVercelLogFile();
+        toast.error(
+          `After stripping unused fields, log payload is ${(payloadBytes / _MB).toFixed(1)} MB (limit ${(DISASTER_VERCEL_PAYLOAD_MAX_BYTES / _MB).toFixed(0)} MB). Raise API BODY_LIMIT and VITE_DISASTER_VERCEL_PAYLOAD_MAX_MB, or export a shorter time window.`,
+        );
+        return;
+      }
+      disasterVercelLogRowsRef.current = compacted;
       setDisasterLogFileMeta({
         name: file.name,
-        rows: rows.length,
-        sizeMb: +(file.size / 1024 / 1024).toFixed(2),
+        rows: compacted.length,
+        rawSizeMb: +(file.size / 1024 / 1024).toFixed(2),
+        payloadMb: +(payloadBytes / 1024 / 1024).toFixed(2),
       });
       setDisasterForm((v) => ({ ...v, vercelLogJson: '', rebuildLogCorrelation: true }));
-      toast.success(`Loaded ${file.name} (${rows.length.toLocaleString()} rows) — log correlation enabled`);
+      toast.success(
+        `Loaded ${file.name} (${compacted.length.toLocaleString()} rows, ${(payloadBytes / _MB).toFixed(1)} MB payload) — log correlation enabled`,
+      );
     } catch (err) {
       clearDisasterVercelLogFile();
       toast.error(err?.message || 'Failed to read or parse log JSON');
@@ -809,6 +837,21 @@ export default function AdminPage() {
       setDisasterLogParseBusy(false);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await adminAPI.getDisasterRecoveryVercelLogFetchConfig();
+        if (!cancelled && r?.success && r?.data) setDisasterVercelFetchConfig(r.data);
+      } catch {
+        /* non-admin pages / 403 — ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // ── Data loaders ─────────────────────────────────────────────────────────────
 
@@ -1649,15 +1692,27 @@ export default function AdminPage() {
     setDisasterLoading(true);
     setDisasterResult(null);
     try {
+      const useVercelApi = Boolean(disasterForm.fetchVercelLogs);
       let vercelLogRows;
-      if (disasterForm.vercelLogJson?.trim()) {
-        const parsed = JSON.parse(disasterForm.vercelLogJson);
-        vercelLogRows = Array.isArray(parsed) ? parsed : parsed?.rows;
-        if (!Array.isArray(vercelLogRows)) {
-          throw new Error('Vercel log JSON must be an array of log objects (or { rows: [...] })');
+      if (!useVercelApi) {
+        if (disasterForm.vercelLogJson?.trim()) {
+          const parsed = JSON.parse(disasterForm.vercelLogJson);
+          vercelLogRows = Array.isArray(parsed) ? parsed : parsed?.rows;
+          if (!Array.isArray(vercelLogRows)) {
+            throw new Error('Vercel log JSON must be an array of log objects (or { rows: [...] })');
+          }
+        } else if (Array.isArray(disasterVercelLogRowsRef.current)) {
+          vercelLogRows = disasterVercelLogRowsRef.current;
         }
-      } else if (Array.isArray(disasterVercelLogRowsRef.current)) {
-        vercelLogRows = disasterVercelLogRowsRef.current;
+        if (Array.isArray(vercelLogRows) && vercelLogRows.length > 0) {
+          vercelLogRows = compactVercelLogRowsForDisaster(vercelLogRows);
+          const payloadBytes = jsonUtf8ByteLength(vercelLogRows);
+          if (payloadBytes > DISASTER_VERCEL_PAYLOAD_MAX_BYTES) {
+            throw new Error(
+              `Vercel log payload is ${(payloadBytes / _MB).toFixed(1)} MB after compacting (limit ${(DISASTER_VERCEL_PAYLOAD_MAX_BYTES / _MB).toFixed(0)} MB). Raise BODY_LIMIT on the API and VITE_DISASTER_VERCEL_PAYLOAD_MAX_MB for the client build, or use a smaller export.`,
+            );
+          }
+        }
       }
       const since = disasterForm.since?.trim()
         ? new Date(disasterForm.since).toISOString()
@@ -1667,7 +1722,15 @@ export default function AdminPage() {
         since,
         maxCheckoutSessions: Math.max(1, Math.min(5000, parseInt(disasterForm.maxCheckoutSessions, 10) || 400)),
         maxStripeCustomers: Math.max(100, Math.min(10000, parseInt(disasterForm.maxStripeCustomers, 10) || 2000)),
-        vercelLogRows,
+        ...(useVercelApi
+          ? {
+              fetchVercelLogs: true,
+              vercelMaxDeploymentsToFetchLogs: Math.max(
+                1,
+                Math.min(80, parseInt(String(disasterForm.vercelMaxDeploymentsToFetch), 10) || 32),
+              ),
+            }
+          : { vercelLogRows }),
         resyncTodaysUsers: disasterForm.resyncTodaysUsers,
         recoverKieGenerations: disasterForm.recoverKie,
         kieReconcileLimit: Math.max(1, Math.min(2000, parseInt(disasterForm.kieLimit, 10) || 500)),
@@ -1675,7 +1738,9 @@ export default function AdminPage() {
         scanCheckoutsFromStripe: true,
         rebuildMissingGenerationsFromLogCorrelation:
           Boolean(disasterForm.rebuildLogCorrelation) &&
-          (Boolean(disasterForm.vercelLogJson?.trim()) || Array.isArray(disasterVercelLogRowsRef.current)),
+          (useVercelApi ||
+            Boolean(disasterForm.vercelLogJson?.trim()) ||
+            Array.isArray(disasterVercelLogRowsRef.current)),
         catastropheUserRestore: Boolean(disasterForm.catastropheUserRestore),
         sendCatastropheAccountEmail: true,
       });
@@ -3685,9 +3750,9 @@ export default function AdminPage() {
         <Section>
           <SectionHeader title="Disaster recovery" />
           <p className="text-xs text-amber-200/90 mb-2 border border-amber-500/25 rounded-lg p-2 bg-amber-500/5">
-            <strong>High impact.</strong> Load your <strong>Vercel log export JSON</strong> with the button below (recommended) so Stripe id extraction, catastrophe email discovery, and generation correlation{' '}
-            <strong>use the logs</strong> automatically — no copy-paste needed unless you prefer the box. Replays checkouts since <strong>Since</strong>, backfills credits/subs, optional catastrophe accounts + temp
-            password email, KIE reconcile. Gen restore still needs <code className="text-amber-100/80">KieTask</code> / sampled <code className="text-amber-100/80">ApiRequestMetric</code> in the DB.
+            <strong>High impact.</strong> Prefer <strong>Fetch logs from Vercel API</strong> (server calls Vercel with your API token — no upload), or load a <strong>Vercel JSON export</strong> / paste. That feeds Stripe id extraction,
+            catastrophe email discovery, and generation correlation. File uploads are trimmed client-side to the fields the server reads. Replays checkouts since <strong>Since</strong>, backfills credits/subs, optional catastrophe
+            accounts + temp password email, KIE reconcile. Gen restore still needs <code className="text-amber-100/80">KieTask</code> / sampled <code className="text-amber-100/80">ApiRequestMetric</code> in the DB.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             <label className="text-[11px] text-gray-500 col-span-full">Since (local) — default on server: start of today UTC if empty</label>
@@ -3749,6 +3814,42 @@ export default function AdminPage() {
                 temporary password (runs first, then payments + gen restore)
               </span>
             </label>
+            <label className="inline-flex items-center gap-2 text-xs text-cyan-100/90 col-span-full max-w-3xl">
+              <input
+                type="checkbox"
+                checked={disasterForm.fetchVercelLogs}
+                onChange={(e) => {
+                  const v = e.target.checked;
+                  setDisasterForm((f) => ({ ...f, fetchVercelLogs: v, ...(v ? { rebuildLogCorrelation: true } : {}) }));
+                }}
+                className="accent-cyan-400"
+              />
+              <span>
+                <strong>Fetch logs from Vercel API</strong> — API server calls Vercel (runtime logs per production deployment overlapping <strong>Since</strong>); set <code className="text-cyan-200/80">VERCEL_API_TOKEN</code>,{' '}
+                <code className="text-cyan-200/80">VERCEL_PROJECT_ID</code>, optional <code className="text-cyan-200/80">VERCEL_TEAM_ID</code>. Ignores file / paste for log rows. Can take several minutes.
+              </span>
+            </label>
+            {disasterForm.fetchVercelLogs && (
+              <div className="md:col-span-2 flex flex-wrap items-center gap-2">
+                <label className="text-[11px] text-gray-500">Max prod deployments to download logs from (cap)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={80}
+                  value={disasterForm.vercelMaxDeploymentsToFetch}
+                  onChange={(e) => setDisasterForm((v) => ({ ...v, vercelMaxDeploymentsToFetch: e.target.value }))}
+                  className="px-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.03] text-xs w-24"
+                  title="Each deployment is a separate runtime-logs request to Vercel"
+                />
+              </div>
+            )}
+            {disasterVercelFetchConfig && (
+              <p className="text-[10px] text-gray-500 col-span-full -mt-1">
+                Vercel API env on server: token {disasterVercelFetchConfig.tokenConfigured ? 'set' : 'missing'} · project id{' '}
+                {disasterVercelFetchConfig.projectIdConfigured ? 'set' : 'missing'}
+                {disasterVercelFetchConfig.teamIdConfigured ? ' · team id set' : ''}
+              </p>
+            )}
             <label className="inline-flex items-center gap-2 text-xs text-amber-100/90 col-span-full max-w-3xl">
               <input
                 type="checkbox"
@@ -3758,7 +3859,7 @@ export default function AdminPage() {
               />
               <span>
                 Rebuild <strong>missing</strong> generations using Vercel path + merged <code className="text-amber-200/90">requestId</code> messages + <code className="text-amber-200/90">KieTask</code> +{' '}
-                <code className="text-amber-200/90">ApiRequestMetric</code> (requires log JSON)
+                <code className="text-amber-200/90">ApiRequestMetric</code> (needs log data: API, file, or paste)
               </span>
             </label>
             <input
@@ -3781,7 +3882,8 @@ export default function AdminPage() {
               <GhostBtn
                 type="button"
                 onClick={() => disasterLogFileInputRef.current?.click()}
-                disabled={disasterLoading || disasterLogParseBusy}
+                disabled={disasterLoading || disasterLogParseBusy || disasterForm.fetchVercelLogs}
+                title={disasterForm.fetchVercelLogs ? 'Turn off Vercel API fetch to load a file' : undefined}
               >
                 {disasterLogParseBusy ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -3793,7 +3895,8 @@ export default function AdminPage() {
               {disasterLogFileMeta && (
                 <>
                   <span className="text-[11px] text-emerald-300/90">
-                    {disasterLogFileMeta.name} — {disasterLogFileMeta.rows.toLocaleString()} rows, {disasterLogFileMeta.sizeMb} MB
+                    {disasterLogFileMeta.name} — {disasterLogFileMeta.rows.toLocaleString()} rows, disk{' '}
+                    {disasterLogFileMeta.rawSizeMb ?? disasterLogFileMeta.sizeMb} MB → payload {disasterLogFileMeta.payloadMb} MB
                   </span>
                   <GhostBtn type="button" onClick={clearDisasterVercelLogFile} disabled={disasterLoading}>
                     Clear log file
@@ -3801,15 +3904,16 @@ export default function AdminPage() {
                 </>
               )}
               {!hasDisasterVercelLogs && (
-                <span className="text-[10px] text-amber-200/70">No log file loaded — only Stripe / DB paths run.</span>
+                <span className="text-[10px] text-amber-200/70">No Vercel log source — only Stripe / DB paths run.</span>
               )}
             </div>
             <textarea
               value={disasterForm.vercelLogJson}
               onChange={(e) => setDisasterForm((v) => ({ ...v, vercelLogJson: e.target.value }))}
               rows={3}
+              disabled={disasterForm.fetchVercelLogs}
               placeholder="Optional: paste JSON here instead of file (same format). If both are set, this box wins over the loaded file."
-              className="md:col-span-2 px-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.03] text-[11px] font-mono focus:border-white/20 outline-none"
+              className="md:col-span-2 px-3 py-2 rounded-lg border border-white/[0.07] bg-white/[0.03] text-[11px] font-mono focus:border-white/20 outline-none disabled:opacity-40"
             />
           </div>
           <div className="mt-3 flex items-center gap-2 flex-wrap">

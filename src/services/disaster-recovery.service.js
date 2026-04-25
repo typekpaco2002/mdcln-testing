@@ -19,6 +19,7 @@ import { runKieLostGenerationReconcileAll } from "./kie-lost-generation-reconcil
 import { runCatastropheUserAccountPhase } from "./catastrophe-user-restore.service.js";
 import { buildVercelLogInventoryReport } from "./vercel-log-inventory.service.js";
 import { restoreUserActivityFromLogsAndDatabaseHints } from "./user-activity-restore.service.js";
+import { fetchVercelLogRowsFromApi } from "./vercel-runtime-logs-fetch.service.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -386,6 +387,11 @@ async function listCheckoutSessionsSince(client, sinceSec, maxItems) {
  * @param {number} [options.maxCheckoutSessions=400]
  * @param {boolean} [options.scanCheckoutsFromStripe=true]
  * @param {any[]} [options.vercelLogRows] — Vercel JSON log rows; strip ids
+ * @param {boolean} [options.fetchVercelLogs] — if true, pull runtime logs from Vercel API (env token + project); replaces body vercelLogRows
+ * @param {string} [options.vercelProjectId] — override VERCEL_PROJECT_ID
+ * @param {string} [options.vercelTeamId] — override VERCEL_TEAM_ID
+ * @param {number} [options.vercelMaxDeploymentsToFetchLogs]
+ * @param {number} [options.vercelMaxListDeployments]
  * @param {boolean} [options.recoverKieGenerations=true]
  * @param {number} [options.kieReconcileLimit=500]
  * @param {boolean} [options.dryRunKie=true] — if dryRun, KIE is dry-run too
@@ -399,7 +405,19 @@ export async function runDisasterRecovery(options = {}) {
   const since = parseDisasterSince(options.since);
   const sinceSec = Math.floor(since.getTime() / 1000);
   const maxCheckout = Math.max(1, Math.min(5000, parseInt(options.maxCheckoutSessions, 10) || 400));
-  const vercelLogRows = Array.isArray(options.vercelLogRows) ? options.vercelLogRows : [];
+  let vercelLogRows = Array.isArray(options.vercelLogRows) ? options.vercelLogRows : [];
+  let vercelLogApiFetch = null;
+  if (options.fetchVercelLogs === true) {
+    const pulled = await fetchVercelLogRowsFromApi({
+      since,
+      projectId: options.vercelProjectId,
+      teamId: options.vercelTeamId,
+      maxDeploymentsToFetchLogs: options.vercelMaxDeploymentsToFetchLogs,
+      maxListDeployments: options.vercelMaxListDeployments,
+    });
+    vercelLogRows = pulled.rows;
+    vercelLogApiFetch = pulled.meta;
+  }
   const fromLogs = collectStripeIdsFromVercelRows(vercelLogRows);
   const sendPasswordResetEmail = options.sendPasswordResetEmail !== false;
   const ctx = { dryRun, sendPasswordResetEmail };
@@ -415,6 +433,7 @@ export async function runDisasterRecovery(options = {}) {
     vercelLogInventory: null,
     logCorrelationRestore: null,
     catastrophe: null,
+    vercelLogApiFetch,
   };
 
   if (options.catastropheUserRestore === true) {
