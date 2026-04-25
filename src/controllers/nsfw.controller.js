@@ -3733,7 +3733,8 @@ async function runNsfwPromptGenerationForModel(
     ].find((v) => typeof v === "string" && v.trim()) || "authentic candid private mood";
 
     const mode = String(context?.mode || "").trim().toLowerCase();
-    const jsonGrokOutput = isNsfwGrokJsonPromptsEnabled();
+    // Nudes pack always uses plain-text prompts for the sampler (ignore NSFW_GROK_JSON_PROMPTS).
+    const jsonGrokOutput = isNsfwGrokJsonPromptsEnabled() && mode !== "nudes-pack";
 
     const zit62Ctx = {
       triggerWord,
@@ -3753,7 +3754,7 @@ ${buildGrokNsfwZit62JsonSystemBody(zit62Ctx)}`;
 
     const systemPromptText = buildGrokNsfwZit62TextSystemBlock(zit62Ctx);
 
-    // Default: text prompts to the image model. Set NSFW_GROK_JSON_PROMPTS=1 to use structured JSON (legacy).
+    // Default: text prompts. Set NSFW_GROK_JSON_PROMPTS=1 for structured JSON on non–nudes-pack flows only.
     const systemTemplateKey = jsonGrokOutput ? "nsfwPromptGenerator" : "nsfwTextPromptGenerator";
     let systemPrompt = await getPromptTemplateValue(
       systemTemplateKey,

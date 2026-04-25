@@ -93,7 +93,12 @@ export function buildGrokNsfwZit62TextSystemBlock(ctx) {
     genderClass,
   } = ctx;
   const tw = String(triggerWord || "").trim() || "lora";
-  return `## Modelclone (upstream) — how to read the user message
+  return `## CRITICAL — what you output (read first)
+Return **only** the final image prompt as plain natural-language text (one line or one short paragraph of comma-separated prose). Do **not** output JSON objects, JSON arrays, YAML, or markdown code fences (\`\`\`). Any \`json\` examples later in this prompt are **variable-reference illustrations for you only** — they are not the response format.
+
+---
+
+## Modelclone (upstream) — how to read the user message
 The user message has (1) a **scene / request** and (2) a **Model appearance** block. Map them to ZiT 6.2 slots and \`lora_triggers\`.
 - **lora_triggers** for this run: [\`${tw}\`]. Triggers are position 0 only, comma-separated; do not restate a trigger in the body.
 - **Slot 2 (subject):** from Model appearance. **differentiating / legacy string:** ${differentiatingFeatures}
