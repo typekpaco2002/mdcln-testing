@@ -2,7 +2,7 @@
   "1": {
     "inputs": {
       "text": ["41", 0],
-      "clip": ["248", 0]
+      "clip": ["364", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": { "title": "Negative Prompt" }
@@ -10,7 +10,7 @@
   "2": {
     "inputs": {
       "text": ["56", 0],
-      "clip": ["248", 0]
+      "clip": ["364", 1]
     },
     "class_type": "CLIPTextEncode",
     "_meta": { "title": "Positive prompt" }
@@ -90,11 +90,18 @@
       "denoise": 1,
       "model": ["364", 0],
       "positive": ["2", 0],
-      "negative": ["1", 0],
+      "negative": ["336", 0],
       "latent_image": ["50", 4]
     },
     "class_type": "KSampler",
     "_meta": { "title": "KSampler" }
+  },
+  "336": {
+    "inputs": {
+      "conditioning": ["1", 0]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": { "title": "ConditioningZeroOut" }
   },
   "289": {
     "inputs": {

@@ -163,3 +163,12 @@ Response on success:
 8. **Debug missing nodes** — call the handler with
    `{"input": {"debug_nodes": true}}` and compare the returned list to the
    workflow `class_type` values.
+9. **Workers show “unhealthy” right after deploy** — `pip install runpod` with
+   no version pulled **runpod 1.9+**, which runs startup **fitness checks** (GPU
+   memory test, min free disk % on `/`, RAM) *before* the worker heartbeats.
+   Full model mirrors or busy GPUs often fail those checks and the process
+   exits with code 1. The Dockerfile pins **`runpod==1.8.2`** (no fitness) and
+   sets `RUNPOD_MIN_DISK_PERCENT=1` / `RUNPOD_GPU_TEST_TIMEOUT=120` as a
+   fallback if you upgrade the SDK later. You can also set endpoint env
+   `RUNPOD_SKIP_AUTO_SYSTEM_CHECKS=true` or `RUNPOD_SKIP_GPU_CHECK=true` in the
+   RunPod console (use sparingly).

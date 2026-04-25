@@ -34,6 +34,7 @@ import time
 import base64
 import os
 import mimetypes
+import traceback
 from urllib.parse import urlparse, unquote
 
 COMFYUI_URL = "http://127.0.0.1:8188"
@@ -360,11 +361,23 @@ def handler(event):
     if not check_comfyui():
         return {"error": "ComfyUI is not running"}
 
+    uimgs = inp.get("upload_images") or []
+    uvids = inp.get("upload_videos") or []
+    if isinstance(uimgs, list) and isinstance(uvids, list):
+        print(f"[motion] base64 upload: upload_images={len(uimgs)} upload_videos={len(uvids)}")
+
     # ── Optional: download https URLs (no base64; avoids 10 MiB /run request limit) ─
     ref_url = (inp.get("reference_image_url") or "").strip()
     drv_url = (inp.get("driving_video_url") or "").strip()
+    if ref_url or drv_url:
+        print(
+            f"[motion] URL branch: reference_image_url={'set' if ref_url else 'empty'} "
+            f"driving_video_url={'set' if drv_url else 'empty'}"
+        )
     if ref_url:
         try:
+            udisp = f"{ref_url[:96]}…" if len(ref_url) > 96 else ref_url
+            print(f"[motion] downloading reference_image from {udisp!r} …")
             raw, name_hint = download_url_bytes(ref_url, "reference_image", MAX_DOWNLOAD_BYTES)
             ext = (os.path.splitext(name_hint)[1] or ".jpg").lower()
             if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
@@ -376,9 +389,12 @@ def handler(event):
             if node_id in workflow:
                 workflow[node_id].setdefault("inputs", {})["image"] = saved
         except Exception as e:
+            traceback.print_exc()
             return {"error": f"Failed to download/patch reference image from URL: {e}"}
     if drv_url:
         try:
+            udisp = f"{drv_url[:96]}…" if len(drv_url) > 96 else drv_url
+            print(f"[motion] downloading driving_video from {udisp!r} …")
             raw, name_hint = download_url_bytes(drv_url, "driving_video", MAX_DOWNLOAD_BYTES)
             ext = (os.path.splitext(name_hint)[1] or ".mp4").lower()
             if ext not in (".mp4", ".webm", ".mov", ".mkv", ".m4v"):
@@ -390,6 +406,7 @@ def handler(event):
             if node_id in workflow:
                 workflow[node_id].setdefault("inputs", {})["video"] = saved
         except Exception as e:
+            traceback.print_exc()
             return {"error": f"Failed to download/patch driving video from URL: {e}"}
 
     # ── Upload images ──────────────────────────────────────────────────────────

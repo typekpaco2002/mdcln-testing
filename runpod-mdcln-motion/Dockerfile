@@ -19,6 +19,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONFAULTHANDLER=1
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
+# runpod 1.9+ runs pre-flight fitness checks (GPU test, min disk %, memory) and
+# exits before heartbeat — workers show unhealthy. Pin 1.8.2 (no fitness).
+# If you upgrade runpod, set endpoint env e.g. RUNPOD_MIN_DISK_PERCENT=1,
+# RUNPOD_GPU_TEST_TIMEOUT=120, or RUNPOD_SKIP_AUTO_SYSTEM_CHECKS=true.
+ENV RUNPOD_MIN_DISK_PERCENT=1
+ENV RUNPOD_GPU_TEST_TIMEOUT=120
 
 # -----------------------------------------------
 # 1. System deps
@@ -107,7 +113,7 @@ RUN python3 -m pip install --no-cache-dir "numpy<2"
 # -----------------------------------------------
 # 6. RunPod handler + startup
 # -----------------------------------------------
-RUN python3 -m pip install --no-cache-dir runpod requests
+RUN python3 -m pip install --no-cache-dir "runpod==1.8.2" requests
 
 COPY handler.py /workspace/handler.py
 COPY start.sh /workspace/start.sh

@@ -40,7 +40,7 @@ const VIDEO_RECREATE_ULTRA_PER_SEC = 25; // kling-3.0 motion-control 1080p
 const VIDEO_RECREATE_WAN_720_PER_SEC = 12.5;
 const VIDEO_RECREATE_WAN_580_PER_SEC = 9.5;
 const VIDEO_RECREATE_WAN_480_PER_SEC = 6;
-/** RunPod NSFW motion worker (same as POST /nsfw/generate-motion-video) */
+/** NSFW motion video (Motion-X) — same flow as POST /nsfw/generate-motion-video */
 const VIDEO_RECREATE_MOTION_X_PER_SEC = 30;
 
 const LOCALE_STORAGE_KEY = "app_locale";
@@ -96,7 +96,8 @@ const GENERATE_COPY = {
     videoRecreateEngineWan: "Wan (faster, cheaper)",
     videoRecreateEngineMotionX: "Motion-X",
     videoRecreateEngineHint: "Kling supports classic/ultra motion-control. Wan is faster and lower cost.",
-    videoRecreateEngineHintMotionX: "Motion-X uses the dedicated RunPod motion worker. Long runs (30+ min) are possible.",
+    videoRecreateEngineHintMotionX:
+      "Applies motion from your reference clip to your still. Most recreates finish in about 10 minutes.",
     videoRecreateWanResolutionLabel: "Wan Resolution",
     videoRecreateWanResolution480: "480p (fastest)",
     videoRecreateWanResolution580: "580p (balanced)",
@@ -270,7 +271,8 @@ const GENERATE_COPY = {
     videoRecreateEngineWan: "Wan (быстрее, дешевле)",
     videoRecreateEngineMotionX: "Motion-X",
     videoRecreateEngineHint: "Kling поддерживает classic/ultra motion-control. Wan быстрее и дешевле.",
-    videoRecreateEngineHintMotionX: "Motion-X: выделенный RunPod motion worker. Долгие прогоны (30+ мин) — норма.",
+    videoRecreateEngineHintMotionX:
+      "Перенос движения с референс-ролика на кадр. Обычно около 10 минут.",
     videoRecreateWanResolutionLabel: "Разрешение Wan",
     videoRecreateWanResolution480: "480p (самый быстрый)",
     videoRecreateWanResolution580: "580p (баланс)",
@@ -2820,7 +2822,7 @@ function VideoGeneration() {
             });
           }
           triggerRefresh();
-          toast.success("Video started! This motion run can take 15+ min — check Live Preview.");
+          toast.success("Video started! Most recreates finish in about 10 minutes — check Live Preview.");
           setReferenceVideo(null);
           setReferenceVideoDuration(0);
           setVideoStartingImage(null);
@@ -2908,7 +2910,7 @@ function VideoGeneration() {
         if (response.data.generation) {
           addOptimisticGeneration(response.data.generation);
         }
-        toast.success("Video started! Check Live Preview (2-3 min).");
+        toast.success("Video started! Most recreates finish in about 10 minutes — check Live Preview.");
         setReferenceVideo(null);
         setReferenceVideoDuration(0);
         setVideoStartingImage(null);

@@ -9,6 +9,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONFAULTHANDLER=1
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
+# runpod 1.9+ runs startup fitness checks that call sys.exit(1) before heartbeat
+# (GPU test, 10% min free root disk) — pin 1.8.2; see runpod-mdcln-motion notes.
+ENV RUNPOD_MIN_DISK_PERCENT=1
+ENV RUNPOD_GPU_TEST_TIMEOUT=120
 
 # -----------------------------------------------
 # 1. Extra system deps not in base image
@@ -96,7 +100,7 @@ RUN for dir in /workspace/ComfyUI/custom_nodes/*/; do \
 # -----------------------------------------------
 # 7. RunPod handler + startup  [changes frequently — always last so rebuilds are instant]
 # -----------------------------------------------
-RUN python3 -m pip install --no-cache-dir runpod requests
+RUN python3 -m pip install --no-cache-dir "runpod==1.8.2" requests
 
 COPY handler.py /workspace/handler.py
 COPY start.sh /workspace/start.sh

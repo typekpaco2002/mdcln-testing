@@ -32,6 +32,7 @@ import {
 import { resolveRunpodWebhookUrl } from "../lib/runpodWebhookUrl.js";
 import { getPromptTemplateValue } from "./prompt-template-config.service.js";
 import { NSFW_ZIMAGE_UNET_BASENAME } from "../config/nsfwZImageModel.js";
+import { flattenStructuredNsfwJsonForClipText } from "../lib/structuredPromptInput.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -342,6 +343,7 @@ function buildNsfwImg2ImgV2ApiPrompt({
   steps = null,
   cfg = null,
 }) {
+  const flatPositive = flattenStructuredNsfwJsonForClipText(String(positivePrompt ?? "").trim());
   const graph = loadNsfwImg2ImgV2GraphPrepared();
   const negNode = graph.nodes?.find((n) => String(n.id) === "41" && n.type === "String Literal");
   const negativeText =
@@ -357,7 +359,7 @@ function buildNsfwImg2ImgV2ApiPrompt({
   inlineStringLiteralRefsInApiWorkflow(api, { "41": negativeText });
   delete api["41"];
 
-  inlineStringOutputNodeAsValue(api, "311", positivePrompt);
+  inlineStringOutputNodeAsValue(api, "311", flatPositive);
 
   if (api["305"]?.inputs) {
     api["305"].inputs.image = "__INPUT_IMAGE__";

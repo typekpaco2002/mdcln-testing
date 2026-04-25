@@ -20,6 +20,7 @@ import { resolveNsfwResolution } from "../utils/nsfwResolution.js";
 import { resolveRunpodWebhookUrl } from "../lib/runpodWebhookUrl.js";
 import { getPromptTemplateValue } from "./prompt-template-config.service.js";
 import { NSFW_ZIMAGE_UNET_BASENAME } from "../config/nsfwZImageModel.js";
+import { flattenStructuredNsfwJsonForClipText } from "../lib/structuredPromptInput.js";
 // dynamicPoll removed — inline polling used directly
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1376,6 +1377,11 @@ function buildComfyWorkflowPro(params) {
     return null;
   }
 
+  // Single source of truth: nsfwZImageModel.js (8a7a720 used 62 in config; JSON on disk can lag).
+  if (wf["247"]?.inputs) {
+    wf["247"].inputs.unet_name = NSFW_ZIMAGE_UNET_BASENAME;
+  }
+
   // ── LoRA (node 363 = LoadLoraFromUrlOrPath, node 364 = CR Apply LoRA Stack) ─
   // Single slot: girl identity LoRA URL fed through the URL stack into KSampler.
   if (wf["363"]) {
@@ -2445,15 +2451,19 @@ export async function submitNsfwGeneration(params, webhookUrl = null, generation
   const validatedOverride = Number.isFinite(rawStrength) && rawStrength >= 0.1 && rawStrength <= 0.9
     ? rawStrength : null;
 
-  // Build prompt: anchor identity with triggerWord, then the AI-generated scene prose — nothing else.
-  // Z-Image Turbo is degraded by quality tag dumps ("anatomically correct", "solo girl", etc.).
-  // The AI system prompt already produces correctly styled, complete descriptions.
+  // Build prompt: Grok returns structured JSON; CLIP (Qwen) must not receive raw pretty-printed JSON
+  // — that produces incoherent conditioning and "mutated" anatomy. Flatten to natural language.
+  // Z-Image is still degraded by empty quality tag dumps; keep the Grok/flatten output lean.
   const basePrompt = (userPrompt && userPrompt.trim()) || "";
   if (!basePrompt) {
     return { success: false, error: "Prompt is required. Generate a prompt first (Create Prompt)." };
   }
-  const hasTriggerAnchor = basePrompt.toLowerCase().includes(String(triggerWord || "").toLowerCase());
-  let prompt = hasTriggerAnchor ? basePrompt : `${triggerWord}, ${basePrompt}`;
+  const clipPrompt = flattenStructuredNsfwJsonForClipText(basePrompt);
+  if (!String(clipPrompt).trim()) {
+    return { success: false, error: "Prompt is required. Generate a prompt first (Create Prompt)." };
+  }
+  const hasTriggerAnchor = clipPrompt.toLowerCase().includes(String(triggerWord || "").toLowerCase());
+  let prompt = hasTriggerAnchor ? clipPrompt : `${triggerWord}, ${clipPrompt}`;
 
   // Identity LoRA only — no additive LoRAs, no AI Grok call for LoRA selection.
   const aiSelection = buildGirlOnlyLoraSelection(validatedOverride);

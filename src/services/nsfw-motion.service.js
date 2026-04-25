@@ -1,9 +1,14 @@
 /**
  * NSFW Motion Control video generation (Wan 2.2 Animate, dedicated RunPod worker).
  *
- * Flow: the client uploads reference image + driving video to public storage (e.g. Vercel Blob),
- * then passes those **https URLs** here. We submit only `reference_image_url` + `driving_video_url`
- * in the RunPod `/run` JSON; the worker downloads into Comfy (`runpod-mdcln-motion/handler.py`).
+ * Flow: the client uploads reference + driving video to public URLs (e.g. blob) and passes them here.
+ *
+ * **Default:** the API downloads both URLs and sends `upload_images` + `upload_videos` (base64) so Comfy
+ * always receives the files, even if the serverless image does not implement `reference_image_url` /
+ * `driving_video_url` downloads.
+ *
+ * **Fallback:** if the JSON body would exceed RunPod’s ~10 MiB limit, we send only the two URLs
+ * (smaller request) and the **worker** must download them (see `runpod-mdcln-motion/handler.py`).
  *
  * Endpoint: `RUNPOD_MOTION_ENDPOINT_ID` · Auth: `RUNPOD_API_KEY`
  *   - extractNsfwMotionVideo / materializeNsfwMotionOutputFromRunpodResponse / checkNsfwMotionStatus
@@ -29,6 +34,11 @@ const WORKFLOW_OUTPUT_NODE = "226"; // KIARA_AnimateX VHS_VideoCombine
 const SUBMIT_TIMEOUT_MS = 60_000;
 const STATUS_TIMEOUT_MS = 20_000;
 const DEFAULT_JOB_TIMEOUT_SECS = 1800;
+/** RunPod serverless `/run` body limit; base64 submit must stay under this. */
+const RUNPOD_MAX_JSON_BYTES = 9.5 * 1024 * 1024;
+/** Do not download more than this per URL (aligns with motion worker cap). */
+const MOTION_URL_FETCH_MAX_BYTES = 450 * 1024 * 1024;
+const URL_FETCH_TIMEOUT_MS = 600_000;
 
 // Default reference frame width × height fed into the workflow.
 const DEFAULT_WIDTH = 720;
@@ -92,7 +102,6 @@ function clampInt(value, min, max, fallback) {
   return Math.max(min, Math.min(max, n));
 }
 
-/** Motion submit always uses public URLs (client → blob → RunPod); no base64 in `/run`. */
 function isPublicHttpUrl(s) {
   const t = String(s || "").trim();
   if (!/^https?:\/\//i.test(t)) return false;
@@ -106,6 +115,68 @@ function isPublicHttpUrl(s) {
   }
 }
 
+function pickContentType(headers, fallback) {
+  const ct = headers?.get?.("content-type") || "";
+  return (ct.split(";")[0] || "").trim() || fallback;
+}
+
+function extensionFromContentType(contentType, fallback) {
+  if (!contentType) return fallback;
+  const map = {
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+    "video/mp4": "mp4",
+    "video/quicktime": "mov",
+    "video/webm": "webm",
+  };
+  return map[contentType.toLowerCase()] || fallback;
+}
+
+function jsonUtf8Length(obj) {
+  return Buffer.byteLength(JSON.stringify(obj), "utf8");
+}
+
+/** Fetch a public URL into a buffer; caps size and timeout. */
+async function fetchUrlBuffer(url, label, expectedKind /* "image" | "video" */) {
+  if (!url) throw new Error(`${label}: URL is empty`);
+  if (!/^https?:\/\//i.test(url)) {
+    throw new Error(`${label}: only http(s) URLs are supported`);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), URL_FETCH_TIMEOUT_MS);
+  let resp;
+  try {
+    resp = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    clearTimeout(timer);
+    throw new Error(`${label}: download failed (${err.message || "fetch"})`);
+  }
+  clearTimeout(timer);
+  if (!resp.ok) {
+    throw new Error(`${label}: HTTP ${resp.status} ${resp.statusText}`);
+  }
+  const cl = resp.headers.get("content-length");
+  if (cl && Number.isFinite(Number(cl)) && Number(cl) > MOTION_URL_FETCH_MAX_BYTES) {
+    throw new Error(
+      `${label}: file is too large to pull on the API (${(Number(cl) / (1024 * 1024)).toFixed(0)} MB; max ${MOTION_URL_FETCH_MAX_BYTES / (1024 * 1024)} MB)`,
+    );
+  }
+  const fallbackCt = expectedKind === "video" ? "video/mp4" : "image/jpeg";
+  const contentType = pickContentType(resp.headers, fallbackCt);
+  const ab = await resp.arrayBuffer();
+  if (ab.byteLength > MOTION_URL_FETCH_MAX_BYTES) {
+    throw new Error(
+      `${label}: download too large (~${(ab.byteLength / (1024 * 1024)).toFixed(0)} MB)`,
+    );
+  }
+  const buf = Buffer.from(ab);
+  const ext = extensionFromContentType(contentType, expectedKind === "video" ? "mp4" : "jpg");
+  return { buffer: buf, contentType, extension: ext, bytes: buf.length };
+}
+
 function motionInputBase(workflow, generationId) {
   return {
     prompt: workflow,
@@ -115,6 +186,15 @@ function motionInputBase(workflow, generationId) {
       ? { generationId: String(generationId), kind: "nsfw-video-motion" }
       : { kind: "nsfw-video-motion" },
   };
+}
+
+/**
+ * Comfy template placeholders — also what URL-handoff / worker must resolve after download.
+ * Do not send ref.${arbitrary} to URL mode; handler patches with Comfy’s returned `saved` name.
+ */
+function applyDefaultMotionInputFilenames(workflow) {
+  if (workflow["167"]?.inputs) workflow["167"].inputs.image = "ref.jpg";
+  if (workflow["52"]?.inputs) workflow["52"].inputs.video = "drive.mp4";
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -203,8 +283,7 @@ export async function submitNsfwMotionVideo(opts, webhookUrl = null, generationI
 
   if (workflow["254"]?.inputs) workflow["254"].inputs.value = finalSkip;
   if (workflow["255"]?.inputs) workflow["255"].inputs.value = finalDuration;
-  if (workflow["167"]?.inputs) workflow["167"].inputs.image = "ref.jpg";
-  if (workflow["52"]?.inputs) workflow["52"].inputs.video = "drive.mp4";
+  applyDefaultMotionInputFilenames(workflow);
 
   const refStr = String(referenceImageUrl).trim();
   const drvStr = String(drivingVideoUrl).trim();
@@ -216,14 +295,90 @@ export async function submitNsfwMotionVideo(opts, webhookUrl = null, generationI
     };
   }
 
-  const body = {
-    input: {
-      ...motionInputBase(workflow, generationId),
-      reference_image_url: refStr,
-      driving_video_url: drvStr,
-    },
-  };
-  if (webhookUrl) body.webhook = webhookUrl;
+  let img;
+  let vid;
+  try {
+    img = await fetchUrlBuffer(refStr, "Reference image", "image");
+    vid = await fetchUrlBuffer(drvStr, "Driving video", "video");
+  } catch (e) {
+    return { success: false, error: e.message || String(e) };
+  }
+
+  /** ~4/3 of raw bytes in base64 + JSON overhead; skip huge base64 alloc when URL handoff is inevitable. */
+  const estUploadJson =
+    80_000 + Math.ceil((img.bytes + vid.bytes) * 4 / 3) + 2_000_000;
+  const willFitUpload = estUploadJson <= RUNPOD_MAX_JSON_BYTES;
+
+  let body;
+  let submitMode;
+  if (!willFitUpload) {
+    // URL handoff: workflow must keep template names ref.jpg / drive.mp4 — handler downloads and patches to Comfy’s saved name.
+    applyDefaultMotionInputFilenames(workflow);
+    body = {
+      input: {
+        ...motionInputBase(workflow, generationId),
+        reference_image_url: refStr,
+        driving_video_url: drvStr,
+      },
+    };
+    if (webhookUrl) body.webhook = webhookUrl;
+    submitMode = "url_fallback";
+    console.warn(
+      `[NSFW/motion] Source media is large (~${(img.bytes + vid.bytes) / (1024 * 1024) | 0} MiB raw); ` +
+        "using URL-only /run body (under RunPod 10 MiB). Worker must support reference_image_url + driving_video_url.",
+    );
+  } else {
+    if (workflow["167"]?.inputs) workflow["167"].inputs.image = `ref.${img.extension}`;
+    if (workflow["52"]?.inputs) workflow["52"].inputs.video = `drive.${vid.extension}`;
+
+    const uploadBody = {
+      input: {
+        ...motionInputBase(workflow, generationId),
+        upload_images: [
+          { node_id: "167", filename: `ref.${img.extension}`, data: img.buffer.toString("base64") },
+        ],
+        upload_videos: [
+          { node_id: "52", filename: `drive.${vid.extension}`, data: vid.buffer.toString("base64") },
+        ],
+      },
+    };
+    if (webhookUrl) uploadBody.webhook = webhookUrl;
+    const uploadJsonBytes = jsonUtf8Length(uploadBody);
+    if (uploadJsonBytes <= RUNPOD_MAX_JSON_BYTES) {
+      body = uploadBody;
+      submitMode = "upload";
+    } else {
+      applyDefaultMotionInputFilenames(workflow);
+      body = {
+        input: {
+          ...motionInputBase(workflow, generationId),
+          reference_image_url: refStr,
+          driving_video_url: drvStr,
+        },
+      };
+      if (webhookUrl) body.webhook = webhookUrl;
+      submitMode = "url_fallback";
+      console.warn(
+        `[NSFW/motion] Measured JSON ~${(uploadJsonBytes / (1024 * 1024)).toFixed(1)} MiB exceeds limit; ` +
+          "using URL-only handoff.",
+      );
+    }
+  }
+
+  {
+    const inp = body?.input;
+    const keys = inp && typeof inp === "object" ? Object.keys(inp).sort() : [];
+    const nImg = Array.isArray(inp?.upload_images) ? inp.upload_images.length : 0;
+    const nVid = Array.isArray(inp?.upload_videos) ? inp.upload_videos.length : 0;
+    const hasRefU = Boolean(inp?.reference_image_url);
+    const hasDrvU = Boolean(inp?.driving_video_url);
+    console.log(
+      `[NSFW/motion] run payload: mode=${submitMode} input.keys=[${keys.join(",")}] ` +
+        `refUrl=${hasRefU} drvUrl=${hasDrvU} upload_images=${nImg} upload_videos=${nVid} ` +
+        `genId=${generationId || "—"}`,
+    );
+  }
+
   const lastBodySize = Buffer.byteLength(JSON.stringify(body), "utf8");
 
   if (!webhookUrl) {
@@ -233,7 +388,7 @@ export async function submitNsfwMotionVideo(opts, webhookUrl = null, generationI
     );
   }
   console.log(
-    `[NSFW/motion] submit (public blob URLs) endpoint=${RUNPOD_MOTION_ENDPOINT_ID} ` +
+    `[NSFW/motion] submit mode=${submitMode} endpoint=${RUNPOD_MOTION_ENDPOINT_ID} ` +
       `dur=${finalDuration}s skip=${finalSkip}s fps=${finalFps} ${finalW}x${finalH} ` +
       `seed=${finalSeed} torchCompile=${!!torchCompile} blockSwap=${finalBlockSwap} ` +
       `jsonBytes≈${lastBodySize}` +
@@ -289,7 +444,11 @@ export async function submitNsfwMotionVideo(opts, webhookUrl = null, generationI
     success: true,
     requestId,
     seed: finalSeed,
-    bytes: { image: 0, video: 0, mode: "url" },
+    bytes: {
+      image: img?.bytes ?? 0,
+      video: vid?.bytes ?? 0,
+      mode: submitMode === "upload" ? "upload" : "url_fallback",
+    },
   };
 }
 

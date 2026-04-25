@@ -20,7 +20,7 @@ echo ">>> Ensuring runtime Python dependencies..."
 python3 -m pip install --no-cache-dir \
     "huggingface-hub>=0.25.0" hf_transfer \
     sqlalchemy aiosqlite \
-    runpod requests \
+    "runpod==1.8.2" requests \
     onnxruntime-gpu \
     opencv-python-headless \
     "numpy<2" \

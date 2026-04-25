@@ -164,10 +164,10 @@ const NSFW_COPY = {
     videoModeStandardI2vBadge: "5s / 8s",
     videoMotionXInfoTitle: "Motion-X (video recreate):",
     videoMotionXInfoBody:
-      "use your first frame plus a driving video. Uses the same NSFW motion-control worker (RunPod). Duration follows the source clip, max 30s.",
+      "Use a first frame plus a driving video. Output length follows your source (up to 30s). Most finish in about 10 minutes.",
     videoButtonGenerateMotionX: "Generate Motion-X Video",
     videoMotionXGenerating: "Generating Motion-X video...",
-    videoModeMotionXSubline: "NSFW motion worker",
+    videoModeMotionXSubline: "Video recreate",
     videoGalleryMotionXSection: "Motion-X & motion",
     videoNsfwMotionRecreateInCreate:
       "To recreate from a reference video, use the Create tab with your model → Video → Recreate (Motion-X is the default).",
@@ -397,10 +397,10 @@ const NSFW_COPY = {
     videoModeStandardI2vBadge: "5с / 8с",
     videoMotionXInfoTitle: "Motion-X (воссоздание видео):",
     videoMotionXInfoBody:
-      "первый кадр + движение с опорного ролика. Тот же motion-control worker (RunPod). Длительность — по исходнику, макс. 30с.",
+      "Первый кадр и опорный ролик с движением. Длительность — по исходнику, до 30 с. Обычно около 10 минут.",
     videoButtonGenerateMotionX: "Создать Motion-X",
     videoMotionXGenerating: "Генерация Motion-X...",
-    videoModeMotionXSubline: "Motion worker (NSFW)",
+    videoModeMotionXSubline: "Воссоздание видео",
     videoGalleryMotionXSection: "Motion-X и motion",
     videoNsfwMotionRecreateInCreate:
       "Воссоздание по референс-видео: вкладка Create → ваша модель → Video → Recreate (по умолчанию — Motion-X).",
@@ -5160,7 +5160,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
       queryClient.invalidateQueries({ queryKey: ["nsfw-processing", selectedModel] });
       toast(
         `Some nudes pack images are still running (${pending.size} pending). ` +
-          "They are not failed — long RunPod/jobs are normal. Refresh or check your gallery.",
+          "They are not failed — large batches can take a while. Refresh or check your gallery.",
         { id: TOAST_ID, icon: "⏳", duration: 10_000 },
       );
     }
