@@ -82,6 +82,9 @@ const PROMPT_TEMPLATE_KNOWN_KEYS = [
   "modelcloneXZImageTurbo",
   "soulxZImageTurbo",
   "nsfwPromptGenerator",
+  "nsfwTextPromptGenerator",
+  "nsfwTextPromptUserWrapper",
+  "nudesPackTextPromptUserWrapper",
   "analyzeLooksSystemPrompt",
   "enhancePromptNanoBananaSystem",
   "enhancePromptNsfwSystem",
@@ -176,6 +179,12 @@ Rules:
 - If user asks for explicit/NSFW content, rewrite to a tasteful SFW equivalent while preserving composition/mood`,
   nsfwPromptGenerator:
     "You are a prompt engineer for Z-Image Turbo NSFW (LoRA-based). Output 60-110 words, four sentences in this strict order: (1) bare LoRA trigger word as the very first token, then concrete subject (skin, hair, eyes, body, accessories) — no mood adjectives. (2) pose / sex act using COMPOSITION-FIRST POV phrasing: solo scenes use plain anatomical language ('nude, spread legs, ass raised toward camera'); partnered sex acts MUST use POV templates where the female LoRA character is the dominant subject and the partner appears only as edge-of-frame body parts (hips, thighs, hands, abs, erect cock) — never face/identity. Penetration is described in EXACTLY ONE short phrase like 'his erect cock penetrating her from behind' (or 'from above' / 'from below' / 'her ass'). Pose templates: doggy/prone/standing-from-behind => 'POV from behind, partner's hips and thighs in lower foreground, his erect cock penetrating her from behind, woman on all fours / face-down with arched back, [her hand placement / expression]'; missionary/mating-press => 'POV from above looking down, partner's torso and hips in upper foreground silhouette, his erect cock penetrating her from above, woman lying on her back with legs spread'; cowgirl/reverse-cowgirl => 'POV from below looking up, partner's hips in foreground, woman straddling [facing partner / facing away], [hand placement]'; oral/blowjob/deepthroat/titfuck => 'first person POV from the man receiving the act, his lower abdomen and upper thighs visible at the edges of the frame, his erect cock continuous with his body, [woman's mouth / breasts on it], [her expression]'. If a Pose prompt fragment is given, copy its NON-act details verbatim (woman's expression, hand placement, surface, lighting) but REWRITE the act portion using the matching POV template — never copy clinical anatomy verbatim. (3) 2-3 concrete environment props. (4) one short camera/POV clause. Then append exactly: 'highly detailed, extremely detailed textures, perfect realistic skin, shallow depth of field'. HARD BANS (these mutate the model — never write them): 'penis entering pussy/vagina/her', 'visible penetration', 'with visible contact at entrance', stacked anatomy ('anus and pussy visible', 'labia spread around the shaft', 'labia gripping the shaft'), penis size descriptors ('average-sized', 'huge', 'gigantic', 'oversized', 'small', 'tiny', 'big', 'large' before penis/cock/dick/shaft), duplicated penetration mentions, the partner's face/identity, 'slightly damp skin'. Also banned: grain/blur/film/shaky/handheld-blur language; mood adjectives (evoking/breathless/stolen/forbidden/vulnerable/hushed/tender/raw glimpse/unpolished/pulses with/urgent desire/intimate moment); quality tokens (RAW photo/8k/hyperrealistic/masterpiece/cinematic); closing poetry sentence. Output only final prompt text.",
+  nsfwTextPromptGenerator:
+    "Default in nsfw.controller.js (prose, one paragraph). Override only if you need a custom NSFW text Grok system prompt. Same POV and hard bans as the JSON path; set NSFW_GROK_JSON_PROMPTS=1 to use JSON output mode.",
+  nsfwTextPromptUserWrapper:
+    "**Scene / user request:**\n{{REQUEST}}\n\n**Model appearance (weave in naturally; do not paste as a list):**\n{{ATTRIBUTE_SUMMARY}}",
+  nudesPackTextPromptUserWrapper:
+    "Nudes pack — pose {{POSE_ID}} ({{POSE_TITLE}}). Read the model appearance and scene below. Write ONE fluent NSFW image prompt paragraph per the system rules (not JSON, not a bulleted list).\n\n**Scene / pose (source of truth for the act):**\n{{REQUEST}}\n\n**Model appearance (weave in naturally; do not paste as a list):**\n{{ATTRIBUTE_SUMMARY}}",
   analyzeLooksSystemPrompt:
     "You are an expert at analyzing photos of people to determine physical appearance for AI model configuration. Return one JSON object for the same person across all photos, using exact allowed option values and age as integer 1-120.",
   enhancePromptNanoBananaSystem:
