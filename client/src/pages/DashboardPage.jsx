@@ -49,7 +49,6 @@ import ModelsPage from "./ModelsPage";
 import GeneratePage from "./GeneratePage";
 import HistoryPage from "./HistoryPage";
 import SettingsPage from "./SettingsPage";
-import NSFWPage from "./NSFWPage";
 import JobBoardPage from "./JobBoardPage";
 import CoursePage from "./CoursePage";
 import VideoRepurposerPage from "./VideoRepurposerPage";
@@ -59,6 +58,7 @@ import ContentReformatterPage from "./ContentReformatterPage";
 import FirstFrameExtractorPage from "./FirstFrameExtractorPage";
 import UpscalerPage from "./UpscalerPage";
 import ModelCloneXPage from "./ModelCloneXPage";
+import NSFWPage from "./NSFWPage";
 import CreatorStudioPage from "./CreatorStudioPage";
 import AddCreditsModal from "../components/AddCreditsModal";
 import PurchaseSuccessModal from "../components/PurchaseSuccessModal";
@@ -104,6 +104,7 @@ const COPY = {
     mobileNavSettings: "Settings",
     mobileNavCourses: "Courses",
     mobileNavNsfw: "NSFW",
+    nsfwStudioLockedToast: "NSFW Studio is under reconstruction for now.",
     mobileNavPhotoVideoRepurposer: "Photo/Video Repurposer",
     mobileNavReelFinder: "Reel Finder",
     badgeSoon: "Soon",
@@ -196,6 +197,7 @@ const COPY = {
     mobileNavSettings: "Настройки",
     mobileNavCourses: "Курсы",
     mobileNavNsfw: "NSFW",
+    nsfwStudioLockedToast: "NSFW-студия временно на реконструкции.",
     mobileNavPhotoVideoRepurposer: "Переработка фото/видео",
     mobileNavReelFinder: "Поиск рилс",
     badgeSoon: "Скоро",
@@ -325,15 +327,24 @@ export default function DashboardPage() {
   const { theme, toggleTheme } = useTheme();
   const canAccessPremiumTabs = hasPremiumAccess(user);
   const hideRestrictedTabs = !hasRestrictedFeatureAccess(user);
+  const isNsfwStudioAdmin = user?.role === "admin";
   const premiumTabs = ["course", "repurposer", "reelfinder", "voice-studio"];
 
   const [activeTab, setActiveTab] = useState(() => {
     try {
+      const isAdmin = useAuthStore.getState().user?.role === "admin";
       const params = new URLSearchParams(window.location.search);
       const fromUrl = params.get("tab");
-      if (fromUrl) return fromUrl === "soulx" ? "modelclone-x" : fromUrl;
+      if (fromUrl) {
+        const t = fromUrl === "soulx" ? "modelclone-x" : fromUrl;
+        if (t === "nsfw") return isAdmin ? "nsfw" : "home";
+        return t;
+      }
       const fromStorage = safeLocalStorageGet("dashboard-active-tab");
-      if (fromStorage) return fromStorage;
+      if (fromStorage) {
+        if (fromStorage === "nsfw") return isAdmin ? "nsfw" : "home";
+        return fromStorage;
+      }
     } catch (_) {}
     return "home";
   });
@@ -371,7 +382,10 @@ export default function DashboardPage() {
       const urlParams = new URLSearchParams(window.location.search);
       let tabParam = urlParams.get("tab");
       if (tabParam === "soulx") tabParam = "modelclone-x";
-      if (tabParam && ["home", "models", "generate", "creator-studio", "voice-studio", "reformatter", "frame-extractor", "upscaler", "modelclone-x", "history", "settings", "nsfw", "course", "repurposer", "reelfinder", "referral"].includes(tabParam)) {
+      if (tabParam === "nsfw") {
+        if (freshUser?.role === "admin") setActiveTab("nsfw");
+        else setActiveTab("home");
+      } else if (tabParam && ["home", "models", "generate", "creator-studio", "voice-studio", "reformatter", "frame-extractor", "upscaler", "modelclone-x", "history", "settings", "course", "repurposer", "reelfinder", "referral"].includes(tabParam)) {
         if (premiumTabs.includes(tabParam)) {
           const hasAccess = hasPremiumAccess(freshUser);
           if (!hasAccess) {
@@ -452,10 +466,16 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!hideRestrictedTabs) return;
-    if (activeTab === "nsfw" || activeTab === "course") {
+    if (activeTab === "course") {
       setActiveTab("home");
     }
   }, [activeTab, hideRestrictedTabs]);
+
+  useEffect(() => {
+    if (activeTab === "nsfw" && !isNsfwStudioAdmin) {
+      setActiveTab("home");
+    }
+  }, [activeTab, isNsfwStudioAdmin]);
 
   const loadUserProfile = async () => {
     await refreshUserCredits();
@@ -527,7 +547,11 @@ export default function DashboardPage() {
   };
 
   const handleTabChange = (tabId) => {
-    if (hideRestrictedTabs && (tabId === "nsfw" || tabId === "course")) {
+    if (tabId === "nsfw" && !isNsfwStudioAdmin) {
+      toast(copy.nsfwStudioLockedToast);
+      return;
+    }
+    if (hideRestrictedTabs && tabId === "course") {
       setActiveTab("home");
       return;
     }
@@ -894,7 +918,16 @@ export default function DashboardPage() {
           {activeTab === "modelclone-x" && <ModelCloneXPage />}
           {activeTab === "history" && <HistoryPage />}
           {activeTab === "settings" && <SettingsPage />}
-          {!hideRestrictedTabs && activeTab === "nsfw" && <NSFWPage embedded sidebarCollapsed={sidebarNarrow} setDashboardTab={(tab, videoId) => { setActiveTab(tab); if (videoId) setCourseVideoId(videoId); }} />}
+          {!hideRestrictedTabs && activeTab === "nsfw" && isNsfwStudioAdmin && (
+            <NSFWPage
+              embedded
+              sidebarCollapsed={sidebarNarrow}
+              setDashboardTab={(tab, videoId) => {
+                setActiveTab(tab);
+                if (videoId) setCourseVideoId(videoId);
+              }}
+            />
+          )}
           {!hideRestrictedTabs && activeTab === "course" && <CoursePage setActiveTab={setActiveTab} onOpenCredits={() => setShowAddCredits(true)} initialVideoId={courseVideoId} onVideoIdConsumed={() => setCourseVideoId(null)} />}
           {activeTab === "jobs" && <JobBoardPage />}
           {activeTab === "repurposer" && <VideoRepurposerPage embedded />}
@@ -1215,7 +1248,11 @@ export default function DashboardPage() {
               <button
                 onClick={() => {
                   handleCloseWhatsNew();
-                  setActiveTab("nsfw");
+                  if (user?.role === "admin") {
+                    setActiveTab("nsfw");
+                  } else {
+                    navigate("/nsfw");
+                  }
                 }}
                 className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02]"
                 style={{ background: 'linear-gradient(135deg, #F43F5E, #EC4899)' }}

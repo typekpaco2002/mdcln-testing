@@ -45,7 +45,7 @@ import VoiceTestPage from './pages/VoiceTestPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ReplicateTestPage from './pages/ReplicateTestPage';
 import FaceRefTestPage from './pages/FaceRefTestPage';
-import NSFWPage from './pages/NSFWPage';
+import NsfwStudioRoute from './pages/NsfwStudioRoute';
 import FreeCourseFunnelPage from './pages/FreeCourseFunnelPage';
 import ContentReformatterPage from './pages/ContentReformatterPage';
 import UpscalerPage from './pages/UpscalerPage';
@@ -702,7 +702,7 @@ function App() {
             path="/nsfw"
             element={
               <ProtectedRouteWithOnboarding>
-                <NSFWPage />
+                <NsfwStudioRoute />
               </ProtectedRouteWithOnboarding>
             }
           />
