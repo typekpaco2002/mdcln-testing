@@ -178,9 +178,9 @@ Rules:
 - STRICT SFW POLICY: no nudity, no explicit sexual acts, no exposed genitals, no explicit erotic phrasing
 - If user asks for explicit/NSFW content, rewrite to a tasteful SFW equivalent while preserving composition/mood`,
   nsfwPromptGenerator:
-    "Default: inline in src/controllers/nsfw.controller.js (runNsfwPromptGenerationForModel) — Z-Image Turbo NSFW JSON system prompt + STRUCTURED_INPUT_CONTRACT. Override in DB; ensure STRUCTURED JSON INPUT is included if you replace the full text.",
+    "Default: src/lib/nsfwZit62PromptBuilder.js (buildNsfwZitGrokSystemPrompt) + NSFW_ZIT_INPUT_BRIEF — ZiT 6.2 plain-text positive prompt, structured JSON to Grok is input-only. Override in DB; include STRUCTURED NSFW INPUT in the system prompt (or the app will append the brief) if you replace the full text.",
   nsfwTextPromptGenerator:
-    "Same stack as nsfwPromptGenerator (single JSON Grok path in runNsfwPromptGenerationForModel). Use DB key nsfwPromptGenerator; this key is for legacy / alternate admin labels only.",
+    "Same stack as nsfwPromptGenerator (runNsfwPromptGenerationForModel). Use DB key nsfwPromptGenerator; this key is for legacy / alternate admin labels only.",
   nsfwTextPromptUserWrapper:
     "**Scene / user request:**\n{{REQUEST}}\n\n**Model appearance (weave in naturally; do not paste as a list):**\n{{ATTRIBUTE_SUMMARY}}",
   nudesPackTextPromptUserWrapper:
@@ -192,9 +192,9 @@ Rules:
   enhancePromptNsfwSystem:
     "Default: inline in src/routes/api.routes.js (POST /generate/enhance-prompt, mode nsfw) — Z-Image Turbo 60–110 words, four-sentence + quality suffix + hard bans. Override in DB to replace.",
   nudesPackPromptGeneratorSystem:
-    "Nudes pack uses runNsfwPromptGenerationForModel with the same system prompt as /nsfw/generate-prompt (key nsfwPromptGenerator) plus nudesPackPromptUserWrapper. Ignored if you only override nsfwPromptGenerator.",
+    "Nudes pack uses runNsfwPromptGenerationForModel (ZiT 6.2 text output; key nudesPackPromptGeneratorSystem or nsfwPromptGenerator). Ignored if you only set nsfwPromptGenerator.",
   nudesPackPromptGeneratorUserWrapper:
-    "Compose one final NSFW prompt for this nudes-pack item. Use the full request as source-of-truth.\n\n{{REQUEST}}",
+    "Compose one final ZiT NSFW prompt string (plain text, not JSON) for this nudes-pack item. The JSON bundle + raw request are source-of-truth.\n\n{{REQUEST_JSON}}\n\n{{REQUEST}}",
   describeTargetImageSystemPrompt:
     'You are an expert at describing reference images for AI identity recreation. Start with model name, describe scene/pose/camera/lighting/background/mood, avoid identity-trait details, keep under 150 words, output one paragraph only.',
   img2imgInjectSystemPrompt:

@@ -2,8 +2,9 @@
  * Structured prompt input builder.
  *
  * Both NSFW and ModelClone-X (SFW) prompt generators feed their LLM (Grok via OpenRouter)
- * the SAME canonical JSON payload describing the request. The LLM then renders that JSON
- * into a natural-language prompt for Z-Image Turbo (or the matching downstream model).
+ * a canonical JSON *payload* describing the request. ModelClone-X's optimizer still asks
+ * the model to return JSON. NSFW ZiT 6.2 uses the same input bundle but the LLM must return
+ * a single plain-text prompt string (see NSFW_ZIT_INPUT_BRIEF and nsfwZit62PromptBuilder.js).
  *
  * When a LoRA model is selected → `main_subject` is FILLED with every identity-lock field
  * available from saved appearance / LoRA defaults / legacy aiGenerationParams (face shape,
@@ -275,9 +276,14 @@ export function buildStructuredPromptInput({
     ? buildMainSubject({ model, lora, options })
     : null;
 
+  const tw = safeStr(triggerWord);
+  const loraTriggers =
+    (mode === "nsfw" || mode === "nudes-pack") && tw ? [tw] : undefined;
+
   const payload = pruneEmpty({
     request_kind: mode,
-    trigger_word: safeStr(triggerWord) || undefined,
+    trigger_word: tw || undefined,
+    lora_triggers: loraTriggers,
     main_subject: main_subject || undefined,
     scene: buildScene({ userRequest, context }),
     composition: buildComposition({ context }),
@@ -304,9 +310,29 @@ export function buildStructuredPromptInput({
  *
  * IMPORTANT: The OUTPUT of the LLM is the JSON itself (pretty-printed). It is then
  * stringified and fed to the downstream image model (Z-Image Turbo etc.) as the prompt
- * — JSON formatting is preserved verbatim because the diffusion model conditions on
- * the structured tokens, and our UI / logs need it human-readable.
+ * (SFW only). **NSFW** uses `NSFW_ZIT_INPUT_BRIEF` and plain-text output instead.
  */
+/**
+ * What Grok receives for NSFW prompt generation: input is still a JSON variable bundle; output
+ * must be one raw string for ZiT 6.2, not a JSON object.
+ */
+export const NSFW_ZIT_INPUT_BRIEF = `## STRUCTURED NSFW INPUT (READ CAREFULLY)
+
+### INPUT
+The user message includes a **JSON variable bundle** built by the app. It categorizes
+trigger_word, lora_triggers, main_subject, scene, composition, colors, style, and nsfw_meta.
+This JSON is *upstream context only* — you translate it into one photographic prompt string.
+
+You MUST read every non-empty field. Do not dump key:value lines into the final prompt. Do
+not return JSON, YAML, or markdown. The diffusion sampler is conditioned on a single
+natural-language string.
+
+### OUTPUT
+Return **only** the final ZiT positive prompt: plain English, comma-separated or flowing prose
+as required by the system rules. No \`\`\` fences. If you cannot satisfy the request as one
+coherent image, return exactly:
+Irresolvable logical conflict in request - please clarify`;
+
 export const STRUCTURED_INPUT_CONTRACT = `## STRUCTURED JSON I/O CONTRACT (READ CAREFULLY — INPUT *AND* OUTPUT ARE JSON)
 
 ### INPUT
