@@ -3241,7 +3241,7 @@ export async function generateNudesPack(req, res) {
               userRequestForAi,
               attributesDetail,
               attributesString,
-              { pose, mode: "nudes-pack" },
+              { pose },
             );
             if (aiPrompt && typeof aiPrompt === "string" && aiPrompt.trim()) {
               if (isNsfwPromptLogicalConflict(aiPrompt)) {
