@@ -9,8 +9,8 @@
  * mirror the output mp4 to Blob/R2 (RunningHub result URLs expire ~24h).
  *
  * Env: RUNNINGHUB_API_KEY, RUNNINGHUB_MOTION_APP_ID (default below), optional RUNNINGHUB_API_BASE / RUNNINGHUB_MEDIA_UPLOAD_BASE.
- * Driving video is re-encoded to H.264 (yuv420p) + MP4 before upload (unless NSFW_MOTION_TRANSCODE=false) so
- * Comfy VHS_LoadVideo (OpenCV) on RunningHub can decode — same fix as “could not be loaded with cv” on exotic codecs.
+ * Driving video is re-encoded to H.264 **baseline** + yuv420p MP4 before upload (unless NSFW_MOTION_TRANSCODE=false) so
+ * Comfy VHS_LoadVideo (OpenCV) on RunningHub can decode (OpenCV is picky; main/hevc av1 will fail with “cv”).
  * Prefer FFMPEG_WORKER_URL + R2 (presigned PUT) like reformatter/Seedance — R2 is still used in blob-only
  * deployments for temp worker output when R2 is configured. Fallback: local ffmpeg (FFMPEG_PATH).
  *
@@ -34,25 +34,44 @@ const execFileAsync = promisify(execFile);
 
 /** Re-encode driving clip so OpenCV in Comfy VHS can open it (H.264 + yuv420p, no B-frames, no audio). */
 const NSFW_MOTION_TRANSCODE = String(process.env.NSFW_MOTION_TRANSCODE || "true").toLowerCase() !== "false";
+/**
+ * If re-encode is on but no worker+local transcode could produce a file, return an error instead of
+ * submitting the raw file (which usually fails on RunningHub with VHS/cv2). Set to false to restore old “upload as-is” behavior.
+ */
+const NSFW_MOTION_TRANSCODE_STRICT =
+  String(process.env.NSFW_MOTION_TRANSCODE_STRICT || "true").toLowerCase() !== "false";
 
-/** Tuned for VHS_LoadVideo (OpenCV): yuv420, even dimensions, SAR=1, fastdecode, no B-frames. */
+const FTYP_SIG = Buffer.from("ftyp");
+
+/**
+ * @param {Buffer} b
+ * @returns {boolean} True if buffer looks like an MP4/ISO with an ftyp box (avoids 0 B / junk uploads)
+ */
+function bufferContainsFtypMp4(b) {
+  if (!Buffer.isBuffer(b) || b.length < 32) return false;
+  const n = Math.min(b.length, 1_000_000);
+  return b.subarray(0, n).indexOf(FTYP_SIG) >= 0;
+}
+
+/** Tuned for VHS_LoadVideo (OpenCV / cv2): yuv420, even dimensions, H.264 baseline, no B-frames, faststart. */
 const MOTION_VHS_VF =
   "format=yuv420p,scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=bicubic,setsar=1";
+/* Align with RunningHub guidance: H.264 baseline, preset fast, crf 23 — libx264, no audio, moov at start. */
 const MOTION_VHS_X264_OUT = [
   "-c:v",
   "libx264",
   "-profile:v",
-  "main",
-  "-level",
-  "4.0",
+  "baseline",
   "-preset",
-  "veryfast",
+  "fast",
   "-tune",
   "fastdecode",
   "-crf",
   "23",
   "-bf",
   "0",
+  "-refs",
+  "1",
   "-g",
   "30",
   "-pix_fmt",
@@ -152,6 +171,10 @@ async function transcodeDrivingVideoToH264OpencvFriendly(inputBuffer, sourceExt)
     await execFileAsync(ff, args, { maxBuffer: 50 * 1024 * 1024, timeout: 15 * 60 * 1000 });
     const out = await fs.readFile(outPath);
     if (out.length < 256) return null;
+    if (!bufferContainsFtypMp4(out)) {
+      console.warn("[NSFW/motion] local transcode output missing ftyp — treating as failed");
+      return null;
+    }
     return out;
   } catch (e) {
     console.warn("[NSFW/motion] ffmpeg transcode failed:", e?.message || e);
@@ -171,7 +194,7 @@ function isFfmpegWorkerR2PathAvailable() {
 }
 
 /**
- * OpenCV-friendly H.264 (main, yuv420p, no B-frames, no audio) via the same external ffmpeg worker as reformatter.
+ * OpenCV-friendly H.264 baseline (yuv420p, no B-frames, no audio) via the same external ffmpeg worker as reformatter.
  * @param {string} publicDrivingUrl - Public http(s) URL the worker can fetch
  * @returns {Promise<Buffer | null>}
  */
@@ -193,16 +216,34 @@ async function transcodeDrivingVideoViaFfmpegWorker(publicDrivingUrl) {
     console.warn("[NSFW/motion] ffmpeg worker transcode failed:", e?.message || e);
     return null;
   }
-  try {
-    const res = await fetch(publicUrl, { signal: AbortSignal.timeout(600_000) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 256) return null;
-    return buf;
-  } catch (e) {
-    console.warn("[NSFW/motion] could not download transcoded video from R2:", e?.message || e);
-    return null;
+  let lastErr = null;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 400 * attempt));
+    }
+    try {
+      const res = await fetch(publicUrl, { signal: AbortSignal.timeout(600_000) });
+      if (!res.ok) {
+        lastErr = new Error(`HTTP ${res.status}`);
+        continue;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length < 256) {
+        lastErr = new Error("empty file");
+        continue;
+      }
+      if (!bufferContainsFtypMp4(buf)) {
+        lastErr = new Error("not a valid ftyp MP4 (truncated or wrong content-type?)");
+        console.warn(`[NSFW/motion] R2 transcode read missing ftyp, retry ${attempt + 1}/6`);
+        continue;
+      }
+      return buf;
+    } catch (e) {
+      lastErr = e instanceof Error ? e : new Error(e?.message || String(e));
+    }
   }
+  console.warn("[NSFW/motion] could not download valid MP4 from R2 after transcode:", lastErr?.message || lastErr);
+  return null;
 }
 
 /**
@@ -406,9 +447,16 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
   let videoUploadExt = vid.extension;
   let videoContentType = vid.contentType;
   if (NSFW_MOTION_TRANSCODE) {
-    const workerOut = await transcodeDrivingVideoViaFfmpegWorker(drvStr);
-    const tc =
-      workerOut || (await transcodeDrivingVideoToH264OpencvFriendly(vid.buffer, vid.extension));
+    let workerOut = await transcodeDrivingVideoViaFfmpegWorker(drvStr);
+    if (workerOut && !bufferContainsFtypMp4(workerOut)) {
+      console.warn("[NSFW/motion] worker transcode not a valid MP4; trying local ffmpeg");
+      workerOut = null;
+    }
+    let tc = workerOut || (await transcodeDrivingVideoToH264OpencvFriendly(vid.buffer, vid.extension));
+    if (tc && !bufferContainsFtypMp4(tc)) {
+      console.warn("[NSFW/motion] local transcode not a valid MP4");
+      tc = null;
+    }
     if (tc) {
       videoBufferToUpload = Buffer.from(tc);
       videoUploadExt = "mp4";
@@ -416,12 +464,20 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
       const mb = videoBufferToUpload.length / (1024 * 1024);
       const source = workerOut ? "ffmpeg worker" : "local ffmpeg";
       console.log(
-        `[NSFW/motion] driving video transcoded (${source}) to H.264/yuv420p MP4 ≈${mb.toFixed(2)} MiB (was ${vid.extension})`,
+        `[NSFW/motion] driving video transcoded (${source}) to H.264 baseline yuv420p MP4 ≈${mb.toFixed(2)} MiB (was ${vid.extension})`,
       );
+    } else if (NSFW_MOTION_TRANSCODE_STRICT) {
+      return {
+        success: false,
+        error:
+          "Driving video could not be re-encoded to OpenCV-friendly H.264 baseline MP4. Configure R2 + " +
+          "FFMPEG_WORKER_URL/KEY (recommended), or point FFMPEG_PATH at ffmpeg on the API. " +
+          "If you must try an untranscoded upload, set NSFW_MOTION_TRANSCODE_STRICT=false (it often still fails on RunningHub with VHS/cv2).",
+      };
     } else {
       console.warn(
-        "[NSFW/motion] H.264 transcode unavailable or failed; uploading source bytes (VHS will fail if the clip is not OpenCV-decodable). " +
-          "Set R2 + FFMPEG_WORKER_URL/KEY, or FFMPEG_PATH for local re-encode. On Vercel blob-only without R2, the worker transcode is skipped—use R2 for presigned output or a host with ffmpeg.",
+        "[NSFW/motion] H.264 transcode unavailable; uploading source as-is (NSFW_MOTION_TRANSCODE_STRICT=false) — " +
+          "VHS will fail if the clip is not H.264 baseline yuv420p. Set R2 + FFMPEG_WORKER, or FFMPEG_PATH.",
       );
     }
   }
