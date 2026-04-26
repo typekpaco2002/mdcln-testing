@@ -11,7 +11,8 @@
  * Env: RUNNINGHUB_API_KEY, RUNNINGHUB_MOTION_APP_ID (default below), optional RUNNINGHUB_API_BASE / RUNNINGHUB_MEDIA_UPLOAD_BASE.
  * Driving video is re-encoded to H.264 (yuv420p) + MP4 before upload (unless NSFW_MOTION_TRANSCODE=false) so
  * Comfy VHS_LoadVideo (OpenCV) on RunningHub can decode — same fix as “could not be loaded with cv” on exotic codecs.
- * Prefer FFMPEG_WORKER_URL + R2 (presigned PUT) like reformatter/Seedance; fallback to local ffmpeg (FFMPEG_PATH).
+ * Prefer FFMPEG_WORKER_URL + R2 (presigned PUT) like reformatter/Seedance — R2 is still used in blob-only
+ * deployments for temp worker output when R2 is configured. Fallback: local ffmpeg (FFMPEG_PATH).
  *
  * The hosted app workflow may not expose prompt/duration/skip via the API; those are accepted
  * for billing / UX and stored on the generation row, but are not always sent to RunningHub.
@@ -25,14 +26,41 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { getFfmpegWorkerBaseUrls } from "../lib/ffmpeg-worker-env.js";
 import { postTranscodeJobToWorker } from "./ffmpeg-worker-client.js";
-import { getR2PresignedPutForKey, isBlobOnlyStorageMode, isR2Configured } from "../utils/r2.js";
+import { getR2PresignedPutForKey, isR2Configured } from "../utils/r2.js";
 import { uploadBufferToBlobOrR2 } from "../utils/kieUpload.js";
 import { getFfmpegPathSync } from "../utils/ffmpeg-path.js";
 
 const execFileAsync = promisify(execFile);
 
-/** Re-encode driving clip so OpenCV in Comfy VHS can open it (baseline H.264, no audio). */
+/** Re-encode driving clip so OpenCV in Comfy VHS can open it (H.264 + yuv420p, no B-frames, no audio). */
 const NSFW_MOTION_TRANSCODE = String(process.env.NSFW_MOTION_TRANSCODE || "true").toLowerCase() !== "false";
+
+/** Tuned for VHS_LoadVideo (OpenCV): yuv420, even dimensions, SAR=1, fastdecode, no B-frames. */
+const MOTION_VHS_VF =
+  "format=yuv420p,scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=bicubic,setsar=1";
+const MOTION_VHS_X264_OUT = [
+  "-c:v",
+  "libx264",
+  "-profile:v",
+  "main",
+  "-level",
+  "4.0",
+  "-preset",
+  "veryfast",
+  "-tune",
+  "fastdecode",
+  "-crf",
+  "23",
+  "-bf",
+  "0",
+  "-g",
+  "30",
+  "-pix_fmt",
+  "yuv420p",
+  "-an",
+  "-movflags",
+  "+faststart",
+];
 
 const RUNNINGHUB_API_KEY = String(process.env.RUNNINGHUB_API_KEY || "").trim();
 const DEFAULT_MOTION_APP_ID = "2048360380644204545";
@@ -116,21 +144,9 @@ async function transcodeDrivingVideoToH264OpencvFriendly(inputBuffer, sourceExt)
       "-y",
       "-i",
       inPath,
-      "-c:v",
-      "libx264",
-      "-profile:v",
-      "main",
-      "-level",
-      "4.0",
-      "-preset",
-      "veryfast",
-      "-crf",
-      "23",
-      "-pix_fmt",
-      "yuv420p",
-      "-movflags",
-      "+faststart",
-      "-an",
+      "-vf",
+      MOTION_VHS_VF,
+      ...MOTION_VHS_X264_OUT,
       outPath,
     ];
     await execFileAsync(ff, args, { maxBuffer: 50 * 1024 * 1024, timeout: 15 * 60 * 1000 });
@@ -150,13 +166,12 @@ function isFfmpegWorkerR2PathAvailable() {
   return (
     getFfmpegWorkerBaseUrls().length > 0 &&
     Boolean(String(process.env.FFMPEG_WORKER_API_KEY || "").trim()) &&
-    !isBlobOnlyStorageMode() &&
     isR2Configured()
   );
 }
 
 /**
- * OpenCV-friendly H.264 (libx264 main, yuv420p, no audio) via the same external ffmpeg worker as reformatter.
+ * OpenCV-friendly H.264 (main, yuv420p, no B-frames, no audio) via the same external ffmpeg worker as reformatter.
  * @param {string} publicDrivingUrl - Public http(s) URL the worker can fetch
  * @returns {Promise<Buffer | null>}
  */
@@ -170,23 +185,8 @@ async function transcodeDrivingVideoViaFfmpegWorker(publicDrivingUrl) {
     publicUrl = presign.publicUrl;
     await postTranscodeJobToWorker({
       inputUrl: u,
-      extraOptions: [
-        "-c:v",
-        "libx264",
-        "-profile:v",
-        "main",
-        "-level",
-        "4.0",
-        "-preset",
-        "veryfast",
-        "-crf",
-        "23",
-        "-pix_fmt",
-        "yuv420p",
-        "-an",
-        "-movflags",
-        "+faststart",
-      ],
+      vfFilter: MOTION_VHS_VF,
+      extraOptions: [...MOTION_VHS_X264_OUT],
       outputPutUrl: { putUrl: presign.uploadUrl, publicUrl: presign.publicUrl, contentType: "video/mp4" },
     });
   } catch (e) {
@@ -420,8 +420,8 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
       );
     } else {
       console.warn(
-        "[NSFW/motion] H.264 transcode unavailable or failed; uploading source bytes. " +
-          "Configure FFMPEG_WORKER_URL + R2, or FFMPEG_PATH for local transcode, if OpenCV still fails (cv load error).",
+        "[NSFW/motion] H.264 transcode unavailable or failed; uploading source bytes (VHS will fail if the clip is not OpenCV-decodable). " +
+          "Set R2 + FFMPEG_WORKER_URL/KEY, or FFMPEG_PATH for local re-encode. On Vercel blob-only without R2, the worker transcode is skipped—use R2 for presigned output or a host with ffmpeg.",
       );
     }
   }
