@@ -5,6 +5,7 @@ import {
   getStripeForUser,
   accountForUser,
   accountForUserSubscription,
+  retrieveSubscriptionFromEitherAccount,
 } from "../lib/stripeClients.js";
 import {
   setChunkedString,
@@ -197,6 +198,104 @@ function getTrustedFrontendUrl(req) {
     return headerOrigin;
   }
   return fallbackProdUrl;
+}
+
+/**
+ * Billing Customer Portal: resolve subscription or customer on NEW and/or LEGACY Stripe.
+ * @param {import("@prisma/client").User} user
+ * @param {import("express").Request} req
+ */
+async function createCustomerPortalForUser(user, req) {
+  const returnUrl = getTrustedFrontendUrl(req);
+  const returnPath = `${returnUrl}/dashboard?tab=settings&billing=updated`;
+
+  for (const sid of new Set(
+    [user.stripeSubscriptionId, user.legacyStripeSubscriptionId].filter(Boolean),
+  )) {
+    const { subscription, account } = await retrieveSubscriptionFromEitherAccount(sid, [
+      "items.data.price",
+    ]);
+    if (subscription && account) {
+      const client = getStripeForAccount(account);
+      if (!client) continue;
+      const cust =
+        typeof subscription.customer === "string"
+          ? subscription.customer
+          : subscription.customer?.id;
+      if (cust) {
+        const portalSession = await client.billingPortal.sessions.create({
+          customer: cust,
+          return_url: returnPath,
+        });
+        return { url: portalSession.url, account, customerId: cust };
+      }
+    }
+  }
+
+  for (const cusId of new Set(
+    [user.stripeCustomerId, user.legacyStripeCustomerId].filter(Boolean),
+  )) {
+    for (const acc of ["new", "legacy"]) {
+      const client = getStripeForAccount(acc);
+      if (!client) continue;
+      try {
+        const portalSession = await client.billingPortal.sessions.create({
+          customer: cusId,
+          return_url: returnPath,
+        });
+        return { url: portalSession.url, account: acc, customerId: cusId };
+      } catch (e) {
+        if (e?.code === "resource_missing" || e?.type === "StripeInvalidRequestError" || e?.statusCode === 404) {
+          continue;
+        }
+        throw e;
+      }
+    }
+  }
+
+  for (const acc of ["new", "legacy"]) {
+    const client = getStripeForAccount(acc);
+    if (!client) continue;
+    const list = await client.customers.list({ email: user.email, limit: 1 });
+    const c = list.data?.[0];
+    if (c && !c.deleted) {
+      if (acc === "legacy" && !user.legacyStripeCustomerId) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { legacyStripeCustomerId: c.id, stripeAccount: "legacy" },
+        });
+      } else if (acc === "new" && !user.stripeCustomerId) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { stripeCustomerId: c.id, stripeAccount: "new" },
+        });
+      }
+      const portalSession = await client.billingPortal.sessions.create({
+        customer: c.id,
+        return_url: returnPath,
+      });
+      return { url: portalSession.url, account: acc, customerId: c.id };
+    }
+  }
+
+  const account = accountForUser(user);
+  const client = getStripeForAccount(account);
+  if (!client) {
+    throw new Error("Stripe is not configured for this user account");
+  }
+  const created = await client.customers.create({
+    email: user.email,
+    metadata: { userId: user.id },
+  });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { stripeCustomerId: created.id, stripeAccount: account },
+  });
+  const portalSession = await client.billingPortal.sessions.create({
+    customer: created.id,
+    return_url: returnPath,
+  });
+  return { url: portalSession.url, account, customerId: created.id };
 }
 
 async function validateAndApplyDiscountCode(discountCode, purchaseType, amountCents) {
@@ -2045,9 +2144,7 @@ router.post('/cancel-subscription', authMiddleware, async (req, res) => {
 });
 
 // Create Customer Portal session for subscription management.
-// Routes to the account that owns the user's CURRENT primary customer:
-//   - legacy account → opens portal for grandfathered subscription
-//   - new account    → opens portal for current US LLC customer
+// Tries NEW and LEGACY Stripe: subscription id → customer ids → email on both → create on primary account.
 router.post('/create-portal-session', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -2060,51 +2157,16 @@ router.post('/create-portal-session', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const account = accountForUser(user);
-    const stripe = getStripeForAccount(account);
-    if (!stripe) {
-      return res.status(500).json({ error: 'Stripe is not configured for this user account' });
+    if (!getStripeForAccount("new") && !getStripeForAccount("legacy")) {
+      return res.status(500).json({ error: "Stripe is not configured" });
     }
 
-    let customerId = user.stripeCustomerId;
-
-    // Make billing portal available to every tier:
-    // recover existing Stripe customer by email, or create one if missing — within
-    // whichever account the user currently belongs to.
-    if (!customerId) {
-      const existingByEmail = await stripe.customers.list({
-        email: user.email,
-        limit: 1,
-      });
-      customerId = existingByEmail?.data?.[0]?.id || null;
-
-      if (!customerId) {
-        const createdCustomer = await stripe.customers.create({
-          email: user.email,
-          metadata: { userId: user.id },
-        });
-        customerId = createdCustomer.id;
-      }
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { stripeCustomerId: customerId },
-      });
-    }
-
-    // Auto-detect correct return URL
-    const returnUrl = getTrustedFrontendUrl(req);
-
-    const portalSession = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${returnUrl}/dashboard?tab=settings&billing=updated`,
-    });
-
-    console.log(`✅ Customer Portal session created on ${account} account:`, portalSession.url);
-    res.json({ url: portalSession.url });
+    const { url, account } = await createCustomerPortalForUser(user, req);
+    console.log(`✅ Customer Portal session on ${account} account:`, url);
+    return res.json({ url });
   } catch (error) {
     console.error('❌ Error creating portal session:', error.message);
-    res.status(500).json({ error: 'Failed to create portal session' });
+    return res.status(500).json({ error: 'Failed to create portal session' });
   }
 });
 

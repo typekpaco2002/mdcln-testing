@@ -21,6 +21,10 @@ import {
   runMonthlyVoiceBillingForAllUsers,
 } from "../services/voice-monthly-billing.service.js";
 import { decryptApiKey, encryptApiKey } from "../utils/apiKeyVault.js";
+import {
+  gatherSubscriptionCandidatesFromDualAccounts,
+  findFirstCustomerByEmailDualAccount,
+} from "../lib/stripeDualResync.js";
 
 /**
  * Dual-Stripe admin helpers.
@@ -366,6 +370,119 @@ function pickBestSubscription(subscriptions = []) {
     if (ra !== rb) return ra - rb;
     return (b?.created || 0) - (a?.created || 0);
   })[0];
+}
+
+/**
+ * @param {object} p
+ * @param {object | null} p.bestSub
+ * @param {"new" | "legacy" | null} p.bestAccount
+ * @param {object} p.user
+ * @param {string} p.normalizedStatus
+ * @param {boolean} p.isActiveish
+ * @param {Date | null} p.currentPeriodEnd
+ * @param {Date | null} p.cancelledAt
+ * @param {{ customerId: string | null, account: "new" | "legacy" | null } | null} p.emailCustomer
+ */
+function buildSubscriptionResyncPrismaData(p) {
+  const {
+    bestSub,
+    bestAccount,
+    user,
+    normalizedStatus,
+    isActiveish,
+    currentPeriodEnd,
+    cancelledAt,
+    emailCustomer,
+  } = p;
+
+  if (!bestSub) {
+    const base = {
+      subscriptionStatus: "cancelled",
+      subscriptionTier: null,
+      subscriptionBillingCycle: null,
+      creditsExpireAt: null,
+      subscriptionCancelledAt: new Date(),
+      subscriptionCredits: 0,
+      stripeSubscriptionId: null,
+      legacyStripeSubscriptionId: null,
+    };
+    if (emailCustomer?.customerId && emailCustomer?.account === "new") {
+      return { ...base, stripeCustomerId: emailCustomer.customerId, stripeAccount: "new" };
+    }
+    if (emailCustomer?.customerId && emailCustomer?.account === "legacy") {
+      return { ...base, legacyStripeCustomerId: emailCustomer.customerId, stripeAccount: "legacy" };
+    }
+    return base;
+  }
+
+  const cus = bestSub?.customer
+    ? typeof bestSub.customer === "string"
+      ? bestSub.customer
+      : bestSub.customer?.id
+    : null;
+
+  if (bestAccount === "new") {
+    if (isActiveish) {
+      return {
+        stripeAccount: "new",
+        stripeCustomerId: cus || user.stripeCustomerId || null,
+        stripeSubscriptionId: bestSub.id,
+        legacyStripeSubscriptionId: null,
+        subscriptionStatus: normalizedStatus,
+        subscriptionTier: inferTierFromSubscription(bestSub, user.subscriptionTier),
+        subscriptionBillingCycle: inferBillingCycleFromSubscription(bestSub, user.subscriptionBillingCycle),
+        creditsExpireAt: currentPeriodEnd,
+        subscriptionCancelledAt: null,
+      };
+    }
+    return {
+      stripeAccount: "new",
+      stripeCustomerId: cus || user.stripeCustomerId || null,
+      stripeSubscriptionId: null,
+      legacyStripeSubscriptionId: null,
+      subscriptionStatus: normalizedStatus,
+      subscriptionTier: null,
+      subscriptionBillingCycle: null,
+      creditsExpireAt: null,
+      subscriptionCancelledAt: cancelledAt || new Date(),
+      subscriptionCredits: 0,
+    };
+  }
+  if (bestAccount === "legacy") {
+    if (isActiveish) {
+      return {
+        stripeAccount: "legacy",
+        legacyStripeCustomerId: cus || user.legacyStripeCustomerId || null,
+        legacyStripeSubscriptionId: bestSub.id,
+        stripeSubscriptionId: null,
+        subscriptionStatus: normalizedStatus,
+        subscriptionTier: inferTierFromSubscription(bestSub, user.subscriptionTier),
+        subscriptionBillingCycle: inferBillingCycleFromSubscription(bestSub, user.subscriptionBillingCycle),
+        creditsExpireAt: currentPeriodEnd,
+        subscriptionCancelledAt: null,
+      };
+    }
+    return {
+      stripeAccount: "legacy",
+      legacyStripeCustomerId: cus || user.legacyStripeCustomerId || null,
+      legacyStripeSubscriptionId: null,
+      stripeSubscriptionId: null,
+      subscriptionStatus: normalizedStatus,
+      subscriptionTier: null,
+      subscriptionBillingCycle: null,
+      creditsExpireAt: null,
+      subscriptionCancelledAt: cancelledAt || new Date(),
+      subscriptionCredits: 0,
+    };
+  }
+  return {
+    subscriptionStatus: "cancelled",
+    subscriptionTier: null,
+    subscriptionBillingCycle: null,
+    creditsExpireAt: null,
+    subscriptionCancelledAt: new Date(),
+    subscriptionCredits: 0,
+  };
 }
 
 function parseSourceFromPaymentSessionId(paymentSessionId) {
@@ -2196,7 +2313,7 @@ export async function recoverPayment(req, res) {
 
 export async function syncUserStripeState(req, res) {
   try {
-    if (!stripe) {
+    if (!getStripeForAccount("new") && !getStripeForAccount("legacy")) {
       return res.status(503).json({ success: false, message: "Stripe not configured" });
     }
 
@@ -2206,8 +2323,11 @@ export async function syncUserStripeState(req, res) {
       select: {
         id: true,
         email: true,
+        stripeAccount: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        legacyStripeCustomerId: true,
+        legacyStripeSubscriptionId: true,
         subscriptionTier: true,
         subscriptionStatus: true,
         subscriptionBillingCycle: true,
@@ -2217,38 +2337,17 @@ export async function syncUserStripeState(req, res) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    let customerId = user.stripeCustomerId || null;
-    let candidateSubscriptions = [];
-
-    if (!customerId && user.email) {
-      const customers = await stripe.customers.list({ email: user.email, limit: 5 });
-      const activeCustomer = (customers.data || []).find((c) => !c.deleted);
-      customerId = activeCustomer?.id || null;
-    }
-
-    if (customerId) {
-      const subscriptions = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "all",
-        limit: 20,
-        expand: ["data.items.data.price"],
-      });
-      candidateSubscriptions = subscriptions?.data || [];
-    } else if (user.stripeSubscriptionId) {
-      try {
-        const fallbackSub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
-          expand: ["items.data.price"],
-        });
-        candidateSubscriptions = fallbackSub ? [fallbackSub] : [];
-        if (!customerId && fallbackSub?.customer) {
-          customerId = String(fallbackSub.customer);
-        }
-      } catch (error) {
-        if (error?.code !== "resource_missing") throw error;
-      }
-    }
-
+    const { entries } = await gatherSubscriptionCandidatesFromDualAccounts(user);
+    const candidateSubscriptions = entries.map((e) => e.subscription);
     const bestSub = pickBestSubscription(candidateSubscriptions);
+    const bestEntry = bestSub ? entries.find((e) => e.subscription.id === bestSub.id) : null;
+    const bestAccount = bestEntry?.account || null;
+
+    let emailCustomer = null;
+    if (!bestSub && user.email) {
+      emailCustomer = await findFirstCustomerByEmailDualAccount(user.email);
+    }
+
     const normalizedStatus = normalizeSubscriptionStatus(bestSub?.status);
     const isActiveish = ["active", "trialing", "past_due", "unpaid"].includes(normalizedStatus);
     const cancelledAt = bestSub?.canceled_at
@@ -2258,29 +2357,16 @@ export async function syncUserStripeState(req, res) {
       ? new Date(bestSub.current_period_end * 1000)
       : null;
 
-    const updateData = bestSub
-      ? {
-          stripeCustomerId: customerId || user.stripeCustomerId || null,
-          stripeSubscriptionId: isActiveish ? bestSub.id : null,
-          subscriptionStatus: normalizedStatus,
-          subscriptionTier: isActiveish ? inferTierFromSubscription(bestSub, user.subscriptionTier) : null,
-          subscriptionBillingCycle: isActiveish
-            ? inferBillingCycleFromSubscription(bestSub, user.subscriptionBillingCycle)
-            : null,
-          creditsExpireAt: isActiveish ? currentPeriodEnd : null,
-          subscriptionCancelledAt: !isActiveish ? (cancelledAt || new Date()) : null,
-          ...(isActiveish ? {} : { subscriptionCredits: 0 }),
-        }
-      : {
-          stripeCustomerId: customerId || user.stripeCustomerId || null,
-          stripeSubscriptionId: null,
-          subscriptionStatus: "cancelled",
-          subscriptionTier: null,
-          subscriptionBillingCycle: null,
-          creditsExpireAt: null,
-          subscriptionCancelledAt: new Date(),
-          subscriptionCredits: 0,
-        };
+    const updateData = buildSubscriptionResyncPrismaData({
+      bestSub,
+      bestAccount,
+      user,
+      normalizedStatus,
+      isActiveish,
+      currentPeriodEnd,
+      cancelledAt,
+      emailCustomer,
+    });
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -2290,12 +2376,20 @@ export async function syncUserStripeState(req, res) {
         email: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        legacyStripeCustomerId: true,
+        legacyStripeSubscriptionId: true,
         subscriptionStatus: true,
         subscriptionTier: true,
         subscriptionBillingCycle: true,
         creditsExpireAt: true,
       },
     });
+
+    const primaryCus = bestSub?.customer
+      ? typeof bestSub.customer === "string"
+        ? bestSub.customer
+        : bestSub.customer?.id
+      : emailCustomer?.customerId || null;
 
     await prisma.adminAuditLog.create({
       data: {
@@ -2306,7 +2400,10 @@ export async function syncUserStripeState(req, res) {
         targetId: userId,
         detailsJson: JSON.stringify({
           stripeCustomerId: updatedUser.stripeCustomerId,
+          legacyStripeCustomerId: updatedUser.legacyStripeCustomerId,
           stripeSubscriptionId: updatedUser.stripeSubscriptionId,
+          legacyStripeSubscriptionId: updatedUser.legacyStripeSubscriptionId,
+          selectedStripeAccount: bestAccount || emailCustomer?.account || null,
           subscriptionStatus: updatedUser.subscriptionStatus,
           subscriptionTier: updatedUser.subscriptionTier,
           subscriptionBillingCycle: updatedUser.subscriptionBillingCycle,
@@ -2320,9 +2417,10 @@ export async function syncUserStripeState(req, res) {
       message: "Stripe state synced",
       user: updatedUser,
       stripe: {
-        customerId: customerId || null,
+        customerId: primaryCus,
         subscriptionsFound: candidateSubscriptions.length,
         selectedSubscriptionId: bestSub?.id || null,
+        selectedStripeAccount: bestAccount || emailCustomer?.account || null,
       },
     });
   } catch (error) {
@@ -2341,7 +2439,7 @@ export async function syncUserStripeState(req, res) {
  */
 export async function reconcileAllSubscriptions(req, res) {
   try {
-    if (!stripe) {
+    if (!getStripeForAccount("new") && !getStripeForAccount("legacy")) {
       return res.status(503).json({ success: false, message: "Stripe not configured" });
     }
 
@@ -2355,14 +2453,19 @@ export async function reconcileAllSubscriptions(req, res) {
         OR: [
           { stripeCustomerId: { not: null } },
           { stripeSubscriptionId: { not: null } },
+          { legacyStripeCustomerId: { not: null } },
+          { legacyStripeSubscriptionId: { not: null } },
         ],
       },
       take: limit,
       select: {
         id: true,
         email: true,
+        stripeAccount: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        legacyStripeCustomerId: true,
+        legacyStripeSubscriptionId: true,
         subscriptionTier: true,
         subscriptionStatus: true,
         subscriptionBillingCycle: true,
@@ -2374,37 +2477,17 @@ export async function reconcileAllSubscriptions(req, res) {
 
     for (const user of users) {
       try {
-        let customerId = user.stripeCustomerId || null;
-        let candidateSubscriptions = [];
-
-        if (!customerId && user.email) {
-          const customers = await stripe.customers.list({ email: user.email, limit: 5 });
-          const activeCustomer = (customers.data || []).find((c) => !c.deleted);
-          customerId = activeCustomer?.id || null;
-        }
-
-        if (customerId) {
-          const list = await stripe.subscriptions.list({
-            customer: customerId,
-            status: "all",
-            limit: 20,
-            expand: ["data.items.data.price"],
-          });
-          candidateSubscriptions = list?.data || [];
-        } else if (user.stripeSubscriptionId) {
-          try {
-            const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
-              expand: ["items.data.price"],
-            });
-            candidateSubscriptions = sub ? [sub] : [];
-            if (!customerId && sub?.customer) customerId = String(sub.customer);
-          } catch (e) {
-            if (e?.code === "resource_missing") candidateSubscriptions = [];
-            else throw e;
-          }
-        }
-
+        const { entries } = await gatherSubscriptionCandidatesFromDualAccounts(user);
+        const candidateSubscriptions = entries.map((e) => e.subscription);
         const bestSub = pickBestSubscription(candidateSubscriptions);
+        const bestEntry = bestSub ? entries.find((e) => e.subscription.id === bestSub.id) : null;
+        const bestAccount = bestEntry?.account || null;
+
+        let emailCustomer = null;
+        if (!bestSub && user.email) {
+          emailCustomer = await findFirstCustomerByEmailDualAccount(user.email);
+        }
+
         const normalizedStatus = normalizeSubscriptionStatus(bestSub?.status);
         const isActiveish = ["active", "trialing", "past_due", "unpaid"].includes(normalizedStatus);
         const cancelledAt = bestSub?.canceled_at ? new Date(bestSub.canceled_at * 1000) : null;
@@ -2412,29 +2495,16 @@ export async function reconcileAllSubscriptions(req, res) {
           ? new Date(bestSub.current_period_end * 1000)
           : null;
 
-        const updateData = bestSub
-          ? {
-              stripeCustomerId: customerId || user.stripeCustomerId || null,
-              stripeSubscriptionId: isActiveish ? bestSub.id : null,
-              subscriptionStatus: normalizedStatus,
-              subscriptionTier: isActiveish ? inferTierFromSubscription(bestSub, user.subscriptionTier) : null,
-              subscriptionBillingCycle: isActiveish
-                ? inferBillingCycleFromSubscription(bestSub, user.subscriptionBillingCycle)
-                : null,
-              creditsExpireAt: isActiveish ? currentPeriodEnd : null,
-              subscriptionCancelledAt: !isActiveish ? (cancelledAt || new Date()) : null,
-              ...(isActiveish ? {} : { subscriptionCredits: 0 }),
-            }
-          : {
-              stripeCustomerId: customerId || user.stripeCustomerId || null,
-              stripeSubscriptionId: null,
-              subscriptionStatus: "cancelled",
-              subscriptionTier: null,
-              subscriptionBillingCycle: null,
-              creditsExpireAt: null,
-              subscriptionCancelledAt: new Date(),
-              subscriptionCredits: 0,
-            };
+        const updateData = buildSubscriptionResyncPrismaData({
+          bestSub,
+          bestAccount,
+          user,
+          normalizedStatus,
+          isActiveish,
+          currentPeriodEnd,
+          cancelledAt,
+          emailCustomer,
+        });
 
         await prisma.user.update({
           where: { id: user.id },

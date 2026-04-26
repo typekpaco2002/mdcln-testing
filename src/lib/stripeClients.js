@@ -165,3 +165,26 @@ export function describeStripeAccountConfig() {
     },
   };
 }
+
+/**
+ * Retrieve a subscription by id, trying NEW Stripe then LEGACY (or reverse would miss).
+ * @param {string} subscriptionId
+ * @param {string[]|string} [expand] — e.g. ["items.data.price"]
+ * @returns {Promise<{ subscription: import("stripe").Stripe.Subscription | null, account: "new" | "legacy" | null }>}
+ */
+export async function retrieveSubscriptionFromEitherAccount(subscriptionId, expand = ["items.data.price"]) {
+  if (!subscriptionId) return { subscription: null, account: null };
+  const exp = Array.isArray(expand) ? expand : [expand];
+  for (const acc of ["new", "legacy"]) {
+    const client = getStripeForAccount(acc);
+    if (!client) continue;
+    try {
+      const subscription = await client.subscriptions.retrieve(String(subscriptionId), { expand: exp });
+      return { subscription, account: acc };
+    } catch (e) {
+      if (e?.code === "resource_missing" || e?.statusCode === 404) continue;
+      throw e;
+    }
+  }
+  return { subscription: null, account: null };
+}
