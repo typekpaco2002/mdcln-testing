@@ -38,11 +38,13 @@ const execFileAsync = promisify(execFile);
 /** Re-encode driving clip for VHS; default codec is mpeg4 (NSFW_MOTION_VHS_VIDEO_CODEC=libx264 for H.264). */
 const NSFW_MOTION_TRANSCODE = String(process.env.NSFW_MOTION_TRANSCODE || "true").toLowerCase() !== "false";
 /**
- * If re-encode is on but no worker+local transcode could produce a file, return an error instead of
- * submitting the raw file (which usually fails on RunningHub with VHS/cv2). Set to false to restore old “upload as-is” behavior.
+ * Escape hatch (OFF by default): allow uploading bytes identical to the source driving file. Only useful
+ * for debugging — RunningHub content-addresses uploads, so it's almost always a no-op that keeps failing.
  */
-const NSFW_MOTION_TRANSCODE_STRICT =
-  String(process.env.NSFW_MOTION_TRANSCODE_STRICT || "true").toLowerCase() !== "false";
+const NSFW_MOTION_ALLOW_UNTRANSCODED =
+  String(process.env.NSFW_MOTION_ALLOW_UNTRANSCODED || "false").toLowerCase() === "true";
+/** When true, prints ffmpeg/ffprobe/R2 env-availability flags before transcode to help debug config. */
+const NSFW_MOTION_LOG_ENV = String(process.env.NSFW_MOTION_LOG_ENV || "false").toLowerCase() === "true";
 
 const FTYP_SIG = Buffer.from("ftyp");
 
@@ -113,15 +115,20 @@ function getMotionVhsVideoCodec() {
 }
 
 /**
- * -vf: yuv420, even size (VFR/CFF fixed via -r and -fps_mode cfr in output, not fps filter, to match OpenCV/VHS workarounds).
+ * -vf: CFR via `fps=` filter (broadly supported across ffmpeg versions, unlike -fps_mode),
+ *      yuv420 + even dimensions + SAR=1. This guarantees CFR even if older ffmpeg ignores -fps_mode.
  * @returns {string}
  */
 function getMotionVhsVf() {
-  return "format=yuv420p,scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=bicubic,setsar=1";
+  const cfr = getMotionVhsCfrFps();
+  const parts = [];
+  if (cfr > 0) parts.push(`fps=${cfr}`);
+  parts.push("format=yuv420p", "scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=bicubic", "setsar=1");
+  return parts.join(",");
 }
 
 /**
- * @returns {number} Output CFR frame rate (0 = do not set -r / -fps_mode).
+ * @returns {number} Output CFR frame rate (0 = do not force CFR).
  */
 function getMotionVhsCfrFps() {
   const raw = String(process.env.NSFW_MOTION_VHS_CFR_FPS ?? "30").toLowerCase();
@@ -134,14 +141,7 @@ function getMotionVhsCfrFps() {
  * @returns {string[]}
  */
 function getMotionVhsFfmpegOutputOpts() {
-  const cfr = getMotionVhsCfrFps();
-  const base = getMotionVhsVideoCodec() === "libx264" ? [...MOTION_VHS_X264_OUT] : [...MOTION_VHS_MPEG4_OUT];
-  if (cfr <= 0) return base;
-  const anIdx = base.indexOf("-an");
-  if (anIdx < 0) {
-    return [...base, "-r", String(cfr), "-fps_mode", "cfr"];
-  }
-  return [...base.slice(0, anIdx), "-r", String(cfr), "-fps_mode", "cfr", ...base.slice(anIdx)];
+  return getMotionVhsVideoCodec() === "libx264" ? [...MOTION_VHS_X264_OUT] : [...MOTION_VHS_MPEG4_OUT];
 }
 
 /**
@@ -644,9 +644,20 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
     `[NSFW/motion] VHS trace [gen=${generationId || "—"}] downloaded: drivingBytes=${vid.bytes} drivingSha16=${shortBufferSha16(vid.buffer)} refImageBytes=${img.bytes}`,
   );
 
+  if (NSFW_MOTION_LOG_ENV) {
+    console.log(
+      `[NSFW/motion] env: FFMPEG_WORKER_URL=${Boolean(getFfmpegWorkerBaseUrls().length)} ` +
+        `FFMPEG_WORKER_API_KEY=${Boolean(String(process.env.FFMPEG_WORKER_API_KEY || "").trim())} ` +
+        `R2Configured=${isR2Configured()} FFMPEG_PATH=${String(process.env.FFMPEG_PATH || "(unset)")} ` +
+        `codec=${getMotionVhsVideoCodec()} cfrFps=${getMotionVhsCfrFps() || "off"} ` +
+        `STRICT_ALWAYS=true ALLOW_UNTRANSCODED=${NSFW_MOTION_ALLOW_UNTRANSCODED}`,
+    );
+  }
+
   let videoBufferToUpload = vid.buffer;
   let videoUploadExt = vid.extension;
   let videoContentType = vid.contentType;
+  let transcodeSource = null;
   if (NSFW_MOTION_TRANSCODE) {
     let workerOut = await transcodeDrivingVideoViaFfmpegWorker(drvStr);
     if (workerOut && !bufferContainsFtypMp4(workerOut)) {
@@ -662,35 +673,51 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
       videoBufferToUpload = Buffer.from(tc);
       videoUploadExt = "mp4";
       videoContentType = "video/mp4";
+      transcodeSource = workerOut ? "ffmpeg worker" : "local ffmpeg";
       const mb = videoBufferToUpload.length / (1024 * 1024);
-      const source = workerOut ? "ffmpeg worker" : "local ffmpeg";
-      const codec = getMotionVhsVideoCodec();
       console.log(
-        `[NSFW/motion] driving video transcoded (${source}, ${codec}) for VHS (yuv420p) MP4 ≈${mb.toFixed(2)} MiB (was ${vid.extension})`,
+        `[NSFW/motion] driving video transcoded (${transcodeSource}, ${getMotionVhsVideoCodec()}) for VHS MP4 ≈${mb.toFixed(2)} MiB (was ${vid.extension})`,
       );
-    } else if (NSFW_MOTION_TRANSCODE_STRICT) {
+    } else {
       return {
         success: false,
         error:
-          "Driving video could not be re-encoded for VHS (OpenCV). Set R2 + " +
-          "FFMPEG_WORKER_URL/KEY, or FFMPEG_PATH. Default VHS encode is mpeg4 (set NSFW_MOTION_VHS_VIDEO_CODEC=libx264 to try H.264). " +
-          "To attempt raw upload, set NSFW_MOTION_TRANSCODE_STRICT=false (RunningHub will often still fail on VHS/cv2).",
+          "Driving video could not be re-encoded for VHS (OpenCV). RunningHub content-addresses uploads " +
+          "(SHA-256 → filename), so uploading raw bytes reuses the same filename that already failed on their side. " +
+          "Configure EXACTLY ONE of: (a) FFMPEG_PATH to /usr/bin/ffmpeg on the API host, or (b) FFMPEG_WORKER_URL + FFMPEG_WORKER_API_KEY + full R2 env vars. " +
+          "To debug, POST /api/nsfw/generate-motion-video with NSFW_MOTION_LOG_ENV=true and check logs.",
       };
-    } else {
-      console.warn(
-        "[NSFW/motion] H.264 transcode unavailable; uploading source as-is (NSFW_MOTION_TRANSCODE_STRICT=false) — " +
-          "VHS will fail if the clip is not H.264 baseline yuv420p. Set R2 + FFMPEG_WORKER, or FFMPEG_PATH.",
-      );
     }
   }
 
+  // Hard gate: if we are about to upload bytes identical to the driving source, RunningHub will
+  // re-use the exact same filename hash that already failed on VHS — never upload no-op re-encodes.
+  const sourceSha = shortBufferSha16(vid.buffer);
   const outSha = shortBufferSha16(videoBufferToUpload);
-  const sameAsSourceDownload = outSha === shortBufferSha16(vid.buffer);
+  const bytesDiffer = outSha !== sourceSha;
   console.log(
     `[NSFW/motion] VHS trace [gen=${generationId || "—"}] pre-RunningHub upload: ` +
-      `videoOutBytes=${videoBufferToUpload.length} videoOutSha16=${outSha} sameAsDownloadedDrivingFile=${sameAsSourceDownload} ` +
-      `ext=${videoUploadExt} (if transcode ran, sameSha is usually false unless re-encode was a no-op)`,
+      `videoOutBytes=${videoBufferToUpload.length} videoOutSha16=${outSha} ` +
+      `sourceSha16=${sourceSha} bytesDiffer=${bytesDiffer} transcodeSource=${transcodeSource || "none"} ` +
+      `ext=${videoUploadExt}`,
   );
+  if (NSFW_MOTION_TRANSCODE && !bytesDiffer && !NSFW_MOTION_ALLOW_UNTRANSCODED) {
+    return {
+      success: false,
+      error:
+        `Transcode produced identical bytes to the source (sha16=${outSha}). RunningHub would re-use ` +
+        "the same filename hash that already failed on VHS (cv). Verify the ffmpeg re-encode actually ran; " +
+        "set NSFW_MOTION_ALLOW_UNTRANSCODED=true only for one-off debugging.",
+    };
+  }
+  if (!NSFW_MOTION_TRANSCODE && !NSFW_MOTION_ALLOW_UNTRANSCODED) {
+    return {
+      success: false,
+      error:
+        "NSFW_MOTION_TRANSCODE=false is not supported for Motion X (VHS_LoadVideo requires cv-friendly MP4). " +
+        "Enable transcode (default on) and configure FFMPEG_PATH or FFMPEG_WORKER_URL + R2.",
+    };
+  }
 
   const videoFilename = `drive-${generationId || "g"}.${videoUploadExt}`;
 
