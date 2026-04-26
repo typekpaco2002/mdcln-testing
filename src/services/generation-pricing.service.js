@@ -89,7 +89,7 @@ export const DEFAULT_GENERATION_PRICING = Object.freeze({
   veo31Render1080p: 5,
   veo31Upscale4k: 120,
 
-  // Sora 2 Pro
+  // Sora 2 Pro (legacy KIE pricing — kept for historical gens / UI fallbacks)
   sora2Standard10Frames: 300,
   sora2Standard15Frames: 540,
   sora2High10Frames: 660,
@@ -98,6 +98,16 @@ export const DEFAULT_GENERATION_PRICING = Object.freeze({
   sora2Storyboard15To25s: 270,
   /** KIE sora-watermark-remover — ~$0.016/s at current credit policy (same basis as Seedance WM). */
   sora2WatermarkRemoverPerSec: 6.4,
+
+  // Sora via RunningHub (rhart-video-s-official) — user pays 2× provider cost (100 credits ≈ $1).
+  // image-to-video-pro: 720p=$0.3/s → 60 cr/s, 1080p=$0.5/s → 100 cr/s.
+  soraRh720pI2vPerSec: 60,
+  soraRh1080pI2vPerSec: 100,
+  // text-to-video-pro: 720x1280 / 1280x720 = $0.3/s (60), 1024x1792 / 1792x1024 = $0.5/s (100),
+  // 1080x1920 / 1920x1080 = $0.7/s (140).
+  soraRh720T2vPerSec: 60,
+  soraRh1024T2vPerSec: 100,
+  soraRh1080T2vPerSec: 140,
 
   // Kling generation (non-motion)
   kling30StdNoSoundPerSec: 14,

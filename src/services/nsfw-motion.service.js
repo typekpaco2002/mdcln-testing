@@ -46,10 +46,10 @@ const NSFW_MOTION_ALLOW_UNTRANSCODED =
 const NSFW_MOTION_LOG_ENV = String(process.env.NSFW_MOTION_LOG_ENV || "false").toLowerCase() === "true";
 /**
  * Debug: upload the transcoded driving clip to Vercel Blob so you can download and inspect it
- * (check cv2 compatibility locally) before it's POSTed to RunningHub. Default OFF.
+ * (check cv2 compatibility locally) before it's POSTed to RunningHub. Default ON; set to "false" to skip.
  */
 const NSFW_MOTION_DEBUG_UPLOAD_BLOB =
-  String(process.env.NSFW_MOTION_DEBUG_UPLOAD_BLOB || "false").toLowerCase() === "true";
+  String(process.env.NSFW_MOTION_DEBUG_UPLOAD_BLOB || "true").toLowerCase() !== "false";
 
 const FTYP_SIG = Buffer.from("ftyp");
 
