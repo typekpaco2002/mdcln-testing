@@ -159,7 +159,7 @@ export const LANDER_NEW_DEFAULTS = {
         { id: "kie",        name: "KIE AI",      logoUrl: "" },
         { id: "wavespeed",  name: "WaveSpeed",   logoUrl: "" },
         { id: "openrouter", name: "OpenRouter",  logoUrl: "" },
-        { id: "runpod",     name: "RunPod",      logoUrl: "" },
+        { id: "compute",    name: "GPU Cloud",   logoUrl: "" },
         { id: "vercel",     name: "Vercel Blob", logoUrl: "" },
         { id: "stripe",     name: "Stripe",      logoUrl: "/partners/stripe.svg" },
         { id: "falai",      name: "Fal AI",      logoUrl: "/partners/fal.svg" },

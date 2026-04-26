@@ -167,7 +167,7 @@ const NSFW_COPY = {
     videoModeStandardI2vBadge: "5s / 8s",
     videoMotionXInfoTitle: "NSFW Motion Control (video recreate):",
     videoMotionXInfoBody:
-      "First frame + driving video; length follows source (up to 30s). Same Wan RunPod worker as Create → Video → Recreate → Motion X (default there). Most finish in about 10 minutes.",
+      "First frame plus driving video; output length follows your source (up to 30s). Same Motion X flow as Create → Video → Recreate (default there). Results appear in your gallery when ready.",
     videoButtonGenerateMotionX: "Generate NSFW Motion Video",
     videoMotionXGenerating: "Generating NSFW motion video...",
     videoModeMotionXSubline: "Video recreate",
@@ -402,7 +402,7 @@ const NSFW_COPY = {
     videoModeStandardI2vBadge: "5с / 8с",
     videoMotionXInfoTitle: "NSFW Motion Control (воссоздание видео):",
     videoMotionXInfoBody:
-      "Первый кадр + опорный ролик; длительность по исходнику (до 30 с). Тот же Wan RunPod, что Create → Video → Recreate → Motion X (там по умолчанию). Обычно ~10 минут.",
+      "Первый кадр и опорный ролик; длительность по исходнику (до 30 с). Тот же сценарий Motion X, что Create → Video → Recreate (по умолчанию). Результат — в галерее, когда будет готов.",
     videoButtonGenerateMotionX: "Создать NSFW motion-видео",
     videoMotionXGenerating: "Генерация NSFW motion...",
     videoModeMotionXSubline: "Воссоздание видео",
@@ -5210,7 +5210,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     }
 
     toast(
-      "This generation is still processing or will appear in your gallery. Long NSFW runs are normal — refresh the page to update.",
+      "This generation is still processing or will appear in your gallery. Processing can take a while — refresh to update.",
       { icon: "⏳", duration: 8000 },
     );
   };
@@ -6118,7 +6118,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
 
                 {((nsfwGenerateMode === "simple" && simplePlanReady) || nsfwGenerateMode === "advanced" || nsfwGenerateMode === "custom") && (
                 <>
-                {/* Aspect Ratio Selector — passed to ComfyUI / RunPod */}
+                {/* Aspect ratio for the generation request (backend) */}
                 <div>
                   <label className="block text-sm font-medium text-white mb-2">
                     Image Resolution

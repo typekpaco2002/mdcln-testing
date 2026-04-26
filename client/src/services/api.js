@@ -481,7 +481,7 @@ export const generationAPI = {
     return response.data;
   },
 
-  /** RunPod Wan motion worker — Create tab labels it “Motion X”; NSFW Studio calls it “NSFW Motion Control”. */
+  /** Motion-recreate engine id — Create tab: Motion X; NSFW Studio: NSFW Motion Control. */
   nsfwGenerateMotionVideo: async (data) => {
     const response = await api.post("/nsfw/generate-motion-video", data);
     return response.data;

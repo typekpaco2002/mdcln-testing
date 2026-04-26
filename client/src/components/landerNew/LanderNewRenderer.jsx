@@ -98,7 +98,7 @@ export default function LanderNewRenderer({
   const fallbackPartners = [
     { id: "kie", name: "KIE AI", logoUrl: "" },
     { id: "wavespeed", name: "WaveSpeed", logoUrl: "" },
-    { id: "runpod", name: "RunPod", logoUrl: "" },
+    { id: "compute", name: "GPU Cloud", logoUrl: "" },
     { id: "stripe", name: "Stripe", logoUrl: "/partners/stripe.svg" },
   ];
   const fallbackPricing = [

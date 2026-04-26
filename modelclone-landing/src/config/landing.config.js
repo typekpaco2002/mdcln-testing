@@ -130,7 +130,7 @@ export const landingConfig = {
       { name: "KIE AI",       logoUrl: "" },
       { name: "WaveSpeed",    logoUrl: "" },
       { name: "OpenRouter",   logoUrl: "" },
-      { name: "RunPod",       logoUrl: "" },
+      { name: "GPU Cloud",    logoUrl: "" },
       { name: "Vercel Blob",  logoUrl: "" },
       { name: "Stripe",       logoUrl: "/partners/stripe.svg" },
       { name: "Fal AI",       logoUrl: "/partners/fal.svg" },

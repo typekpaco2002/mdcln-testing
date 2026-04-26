@@ -1,5 +1,5 @@
 /**
- * Motion X / NSFW Motion — backend: RunningHub published workflow (media upload + `run/workflow`).
+ * Motion X / NSFW Motion — server-side motion-recreate pipeline (upload + workflow run).
  * Shared by Create (Video → Recreate) and NSFW Studio.
  *
  * UI naming (product choice):

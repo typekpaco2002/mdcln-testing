@@ -102,7 +102,7 @@ const GENERATE_COPY = {
     videoRecreateNsfwMotionBadge: MOTION_X_CREATE_LABEL,
     videoRecreateEngineHint: "Kling supports classic/ultra motion-control. Wan is faster and lower cost.",
     videoRecreateEngineHintMotionX:
-      "Applies motion from your reference clip to your still (Wan on RunPod). Most recreates finish in about 10 minutes.",
+      "Transfers motion from your reference video onto your still image. Time depends on queue and clip length — watch Live Preview for progress.",
     videoRecreateWanResolutionLabel: "Wan Resolution",
     videoRecreateWanResolution480: "480p (fastest)",
     videoRecreateWanResolution580: "580p (balanced)",
@@ -216,7 +216,7 @@ const GENERATE_COPY = {
     videoMethodFaceSwapShort: "Face Swap",
     videoNoticeAdvancedMotionTitle: "Advanced Motion Control AI:",
     videoNoticeAdvancedMotionBody:
-      "Ideal for copying dances, movements, and poses into video. May take 15-20 minutes to complete.",
+      "Ideal for copying dances, movements, and poses into video. Can take a while when demand is high.",
     videoHistoryFaceSwapVideos: "Face Swap Videos",
     talkingHeadOpenVoiceStudio: "Open Voice Studio…",
     talkingHeadDefaultVoiceReady: "Default model voice ready",
@@ -278,7 +278,7 @@ const GENERATE_COPY = {
     videoRecreateNsfwMotionBadge: MOTION_X_CREATE_LABEL,
     videoRecreateEngineHint: "Kling поддерживает classic/ultra motion-control. Wan быстрее и дешевле.",
     videoRecreateEngineHintMotionX:
-      "Движение с референс-ролика на ваш кадр (Wan на RunPod). Обычно около 10 минут.",
+      "Переносит движение с референс-ролика на ваш кадр. Время зависит от очереди и длины ролика — смотрите «Живой просмотр».",
     videoRecreateWanResolutionLabel: "Разрешение Wan",
     videoRecreateWanResolution480: "480p (самый быстрый)",
     videoRecreateWanResolution580: "580p (баланс)",
@@ -393,7 +393,7 @@ const GENERATE_COPY = {
     videoMethodFaceSwapShort: "Замена лица",
     videoNoticeAdvancedMotionTitle: "Продвинутый ИИ контроля движения:",
     videoNoticeAdvancedMotionBody:
-      "Идеально подходит для копирования танцев, движений и поз в видео. Обработка может занять 15–20 минут.",
+      "Идеально подходит для копирования танцев, движений и поз в видео. При высокой нагрузке обработка может занять заметное время.",
     videoHistoryFaceSwapVideos: "Видео с заменой лица",
     talkingHeadOpenVoiceStudio: "Открыть голосовую студию…",
     talkingHeadDefaultVoiceReady: "Голос модели по умолчанию готов",
@@ -2828,7 +2828,7 @@ function VideoGeneration() {
             });
           }
           triggerRefresh();
-          toast.success("Video started! Most recreates finish in about 10 minutes — check Live Preview.");
+          toast.success("Video started! Check Live Preview for progress — you can keep using the app.");
           setReferenceVideo(null);
           setReferenceVideoDuration(0);
           setVideoStartingImage(null);
@@ -2916,7 +2916,7 @@ function VideoGeneration() {
         if (response.data.generation) {
           addOptimisticGeneration(response.data.generation);
         }
-        toast.success("Video started! Most recreates finish in about 10 minutes — check Live Preview.");
+        toast.success("Video started! Check Live Preview for progress — you can keep using the app.");
         setReferenceVideo(null);
         setReferenceVideoDuration(0);
         setVideoStartingImage(null);

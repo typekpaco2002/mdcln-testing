@@ -285,9 +285,9 @@ const COPY = {
     title: "ModelClone-X",
     subtitle: "Photoreal image generation with optional character identity locking",
     serverPhotoPromptMissing:
-      "Backend has no OPENROUTER_API_KEY — the server cannot read your photo and build a scene. Set it in .env and restart the API.",
+      "Photo-to-prompt isn’t available on this deployment. Use a text prompt or try again later.",
     serverRunpodMissing:
-      "RunPod is not fully configured (RUNPOD_API_KEY + serverless endpoint id). Generations will not start until this is set on the server.",
+      "Image generation isn’t fully available on this deployment. Please try again later or contact support.",
     tabGenerate: "Generate",
     tabCharacter: "Character",
     pricingTitle: "ModelClone-X Pricing",
@@ -302,15 +302,16 @@ const COPY = {
     outputTxt: "Text → image",
     outputImg: "Image → image",
     refImage: "Source image",
-    refImageHint: "1) Add a photo. 2) Build prompt (Grok on the server). 3) Generate — same ModelClone-X as typing a prompt. No image is sent to RunPod.",
+    refImageHint:
+      "1) Add a photo. 2) Build prompt. 3) Generate — same ModelClone-X as typing a prompt. The photo is only used to craft the text prompt.",
     refImageHintCharImg: "1) Model + character. 2) Photo. 3) Build prompt, then Generate.",
-    adminRunpodImg2Img: "Admin: true RunPod img2img (reference photo + prompt)",
+    adminRunpodImg2Img: "Admin: reference img2img (photo + prompt)",
     adminRunpodImg2ImgHint:
-      "Uses the Z-Image img2img graph on RunPod with your character LoRA. Only admins see this while testing.",
-    adminRunpodImg2ImgNeedCharacter: "RunPod img2img needs “Use Character” with a ready identity.",
+      "Uses the Z-Image img2img workflow with your character LoRA. Admin-only while testing.",
+    adminRunpodImg2ImgNeedCharacter: "Reference img2img needs “Use Character” with a ready identity.",
     aspectNoteFromImage: "Aspect ratio applies to the generated image (the photo is not composited, only used to build the scene description).",
     aspectNoteImg2ImgAdmin:
-      "RunPod img2img uses the Z-Image workflow’s own canvas — aspect ratio below may not match txt2img behavior.",
+      "Reference img2img uses the Z-Image workflow’s own canvas — aspect ratio below may not match text-only behavior.",
   },
   ru: {
     mode: "Режим",
@@ -345,9 +346,9 @@ const COPY = {
     title: "ModelClone-X",
     subtitle: "Фотореалистичная генерация с опциональной фиксацией идентичности персонажа",
     serverPhotoPromptMissing:
-      "На сервере нет OPENROUTER_API_KEY — сцена по фото не соберётся. Укажите ключ в .env и перезапустите API.",
+      "Сбор промпта по фото недоступен на этом развёртывании. Используйте текстовый промпт или попробуйте позже.",
     serverRunpodMissing:
-      "RunPod не настроен (RUNPOD_API_KEY + id serverless endpoint). Пока генерация не уйдёт в RunPod.",
+      "Генерация изображений сейчас недоступна на этом развёртывании. Попробуйте позже или обратитесь в поддержку.",
     tabGenerate: "Генерация",
     tabCharacter: "Персонаж",
     pricingTitle: "Тарифы ModelClone-X",
@@ -362,15 +363,17 @@ const COPY = {
     outputTxt: "Текст → изображение",
     outputImg: "Изображение → изображение",
     refImage: "Исходное фото",
-    refImageHint: "1) Фото. 2) «Собрать промпт» (Grok на сервере). 3) «Сгенерировать» — тот же MCX, что и с текстом.",
+    refImageHint:
+      "1) Фото. 2) «Собрать промпт». 3) «Сгенерировать» — тот же MCX, что и с текстом. Фото нужно только для текста промпта.",
     refImageHintCharImg: "1) Модель + персонаж. 2) Фото. 3) Собрать промпт, затем сгенерировать.",
-    adminRunpodImg2Img: "Админ: настоящий RunPod img2img (референс + промпт)",
+    adminRunpodImg2Img: "Админ: img2img по референсу (фото + промпт)",
     adminRunpodImg2ImgHint:
-      "Граф Z-Image img2img на RunPod с LoRA персонажа. Видно только админам на время теста.",
-    adminRunpodImg2ImgNeedCharacter: "RunPod img2img нужен режим «С персонажем» и готовая идентичность.",
-    aspectNoteFromImage: "Соотношение сторон задаёт картинку, которую генерирует модель (входная фотка в RunPod не подмешивается).",
+      "Граф Z-Image img2img с LoRA персонажа. Видно только админам на время теста.",
+    adminRunpodImg2ImgNeedCharacter: "Нужен режим «С персонажем» и готовая идентичность.",
+    aspectNoteFromImage:
+      "Соотношение сторон задаёт итоговое изображение (входная фотка не подмешивается в кадр, только в промпт).",
     aspectNoteImg2ImgAdmin:
-      "RunPod img2img использует свой холст в Z-Image — соотношение сторон может отличаться от txt2img.",
+      "Референсный img2img использует свой холст Z-Image — соотношение сторон может отличаться от текстового режима.",
   },
 };
 
