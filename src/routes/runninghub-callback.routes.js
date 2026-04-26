@@ -3,8 +3,7 @@
  * Body: { event, taskId, eventData } where `eventData` matches `/openapi/v2/query` result fields.
  *
  * Always respond 200 when the payload is parseable so RunningHub does not retry indefinitely.
- * Optional: set RUNNINGHUB_WEBHOOK_SECRET and include the same value in the webhook URL query `secret`
- * (appended automatically by getRunningHubWebhookUrl()) or header `x-runninghub-webhook-secret`.
+ * Optional hardening: RUNNINGHUB_WEBHOOK_SECRET — same value in URL `?secret=` (auto-appended when set) or header `x-runninghub-webhook-secret`.
  */
 import express from "express";
 import prisma from "../lib/prisma.js";

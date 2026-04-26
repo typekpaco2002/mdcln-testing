@@ -43,37 +43,59 @@ function rhHeaders() {
 
 /**
  * Public HTTPS URL for RunningHub `webhookUrl` (TASK_END callbacks).
- * Priority: RUNNINGHUB_WEBHOOK_URL (full) → RUNNINGHUB_CALLBACK_URL (full) → CALLBACK_BASE_URL / KIE-style bases + `/api/runninghub/callback`.
- * Optional `RUNNINGHUB_WEBHOOK_SECRET`: appended as `?secret=` when building the default URL (verify in callback).
+ * Uses the same public base you already set for the app / KIE — no extra env required:
+ * tries CALLBACK_BASE_URL, NEXT_PUBLIC_APP_URL, FRONTEND_URL, CLIENT_URL, APP_PUBLIC_URL, PUBLIC_URL, APP_URL,
+ * then origin of VITE_API_URL, then VERCEL_URL. Path is always `/api/runninghub/callback`.
+ * Optional hard override: RUNNINGHUB_WEBHOOK_URL (full URL). Optional RUNNINGHUB_WEBHOOK_SECRET → `?secret=` on built URL.
  */
 export function getRunningHubWebhookUrl() {
-  const explicit =
-    String(process.env.RUNNINGHUB_WEBHOOK_URL || process.env.RUNNINGHUB_CALLBACK_URL || "").trim();
+  const explicit = String(process.env.RUNNINGHUB_WEBHOOK_URL || "").trim();
   if (explicit.startsWith("http")) return explicit;
 
+  const candidates = [
+    process.env.CALLBACK_BASE_URL,
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.FRONTEND_URL,
+    process.env.CLIENT_URL,
+    process.env.APP_PUBLIC_URL,
+    process.env.PUBLIC_URL,
+    process.env.APP_URL,
+  ];
+
   let basePath = null;
-  const callbackBase = process.env.CALLBACK_BASE_URL || process.env.NEXT_PUBLIC_APP_URL;
-  if (callbackBase) {
-    const base = callbackBase.replace(/\/$/, "").trim();
+  for (const raw of candidates) {
+    const s = String(raw || "").trim();
+    if (!s) continue;
+    const base = s.replace(/\/$/, "");
     const withProtocol = base.startsWith("http") ? base : `https://${base}`;
     basePath = `${withProtocol.replace(/\/$/, "")}/api/runninghub/callback`;
-  } else {
-    const baseUrl = process.env.APP_PUBLIC_URL || process.env.PUBLIC_URL || process.env.APP_URL;
-    if (baseUrl) {
-      const host = baseUrl.replace(/\/$/, "").replace(/^https?:\/\//, "").split("/")[0];
-      const protocol = baseUrl.trim().toLowerCase().startsWith("http:") ? "http" : "https";
-      basePath = `${protocol}://${host}/api/runninghub/callback`;
-    } else {
-      const vercel = process.env.VERCEL_URL;
-      if (vercel) {
-        basePath = `https://${vercel.replace(/^https?:\/\//, "").split("/")[0]}/api/runninghub/callback`;
+    break;
+  }
+
+  if (!basePath) {
+    const viteApi = String(process.env.VITE_API_URL || "").trim();
+    if (viteApi.startsWith("http")) {
+      try {
+        const u = new URL(viteApi);
+        basePath = `${u.protocol}//${u.host}/api/runninghub/callback`;
+      } catch {
+        /* ignore */
       }
+    }
+  }
+
+  if (!basePath) {
+    const vercel = process.env.VERCEL_URL;
+    if (vercel) {
+      basePath = `https://${vercel.replace(/^https?:\/\//, "").split("/")[0]}/api/runninghub/callback`;
     }
   }
 
   if (!basePath) return null;
   if (basePath.startsWith("http://localhost")) {
-    console.warn("[RunningHub] webhook URL resolves to localhost — omitting webhookUrl (use polling or set RUNNINGHUB_WEBHOOK_URL)");
+    console.warn(
+      "[RunningHub] webhook URL resolves to localhost — omitting webhookUrl (set CALLBACK_BASE_URL or FRONTEND_URL to a public HTTPS origin)",
+    );
     return null;
   }
   const secret = String(process.env.RUNNINGHUB_WEBHOOK_SECRET || "").trim();

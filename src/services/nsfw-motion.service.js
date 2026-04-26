@@ -11,7 +11,7 @@
  *
  * Env: RUNNINGHUB_API_KEY, RUNNINGHUB_MOTION_WORKFLOW_ID (default below; legacy RUNNINGHUB_MOTION_APP_ID still read as fallback),
  * optional RUNNINGHUB_API_BASE / RUNNINGHUB_MEDIA_UPLOAD_BASE,
- * optional OpenAPI: webhook (RUNNINGHUB_MOTION_WEBHOOK_URL or shared `getRunningHubWebhookUrl()`), RUNNINGHUB_MOTION_RETAIN_SECONDS (10–180, enterprise).
+ * optional OpenAPI: TASK_END webhook via same public base as the rest of the app (`getRunningHubWebhookUrl()`), optional RUNNINGHUB_MOTION_WEBHOOK_URL override; RUNNINGHUB_MOTION_RETAIN_SECONDS (10–180, enterprise).
  * Driving video is re-encoded for VHS (OpenCV `VideoCapture` + `grab()`) before upload (unless NSFW_MOTION_TRANSCODE=false).
  * Default codec is **MPEG-4 Part 2 (mpeg4 / mp4v)** — often more reliable than H.264 on some OpenCV+FFmpeg builds; override with
  * NSFW_MOTION_VHS_VIDEO_CODEC=libx264. Optional constant frame rate: NSFW_MOTION_VHS_CFR_FPS=30 (0=off) helps broken fps metadata.
