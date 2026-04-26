@@ -6,10 +6,11 @@
  *
  * Flow: download public reference + driving video URLs, upload to RunningHub binary API
  * (`POST {RUNNINGHUB_MEDIA_UPLOAD_BASE}/openapi/v2/media/upload/binary`), then
- * `POST {RUNNINGHUB_API_BASE}/openapi/v2/run/ai-app/{appId}` with `nodeInfoList`, poll
+ * `POST {RUNNINGHUB_API_BASE}/openapi/v2/run/workflow/{workflowId}` with `nodeInfoList`, poll
  * `POST /openapi/v2/query` — mirror the output mp4 to Blob/R2 (RunningHub result URLs expire ~24h).
  *
- * Env: RUNNINGHUB_API_KEY, RUNNINGHUB_MOTION_APP_ID (default below), optional RUNNINGHUB_API_BASE / RUNNINGHUB_MEDIA_UPLOAD_BASE,
+ * Env: RUNNINGHUB_API_KEY, RUNNINGHUB_MOTION_WORKFLOW_ID (default below; legacy RUNNINGHUB_MOTION_APP_ID still read as fallback),
+ * optional RUNNINGHUB_API_BASE / RUNNINGHUB_MEDIA_UPLOAD_BASE,
  * optional OpenAPI: RUNNINGHUB_MOTION_WEBHOOK_URL, RUNNINGHUB_MOTION_RETAIN_SECONDS (10–180, enterprise).
  * Driving video is re-encoded for VHS (OpenCV `VideoCapture` + `grab()`) before upload (unless NSFW_MOTION_TRANSCODE=false).
  * Default codec is **MPEG-4 Part 2 (mpeg4 / mp4v)** — often more reliable than H.264 on some OpenCV+FFmpeg builds; override with
@@ -236,9 +237,13 @@ async function validateVhsTranscodedBufferWithFfprobe(buffer, where) {
 }
 
 const RUNNINGHUB_API_KEY = String(process.env.RUNNINGHUB_API_KEY || "").trim();
-const DEFAULT_MOTION_APP_ID = "2048360380644204545";
-const RUNNINGHUB_MOTION_APP_ID =
-  String(process.env.RUNNINGHUB_MOTION_APP_ID || DEFAULT_MOTION_APP_ID).trim() || null;
+/** Published ComfyUI workflow on RunningHub (OpenAPI `run/workflow/{id}`). */
+const DEFAULT_MOTION_WORKFLOW_ID = "2048356312307736578";
+const RUNNINGHUB_MOTION_WORKFLOW_ID = String(
+  process.env.RUNNINGHUB_MOTION_WORKFLOW_ID ||
+    process.env.RUNNINGHUB_MOTION_APP_ID ||
+    DEFAULT_MOTION_WORKFLOW_ID,
+).trim() || null;
 
 const RUNNINGHUB_API_BASE = (String(process.env.RUNNINGHUB_API_BASE || "https://www.runninghub.ai").trim() ||
   "https://www.runninghub.ai").replace(/\/$/, "");
@@ -248,7 +253,7 @@ const RUNNINGHUB_MEDIA_UPLOAD_BASE = (String(
 
 const MOTION_NODE_VIDEO = String(process.env.RUNNINGHUB_MOTION_VIDEO_NODE_ID || "52").trim();
 const MOTION_NODE_IMAGE = String(process.env.RUNNINGHUB_MOTION_IMAGE_NODE_ID || "167").trim();
-/** `POST /openapi/v2/run/ai-app/{id}`: optional `webhookUrl` (RunningHub posts when task completes). */
+/** `POST /openapi/v2/run/workflow/{id}`: optional `webhookUrl` (RunningHub posts when task completes). */
 const RUNNINGHUB_MOTION_WEBHOOK_URL = String(process.env.RUNNINGHUB_MOTION_WEBHOOK_URL || "").trim() || null;
 /** OpenAPI: instance retention 10–180s (Enterprise Shared API keys). */
 const RUNNINGHUB_MOTION_RETAIN_SECONDS_RAW = String(
@@ -265,14 +270,14 @@ if (!RUNNINGHUB_API_KEY) {
   console.warn("⚠️ RUNNINGHUB_API_KEY not set — NSFW motion control (Motion X) will not work");
 } else {
   console.log(
-    `[NSFW/motion] provider=runninghub appId=${RUNNINGHUB_MOTION_APP_ID} uploadBase=${RUNNINGHUB_MEDIA_UPLOAD_BASE}`,
+    `[NSFW/motion] provider=runninghub workflowId=${RUNNINGHUB_MOTION_WORKFLOW_ID} uploadBase=${RUNNINGHUB_MEDIA_UPLOAD_BASE}`,
   );
 }
 
 /**
- * @returns {Record<string, unknown>} Merged into `run/ai-app` body: optional `webhookUrl`, `retainSeconds` (when 10–180).
+ * @returns {Record<string, unknown>} Merged into `run/workflow` body: optional `webhookUrl`, `retainSeconds` (when 10–180).
  */
-function runningHubAiAppRunBodyExtras() {
+function runningHubWorkflowRunBodyExtras() {
   const o = {};
   if (RUNNINGHUB_MOTION_WEBHOOK_URL) {
     o.webhookUrl = RUNNINGHUB_MOTION_WEBHOOK_URL;
@@ -680,8 +685,8 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
   if (!RUNNINGHUB_API_KEY) {
     return { success: false, error: "RUNNINGHUB_API_KEY not configured" };
   }
-  if (!RUNNINGHUB_MOTION_APP_ID) {
-    return { success: false, error: "RUNNINGHUB_MOTION_APP_ID not configured" };
+  if (!RUNNINGHUB_MOTION_WORKFLOW_ID) {
+    return { success: false, error: "RUNNINGHUB_MOTION_WORKFLOW_ID not configured" };
   }
 
   const { referenceImageUrl, drivingVideoUrl, seed } = opts || {};
@@ -837,8 +842,7 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
     : Math.floor(Math.random() * 2 ** 53);
 
   const runBody = {
-    // Official OpenAPI examples and call records include this for AI-app runs.
-    randomSeed: true,
+    addMetadata: true,
     nodeInfoList: [
       {
         nodeId: MOTION_NODE_VIDEO,
@@ -854,20 +858,19 @@ export async function submitNsfwMotionVideo(opts, generationId = null) {
       },
     ],
     instanceType: "default",
-    // Official curl uses the JSON string "false" (not boolean); some stacks expect this shape.
+    // OpenAPI example uses the JSON string "false".
     usePersonalQueue: "false",
-    retainSeconds: 0,
-    ...runningHubAiAppRunBodyExtras(),
+    ...runningHubWorkflowRunBodyExtras(),
   };
   if (RUNNINGHUB_MOTION_WEBHOOK_URL) {
     console.log(
-      "[NSFW/motion] run/ai-app including webhookUrl=",
+      "[NSFW/motion] run/workflow including webhookUrl=",
       `${RUNNINGHUB_MOTION_WEBHOOK_URL.slice(0, 100)}${RUNNINGHUB_MOTION_WEBHOOK_URL.length > 100 ? "…" : ""}`,
     );
   }
   let submitRes;
   try {
-    const path = `/openapi/v2/run/ai-app/${encodeURIComponent(RUNNINGHUB_MOTION_APP_ID)}`;
+    const path = `/openapi/v2/run/workflow/${encodeURIComponent(RUNNINGHUB_MOTION_WORKFLOW_ID)}`;
     submitRes = await postRunningHubJson(path, runBody);
   } catch (e) {
     return { success: false, error: e.message || String(e) };
@@ -1054,5 +1057,5 @@ export function extractNsfwMotionSeed(_raw) {
  * @returns {boolean}
  */
 export function isNsfwMotionConfigured() {
-  return Boolean(RUNNINGHUB_API_KEY && RUNNINGHUB_MOTION_APP_ID);
+  return Boolean(RUNNINGHUB_API_KEY && RUNNINGHUB_MOTION_WORKFLOW_ID);
 }

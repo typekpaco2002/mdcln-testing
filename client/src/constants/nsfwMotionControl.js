@@ -1,5 +1,5 @@
 /**
- * Motion X / NSFW Motion — backend: RunningHub AI app (media upload + `run/ai-app`).
+ * Motion X / NSFW Motion — backend: RunningHub published workflow (media upload + `run/workflow`).
  * Shared by Create (Video → Recreate) and NSFW Studio.
  *
  * UI naming (product choice):
