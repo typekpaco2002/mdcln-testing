@@ -991,6 +991,23 @@ export async function checkNsfwMotionStatus(jobId) {
 }
 
 /**
+ * Motion X Comfy workflow emits multiple video outputs (e.g. head-tracking preview first).
+ * The user-facing result is the 3rd slot (index 2) among the typical 4 outputs.
+ */
+const MOTION_X_FINAL_RESULT_INDEX = 2;
+
+function motionXPreferredResultUrl(queryLike) {
+  if (!queryLike || !Array.isArray(queryLike.results)) return null;
+  const row = queryLike.results[MOTION_X_FINAL_RESULT_INDEX];
+  if (!row) return null;
+  const u = row.url;
+  if (typeof u === "string" && u.trim().startsWith("http")) return u.trim();
+  const txt = row.text;
+  if (typeof txt === "string" && txt.trim().startsWith("http")) return txt.trim();
+  return null;
+}
+
+/**
  * Pick first mp4 (or any video) URL from a RunningHub query `results` array.
  */
 function firstVideoResultUrl(queryLike) {
@@ -1063,6 +1080,10 @@ export function extractNsfwMotionVideo(_raw) {
 export async function materializeNsfwMotionOutputFromRunpodResponse(rp) {
   if (!rp || typeof rp !== "object") return null;
 
+  const preferred = motionXPreferredResultUrl(rp);
+  if (preferred) {
+    return mirrorHttpVideoToOurStorage(preferred);
+  }
   const vUrl = firstVideoResultUrl(rp);
   if (vUrl) {
     return mirrorHttpVideoToOurStorage(vUrl);

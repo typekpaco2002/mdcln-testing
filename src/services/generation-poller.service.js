@@ -901,6 +901,38 @@ class GenerationPollerService {
         const status = String(poll?.status || "").toUpperCase();
 
         if (status === "SUCCESS") {
+          if (gen.type === "nsfw-video-motion") {
+            const finalUrl = await materializeNsfwMotionOutputFromRunpodResponse(poll);
+            if (!finalUrl) {
+              await prisma.generation.update({
+                where: { id: gen.id },
+                data: {
+                  status: "failed",
+                  errorMessage: getErrorMessageForDb("RunningHub task completed but returned no video URL"),
+                  completedAt: new Date(),
+                },
+              });
+              try { await refundGeneration(gen.id); } catch { /**/ }
+              console.warn(`[RunningHub Watchdog] ⚠ motion completed but no URL ${gen.id.slice(0, 8)}`);
+              continue;
+            }
+            await prisma.generation.update({
+              where: { id: gen.id },
+              data: {
+                status: "completed",
+                outputUrl: finalUrl,
+                completedAt: new Date(),
+                pipelinePayload: null,
+                providerResponse: {
+                  runninghub: { taskId, usage: poll.usage || null, via: "watchdog" },
+                  outputUrl: finalUrl,
+                },
+              },
+            });
+            console.log(`[RunningHub Watchdog] ✅ Recovered motion ${gen.id.slice(0, 8)} → ${finalUrl.slice(0, 80)}`);
+            continue;
+          }
+
           const outputUrl = extractRunningHubOutputUrl(poll.results);
           if (!outputUrl) {
             await prisma.generation.update({
