@@ -33,6 +33,11 @@ import {
   Shirt,
   Coins,
 } from "lucide-react";
+import {
+  NSFW_MOTION_RUNPOD_ENGINE,
+  NSFW_MOTION_CREDITS_PER_SEC,
+  normalizeNsfwMotionEngine,
+} from "../constants/nsfwMotionControl.js";
 
 /** Video recreate per-second defaults (align with server `generation-pricing.service`) */
 const VIDEO_RECREATE_CLASSIC_PER_SEC = 18; // kling-2.6 motion-control 1080p
@@ -40,8 +45,6 @@ const VIDEO_RECREATE_ULTRA_PER_SEC = 25; // kling-3.0 motion-control 1080p
 const VIDEO_RECREATE_WAN_720_PER_SEC = 12.5;
 const VIDEO_RECREATE_WAN_580_PER_SEC = 9.5;
 const VIDEO_RECREATE_WAN_480_PER_SEC = 6;
-/** NSFW motion video (Motion-X) — same flow as POST /nsfw/generate-motion-video */
-const VIDEO_RECREATE_MOTION_X_PER_SEC = 30;
 
 const LOCALE_STORAGE_KEY = "app_locale";
 const GENERATE_COPY = {
@@ -94,10 +97,11 @@ const GENERATE_COPY = {
     videoRecreateEngineLabel: "Recreate Engine",
     videoRecreateEngineKling: "Kling",
     videoRecreateEngineWan: "Wan (faster, cheaper)",
-    videoRecreateEngineMotionX: "Motion-X",
+    videoRecreateEngineMotionX: "NSFW Motion Control",
+    videoRecreateNsfwMotionBadge: "NSFW Motion",
     videoRecreateEngineHint: "Kling supports classic/ultra motion-control. Wan is faster and lower cost.",
     videoRecreateEngineHintMotionX:
-      "Applies motion from your reference clip to your still. Most recreates finish in about 10 minutes.",
+      "Wan 2.2 Animate on RunPod — same worker as POST /api/nsfw/generate-motion-video. Motion from your reference clip; most finish in ~10 minutes.",
     videoRecreateWanResolutionLabel: "Wan Resolution",
     videoRecreateWanResolution480: "480p (fastest)",
     videoRecreateWanResolution580: "580p (balanced)",
@@ -269,10 +273,11 @@ const GENERATE_COPY = {
     videoRecreateEngineLabel: "Движок рекреейта",
     videoRecreateEngineKling: "Kling",
     videoRecreateEngineWan: "Wan (быстрее, дешевле)",
-    videoRecreateEngineMotionX: "Motion-X",
+    videoRecreateEngineMotionX: "NSFW Motion Control",
+    videoRecreateNsfwMotionBadge: "NSFW Motion",
     videoRecreateEngineHint: "Kling поддерживает classic/ultra motion-control. Wan быстрее и дешевле.",
     videoRecreateEngineHintMotionX:
-      "Перенос движения с референс-ролика на кадр. Обычно около 10 минут.",
+      "Wan 2.2 Animate на RunPod — тот же воркер, что POST /api/nsfw/generate-motion-video. Движение с референса; обычно ~10 минут.",
     videoRecreateWanResolutionLabel: "Разрешение Wan",
     videoRecreateWanResolution480: "480p (самый быстрый)",
     videoRecreateWanResolution580: "580p (баланс)",
@@ -2195,7 +2200,7 @@ function VideoGeneration() {
   const [galleryTalkingImage, setGalleryTalkingImage] = useState(null); // Gallery-selected image for talking head
   const [keepAudioFromVideo, setKeepAudioFromVideo] = useState(true); // Keep original audio
   const [recreateUltraMode, setRecreateUltraMode] = useState(false); // Kling 3.0 motion-control 1080p (vs default 2.6)
-  const [recreateEngine, setRecreateEngine] = useState("motion-x");
+  const [recreateEngine, setRecreateEngine] = useState(NSFW_MOTION_RUNPOD_ENGINE);
   const [wanResolution, setWanResolution] = useState("580p");
 
   const formatMotionDurationLabel = (sec) => {
@@ -2273,7 +2278,7 @@ function VideoGeneration() {
     if (d.targetGender !== undefined) setTargetGender(d.targetGender);
     if (d.keepAudioFromVideo !== undefined) setKeepAudioFromVideo(d.keepAudioFromVideo);
     if (d.recreateUltraMode !== undefined) setRecreateUltraMode(d.recreateUltraMode);
-    if (d.recreateEngine !== undefined) setRecreateEngine(d.recreateEngine);
+    if (d.recreateEngine !== undefined) setRecreateEngine(normalizeNsfwMotionEngine(d.recreateEngine));
     if (d.wanResolution !== undefined) setWanResolution(d.wanResolution);
     if (d.languageFilter !== undefined) setLanguageFilter(d.languageFilter);
     if (d.promptVideoImage) setPromptVideoImage(d.promptVideoImage);
@@ -2773,7 +2778,7 @@ function VideoGeneration() {
       return;
     }
 
-    if (recreateEngine === "motion-x") {
+    if (recreateEngine === NSFW_MOTION_RUNPOD_ENGINE) {
       const motionLimits = KLING_MOTION;
       const refFile = referenceVideo?.file;
       const refVidBytes = validateLocalFileMaxBytes(refFile, motionLimits.videoMaxBytes, "Reference video");
@@ -2791,7 +2796,7 @@ function VideoGeneration() {
         return;
       }
       const effectiveDur = Math.max(1, Math.min(30, Math.round(Number(referenceVideoDuration) || 0)));
-      const creditsNeeded = effectiveDur * VIDEO_RECREATE_MOTION_X_PER_SEC;
+      const creditsNeeded = effectiveDur * NSFW_MOTION_CREDITS_PER_SEC;
       const durLabel = formatMotionDurationLabel(referenceVideoDuration);
       if (credits < creditsNeeded) {
         toast.error(
@@ -2828,7 +2833,7 @@ function VideoGeneration() {
           setVideoStartingImage(null);
           setKeepAudioFromVideo(true);
           setRecreateUltraMode(false);
-          setRecreateEngine("motion-x");
+          setRecreateEngine(NSFW_MOTION_RUNPOD_ENGINE);
           setWanResolution("580p");
           clearVideoDraft();
         } else {
@@ -2916,7 +2921,7 @@ function VideoGeneration() {
         setVideoStartingImage(null);
         setKeepAudioFromVideo(true);
         setRecreateUltraMode(false);
-        setRecreateEngine("motion-x");
+        setRecreateEngine(NSFW_MOTION_RUNPOD_ENGINE);
         setWanResolution("580p");
         clearVideoDraft();
       }
@@ -2930,8 +2935,8 @@ function VideoGeneration() {
 
   const recreateCreditsPerSec = recreateEngine === "wan"
     ? (wanRecreatePerSecByResolution[wanResolution] ?? VIDEO_RECREATE_WAN_580_PER_SEC)
-    : recreateEngine === "motion-x"
-      ? VIDEO_RECREATE_MOTION_X_PER_SEC
+    : recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
+      ? NSFW_MOTION_CREDITS_PER_SEC
       : (recreateUltraMode ? recreateUltraPerSec : recreateClassicPerSec);
 
   const motionXRoundedSec =
@@ -2940,8 +2945,8 @@ function VideoGeneration() {
       : 0;
   const recreateTotalCredits =
     referenceVideoDuration > 0
-      ? (recreateEngine === "motion-x"
-        ? motionXRoundedSec * VIDEO_RECREATE_MOTION_X_PER_SEC
+      ? (recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
+        ? motionXRoundedSec * NSFW_MOTION_CREDITS_PER_SEC
         : Math.ceil(referenceVideoDuration * recreateCreditsPerSec))
       : 0;
 
@@ -3162,19 +3167,19 @@ function VideoGeneration() {
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="px-2 py-0.5 text-[10px] font-medium rounded-full" style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
                   <span className="inline-flex items-center gap-0.5">
-                    {formatMotionDurationLabel(recreateEngine === "motion-x" ? motionXRoundedSec : referenceVideoDuration)}s = {recreateTotalCredits} <Coins className="w-2.5 h-2.5" />
+                    {formatMotionDurationLabel(recreateEngine === NSFW_MOTION_RUNPOD_ENGINE ? motionXRoundedSec : referenceVideoDuration)}s = {recreateTotalCredits} <Coins className="w-2.5 h-2.5" />
                   </span>
                 </span>
                 <span className="px-1.5 py-0.5 text-[8px] font-bold rounded-full tracking-wide" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(22,163,74,0.15))', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80' }}>
-                  {recreateEngine === "motion-x"
-                    ? "Motion-X"
+                  {recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
+                    ? copy.videoRecreateNsfwMotionBadge
                     : recreateEngine === "wan"
                       ? copy.videoRecreateWanBadge
                       : (recreateUltraMode ? copy.videoRecreateUltraBadge : copy.videoRecreateClassicBadge)}
                 </span>
                 <span className="text-[9px] text-slate-500">
-                  {recreateEngine === "motion-x"
-                    ? `${copy.videoRecreateEngineMotionX} · ${VIDEO_RECREATE_MOTION_X_PER_SEC} 🪙/s · max 30s`
+                  {recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
+                    ? `${copy.videoRecreateEngineMotionX} · ${NSFW_MOTION_CREDITS_PER_SEC} 🪙/s · max 30s`
                     : recreateEngine === "wan"
                       ? `${copy.videoRecreateWanDesc} · ${wanResolution}`
                       : (recreateUltraMode ? copy.videoRecreateUltraDesc : copy.videoRecreateClassicDesc)}
@@ -3189,14 +3194,14 @@ function VideoGeneration() {
               <button
                 type="button"
                 onClick={() => {
-                  setRecreateEngine("motion-x");
+                  setRecreateEngine(NSFW_MOTION_RUNPOD_ENGINE);
                   setRecreateUltraMode(false);
                 }}
-                className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${recreateEngine === "motion-x" ? "text-white" : "text-slate-400 hover:text-white"}`}
-                style={recreateEngine === "motion-x"
+                className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${recreateEngine === NSFW_MOTION_RUNPOD_ENGINE ? "text-white" : "text-slate-400 hover:text-white"}`}
+                style={recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
                   ? { background: "rgba(217,70,239,0.15)", border: "1px solid rgba(217,70,239,0.4)" }
                   : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-                data-testid="button-recreate-engine-motion-x"
+                data-testid="button-recreate-engine-nsfw-motion"
               >
                 {copy.videoRecreateEngineMotionX}
               </button>
@@ -3225,7 +3230,7 @@ function VideoGeneration() {
               </button>
             </div>
             <p className="mt-2 text-[10px] text-slate-500 leading-snug">
-              {recreateEngine === "motion-x" ? copy.videoRecreateEngineHintMotionX : copy.videoRecreateEngineHint}
+              {recreateEngine === NSFW_MOTION_RUNPOD_ENGINE ? copy.videoRecreateEngineHintMotionX : copy.videoRecreateEngineHint}
             </p>
           </div>
 
@@ -3256,10 +3261,10 @@ function VideoGeneration() {
 
           <div className="mb-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <p className="text-[10px] text-slate-400 leading-relaxed">
-              {recreateEngine === "motion-x" ? (
+              {recreateEngine === NSFW_MOTION_RUNPOD_ENGINE ? (
                 <>
                   <span className="text-slate-200 font-medium">{copy.videoRecreateEngineMotionX}:</span>{" "}
-                  {VIDEO_RECREATE_MOTION_X_PER_SEC} <Coins className="w-2.5 h-2.5 inline" />
+                  {NSFW_MOTION_CREDITS_PER_SEC} <Coins className="w-2.5 h-2.5 inline" />
                   /sec (duration rounded to 1–30s, billed by second).
                 </>
               ) : (
@@ -3297,7 +3302,7 @@ function VideoGeneration() {
           )}
 
           {/* Audio Toggle (Kling / Wan only) */}
-          {recreateEngine !== "motion-x" && (
+          {recreateEngine !== NSFW_MOTION_RUNPOD_ENGINE && (
             <div className="mb-5 flex items-center gap-3">
               <button
                 onClick={() => setKeepAudioFromVideo(!keepAudioFromVideo)}

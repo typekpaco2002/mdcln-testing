@@ -5276,6 +5276,7 @@ export async function extendNsfwVideo(req, res) {
 // NSFW Motion Control Video (Wan 2.2 Animate, dedicated RunPod worker)
 // =====================================================================
 
+/** Keep in sync with `NSFW_MOTION_CREDITS_PER_SEC` in client/src/constants/nsfwMotionControl.js */
 const MOTION_BASE_CREDITS_PER_SEC = 30; // 5s ≈ 150, 8s ≈ 240, 15s ≈ 450
 
 /** Drop-in helpers shared with the WaveSpeed video flow. */

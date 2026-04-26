@@ -1,15 +1,14 @@
 /**
- * Nudes Pack — 30 curated poses for batch NSFW generation.
+ * Nudes Pack — curated poses for batch NSFW generation (count = NUDES_PACK_MAX_POSES, some disabled).
  * promptFragment: merged with model looks (attributes) + LoRA trigger on the server.
  *
- * Pricing: total scales linearly from 30 cr (1 pose) to 450 cr (30 poses) — same endpoints as 15–30 cr/image
- * at the extremes, but total never exceeds “full pack” when you select fewer than 30 (monotonic).
+ * Pricing: total scales linearly with pose count (min cr @ 1 pose → full pack) — same endpoints as 15–30 cr/image
+ * at the extremes, monotonic in selected count.
  */
 export const NUDES_PACK_CREDITS_MIN = 15;
 export const NUDES_PACK_CREDITS_MAX = 30;
 /** @deprecated use NUDES_PACK_CREDITS_MIN — kept for older imports */
 export const NUDES_PACK_CREDITS_PER_IMAGE = NUDES_PACK_CREDITS_MIN;
-export const NUDES_PACK_MAX_POSES = 30;
 
 /**
  * @param {{ nudesPackCreditsMin?: number, nudesPackCreditsMax?: number } | null | undefined} pricing — from getGenerationPricing()
@@ -67,8 +66,10 @@ export function getNudesPackCreditsSplit(selectedCount, pricing) {
 
 /** @typedef {{ id: string, title: string, summary: string, category: string, promptFragment: string }} NudesPackPose */
 
-/** @type {NudesPackPose[]} */
-export const NUDES_PACK_POSES = [
+/** @type {NudesPackPose[]}
+ *  Full list before built-in disabled filter; user-facing list is `NUDES_PACK_POSES`.
+ */
+const NUDES_PACK_POSES_ALL = [
   // Amateur / solo — natural nudes
   { id: "np-01", category: "Solo", title: "Bedroom soft light", summary: "Relaxed nude on bed, warm natural light, intimate amateur framing.", promptFragment: "nude lying on a rumpled bed, soft flat daylight from a nearby window, relaxed pose, looking toward camera with a calm expression, rumpled sheets around her, phone charger on the nightstand, hoodie dropped on the floor" },
   { id: "np-02", category: "Solo", title: "Mirror selfie", summary: "Phone mirror selfie, tasteful nude, casual bedroom.", promptFragment: "nude mirror selfie in a casual bedroom, iPhone visible in the reflection, one hand holding the phone at chest height, slightly off-center framing, messy shelves and a lamp visible behind her" },
@@ -104,6 +105,13 @@ export const NUDES_PACK_POSES = [
   { id: "np-30", category: "Sex", title: "Standing carry", summary: "Lifted standing carry, passionate.", promptFragment: "POV from the front, partner's torso and arms supporting her from below, his erect cock penetrating her from below, woman lifted with her legs wrapped around his waist, her arms around his neck, both upright against a bedroom wall or door, passionate expression, phone flash from the front" },
 ];
 
+/** Temporarily removed from the picker + API (poor output quality). */
+export const NUDES_PACK_POSE_IDS_DISABLED = new Set(["np-15", "np-26", "np-28", "np-30"]);
+export const NUDES_PACK_POSES = NUDES_PACK_POSES_ALL.filter(
+  (p) => !NUDES_PACK_POSE_IDS_DISABLED.has(p.id),
+);
+export const NUDES_PACK_MAX_POSES = NUDES_PACK_POSES.length;
+
 const byId = new Map(NUDES_PACK_POSES.map((p) => [p.id, p]));
 
 /**
@@ -134,7 +142,6 @@ export const NUDES_PACK_ADDITIVE_LORA_HINTS = {
   "np-13": { amateurNudes: 0.35 },
   // Sex — pose LoRAs (match workflow slots)
   "np-14": { poseId: "missionary" },
-  "np-15": { poseId: "missionary" },
   "np-16": { poseId: "doggystyle_facing" },
   "np-17": { poseId: "doggystyle_facing" },
   "np-18": { poseId: "cowgirl" },
@@ -146,11 +153,8 @@ export const NUDES_PACK_ADDITIVE_LORA_HINTS = {
   "np-23": { oralScene: true, deepthroat: 0.35 },
   "np-24": { oralScene: true, deepthroat: 0.35 },
   "np-25": { poseId: "missionary" },
-  "np-26": { amateurNudes: 0.38 },
   "np-27": { poseId: "anal_doggystyle" },
-  "np-28": { poseId: "missionary_anal" },
   "np-29": { poseId: "missionary" },
-  "np-30": { poseId: "cowgirl" },
 };
 
 /**

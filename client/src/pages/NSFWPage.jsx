@@ -157,20 +157,20 @@ const NSFW_COPY = {
     videoSectionDuration: "Duration",
     videoButtonGenerate: "Generate Video",
     videoButtonGenerating: "Generating...",
-    videoModeMotionX: "Motion-X",
+    videoModeMotionX: "NSFW Motion Control",
     videoModeMotionXBadge: "Video recreate",
     videoModeRecommended: "Recommended",
     videoModeStandardI2v: "Standard I2V",
     videoModeStandardI2vBadge: "5s / 8s",
-    videoMotionXInfoTitle: "Motion-X (video recreate):",
+    videoMotionXInfoTitle: "NSFW Motion Control (video recreate):",
     videoMotionXInfoBody:
-      "Use a first frame plus a driving video. Output length follows your source (up to 30s). Most finish in about 10 minutes.",
-    videoButtonGenerateMotionX: "Generate Motion-X Video",
-    videoMotionXGenerating: "Generating Motion-X video...",
+      "Same RunPod Wan worker as Create → Video → Recreate → NSFW Motion Control. First frame + driving video; length follows source (up to 30s). Most finish in about 10 minutes.",
+    videoButtonGenerateMotionX: "Generate NSFW Motion Video",
+    videoMotionXGenerating: "Generating NSFW motion video...",
     videoModeMotionXSubline: "Video recreate",
-    videoGalleryMotionXSection: "Motion-X & motion",
+    videoGalleryMotionXSection: "NSFW Motion Control",
     videoNsfwMotionRecreateInCreate:
-      "To recreate from a reference video, use the Create tab with your model → Video → Recreate (Motion-X is the default).",
+      "To recreate from a reference video, use the Create tab with your model → Video → Recreate (NSFW Motion Control is the default).",
     videoToastSelectModel: "Please select a model",
     videoToastUploadSource: "Please upload a source image",
     videoToastEnterPrompt: "Please enter a motion prompt",
@@ -236,7 +236,7 @@ const NSFW_COPY = {
     creditsPanelNsfwImage: "NSFW Image",
     creditsPanelFaceSwap: "+ Face Swap",
     nudesPackCta: "Nudes pack",
-    nudesPackCtaSub: "30 curated poses — one approval, same JSON prompt engine as Generate",
+    nudesPackCtaSub: `${NUDES_PACK_MAX_POSES} curated poses — one approval, same JSON prompt engine as Generate`,
     creditsPanelNsfwVideo: "NSFW Video",
     creditsPanelRetryFailed: "Retry Failed",
     yourVideos: "Your Videos",
@@ -390,20 +390,20 @@ const NSFW_COPY = {
     videoSectionDuration: "Длительность",
     videoButtonGenerate: "Создать видео",
     videoButtonGenerating: "Генерация...",
-    videoModeMotionX: "Motion-X",
+    videoModeMotionX: "NSFW Motion Control",
     videoModeMotionXBadge: "Видео из референса",
     videoModeRecommended: "Рекомендуем",
     videoModeStandardI2v: "Обычный I2V",
     videoModeStandardI2vBadge: "5с / 8с",
-    videoMotionXInfoTitle: "Motion-X (воссоздание видео):",
+    videoMotionXInfoTitle: "NSFW Motion Control (воссоздание видео):",
     videoMotionXInfoBody:
-      "Первый кадр и опорный ролик с движением. Длительность — по исходнику, до 30 с. Обычно около 10 минут.",
-    videoButtonGenerateMotionX: "Создать Motion-X",
-    videoMotionXGenerating: "Генерация Motion-X...",
+      "Тот же RunPod Wan, что Create → Video → Recreate → NSFW Motion Control. Первый кадр + опорный ролик; длительность по исходнику (до 30 с). Обычно ~10 минут.",
+    videoButtonGenerateMotionX: "Создать NSFW motion-видео",
+    videoMotionXGenerating: "Генерация NSFW motion...",
     videoModeMotionXSubline: "Воссоздание видео",
-    videoGalleryMotionXSection: "Motion-X и motion",
+    videoGalleryMotionXSection: "NSFW Motion Control",
     videoNsfwMotionRecreateInCreate:
-      "Воссоздание по референс-видео: вкладка Create → ваша модель → Video → Recreate (по умолчанию — Motion-X).",
+      "Воссоздание по референс-видео: вкладка Create → ваша модель → Video → Recreate (по умолчанию — NSFW Motion Control).",
     videoToastSelectModel: "Пожалуйста, выберите модель",
     videoToastUploadSource: "Пожалуйста, загрузите исходное изображение",
     videoToastEnterPrompt: "Пожалуйста, введите промпт движения",
@@ -469,7 +469,7 @@ const NSFW_COPY = {
     creditsPanelNsfwImage: "NSFW изображение",
     creditsPanelFaceSwap: "+ Замена лица",
     nudesPackCta: "Набор ню",
-    nudesPackCtaSub: "30 поз — одно подтверждение, тот же JSON-движок промптов, что и в генерации",
+    nudesPackCtaSub: `${NUDES_PACK_MAX_POSES} поз — одно подтверждение, тот же JSON-движок промптов, что и в генерации`,
     creditsPanelNsfwVideo: "NSFW видео",
     creditsPanelRetryFailed: "Повтор ошибки",
     yourVideos: "Ваши видео",
@@ -3687,7 +3687,7 @@ function LoRAManager({
                     Pro
                   </span>
                   <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <span>30 curated images, {loraProCost}</span>
+                    <span>{NUDES_PACK_MAX_POSES} curated images, {loraProCost}</span>
                     <Coins className="w-3 h-3 text-yellow-400 flex-shrink-0" />
                   </p>
                   <p className="text-[10px] text-slate-500">{copy.loraTime2h}</p>

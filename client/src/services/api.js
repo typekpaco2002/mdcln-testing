@@ -480,6 +480,7 @@ export const generationAPI = {
     return response.data;
   },
 
+  /** NSFW Motion Control (RunPod Wan) — same worker as Create tab “NSFW Motion Control” recreate engine. */
   nsfwGenerateMotionVideo: async (data) => {
     const response = await api.post("/nsfw/generate-motion-video", data);
     return response.data;
