@@ -399,8 +399,8 @@ export default function SettingsPage() {
       <div className="space-y-4 sm:space-y-6">
         {/* Account Info */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
@@ -507,8 +507,8 @@ export default function SettingsPage() {
 
         {/* Communication preferences (region + marketing language) */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
@@ -586,8 +586,8 @@ export default function SettingsPage() {
 
         {/* HTTP API keys */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2">
@@ -974,8 +974,8 @@ export default function SettingsPage() {
 
         {/* Subscription & Billing Management */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.05 }}
           className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
@@ -1078,8 +1078,8 @@ export default function SettingsPage() {
 
         {/* Legal */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
           className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >

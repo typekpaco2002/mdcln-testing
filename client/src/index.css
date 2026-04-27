@@ -115,7 +115,7 @@ html.light {
   /* Glass tokens — light inversion (precise, minimal blur) */
   --mc-glass-fill:    rgba(255, 255, 255, 0.72);
   --mc-glass-border:  rgba(15, 23, 42, 0.08);
-  --mc-glass-inset:   rgba(255, 255, 255, 0.75);
+  --mc-glass-inset:   rgba(255, 255, 255, 0.0);
   --mc-card-deep:     rgba(255, 255, 255, 0.96);
   --mc-toast-bg:      rgba(255, 255, 255, 0.96);
   --mc-link-soft:     #6d28d9;
@@ -408,7 +408,6 @@ html.light [data-testid^="download-"] {
   background: var(--bg-content);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  box-shadow: 0 1px 2px var(--shadow-ambient);
 }
 
 .panel-strong {
@@ -1062,12 +1061,12 @@ button[data-testid^="button-generate"] {
 :is(html[data-theme="light"], html.light) .bg-\[\#0d1016\],
 :is(html[data-theme="light"], html.light) .bg-\[\#0d0d14\],
 :is(html[data-theme="light"], html.light) .bg-\[\#0e0e12\] { background-color: var(--bg-surface) !important; }
-/* ─── shadows ────────────────────────────────────────── */
+/* ─── shadows — neutralised in light mode (no bright-white inset highlights) ── */
 :is(html[data-theme="light"], html.light) .shadow-\[0_8px_32px_rgba\(0\,0\,0\,0\.45\)\,inset_0_1px_0_0_rgba\(255\,255\,255\,0\.1\)\] {
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.8) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
 }
 :is(html[data-theme="light"], html.light) .shadow-\[inset_0_1px_0_0_rgba\(255\,255\,255\,0\.06\)\] {
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 3px rgba(0,0,0,0.06) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 /* ─── placeholder ────────────────────────────────────── */
 :is(html[data-theme="light"], html.light) .placeholder\:text-slate-500::placeholder { color: #94a3b8 !important; }
