@@ -55,8 +55,10 @@ export const MODELCLONE_X_CREDITS = {
 };
 
 export const MODELCLONE_X_OUTPUT_NODE = "369";
-/** ModelClone-X img2img (ZIT v2promax) saves from this SaveImage — must be scanned when txt2img node 369 is absent. */
-const MODELCLONE_X_IMG2IMG_OUTPUT_NODE = "289";
+/** ModelClone-X img2img (new mcx_i2i graph) SaveImage node id. */
+const MODELCLONE_X_IMG2IMG_OUTPUT_NODE = "368";
+/** Legacy MCX img2img SaveImage node id from older exports. */
+const MODELCLONE_X_IMG2IMG_OUTPUT_NODE_LEGACY = "289";
 const UPSCALE_NODES_TO_STRIP = ["370", "371", "372", "373"];
 
 const ASPECT_RATIO_MAP = {
@@ -341,10 +343,12 @@ export function extractModelCloneXImages(runpodOutput) {
   if (nodeOutputs && typeof nodeOutputs === "object") {
     const preferred = String(MODELCLONE_X_OUTPUT_NODE);
     const i2i = String(MODELCLONE_X_IMG2IMG_OUTPUT_NODE);
+    const i2iLegacy = String(MODELCLONE_X_IMG2IMG_OUTPUT_NODE_LEGACY);
     const orderedNodeIds = [
       preferred,
       i2i,
-      ...Object.keys(nodeOutputs).filter((k) => k !== preferred && k !== i2i),
+      i2iLegacy,
+      ...Object.keys(nodeOutputs).filter((k) => k !== preferred && k !== i2i && k !== i2iLegacy),
     ];
     for (const nodeId of orderedNodeIds) {
       const nodeImages = nodeOutputs?.[nodeId]?.images;

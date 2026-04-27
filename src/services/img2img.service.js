@@ -391,8 +391,16 @@ function buildModelCloneXImg2ImgApiPrompt({ positivePrompt, loraUrl, loraStrengt
   const graph = loadMcxI2iGraphPrepared();
   const api = comfyUiGraphToApiPrompt(graph.nodes, graph.links, graph.extra);
 
-  inlineStringLiteralRefsInApiWorkflow(api, { "56": positivePrompt });
-  delete api["56"];
+  // New MCX i2i graph already has a String Literal prompt node (56).
+  // Keep it and set the string directly to avoid link rewrites that can trigger
+  // sporadic ComfyUI prompt validation failures on some worker revisions.
+  if (api["56"]?.inputs && typeof api["56"].inputs.string === "string") {
+    api["56"].inputs.string = String(positivePrompt || "");
+  } else {
+    // Backward compatibility for older graph exports that do not expose node 56 directly.
+    inlineStringLiteralRefsInApiWorkflow(api, { "56": positivePrompt });
+    delete api["56"];
+  }
 
   if (api["340"]?.inputs) {
     api["340"].inputs.image = "__INPUT_IMAGE__";
