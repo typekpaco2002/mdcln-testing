@@ -244,7 +244,8 @@ function loadNsfwImg2ImgV2GraphPrepared() {
 }
 
 function loadMcxI2iGraphPrepared() {
-  if (mcxI2iGraphCache) return JSON.parse(JSON.stringify(mcxI2iGraphCache));
+  // No in-process caching — always read from disk so workflow updates take effect
+  // without a server restart.
   let raw = null;
   for (const p of MCX_I2I_GRAPH_PATHS) {
     try {
@@ -261,8 +262,7 @@ function loadMcxI2iGraphPrepared() {
       "ModelClone-X i2i workflow missing: add runpod-mdcln/workflows/mcx_i2i.json",
     );
   }
-  mcxI2iGraphCache = JSON.parse(raw);
-  return JSON.parse(JSON.stringify(mcxI2iGraphCache));
+  return JSON.parse(raw);
 }
 
 /** Replace inputs wired as [sourceNodeId, slot] with a string, then remove the source node. */
