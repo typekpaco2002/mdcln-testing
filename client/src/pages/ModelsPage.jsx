@@ -15,6 +15,7 @@ import {
   Mic,
   Coins,
   User,
+  AlertTriangle,
 } from "lucide-react";
 import {
   MagnifyingGlass,
@@ -199,6 +200,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
   const [showCreditsModal, setShowCreditsModal] = useState(false);
   const [editingModel, setEditingModel] = useState(null);
   const [editAge, setEditAge] = useState("");
+  const [looksRequired, setLooksRequired] = useState(false);
   const [savingAge, setSavingAge] = useState(false);
   const [uploading, setUploading] = useState(null);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState(null);
@@ -398,11 +400,20 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
     }
   };
 
+  const REQUIRED_LOOKS_KEYS = ["gender", "hairColor", "eyeColor", "bodyType", "heritage"];
+
   const handleSaveLooks = async () => {
     if (!editingModel) return;
     const appearance = Object.fromEntries(
       Object.entries(editLooks).filter(([, v]) => v != null && v !== "" && String(v).trim() !== "")
     );
+    if (looksRequired) {
+      const missing = REQUIRED_LOOKS_KEYS.filter((k) => !appearance[k]);
+      if (missing.length > 0) {
+        toast.error(`Please set: ${missing.join(", ")} before saving.`);
+        return;
+      }
+    }
     setSavingLooks(true);
     try {
       const response = await api.post("/nsfw/appearance/save", {
@@ -414,6 +425,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
         const saved = response.data.savedAppearance || {};
         setEditingModel(prev => prev ? { ...prev, savedAppearance: saved } : null);
         setModels(prev => prev.map(m => m.id === editingModel.id ? { ...m, savedAppearance: saved } : m));
+        setLooksRequired(false);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || copy.saveLookSettingsFailed);
@@ -437,6 +449,17 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
       );
     }
     setEditingModel(null);
+    setLooksRequired(false);
+  };
+
+  const handleModelCreated = async (newModel) => {
+    await loadModels();
+    if (newModel?.id) {
+      setEditingModel(newModel);
+      setEditLooks({});
+      setEditAge(newModel.age ? String(newModel.age) : "");
+      setLooksRequired(true);
+    }
   };
 
   return (
@@ -672,7 +695,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
       <CreateModelModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={loadModels}
+        onSuccess={handleModelCreated}
         sidebarCollapsed={sidebarCollapsed}
         onNeedCredits={() => {
           setShowCreateModal(false);
@@ -847,7 +870,15 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
               </div>
 
               {/* Model Looks — single source of truth (LoRA-style chips + custom), used in all prompts */}
-              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+              <div className={`p-3 rounded-xl border ${looksRequired ? "bg-amber-500/[0.07] border-amber-500/30" : "bg-white/[0.04] border-white/[0.08]"}`}>
+                {looksRequired && (
+                  <div className="flex items-start gap-2 mb-3 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-[11px] text-amber-200 leading-relaxed">
+                      Set your model&apos;s looks before generating — these values are used to build every NSFW prompt.
+                    </p>
+                  </div>
+                )}
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
                   <p className="text-xs font-medium text-white flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-cyan-400" />
@@ -924,11 +955,16 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
                 <button
                   onClick={handleSaveLooks}
                   disabled={savingLooks}
-                  className="mt-3 w-full py-1.5 rounded-lg bg-white/10 border border-white/15 text-white text-xs font-semibold hover:bg-white/15 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                  className={`mt-3 w-full py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-1 ${
+                    looksRequired
+                      ? "bg-amber-500/20 border border-amber-500/40 text-amber-100 hover:bg-amber-500/30"
+                      : "bg-white/10 border border-white/15 text-white hover:bg-white/15"
+                  }`}
+                  data-testid="button-save-looks"
                 >
                   {(savingLooks
                     ? <><ArrowsClockwise className="w-3 h-3 animate-spin" weight="bold" /> {copy.saving}</>
-                    : <><FloppyDisk className="w-3 h-3" weight="bold" /> {copy.saveLooks}</>
+                    : <><FloppyDisk className="w-3 h-3" weight="bold" /> {looksRequired ? "Save Looks (required)" : copy.saveLooks}</>
                   )}
                 </button>
               </div>

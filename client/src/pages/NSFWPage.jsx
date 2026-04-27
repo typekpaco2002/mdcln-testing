@@ -4304,8 +4304,11 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     if (d.chipSelections && typeof d.chipSelections === "object") setChipSelections(d.chipSelections);
     if (d.selectedPreset) setSelectedPreset(d.selectedPreset);
     if (d.selectedAspectRatio) setSelectedAspectRatio(d.selectedAspectRatio);
-    if (d.nsfwGenerateMode === "simple" || d.nsfwGenerateMode === "advanced" || d.nsfwGenerateMode === "custom") {
+    if (d.nsfwGenerateMode === "simple" || d.nsfwGenerateMode === "custom") {
       setNsfwGenerateMode(d.nsfwGenerateMode);
+    } else if (d.nsfwGenerateMode === "advanced") {
+      // Advanced mode removed — fall back to custom (closest equivalent)
+      setNsfwGenerateMode("custom");
     }
     if (d.simplePlanReady !== undefined) setSimplePlanReady(!!d.simplePlanReady);
     if (d.generatedPrompt !== undefined) setGeneratedPrompt(d.generatedPrompt);
@@ -5671,20 +5674,20 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                   );
                 })()}
 
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-1 rounded-xl border border-white/[0.1] bg-white/[0.03] mb-2">
-                  <span className="text-[11px] uppercase tracking-wider text-slate-500 px-2 shrink-0">Flow</span>
-                  <div className="flex rounded-lg overflow-hidden border border-white/10 flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-1 rounded-xl border border-[var(--border-medium)] bg-[var(--bg-surface)] mb-2">
+                  <span className="text-[11px] uppercase tracking-wider text-[var(--text-muted)] px-2 shrink-0 font-mono">Flow</span>
+                  <div className="flex rounded-lg overflow-hidden border border-[var(--border-subtle)] flex-1">
                     <button
                       type="button"
                       onClick={() => {
                         setNsfwGenerateMode("simple");
-                        setSelectedAspectRatio("1024x1024"); // Quick flow: auto selfie resolution
+                        setSelectedAspectRatio("1024x1024");
                         setCustomPrompt("");
                       }}
                       className={`flex-1 px-2 sm:px-3 py-2 text-xs font-semibold transition-colors ${
                         nsfwGenerateMode === "simple"
-                          ? "bg-white text-black"
-                          : "bg-transparent text-slate-400 hover:text-white"
+                          ? "bg-[var(--text-primary)] text-[var(--bg-page)]"
+                          : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                       }`}
                       data-testid="button-nsfw-flow-simple"
                     >
@@ -5693,29 +5696,14 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     <button
                       type="button"
                       onClick={() => {
-                        setNsfwGenerateMode("advanced");
-                        setCustomPrompt("");
-                      }}
-                      className={`flex-1 px-2 sm:px-3 py-2 text-xs font-semibold transition-colors border-l border-white/10 ${
-                        nsfwGenerateMode === "advanced"
-                          ? "bg-white text-black"
-                          : "bg-transparent text-slate-400 hover:text-white"
-                      }`}
-                      data-testid="button-nsfw-flow-advanced"
-                    >
-                      Advanced
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
                         setNsfwGenerateMode("custom");
                         setSimplePlanReady(false);
                         setGeneratedPrompt("");
                       }}
-                      className={`flex-1 px-2 sm:px-3 py-2 text-xs font-semibold transition-colors border-l border-white/10 ${
+                      className={`flex-1 px-2 sm:px-3 py-2 text-xs font-semibold transition-colors border-l border-[var(--border-subtle)] ${
                         nsfwGenerateMode === "custom"
-                          ? "bg-white text-black"
-                          : "bg-transparent text-slate-400 hover:text-white"
+                          ? "bg-[var(--text-primary)] text-[var(--bg-page)]"
+                          : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                       }`}
                       data-testid="button-nsfw-flow-custom"
                     >
@@ -5723,12 +5711,10 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     </button>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-500 mb-4">
+                <p className="text-[11px] text-[var(--text-muted)] mb-4">
                   {nsfwGenerateMode === "simple"
                     ? "Describe or pick a preset, then confirm — AI picks detail chips and writes the prompt. You only choose resolution and hit generate."
-                    : nsfwGenerateMode === "advanced"
-                    ? "Full control: auto-select chips, edit selectors, write or regenerate the prompt yourself, then generate."
-                    : "Paste or type the full prompt yourself (Danbooru-style tags work best). Your LoRA trigger is added automatically if missing. Same resolution & quality settings as Advanced."}
+                    : "Paste or type the full prompt yourself (Danbooru-style tags work best). Your LoRA trigger is added automatically if missing. Use Advanced Settings below to tune LoRA strength."}
                 </p>
 
                 {NUDES_PACK_UI_ENABLED && isLoraReady && selectedModel && (
@@ -6116,7 +6102,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                   </>
                 )}
 
-                {((nsfwGenerateMode === "simple" && simplePlanReady) || nsfwGenerateMode === "advanced" || nsfwGenerateMode === "custom") && (
+                {((nsfwGenerateMode === "simple" && simplePlanReady) || nsfwGenerateMode === "custom") && (
                 <>
                 {/* Aspect ratio for the generation request (backend) */}
                 <div>

@@ -530,20 +530,17 @@ function GalleryImagePicker({ modelId, selectedImage, onSelect, accentColor = "p
 
 const SELECTED_GLASS_STYLE = {
   background: "var(--bg-elevated)",
-  border: "1px solid var(--border-subtle)",
-  boxShadow: "inset 0 1px 0 var(--mc-glass-inset)",
+  border: "1px solid var(--border-medium)",
 };
 
 const UNSELECTED_GLASS_STYLE = {
-  background: "var(--bg-glass)",
+  background: "var(--bg-surface)",
   border: "1px solid var(--border-subtle)",
-  boxShadow: "inset 0 1px 0 var(--mc-glass-inset)",
 };
 
-const PURPLE_CORNER_GLOW_STYLE = {
+const ACCENT_CORNER_GLOW_STYLE = {
   background:
-    "radial-gradient(ellipse 80% 80% at 0% 0%, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.06) 40%, transparent 65%)",
-  filter: "blur(0.2px)",
+    "radial-gradient(ellipse 80% 80% at 0% 0%, var(--accent-soft) 0%, transparent 65%)",
 };
 
 function getApiErrorMessage(error, fallback = "Generation failed") {
@@ -578,7 +575,7 @@ function ImageSourceSelector({ modelId, onUpload, onGallerySelect, preview, sele
           data-testid="button-source-upload"
         >
           {mode === "upload" && (
-            <span className="absolute top-0 left-0 w-16 h-16 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+            <span className="absolute top-0 left-0 w-16 h-16 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
           )}
           {mode === "upload" && (
             <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -597,7 +594,7 @@ function ImageSourceSelector({ modelId, onUpload, onGallerySelect, preview, sele
           data-testid="button-source-gallery"
         >
           {mode === "gallery" && (
-            <span className="absolute top-0 left-0 w-16 h-16 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+            <span className="absolute top-0 left-0 w-16 h-16 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
           )}
           {mode === "gallery" && (
             <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -699,7 +696,7 @@ function ModelSelector({ models, selectedModel, onSelect, accentColor = "purple"
           className="relative overflow-hidden w-full flex items-center gap-3 p-3 group text-[color:var(--text-primary)]"
         >
           {(isOpen || selectedModelData) && (
-            <span className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+            <span className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
           )}
           {(isOpen || selectedModelData) && (
             <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -863,12 +860,12 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
 
   return (
     <div className="generate-content-page max-w-6xl mx-auto w-full">
-      {/* Premium Header */}
+      {/* Header */}
       <div className="mb-6 sm:mb-10">
-        <h1 className="text-2xl sm:text-4xl font-bold mb-2 text-white">
+        <h1 className="text-2xl sm:text-4xl font-bold mb-2 text-[var(--text-primary)]">
           {copy.title}
         </h1>
-        <p className="text-sm text-slate-400">{copy.subtitle}</p>
+        <p className="text-sm text-[var(--text-muted)]">{copy.subtitle}</p>
       </div>
 
       <CourseTipBanner type="sfw" onNavigateToCourse={() => setDashboardTab?.("course")} />
@@ -886,7 +883,7 @@ export default function GeneratePage({ setActiveTab: setDashboardTab, openVoiceS
           className="w-full relative overflow-hidden py-3 px-3 sm:py-4 sm:px-6 rounded-xl flex items-center justify-between gap-3 min-h-[48px] sm:min-h-[56px] group text-white"
           style={SELECTED_GLASS_STYLE}
         >
-          <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+          <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
           <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
           <div className="relative flex items-center gap-2 sm:gap-3">
             <div className="p-1.5 sm:p-2 rounded-lg bg-white/10 border border-white/20">
@@ -1377,7 +1374,7 @@ function ImageGeneration() {
           className="w-full mb-3 relative overflow-hidden p-3 rounded-xl group text-white bg-white/[0.08] border border-white/20 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] flex items-center justify-between"
           data-testid={`button-mode-${imageMode}`}
         >
-          <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+          <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
           <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
           <div className="flex items-center gap-3 text-left">
             <div className="p-2 rounded-lg bg-white/10 border border-white/20">
@@ -1417,7 +1414,7 @@ function ImageGeneration() {
             data-testid="button-mode-identity"
           >
             {imageMode === "identity" && (
-              <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+              <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
             )}
             {imageMode === "identity" && (
               <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -1459,7 +1456,7 @@ function ImageGeneration() {
             data-testid="button-mode-prompt"
           >
             {imageMode === "prompt" && (
-              <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+              <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
             )}
             {imageMode === "prompt" && (
               <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -1501,7 +1498,7 @@ function ImageGeneration() {
             data-testid="button-mode-faceswap"
           >
             {imageMode === "faceswap" && (
-              <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+              <div className="absolute top-0 left-0 w-24 h-24 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
             )}
             {imageMode === "faceswap" && (
               <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -1585,7 +1582,7 @@ function ImageGeneration() {
                 data-testid="button-clothes-model"
               >
                 {clothesMode === "model" && (
-                  <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                  <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
                 )}
                 {clothesMode === "model" && (
                   <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -1604,7 +1601,7 @@ function ImageGeneration() {
                 data-testid="button-clothes-reference"
               >
                 {clothesMode === "reference" && (
-                  <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                  <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
                 )}
                 {clothesMode === "reference" && (
                   <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -1801,7 +1798,7 @@ function ImageGeneration() {
                 data-testid="button-engine-nano-banana"
               >
                 {advancedModel === "nano-banana" && (
-                  <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                  <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
                 )}
                 {advancedModel === "nano-banana" && (
                   <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -1825,7 +1822,7 @@ function ImageGeneration() {
                   data-testid="button-engine-seedream"
                 >
                   {advancedModel === "seedream" && (
-                    <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                    <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
                   )}
                   {advancedModel === "seedream" && (
                     <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -2973,7 +2970,7 @@ function VideoGeneration() {
             data-testid="button-method-recreate"
           >
             {method === "2-step" && (
-              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
             )}
             {method === "2-step" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -3009,7 +3006,7 @@ function VideoGeneration() {
             data-testid="button-method-prompt"
           >
             {method === "prompt" && (
-              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
             )}
             {method === "prompt" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -3043,7 +3040,7 @@ function VideoGeneration() {
             data-testid="button-method-faceswap"
           >
             {method === "face-swap" && (
-              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
             )}
             {method === "face-swap" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -3077,7 +3074,7 @@ function VideoGeneration() {
             data-testid="button-method-talking-head"
           >
             {method === "talking-head" && (
-              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+              <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
             )}
             {method === "talking-head" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -3345,7 +3342,7 @@ function VideoGeneration() {
                 style={promptVideoDuration === 5 ? SELECTED_GLASS_STYLE : UNSELECTED_GLASS_STYLE}
                 data-testid="button-duration-5"
               >
-                {promptVideoDuration === 5 && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />}
+                {promptVideoDuration === 5 && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />}
                 {promptVideoDuration === 5 && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
                 <div className="relative flex items-center justify-between">
                   <div>
@@ -3364,7 +3361,7 @@ function VideoGeneration() {
                 style={promptVideoDuration === 10 ? SELECTED_GLASS_STYLE : UNSELECTED_GLASS_STYLE}
                 data-testid="button-duration-10"
               >
-                {promptVideoDuration === 10 && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />}
+                {promptVideoDuration === 10 && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />}
                 {promptVideoDuration === 10 && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
                 <div className="relative flex items-center justify-between">
                   <div>
@@ -3456,7 +3453,7 @@ function VideoGeneration() {
                   className="relative p-2.5 rounded-xl text-center group"
                   style={targetGender === gender ? SELECTED_GLASS_STYLE : UNSELECTED_GLASS_STYLE}
                 >
-                  {targetGender === gender && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />}
+                  {targetGender === gender && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />}
                   {targetGender === gender && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
                   <span className={`relative text-xs font-medium ${targetGender === gender ? 'text-white' : 'text-slate-400'}`}>
                     {gender === "female" ? copy.faceswapVideoGenderFemale : gender === "male" ? copy.faceswapVideoGenderMale : copy.talkingHeadLanguageAll}
@@ -3554,7 +3551,7 @@ function VideoGeneration() {
                   className="relative p-2 rounded-xl text-center group overflow-hidden"
                   style={languageFilter === lang.id ? SELECTED_GLASS_STYLE : UNSELECTED_GLASS_STYLE}
                 >
-                  {languageFilter === lang.id && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />}
+                  {languageFilter === lang.id && <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />}
                   {languageFilter === lang.id && <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />}
                   <span className={`relative text-xs font-medium ${languageFilter === lang.id ? 'text-white' : 'text-slate-400'}`}>{lang.label}</span>
                 </button>
@@ -3587,7 +3584,7 @@ function VideoGeneration() {
                   >
                     {selectedVoice === voice.id && (
                       <>
-                        <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                        <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
                         <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
                       </>
                     )}
@@ -4063,7 +4060,7 @@ function PromptImageContent({
               }}
             >
               {!isNsfwMode && (
-                <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
               )}
               {!isNsfwMode && (
                 <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -4104,7 +4101,7 @@ function PromptImageContent({
                 }}
               >
                 {isNsfwMode && (
-                  <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                  <div className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
                 )}
                 {isNsfwMode && (
                   <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
@@ -4164,7 +4161,7 @@ function PromptImageContent({
               data-testid="button-use-ai-enhance"
             >
               {!useCustomPrompt && (
-                <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
               )}
               {!useCustomPrompt && (
                 <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />
@@ -4184,7 +4181,7 @@ function PromptImageContent({
               data-testid="button-use-custom"
             >
               {useCustomPrompt && (
-                <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={PURPLE_CORNER_GLOW_STYLE} />
+                <span className="absolute top-0 left-0 w-20 h-20 pointer-events-none" style={ACCENT_CORNER_GLOW_STYLE} />
               )}
               {useCustomPrompt && (
                 <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45 pointer-events-none" />

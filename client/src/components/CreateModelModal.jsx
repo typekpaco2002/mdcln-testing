@@ -138,7 +138,7 @@ export default function CreateModelModal({ isOpen, onClose, onSuccess, onNeedCre
       });
       if (response.data.success) {
         toast.success(formatCopy(copy.modelCreated, { name }));
-        onSuccess();
+        onSuccess(response.data.model ?? null);
         handleClose();
       }
     } catch (error) {

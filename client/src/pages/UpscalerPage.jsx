@@ -5,7 +5,6 @@ import { Upload, Download, Sparkles, Image as ImageIcon, X, ZoomIn, AlertCircle,
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store";
-import { useTheme } from "../hooks/useTheme.jsx";
 import { pricingAPI, uploadFile } from "../services/api";
 import { downloadFromPublicUrl } from "../utils/directDownload";
 
@@ -34,8 +33,6 @@ function formatBytes(bytes) {
 
 export default function UpscalerPage() {
   const { user } = useAuthStore();
-  const { theme } = useTheme();
-  const isDark = theme !== "light";
 
   const [dragOver, setDragOver] = useState(false);
   const [inputFile, setInputFile] = useState(null);
@@ -86,7 +83,6 @@ export default function UpscalerPage() {
       toast.error("Please drop an image file.");
       return;
     }
-    // Hard cap kept high; real cap is enforced server-side via /upload/config (Vercel Blob plan).
     if (file.size > 100 * 1024 * 1024) {
       toast.error("Image must be under 100 MB.");
       return;
@@ -116,7 +112,6 @@ export default function UpscalerPage() {
     let elapsed = 0;
     pollRef.current = setInterval(async () => {
       elapsed += POLL_INTERVAL_MS;
-      // Animate progress bar up to 90%
       setProgress((p) => Math.min(90, p + 3));
       try {
         const token = localStorage.getItem("token");
@@ -129,7 +124,6 @@ export default function UpscalerPage() {
           setProgress(100);
           setOutputUrl(imageUrl);
           setStatus("done");
-          // Refresh credits
           try {
             const profileRes = await axios.get("/api/profile", {
               headers: { Authorization: `Bearer ${token}` },
@@ -143,7 +137,6 @@ export default function UpscalerPage() {
           setStatus("error");
           setErrorMsg(toErrMsg(error, "Upscaling failed. Your credits have been refunded."));
         }
-        // If still processing, keep polling
         if (elapsed > 5 * 60 * 1000) {
           stopPoll();
           setStatus("error");
@@ -170,13 +163,10 @@ export default function UpscalerPage() {
     try {
       const token = localStorage.getItem("token");
 
-      // Step 1: browser → Vercel Blob direct upload (file never traverses our serverless function → no 413)
       const inputImageUrl = await uploadFile(inputFile, (pct) => {
-        // Map blob upload progress (0-100) onto our 5-25% slot
         setProgress(5 + Math.round((pct / 100) * 20));
       });
 
-      // Step 2: tell our API to dispatch a RunPod job from that URL (small JSON body)
       const res = await axios.post(
         "/api/upscale",
         { inputImageUrl },
@@ -207,16 +197,10 @@ export default function UpscalerPage() {
   };
 
   const isRunning = status === "uploading" || status === "processing";
+  const canUpscale = !!inputFile && !isRunning && hasEnough && status !== "done";
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        background: isDark
-          ? "linear-gradient(135deg, #0a0a12 0%, #0f0f1c 50%, #0a0a14 100%)"
-          : "linear-gradient(135deg, #f1f5f9 0%, #e8eef8 100%)",
-      }}
-    >
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)]">
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 md:py-12">
         {/* Header */}
         <motion.div
@@ -225,24 +209,14 @@ export default function UpscalerPage() {
           className="mb-10"
         >
           <div className="flex items-center gap-3 mb-2">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{
-                background: "linear-gradient(135deg, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.4) 100%)",
-                border: "1px solid rgba(139,92,246,0.5)",
-                boxShadow: "0 0 18px rgba(139,92,246,0.35)",
-              }}
-            >
-              <ZoomIn className="w-5 h-5 text-purple-300" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--accent-soft)] border border-[var(--border-medium)]">
+              <ZoomIn className="w-5 h-5 text-[var(--accent)]" />
             </div>
-            <h1
-              className="text-2xl md:text-3xl font-bold"
-              style={{ color: isDark ? "#e2e8f0" : "#1e293b" }}
-            >
+            <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">
               AI Upscaler
             </h1>
           </div>
-          <p className="text-sm ml-13" style={{ color: isDark ? "rgba(148,163,184,0.8)" : "#64748b", marginLeft: "52px" }}>
+          <p className="text-sm text-[var(--text-muted)] ml-[52px]">
             Enhance any photo to high resolution using SeedVR2 — {creditCost} <Coins className="w-3 h-3 inline align-text-bottom" /> per upscale
           </p>
         </motion.div>
@@ -250,7 +224,7 @@ export default function UpscalerPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Input */}
           <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 }}>
-            <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: isDark ? "rgba(148,163,184,0.6)" : "#94a3b8" }}>
+            <div className="text-xs font-semibold uppercase tracking-widest mb-3 text-[var(--text-muted)]">
               Original
             </div>
             <div
@@ -258,20 +232,16 @@ export default function UpscalerPage() {
               style={{
                 minHeight: 340,
                 borderColor: dragOver
-                  ? "rgba(139,92,246,0.8)"
+                  ? "var(--accent)"
                   : inputPreview
                   ? "transparent"
-                  : isDark ? "rgba(148,163,184,0.2)" : "rgba(100,116,139,0.3)",
+                  : "var(--border-medium)",
                 background: dragOver
-                  ? "rgba(139,92,246,0.08)"
+                  ? "var(--accent-soft)"
                   : inputPreview
                   ? "transparent"
-                  : isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
-                boxShadow: inputPreview
-                  ? isDark
-                    ? "0 4px 24px rgba(0,0,0,0.4)"
-                    : "0 4px 24px rgba(0,0,0,0.1)"
-                  : "none",
+                  : "var(--bg-surface)",
+                boxShadow: inputPreview ? "0 4px 24px var(--shadow-ambient)" : "none",
               }}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
@@ -294,7 +264,6 @@ export default function UpscalerPage() {
                     className="w-full h-full object-contain"
                     style={{ maxHeight: 400, display: "block" }}
                   />
-                  {/* File info overlay */}
                   <div
                     className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center justify-between"
                     style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)" }}
@@ -302,7 +271,6 @@ export default function UpscalerPage() {
                     <span className="text-xs text-white/70 truncate max-w-[70%]">{inputFile?.name}</span>
                     <span className="text-xs text-white/50">{formatBytes(inputFile?.size ?? 0)}</span>
                   </div>
-                  {/* Replace button */}
                   {!isRunning && status !== "done" && (
                     <button
                       className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-100 opacity-70"
@@ -317,19 +285,15 @@ export default function UpscalerPage() {
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8">
                   <motion.div
                     animate={dragOver ? { scale: 1.15, rotate: 5 } : { scale: 1, rotate: 0 }}
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                    style={{
-                      background: isDark ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.08)",
-                      border: "1px solid rgba(139,92,246,0.25)",
-                    }}
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center bg-[var(--accent-soft)] border border-[var(--border-medium)]"
                   >
-                    <Upload className="w-6 h-6" style={{ color: "rgba(139,92,246,0.8)" }} />
+                    <Upload className="w-6 h-6 text-[var(--accent)]" />
                   </motion.div>
                   <div className="text-center">
-                    <p className="font-medium mb-1" style={{ color: isDark ? "rgba(226,232,240,0.9)" : "#334155" }}>
+                    <p className="font-medium mb-1 text-[var(--text-primary)]">
                       Drop your image here
                     </p>
-                    <p className="text-sm" style={{ color: isDark ? "rgba(148,163,184,0.55)" : "#94a3b8" }}>
+                    <p className="text-sm text-[var(--text-muted)]">
                       or click to browse · JPEG, PNG, WEBP · max 20 MB
                     </p>
                   </div>
@@ -340,22 +304,16 @@ export default function UpscalerPage() {
 
           {/* Right: Output */}
           <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-            <div className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: isDark ? "rgba(148,163,184,0.6)" : "#94a3b8" }}>
+            <div className="text-xs font-semibold uppercase tracking-widest mb-3 text-[var(--text-muted)]">
               Upscaled
             </div>
             <div
               className="relative rounded-2xl overflow-hidden"
               style={{
                 minHeight: 340,
-                background: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.7)",
-                border: outputUrl
-                  ? "none"
-                  : `1px solid ${isDark ? "rgba(148,163,184,0.1)" : "rgba(100,116,139,0.2)"}`,
-                boxShadow: outputUrl
-                  ? isDark
-                    ? "0 4px 32px rgba(139,92,246,0.2), 0 4px 24px rgba(0,0,0,0.4)"
-                    : "0 4px 24px rgba(0,0,0,0.1)"
-                  : "none",
+                background: "var(--bg-surface)",
+                border: outputUrl ? "none" : "1px solid var(--border-subtle)",
+                boxShadow: outputUrl ? "0 4px 32px var(--shadow-ambient)" : "none",
               }}
             >
               <AnimatePresence mode="wait">
@@ -367,28 +325,20 @@ export default function UpscalerPage() {
                       className="w-full h-full object-contain"
                       style={{ maxHeight: 400, display: "block" }}
                     />
-                    {/* Done badge */}
                     <div
                       className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1"
                       style={{
-                        background: "rgba(34,197,94,0.2)",
-                        border: "1px solid rgba(34,197,94,0.4)",
+                        background: "rgba(34,197,94,0.15)",
+                        border: "1px solid rgba(34,197,94,0.3)",
                         color: "#86efac",
                       }}
                     >
                       <Sparkles className="w-3 h-3" />
                       Upscaled
                     </div>
-                    {/* Download button */}
                     <button
                       onClick={downloadResult}
-                      className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-                      style={{
-                        background: "rgba(139,92,246,0.85)",
-                        color: "white",
-                        backdropFilter: "blur(8px)",
-                        boxShadow: "0 4px 12px rgba(139,92,246,0.4)",
-                      }}
+                      className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all hover:scale-105 active:scale-95 btn-accent"
                     >
                       <Download className="w-3.5 h-3.5" />
                       Download
@@ -401,48 +351,40 @@ export default function UpscalerPage() {
                     animate={{ opacity: 1 }}
                     className="absolute inset-0 flex flex-col items-center justify-center gap-6 p-8"
                   >
-                    {/* Animated pulsing rings */}
                     <div className="relative w-20 h-20">
                       {[0, 1, 2].map((i) => (
                         <motion.div
                           key={i}
-                          className="absolute inset-0 rounded-full"
-                          style={{ border: "1px solid rgba(139,92,246,0.4)" }}
-                          animate={{ scale: [1, 1.6 + i * 0.3], opacity: [0.6, 0] }}
+                          className="absolute inset-0 rounded-full border border-[var(--border-medium)]"
+                          animate={{ scale: [1, 1.6 + i * 0.3], opacity: [0.5, 0] }}
                           transition={{ duration: 2, delay: i * 0.5, repeat: Infinity, ease: "easeOut" }}
                         />
                       ))}
-                      <div
-                        className="absolute inset-0 rounded-full flex items-center justify-center"
-                        style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.5)" }}
-                      >
-                        <ZoomIn className="w-7 h-7 text-purple-400" />
+                      <div className="absolute inset-0 rounded-full flex items-center justify-center bg-[var(--accent-soft)] border border-[var(--border-medium)]">
+                        <ZoomIn className="w-7 h-7 text-[var(--accent)]" />
                       </div>
                     </div>
 
                     <div className="text-center">
-                      <p className="font-medium mb-1" style={{ color: isDark ? "#e2e8f0" : "#334155" }}>
+                      <p className="font-medium mb-1 text-[var(--text-primary)]">
                         {status === "uploading" ? "Uploading…" : "Upscaling your image…"}
                       </p>
-                      <p className="text-sm" style={{ color: isDark ? "rgba(148,163,184,0.6)" : "#64748b" }}>
+                      <p className="text-sm text-[var(--text-muted)]">
                         {status === "processing" ? "SeedVR2 is processing — usually 1–2 min" : "Sending to worker…"}
                       </p>
                     </div>
 
-                    {/* Progress bar */}
                     <div className="w-full max-w-xs">
                       <div
-                        className="h-1.5 rounded-full overflow-hidden"
-                        style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }}
+                        className="h-1.5 rounded-full overflow-hidden bg-[var(--bg-elevated)]"
                       >
                         <motion.div
-                          className="h-full rounded-full"
-                          style={{ background: "linear-gradient(90deg, #7c3aed, #a855f7)" }}
+                          className="h-full rounded-full bg-[var(--accent)]"
                           animate={{ width: `${progress}%` }}
                           transition={{ duration: 0.6, ease: "easeOut" }}
                         />
                       </div>
-                      <p className="text-xs mt-1.5 text-right" style={{ color: isDark ? "rgba(148,163,184,0.4)" : "#94a3b8" }}>
+                      <p className="text-xs mt-1.5 text-right text-[var(--text-muted)]">
                         {progress}%
                       </p>
                     </div>
@@ -454,15 +396,12 @@ export default function UpscalerPage() {
                     animate={{ opacity: 1 }}
                     className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-8"
                   >
-                    <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                      style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)" }}
-                    >
-                      <AlertCircle className="w-6 h-6 text-red-400" />
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-[var(--danger)]/10 border border-[var(--danger)]/25">
+                      <AlertCircle className="w-6 h-6 text-[var(--danger)]" />
                     </div>
                     <div className="text-center">
-                      <p className="font-medium text-red-400 mb-1">Upscaling failed</p>
-                      <p className="text-sm" style={{ color: isDark ? "rgba(148,163,184,0.6)" : "#64748b" }}>
+                      <p className="font-medium text-[var(--danger)] mb-1">Upscaling failed</p>
+                      <p className="text-sm text-[var(--text-muted)]">
                         {errorMsg || "Something went wrong. Credits have been refunded."}
                       </p>
                     </div>
@@ -472,8 +411,8 @@ export default function UpscalerPage() {
                     key="empty"
                     className="absolute inset-0 flex flex-col items-center justify-center gap-3"
                   >
-                    <ImageIcon className="w-10 h-10" style={{ color: isDark ? "rgba(148,163,184,0.2)" : "rgba(100,116,139,0.25)" }} />
-                    <p className="text-sm" style={{ color: isDark ? "rgba(148,163,184,0.35)" : "#94a3b8" }}>
+                    <ImageIcon className="w-10 h-10 text-[var(--text-muted)] opacity-30" />
+                    <p className="text-sm text-[var(--text-muted)]">
                       Result will appear here
                     </p>
                   </motion.div>
@@ -490,62 +429,38 @@ export default function UpscalerPage() {
           transition={{ delay: 0.15 }}
           className="mt-6 flex flex-col sm:flex-row items-center gap-4"
         >
-          {/* Credit info */}
-          <div
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
-            style={{
-              background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-            }}
-          >
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm panel">
             <Coins className="w-4 h-4 text-yellow-400" />
-            <span style={{ color: isDark ? "rgba(226,232,240,0.7)" : "#475569" }}>
-              Cost: <strong style={{ color: isDark ? "#e2e8f0" : "#1e293b" }}>{creditCost} <Coins className="w-3 h-3 inline align-text-bottom" /></strong>
+            <span className="text-[var(--text-secondary)]">
+              Cost: <strong className="text-[var(--text-primary)]">{creditCost} <Coins className="w-3 h-3 inline align-text-bottom" /></strong>
             </span>
-            <span style={{ color: isDark ? "rgba(148,163,184,0.4)" : "#94a3b8" }}>·</span>
-            <span style={{ color: hasEnough ? (isDark ? "#86efac" : "#16a34a") : "#f87171" }}>
+            <span className="text-[var(--text-muted)]">·</span>
+            <span className={hasEnough ? "text-[var(--success)]" : "text-[var(--danger)]"}>
               You have <strong>{credits} <Coins className="w-3 h-3 inline align-text-bottom" /></strong>
             </span>
           </div>
 
           <div className="flex-1" />
 
-          {/* Reset */}
           {(inputPreview || status === "done") && !isRunning && (
             <button
               onClick={reset}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-              style={{
-                background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-                color: isDark ? "rgba(226,232,240,0.7)" : "#475569",
-              }}
+              className="btn-ghost px-4 py-2.5 rounded-xl text-sm"
             >
               Start Over
             </button>
           )}
 
-          {/* Upscale button */}
           <motion.button
             onClick={handleUpscale}
-            disabled={!inputFile || isRunning || !hasEnough || status === "done"}
-            whileHover={inputFile && !isRunning && hasEnough && status !== "done" ? { scale: 1.02 } : {}}
-            whileTap={inputFile && !isRunning && hasEnough && status !== "done" ? { scale: 0.97 } : {}}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={{
-              background:
-                !inputFile || isRunning || !hasEnough || status === "done"
-                  ? isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"
-                  : "linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)",
-              color:
-                !inputFile || isRunning || !hasEnough || status === "done"
-                  ? isDark ? "rgba(148,163,184,0.4)" : "#94a3b8"
-                  : "white",
-              boxShadow:
-                !inputFile || isRunning || !hasEnough || status === "done"
-                  ? "none"
-                  : "0 4px 20px rgba(124,58,237,0.45)",
-              cursor: !inputFile || isRunning || !hasEnough || status === "done" ? "not-allowed" : "pointer",
-            }}
+            disabled={!canUpscale}
+            whileHover={canUpscale ? { scale: 1.02 } : {}}
+            whileTap={canUpscale ? { scale: 0.97 } : {}}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              canUpscale
+                ? "btn-accent cursor-pointer"
+                : "bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-not-allowed"
+            }`}
           >
             {isRunning ? (
               <>
@@ -584,16 +499,12 @@ export default function UpscalerPage() {
           ].map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="flex gap-3 px-4 py-3 rounded-xl"
-              style={{
-                background: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.6)",
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
-              }}
+              className="flex gap-3 px-4 py-3 rounded-xl panel"
             >
-              <Icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-purple-400" />
+              <Icon className="w-4 h-4 mt-0.5 flex-shrink-0 text-[var(--accent)]" />
               <div>
-                <p className="text-sm font-medium" style={{ color: isDark ? "#e2e8f0" : "#334155" }}>{title}</p>
-                <p className="text-xs mt-0.5" style={{ color: isDark ? "rgba(148,163,184,0.55)" : "#64748b" }}>{desc}</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{title}</p>
+                <p className="text-xs mt-0.5 text-[var(--text-muted)]">{desc}</p>
               </div>
             </div>
           ))}

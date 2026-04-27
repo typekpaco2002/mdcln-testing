@@ -740,7 +740,6 @@ html {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-subtle);
-  box-shadow: 0 1px 0 0 var(--border-subtle) inset;
 }
 
 .glass-panel-strong {
