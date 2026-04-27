@@ -17,7 +17,7 @@ export const NSFW_MOTION_RUNPOD_ENGINE = "nsfw-motion";
 export const NSFW_MOTION_RUNPOD_ENGINE_LEGACY = "motion-x";
 
 /** Credits per second (aligned with MOTION_BASE_CREDITS_PER_SEC in nsfw.controller.js). */
-export const NSFW_MOTION_CREDITS_PER_SEC = 30;
+export const NSFW_MOTION_CREDITS_PER_SEC = 6.5;
 
 /** Create tab — Video → Recreate engine button / hints. */
 export const MOTION_X_CREATE_LABEL = "Motion X";

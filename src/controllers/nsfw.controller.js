@@ -5276,7 +5276,7 @@ export async function extendNsfwVideo(req, res) {
 // NSFW Motion Control Video (RunningHub AI app + media upload)
 // =====================================================================
 
-const DEFAULT_MOTION_X_CREDITS_PER_SEC = 30; // fallback if pricing row is missing
+const DEFAULT_MOTION_X_CREDITS_PER_SEC = 6.5; // fallback if pricing row is missing
 
 /** Drop-in helpers shared with the WaveSpeed video flow. */
 function clampMotionDuration(input, fallback) {

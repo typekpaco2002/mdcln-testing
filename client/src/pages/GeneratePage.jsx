@@ -42,10 +42,7 @@ import {
 /** Video recreate per-second defaults (align with server `generation-pricing.service`) */
 const VIDEO_RECREATE_CLASSIC_PER_SEC = 18; // kling-2.6 motion-control 1080p
 const VIDEO_RECREATE_ULTRA_PER_SEC = 25; // kling-3.0 motion-control 1080p
-const VIDEO_RECREATE_WAN_720_PER_SEC = 12.5;
-const VIDEO_RECREATE_WAN_580_PER_SEC = 9.5;
-const VIDEO_RECREATE_WAN_480_PER_SEC = 6;
-const DEFAULT_MOTION_X_PER_SEC = 30;
+const DEFAULT_MOTION_X_PER_SEC = 6.5;
 
 const LOCALE_STORAGE_KEY = "app_locale";
 const GENERATE_COPY = {
@@ -89,24 +86,17 @@ const GENERATE_COPY = {
     videoRecreateClassicBadge: "CLASSIC",
     videoRecreateUltraDesc: "Motion Control Pro+ · 1080p",
     videoRecreateClassicDesc: "Motion Control 2.6 · 1080p",
-    videoRecreateWanDesc: "Wan 2.2 Animate Move",
-    videoRecreateWanBadge: "WAN",
     videoRecreateClassicInfoPrefix: "Classic (default):",
     videoRecreateClassicInfoValue: "Motion Control 2.6 · 1080p",
     videoRecreateUltraToggleTitle: "Ultra — Motion Control Pro+",
     videoRecreateUltraToggleDesc: "1080p",
     videoRecreateEngineLabel: "Recreate Engine",
     videoRecreateEngineKling: "Kling",
-    videoRecreateEngineWan: "Wan (faster, cheaper)",
     videoRecreateEngineMotionX: MOTION_X_CREATE_LABEL,
     videoRecreateNsfwMotionBadge: MOTION_X_CREATE_LABEL,
-    videoRecreateEngineHint: "Kling supports classic/ultra motion-control. Wan is faster and lower cost.",
+    videoRecreateEngineHint: "Kling supports classic/ultra motion-control.",
     videoRecreateEngineHintMotionX:
       "Transfers motion from your reference video onto your still image. Time depends on queue and clip length — watch Live Preview for progress.",
-    videoRecreateWanResolutionLabel: "Wan Resolution",
-    videoRecreateWanResolution480: "480p (fastest)",
-    videoRecreateWanResolution580: "580p (balanced)",
-    videoRecreateWanResolution720: "720p (best quality)",
     videoRecreatePromptLabel: "Prompt",
     optional: "(Optional)",
     videoRecreatePromptPlaceholder: "e.g., dancing energetically, smiling at camera...",
@@ -265,24 +255,17 @@ const GENERATE_COPY = {
     videoRecreateClassicBadge: "CLASSIC",
     videoRecreateUltraDesc: "Motion Control Pro+ · 1080p",
     videoRecreateClassicDesc: "Motion Control 2.6 · 1080p",
-    videoRecreateWanDesc: "Wan 2.2 Animate Move",
-    videoRecreateWanBadge: "WAN",
     videoRecreateClassicInfoPrefix: "Classic (по умолчанию):",
     videoRecreateClassicInfoValue: "Motion Control 2.6 · 1080p",
     videoRecreateUltraToggleTitle: "Ultra — Motion Control Pro+",
     videoRecreateUltraToggleDesc: "1080p",
     videoRecreateEngineLabel: "Движок рекреейта",
     videoRecreateEngineKling: "Kling",
-    videoRecreateEngineWan: "Wan (быстрее, дешевле)",
     videoRecreateEngineMotionX: MOTION_X_CREATE_LABEL,
     videoRecreateNsfwMotionBadge: MOTION_X_CREATE_LABEL,
-    videoRecreateEngineHint: "Kling поддерживает classic/ultra motion-control. Wan быстрее и дешевле.",
+    videoRecreateEngineHint: "Kling поддерживает classic/ultra motion-control.",
     videoRecreateEngineHintMotionX:
       "Переносит движение с референс-ролика на ваш кадр. Время зависит от очереди и длины ролика — смотрите «Живой просмотр».",
-    videoRecreateWanResolutionLabel: "Разрешение Wan",
-    videoRecreateWanResolution480: "480p (самый быстрый)",
-    videoRecreateWanResolution580: "580p (баланс)",
-    videoRecreateWanResolution720: "720p (лучшее качество)",
     videoRecreatePromptLabel: "Промпт",
     optional: "(Необязательно)",
     videoRecreatePromptPlaceholder: "например, энергично танцует, улыбается в камеру...",
@@ -806,7 +789,6 @@ import {
   validateKlingStartFrameDimensions,
   validateLocalFileMaxBytes,
   validatePromptVideoDuration,
-  WAN_RECREATE_MOTION,
 } from "../utils/kieVideoClientValidation";
 import FileUpload from "../components/FileUpload";
 import { useAuthStore } from "../store";
@@ -2205,7 +2187,6 @@ function VideoGeneration() {
   const [keepAudioFromVideo, setKeepAudioFromVideo] = useState(true); // Keep original audio
   const [recreateUltraMode, setRecreateUltraMode] = useState(false); // Kling 3.0 motion-control 1080p (vs default 2.6)
   const [recreateEngine, setRecreateEngine] = useState(NSFW_MOTION_RUNPOD_ENGINE);
-  const [wanResolution, setWanResolution] = useState("580p");
 
   const readLatestCredits = useCallback(() => {
     const latestUser = useAuthStore.getState().user;
@@ -2241,17 +2222,6 @@ function VideoGeneration() {
   const recreateUltraPerSec = Number.isFinite(generationPricing.videoRecreateUltraPerSec)
     ? generationPricing.videoRecreateUltraPerSec
     : VIDEO_RECREATE_ULTRA_PER_SEC;
-  const wanRecreatePerSecByResolution = {
-    "720p": Number.isFinite(generationPricing.wan22AnimateMove720pPerSec)
-      ? generationPricing.wan22AnimateMove720pPerSec
-      : VIDEO_RECREATE_WAN_720_PER_SEC,
-    "580p": Number.isFinite(generationPricing.wan22AnimateMove580pPerSec)
-      ? generationPricing.wan22AnimateMove580pPerSec
-      : VIDEO_RECREATE_WAN_580_PER_SEC,
-    "480p": Number.isFinite(generationPricing.wan22AnimateMove480pPerSec)
-      ? generationPricing.wan22AnimateMove480pPerSec
-      : VIDEO_RECREATE_WAN_480_PER_SEC,
-  };
   const promptVideoCostByDuration = {
     5: Number.isFinite(generationPricing.videoPrompt5s) ? generationPricing.videoPrompt5s : 60,
     10: Number.isFinite(generationPricing.videoPrompt10s) ? generationPricing.videoPrompt10s : 100,
@@ -2298,8 +2268,10 @@ function VideoGeneration() {
     if (d.targetGender !== undefined) setTargetGender(d.targetGender);
     if (d.keepAudioFromVideo !== undefined) setKeepAudioFromVideo(d.keepAudioFromVideo);
     if (d.recreateUltraMode !== undefined) setRecreateUltraMode(d.recreateUltraMode);
-    if (d.recreateEngine !== undefined) setRecreateEngine(normalizeNsfwMotionEngine(d.recreateEngine));
-    if (d.wanResolution !== undefined) setWanResolution(d.wanResolution);
+    if (d.recreateEngine !== undefined) {
+      const normalizedEngine = normalizeNsfwMotionEngine(d.recreateEngine);
+      setRecreateEngine(normalizedEngine === "wan" ? NSFW_MOTION_RUNPOD_ENGINE : normalizedEngine);
+    }
     if (d.languageFilter !== undefined) setLanguageFilter(d.languageFilter);
     if (d.promptVideoImage) setPromptVideoImage(d.promptVideoImage);
     if (d.faceImage) setFaceImage(d.faceImage);
@@ -2324,7 +2296,6 @@ function VideoGeneration() {
       keepAudioFromVideo,
       recreateUltraMode,
       recreateEngine,
-      wanResolution,
       languageFilter,
       promptVideoImage: promptVideoImage || null,
       faceImage: faceImage || null,
@@ -2342,7 +2313,7 @@ function VideoGeneration() {
       referenceVideo?.url,
     ].filter(Boolean);
     saveVideoDraft(data, imageUrls);
-  }, [method, selectedModel, promptVideoPrompt, promptVideoDuration, selectedVoice, talkingHeadText, talkingHeadPrompt, targetGender, keepAudioFromVideo, recreateUltraMode, recreateEngine, wanResolution, languageFilter, promptVideoImage, faceImage, talkingHeadImage, videoStartingImage, sourceVideo, referenceVideo]);
+  }, [method, selectedModel, promptVideoPrompt, promptVideoDuration, selectedVoice, talkingHeadText, talkingHeadPrompt, targetGender, keepAudioFromVideo, recreateUltraMode, recreateEngine, languageFilter, promptVideoImage, faceImage, talkingHeadImage, videoStartingImage, sourceVideo, referenceVideo]);
 
   const loadVoices = useCallback(async (forModelId) => {
     try {
@@ -2857,7 +2828,6 @@ function VideoGeneration() {
           setKeepAudioFromVideo(true);
           setRecreateUltraMode(false);
           setRecreateEngine(NSFW_MOTION_RUNPOD_ENGINE);
-          setWanResolution("580p");
           clearVideoDraft();
         } else {
           toast.error(res?.message || "Video generation failed");
@@ -2871,7 +2841,7 @@ function VideoGeneration() {
       return;
     }
 
-    const motionLimits = recreateEngine === "wan" ? WAN_RECREATE_MOTION : KLING_MOTION;
+    const motionLimits = KLING_MOTION;
     const refFile = referenceVideo?.file;
     const refVidBytes = validateLocalFileMaxBytes(refFile, motionLimits.videoMaxBytes, "Reference video");
     if (!refVidBytes.ok) {
@@ -2905,9 +2875,7 @@ function VideoGeneration() {
       }
     }
 
-    const perSec = recreateEngine === "wan"
-      ? (wanRecreatePerSecByResolution[wanResolution] ?? VIDEO_RECREATE_WAN_580_PER_SEC)
-      : (recreateUltraMode ? recreateUltraPerSec : recreateClassicPerSec);
+    const perSec = recreateUltraMode ? recreateUltraPerSec : recreateClassicPerSec;
     const creditsNeeded = Math.ceil(referenceVideoDuration * perSec);
     const durLabel = formatMotionDurationLabel(referenceVideoDuration);
     const availableCredits = await ensureFreshCreditsForVideo(creditsNeeded);
@@ -2929,7 +2897,6 @@ function VideoGeneration() {
         keepAudio: keepAudioFromVideo,
         ultraMode: recreateEngine === "kling" ? recreateUltraMode : false,
         recreateEngine,
-        wanResolution,
       });
 
       await refreshUserCredits();
@@ -2946,7 +2913,6 @@ function VideoGeneration() {
         setKeepAudioFromVideo(true);
         setRecreateUltraMode(false);
         setRecreateEngine(NSFW_MOTION_RUNPOD_ENGINE);
-        setWanResolution("580p");
         clearVideoDraft();
       }
     } catch (error) {
@@ -2957,9 +2923,7 @@ function VideoGeneration() {
     }
   };
 
-  const recreateCreditsPerSec = recreateEngine === "wan"
-    ? (wanRecreatePerSecByResolution[wanResolution] ?? VIDEO_RECREATE_WAN_580_PER_SEC)
-    : recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
+  const recreateCreditsPerSec = recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
       ? motionXPerSec
       : (recreateUltraMode ? recreateUltraPerSec : recreateClassicPerSec);
 
@@ -3022,9 +2986,6 @@ function VideoGeneration() {
               </div>
               <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/20">
                 <span className="text-[9px] font-medium text-fuchsia-300 inline-flex items-center gap-0.5">Ultra 3.0 · 1080p · {recreateUltraPerSec} <Coins className="w-2.5 h-2.5" />/sec</span>
-              </div>
-              <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                <span className="text-[9px] font-medium text-emerald-300 inline-flex items-center gap-0.5">Wan 2.2 · 580p · {wanRecreatePerSecByResolution["580p"]} <Coins className="w-2.5 h-2.5" />/sec</span>
               </div>
             </div>
           </button>
@@ -3197,16 +3158,12 @@ function VideoGeneration() {
                 <span className="px-1.5 py-0.5 text-[8px] font-bold rounded-full tracking-wide" style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.25), rgba(22,163,74,0.15))', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80' }}>
                   {recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
                     ? copy.videoRecreateNsfwMotionBadge
-                    : recreateEngine === "wan"
-                      ? copy.videoRecreateWanBadge
-                      : (recreateUltraMode ? copy.videoRecreateUltraBadge : copy.videoRecreateClassicBadge)}
+                    : (recreateUltraMode ? copy.videoRecreateUltraBadge : copy.videoRecreateClassicBadge)}
                 </span>
                 <span className="text-[9px] text-slate-500">
                   {recreateEngine === NSFW_MOTION_RUNPOD_ENGINE
                     ? `${copy.videoRecreateEngineMotionX} · ${motionXPerSec} 🪙/s · max 30s`
-                    : recreateEngine === "wan"
-                      ? `${copy.videoRecreateWanDesc} · ${wanResolution}`
-                      : (recreateUltraMode ? copy.videoRecreateUltraDesc : copy.videoRecreateClassicDesc)}
+                    : (recreateUltraMode ? copy.videoRecreateUltraDesc : copy.videoRecreateClassicDesc)}
                 </span>
               </div>
             )}
@@ -3214,7 +3171,7 @@ function VideoGeneration() {
 
           <div className="mb-5">
             <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium block mb-2">{copy.videoRecreateEngineLabel}</label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -3239,49 +3196,11 @@ function VideoGeneration() {
               >
                 {copy.videoRecreateEngineKling}
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setRecreateEngine("wan");
-                  setRecreateUltraMode(false);
-                }}
-                className={`rounded-xl px-2 py-2 text-xs font-semibold transition-all ${recreateEngine === "wan" ? "text-white" : "text-slate-400 hover:text-white"}`}
-                style={recreateEngine === "wan"
-                  ? { background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.35)" }
-                  : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-              >
-                {copy.videoRecreateEngineWan}
-              </button>
             </div>
             <p className="mt-2 text-[10px] text-slate-500 leading-snug">
               {recreateEngine === NSFW_MOTION_RUNPOD_ENGINE ? copy.videoRecreateEngineHintMotionX : copy.videoRecreateEngineHint}
             </p>
           </div>
-
-          {recreateEngine === "wan" && (
-            <div className="mb-5">
-              <label className="text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium block mb-2">{copy.videoRecreateWanResolutionLabel}</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { value: "480p", label: copy.videoRecreateWanResolution480 },
-                  { value: "580p", label: copy.videoRecreateWanResolution580 },
-                  { value: "720p", label: copy.videoRecreateWanResolution720 },
-                ].map((resolution) => (
-                  <button
-                    key={resolution.value}
-                    type="button"
-                    onClick={() => setWanResolution(resolution.value)}
-                    className={`rounded-xl px-2 py-2 text-[11px] font-medium transition-all ${wanResolution === resolution.value ? "text-white" : "text-slate-400 hover:text-white"}`}
-                    style={wanResolution === resolution.value
-                      ? { background: "rgba(56,189,248,0.16)", border: "1px solid rgba(56,189,248,0.35)" }
-                      : { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  >
-                    {resolution.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="mb-2 rounded-xl px-3 py-2.5" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <p className="text-[10px] text-slate-400 leading-relaxed">
@@ -3293,11 +3212,8 @@ function VideoGeneration() {
                 </>
               ) : (
                 <>
-                  <span className="text-slate-200 font-medium">{recreateEngine === "wan" ? copy.videoRecreateEngineWan : copy.videoRecreateClassicInfoPrefix}</span>{" "}
-                  {recreateEngine === "wan" ? `${copy.videoRecreateWanDesc} · ${wanResolution}` : copy.videoRecreateClassicInfoValue} · ~
-                  {recreateEngine === "wan"
-                    ? (wanRecreatePerSecByResolution[wanResolution] ?? VIDEO_RECREATE_WAN_580_PER_SEC)
-                    : recreateClassicPerSec}{" "}
+                  <span className="text-slate-200 font-medium">{copy.videoRecreateClassicInfoPrefix}</span>{" "}
+                  {copy.videoRecreateClassicInfoValue} · ~{recreateClassicPerSec}{" "}
                   <Coins className="w-2.5 h-2.5 inline" />
                   /sec
                 </>
