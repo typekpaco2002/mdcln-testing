@@ -262,11 +262,11 @@ const COPY = {
     prompt: "Prompt",
     promptPlaceholder: "Describe the scene — lighting, setting, mood, clothing…",
     additionalPrompt: "Optional notes for Grok",
-    additionalPromptHint: "Only used when you tap “Build prompt” — extra instructions for the model that reads the photo.",
+    additionalPromptHint: "Optional extra instructions for the background photo-to-prompt process.",
     buildPrompt: "Build prompt from photo",
     buildingPrompt: "Building prompt…",
     builtPromptLabel: "Your prompt (ready — edit if you want, then use Generate below)",
-    buildPromptFirst: "Use “Build prompt from photo” first, then Generate.",
+    buildPromptFirst: "Add a source image first.",
     buildNeedImage: "Add a photo first",
     aspectRatio: "Aspect Ratio",
     images: "Images",
@@ -303,13 +303,13 @@ const COPY = {
     outputImg: "Image → image",
     refImage: "Source image",
     refImageHint:
-      "1) Add a photo. 2) Build prompt. 3) Generate — same ModelClone-X as typing a prompt. The photo is only used to craft the text prompt.",
-    refImageHintCharImg: "1) Model + character. 2) Photo. 3) Build prompt, then Generate.",
+      "Image → image is available only in “Use Character” mode.",
+    refImageHintCharImg: "Select model + character, add source image, then Generate. Prompt conversion runs automatically in the background.",
     adminRunpodImg2Img: "Admin: reference img2img (photo + prompt)",
     adminRunpodImg2ImgHint:
       "Uses the Z-Image img2img workflow with your character LoRA. Admin-only while testing.",
     adminRunpodImg2ImgNeedCharacter: "Reference img2img needs “Use Character” with a ready identity.",
-    aspectNoteFromImage: "Aspect ratio applies to the generated image (the photo is not composited, only used to build the scene description).",
+    aspectNoteFromImage: "Reference img2img uses the source photo + character LoRA workflow; quantity is limited to 1 image.",
     aspectNoteImg2ImgAdmin:
       "Reference img2img uses the Z-Image workflow’s own canvas — aspect ratio below may not match text-only behavior.",
   },
@@ -323,11 +323,11 @@ const COPY = {
     prompt: "Промпт",
     promptPlaceholder: "Опишите сцену — свет, окружение, настроение, одежду…",
     additionalPrompt: "Заметки для Grok (по желанию)",
-    additionalPromptHint: "Только при нажатии «Собрать промпт» — доп. инструкции к анализу фото.",
+    additionalPromptHint: "Необязательные дополнительные инструкции для фонового преобразования фото в промпт.",
     buildPrompt: "Собрать промпт с фото",
     buildingPrompt: "Собираю промпт…",
     builtPromptLabel: "Промпт (готово — при необходимости отредактируйте, затем «Сгенерировать»)",
-    buildPromptFirst: "Сначала нажмите «Собрать промпт с фото», потом «Сгенерировать».",
+    buildPromptFirst: "Сначала добавьте исходное изображение.",
     buildNeedImage: "Сначала загрузите фото",
     aspectRatio: "Соотношение сторон",
     images: "Изображения",
@@ -364,14 +364,14 @@ const COPY = {
     outputImg: "Изображение → изображение",
     refImage: "Исходное фото",
     refImageHint:
-      "1) Фото. 2) «Собрать промпт». 3) «Сгенерировать» — тот же MCX, что и с текстом. Фото нужно только для текста промпта.",
-    refImageHintCharImg: "1) Модель + персонаж. 2) Фото. 3) Собрать промпт, затем сгенерировать.",
+      "Режим Image → image доступен только в режиме «С персонажем».",
+    refImageHintCharImg: "Выберите модель + персонажа, добавьте исходное фото и нажмите «Сгенерировать». Промпт собирается автоматически в фоне.",
     adminRunpodImg2Img: "Админ: img2img по референсу (фото + промпт)",
     adminRunpodImg2ImgHint:
       "Граф Z-Image img2img с LoRA персонажа. Видно только админам на время теста.",
     adminRunpodImg2ImgNeedCharacter: "Нужен режим «С персонажем» и готовая идентичность.",
     aspectNoteFromImage:
-      "Соотношение сторон задаёт итоговое изображение (входная фотка не подмешивается в кадр, только в промпт).",
+      "Для reference img2img используется workflow с исходным фото и LoRA персонажа; доступна только 1 картинка за запуск.",
     aspectNoteImg2ImgAdmin:
       "Референсный img2img использует свой холст Z-Image — соотношение сторон может отличаться от текстового режима.",
   },
@@ -1056,6 +1056,18 @@ function GenerateTab({ isDark, copy }) {
     setSteps(safe);
   }, [mode, limits]);
 
+  useEffect(() => {
+    if (mode !== "character" && genMode === "img") {
+      setGenMode("txt");
+      setRefImageBase64("");
+      setRefImagePreview("");
+      setImageExtraNotes("");
+      setBuiltPrompt("");
+      setImagePromptReady(false);
+      setAdminRunpodImg2Img(false);
+    }
+  }, [mode, genMode]);
+
   // Fetch characters when model changes
   useEffect(() => {
     if (!selectedModelId || mode !== "character") { setCharacters([]); setSelectedCharacterId(""); return; }
@@ -1168,10 +1180,8 @@ function GenerateTab({ isDark, copy }) {
     if (mode === "character" && !selectedCharacterId) { toast.error("Select a character identity"); return; }
     if (genMode === "txt" && !prompt.trim()) { toast.error("Enter a prompt first"); return; }
     if (genMode === "img") {
-      if (!imagePromptReady || !builtPrompt.trim()) {
-        toast.error(copy.buildPromptFirst);
-        return;
-      }
+      if (mode !== "character") { toast.error(copy.adminRunpodImg2ImgNeedCharacter); return; }
+      if (!refImageBase64) { toast.error(copy.buildNeedImage); return; }
     }
     if (mcxServerEnv && !mcxServerEnv.runpodForModelCloneX) {
       toast.error(copy.serverRunpodMissing);
@@ -1179,23 +1189,12 @@ function GenerateTab({ isDark, copy }) {
     }
     if (!hasEnough) { toast.error("Insufficient balance"); return; }
 
-    if (genMode === "img" && adminRunpodImg2Img) {
-      if (user?.role !== "admin") {
-        toast.error("Not available");
-        return;
-      }
-      if (mode !== "character") {
-        toast.error(copy.adminRunpodImg2ImgNeedCharacter);
-        return;
-      }
-    }
-
     setSubmitInFlight((n) => n + 1);
     try {
       const token = localStorage.getItem("token");
       const body = {
-        prompt: genMode === "img" ? builtPrompt.trim() : prompt.trim(),
-        preOptimized: genMode === "img",
+        prompt: genMode === "img" ? imageExtraNotes.trim() : prompt.trim(),
+        preOptimized: false,
         modelId: mode === "character" ? selectedModelId : null,
         characterLoraId: mode === "character" ? selectedCharacterId : null,
         aspectRatio: aspect,
@@ -1205,14 +1204,14 @@ function GenerateTab({ isDark, copy }) {
         loraStrength: mode === "character" ? loraStrength : undefined,
       };
 
-      if (genMode === "img" && adminRunpodImg2Img && user?.role === "admin" && mode === "character") {
+      if (genMode === "img" && mode === "character") {
         Object.assign(body, { modelcloneXImg2Img: true });
         let b64 = refImageBase64;
         if (refImagePreview) {
           try {
             b64 = await dataUrlToDownscaledJpegBase64(refImagePreview);
           } catch (e) {
-            console.warn("[ModelCloneX] admin img2img downscale failed, using raw:", e?.message);
+            console.warn("[ModelCloneX] img2img downscale failed, using raw:", e?.message);
           }
         }
         if (b64) Object.assign(body, { inputImageBase64: b64 });
@@ -1376,7 +1375,7 @@ function GenerateTab({ isDark, copy }) {
         <div className="flex flex-wrap gap-2">
           {[
             { id: "txt", label: copy.outputTxt, icon: Sparkles },
-            { id: "img", label: copy.outputImg, icon: ImageIcon },
+            ...(mode === "character" ? [{ id: "img", label: copy.outputImg, icon: ImageIcon }] : []),
           ].map(({ id, label, icon: Icon }) => (
             <ControlChip
               key={id}
@@ -1631,11 +1630,6 @@ function GenerateTab({ isDark, copy }) {
         {genMode === "img" && !(user?.role === "admin" && adminRunpodImg2Img) && (
           <p className={`text-[11px] mb-2 ${isDark ? "text-slate-500" : "text-slate-500"}`}>{copy.aspectNoteFromImage}</p>
         )}
-        {genMode === "img" && user?.role === "admin" && adminRunpodImg2Img && (
-          <p className={`text-[11px] mb-2 ${isDark ? "text-amber-200/80" : "text-amber-900/90"}`}>
-            {copy.aspectNoteImg2ImgAdmin}
-          </p>
-        )}
         <div className="flex flex-wrap gap-2">
           {ASPECT_OPTIONS.map((opt) => (
             <ControlChip
@@ -1661,13 +1655,13 @@ function GenerateTab({ isDark, copy }) {
             <ControlChip
               key={n}
               onClick={() => {
-                if (n === 2 && genMode === "img" && user?.role === "admin" && adminRunpodImg2Img) return;
+                if (n === 2 && genMode === "img") return;
                 setQty(n);
               }}
               active={qty === n}
               isDark={isDark}
               className={`min-w-12 ${
-                n === 2 && genMode === "img" && user?.role === "admin" && adminRunpodImg2Img
+                n === 2 && genMode === "img"
                   ? "opacity-40 pointer-events-none"
                   : ""
               }`}
@@ -1739,13 +1733,13 @@ function GenerateTab({ isDark, copy }) {
           disabled={
             !hasEnough
             || submitInFlight > 0
-            || (genMode === "img" && (!imagePromptReady || !String(builtPrompt).trim()))
+            || (genMode === "img" && !refImageBase64)
           }
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.99] disabled:cursor-not-allowed"
           style={primaryBtnStyle(
             !hasEnough
             || submitInFlight > 0
-            || (genMode === "img" && (!imagePromptReady || !String(builtPrompt).trim())),
+            || (genMode === "img" && !refImageBase64),
           )}
         >
           {submitInFlight > 0 ? (

@@ -253,6 +253,7 @@ import {
   submitModelCloneXImg2ImgJob,
 } from "../services/modelcloneX.service.js";
 import { getMcxSceneJsonFromImageGrok } from "../services/mcxGrokImagePrompt.service.js";
+import { buildMcxImg2ImgPromptFromImage } from "../services/mcxImageToPrompt.service.js";
 import {
   MODELCLONE_X_CATEGORY,
   LEGACY_SOULX_CATEGORY,
@@ -3169,6 +3170,58 @@ function buildModelCloneXModelIdentityContext(model, lora = null) {
   return lines.join("\n");
 }
 
+function buildModelCloneXCharacterProfile(model, lora, triggerWord = "") {
+  const modelLooks = parseMaybeJsonObject(model?.savedAppearance);
+  const loraLooks = parseMaybeJsonObject(lora?.defaultAppearance);
+  const aiParams = parseMaybeJsonObject(model?.aiGenerationParams);
+  const looks = { ...modelLooks, ...loraLooks };
+
+  const pick = (...keys) => {
+    for (const key of keys) {
+      const v = looks[key] ?? aiParams[key];
+      if (v != null && String(v).trim()) return String(v).trim();
+    }
+    return "";
+  };
+
+  const ageNumber = Number.parseInt(model?.age ?? looks.age ?? aiParams.age ?? "", 10);
+  const ageAppearance = Number.isFinite(ageNumber) ? String(ageNumber) : pick("ageAppearance", "age");
+
+  const bodyMods = [
+    pick("tattoos"),
+    pick("piercings"),
+    pick("scars"),
+    pick("bodyModifications"),
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return {
+    lora_triggers: triggerWord ? [String(triggerWord).trim()] : [],
+    identity: {
+      age_appearance: ageAppearance || "",
+      ethnicity: pick("ethnicity", "heritage"),
+      skin_tone: pick("skinTone"),
+      skin_texture: pick("skinTexture") || "natural with visible pores",
+      hair: {
+        color: pick("hairColor"),
+        length: pick("hairLength"),
+        texture: pick("hairTexture", "hairType"),
+        style: pick("hairStyle", "style"),
+      },
+      face: {
+        shape: pick("faceShape", "faceType"),
+        eyes_color: pick("eyeColor"),
+        eyes_shape: pick("eyeShape"),
+        lips: pick("lipSize", "lips"),
+        nose: pick("noseShape", "nose"),
+        distinguishing_features: pick("distinguishingFeatures"),
+      },
+      body_modifications: bodyMods,
+    },
+  };
+}
+
 async function optimizeModelCloneXPrompt({
   userPrompt,
   withCharacter = false,
@@ -3345,45 +3398,73 @@ async function resolveModelCloneXGenerationContext(userId, modelId, characterLor
 async function buildMcxPromptFromImagePipeline(
   { modelForPrompt, loraForPrompt, triggerWord, useCharacter, inputImgUrl, inputImgB64, userText },
 ) {
-  const identityHint = useCharacter
-    ? buildModelCloneXModelIdentityContext(modelForPrompt, loraForPrompt)
-    : "";
-  let inputPrompt;
+  const trimmedUser = String(userText || "").trim();
+
+  if (!useCharacter) {
+    const identityHint = "";
+    let inputPrompt;
+    try {
+      const sceneJson = await getMcxSceneJsonFromImageGrok({
+        imageUrl: inputImgUrl,
+        imageBase64: inputImgB64,
+        loraIdentityHint: identityHint,
+      });
+      inputPrompt = trimmedUser
+        ? `${sceneJson}\n\n// Additional user instructions:\n${trimmedUser}`
+        : sceneJson;
+    } catch (grokErr) {
+      console.error("[ModelCloneX] Grok scene JSON failed:", grokErr?.message || grokErr);
+      return {
+        ok: false,
+        status: 500,
+        error: grokErr?.message || "Failed to build scene from image (Grok / OpenRouter).",
+      };
+    }
+    if (!String(inputPrompt || "").trim()) {
+      return { ok: false, status: 400, error: "Prompt is required" };
+    }
+    let optimizedPrompt = inputPrompt;
+    try {
+      optimizedPrompt = await optimizeModelCloneXPrompt({
+        userPrompt: inputPrompt,
+        withCharacter: false,
+        modelIdentityContext: "",
+        model: null,
+        lora: null,
+        triggerWord: "",
+        context: {},
+      });
+    } catch (optErr) {
+      console.warn("[ModelCloneX] Prompt optimization fallback to raw prompt:", optErr.message);
+    }
+    return { ok: true, inputPrompt, optimizedPrompt };
+  }
+
   try {
-    const sceneJson = await getMcxSceneJsonFromImageGrok({
+    const characterProfile = buildModelCloneXCharacterProfile(
+      modelForPrompt,
+      loraForPrompt,
+      triggerWord,
+    );
+    const convertedPrompt = await buildMcxImg2ImgPromptFromImage({
       imageUrl: inputImgUrl,
       imageBase64: inputImgB64,
-      loraIdentityHint: identityHint,
+      characterProfile,
+      additionalInstructions: trimmedUser,
     });
-    const trimmedUser = String(userText || "").trim();
-    inputPrompt = trimmedUser
-      ? `${sceneJson}\n\n// Additional user instructions:\n${trimmedUser}`
-      : sceneJson;
-  } catch (grokErr) {
-    console.error("[ModelCloneX] Grok scene JSON failed:", grokErr?.message || grokErr);
-    return { ok: false, status: 500, error: grokErr?.message || "Failed to build scene from image (Grok / OpenRouter)." };
+    return {
+      ok: true,
+      inputPrompt: trimmedUser || "[image-to-prompt]",
+      optimizedPrompt: convertedPrompt,
+    };
+  } catch (err) {
+    console.error("[ModelCloneX] image-to-prompt conversion failed:", err?.message || err);
+    return {
+      ok: false,
+      status: 500,
+      error: err?.message || "Failed to convert source image into a generation prompt.",
+    };
   }
-  if (!String(inputPrompt || "").trim()) {
-    return { ok: false, status: 400, error: "Prompt is required" };
-  }
-  let optimizedPrompt = inputPrompt;
-  try {
-    const identityContext = useCharacter
-      ? buildModelCloneXModelIdentityContext(modelForPrompt, loraForPrompt)
-      : "";
-    optimizedPrompt = await optimizeModelCloneXPrompt({
-      userPrompt: inputPrompt,
-      withCharacter: useCharacter,
-      modelIdentityContext: identityContext,
-      model: useCharacter ? modelForPrompt : null,
-      lora: useCharacter ? loraForPrompt : null,
-      triggerWord: useCharacter ? triggerWord : "",
-      context: {},
-    });
-  } catch (optErr) {
-    console.warn("[ModelCloneX] Prompt optimization fallback to raw prompt:", optErr.message);
-  }
-  return { ok: true, inputPrompt, optimizedPrompt };
 }
 
 // POST /api/modelclone-x/prompt-from-image
@@ -3409,6 +3490,12 @@ router.post("/modelclone-x/prompt-from-image", authMiddleware, generationLimiter
     const ctx = await resolveModelCloneXGenerationContext(userId, modelId, characterLoraId);
     if (!ctx.ok) {
       return res.status(ctx.status).json({ success: false, error: ctx.error });
+    }
+    if (!ctx.useCharacter) {
+      return res.status(400).json({
+        success: false,
+        error: "Image-to-image prompt conversion requires character mode (model + character LoRA).",
+      });
     }
 
     const { modelForPrompt, loraForPrompt, triggerWord, useCharacter } = ctx;
@@ -3507,8 +3594,8 @@ router.post("/modelclone-x/generate", authMiddleware, generationLimiter, async (
     /** When true, `prompt` is already the MCX-optimized string from prompt-from-image (skip second pass). */
     preOptimized = false,
     /**
-     * Admin-only: submit Z-Image img2img on RunPod (reference image + optimized prompt + character LoRA).
-     * Requires `inputImageUrl` or `inputImageBase64`; does not change prompt-from-image or optimizer behavior.
+     * Submit Z-Image img2img on RunPod (reference image + converted prompt + character LoRA).
+     * Requires `inputImageUrl` or `inputImageBase64`.
      */
     modelcloneXImg2Img = false,
     img2imgDenoise = 0.6,
@@ -3524,13 +3611,12 @@ router.post("/modelclone-x/generate", authMiddleware, generationLimiter, async (
     return res.status(400).json({
       success: false,
       error:
-        "Upload the photo, tap “Build prompt” in the app (or POST /api/modelclone-x/prompt-from-image), " +
-        "then generate using the text only — unless you are an admin testing modelcloneXImg2Img.",
+        "Image input requires modelcloneXImg2Img=true so the source photo is processed through the image-to-image workflow.",
     });
   }
 
   const hasTextPrompt = Boolean(typeof prompt === "string" && prompt.trim());
-  if (!hasTextPrompt) {
+  if (!hasTextPrompt && !wantsImg2Img) {
     return res.status(400).json({ success: false, error: "Prompt is required" });
   }
 
@@ -3552,14 +3638,10 @@ router.post("/modelclone-x/generate", authMiddleware, generationLimiter, async (
   const qty = quantity === 2 ? 2 : 1;
 
   if (wantsImg2Img) {
-    const userRow = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-    if (userRow?.role !== "admin") {
-      return res.status(403).json({
+    if (!useCharacter) {
+      return res.status(400).json({
         success: false,
-        error: "ModelClone-X RunPod img2img is admin-only during testing.",
+        error: "ModelClone-X image-to-image requires character mode (model + character LoRA).",
       });
     }
     if (!loraUrl) {
@@ -3607,9 +3689,24 @@ router.post("/modelclone-x/generate", authMiddleware, generationLimiter, async (
   const costEach = costEachBase.map((c) => c + extraCostPerImage);
   const costPer = costEach.reduce((sum, c) => sum + c, 0);
 
-  const inputPrompt = userText;
+  let inputPrompt = userText;
   let optimizedPrompt = userText;
-  if (skipSecondOptimizer) {
+  if (wantsImg2Img) {
+    const built = await buildMcxPromptFromImagePipeline({
+      modelForPrompt,
+      loraForPrompt,
+      triggerWord,
+      useCharacter,
+      inputImgUrl,
+      inputImgB64,
+      userText,
+    });
+    if (!built.ok) {
+      return res.status(built.status).json({ success: false, error: built.error });
+    }
+    inputPrompt = built.inputPrompt;
+    optimizedPrompt = built.optimizedPrompt;
+  } else if (skipSecondOptimizer) {
     console.log("[ModelCloneX] generate: using pre-optimized prompt (from build step)");
   } else {
     try {
@@ -3692,7 +3789,7 @@ router.post("/modelclone-x/generate", authMiddleware, generationLimiter, async (
       }
 
       const modeMeta = wantsImg2Img
-        ? "img2img-admin"
+        ? "img2img"
         : skipSecondOptimizer
           ? "txt2img-prompt-from-image"
           : "txt2img";
@@ -3736,7 +3833,7 @@ router.post("/modelclone-x/generate", authMiddleware, generationLimiter, async (
     generationIds,
     applied: {
       mode: wantsImg2Img
-        ? "img2img-admin"
+        ? "img2img"
         : skipSecondOptimizer
           ? "txt2img-prompt-from-image"
           : "txt2img",
