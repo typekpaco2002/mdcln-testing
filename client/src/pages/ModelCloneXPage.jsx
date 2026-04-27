@@ -16,6 +16,7 @@ import {
   X,
   Trash2,
   AlertCircle,
+  Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api, { formatApiError } from "../services/api.js";
@@ -933,6 +934,7 @@ function GenerateTab({ isDark, copy }) {
   const [loraStrength, setLoraStrength] = useState(0.8);
   const [refImageBase64, setRefImageBase64] = useState(""); // raw base64, no data: prefix
   const [refImagePreview, setRefImagePreview] = useState("");
+  const [refImageDragOver, setRefImageDragOver] = useState(false);
   const refFileInputRef = useRef(null);
   const [submitInFlight, setSubmitInFlight] = useState(0);
   const [results, setResults] = useState([]); // [{generationId, imageUrl, status}]
@@ -1300,56 +1302,123 @@ function GenerateTab({ isDark, copy }) {
             <p className={`text-[11px] leading-relaxed ${isDark ? "text-slate-500" : "text-slate-600"}`}>
               {mode === "character" ? copy.refImageHintCharImg : copy.refImageHint}
             </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={refFileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target?.files?.[0];
-                  e.target.value = "";
-                  if (!f || !f.type.startsWith("image/")) return;
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const dataUrl = String(reader.result || "");
-                    const comma = dataUrl.indexOf(",");
-                    const raw = comma >= 0 ? dataUrl.slice(comma + 1) : "";
-                    if (!raw) return;
-                    setRefImageBase64(raw);
-                    setRefImagePreview(dataUrl);
-                  };
-                  reader.readAsDataURL(f);
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => refFileInputRef.current?.click()}
-                className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                  isDark ? "border-white/15 text-slate-200 hover:bg-white/[0.06]" : "border-slate-200 text-slate-800 hover:bg-slate-50"
+            {/* Hidden file input */}
+            <input
+              ref={refFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target?.files?.[0];
+                e.target.value = "";
+                if (!f || !f.type.startsWith("image/")) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const dataUrl = String(reader.result || "");
+                  const comma = dataUrl.indexOf(",");
+                  const raw = comma >= 0 ? dataUrl.slice(comma + 1) : "";
+                  if (!raw) return;
+                  setRefImageBase64(raw);
+                  setRefImagePreview(dataUrl);
+                };
+                reader.readAsDataURL(f);
+              }}
+            />
+            {/* Drop zone */}
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => refFileInputRef.current?.click()}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && refFileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setRefImageDragOver(true); }}
+              onDragLeave={() => setRefImageDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setRefImageDragOver(false);
+                const f = e.dataTransfer.files?.[0];
+                if (!f || !f.type.startsWith("image/")) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const dataUrl = String(reader.result || "");
+                  const comma = dataUrl.indexOf(",");
+                  const raw = comma >= 0 ? dataUrl.slice(comma + 1) : "";
+                  if (!raw) return;
+                  setRefImageBase64(raw);
+                  setRefImagePreview(dataUrl);
+                };
+                reader.readAsDataURL(f);
+              }}
+              className="relative cursor-pointer overflow-hidden rounded-xl transition-all duration-200 group select-none"
+              style={{
+                background: refImageDragOver
+                  ? "var(--accent-soft)"
+                  : isDark ? "rgba(20,20,30,0.5)" : "var(--bg-elevated)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+              }}
+            >
+              {/* Dashed border overlay */}
+              <div
+                className={`absolute inset-0 rounded-xl pointer-events-none transition-all duration-200 ${
+                  refImageDragOver
+                    ? "border-2 border-[var(--accent)]"
+                    : refImagePreview
+                      ? "border border-white/20"
+                      : "border-2 border-dashed border-[var(--border-medium)] group-hover:border-[var(--accent)]/60"
                 }`}
-              >
-                <Upload className="w-3.5 h-3.5 inline mr-1" />
-                {copy.refImage}
-              </button>
-              {refImagePreview && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRefImageBase64("");
-                    setRefImagePreview("");
-                  }}
-                  className={`text-xs ${isDark ? "text-rose-400" : "text-rose-600"}`}
-                >
-                  Clear
-                </button>
+              />
+
+              {refImagePreview ? (
+                <>
+                  <img
+                    src={refImagePreview}
+                    alt="Reference"
+                    className="w-full h-48 object-contain bg-black/20 rounded-xl"
+                  />
+                  {/* Success badge */}
+                  <div
+                    className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1 shadow"
+                    style={{ background: "rgba(34,197,94,0.85)" }}
+                  >
+                    <Check className="w-3 h-3" />
+                    Ready
+                  </div>
+                  {/* Replace on hover */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center rounded-xl gap-1">
+                    <Upload className="w-5 h-5 text-white" />
+                    <span className="text-xs text-white font-medium">Replace</span>
+                  </div>
+                  {/* Clear button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRefImageBase64("");
+                      setRefImagePreview("");
+                    }}
+                    className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500/80"
+                    aria-label="Remove image"
+                  >
+                    <X className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 py-8 px-4">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-1 transition-colors"
+                    style={{ background: "var(--bg-elevated)", border: "1px solid var(--border-subtle)" }}
+                  >
+                    <ImageIcon className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+                  </div>
+                  <p className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                    {refImageDragOver ? "Drop image here" : "Click or drag an image"}
+                  </p>
+                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                    JPG, PNG · used as reference for generation
+                  </p>
+                </div>
               )}
             </div>
-            {refImagePreview && (
-              <div className="flex gap-2 items-start">
-                <img src={refImagePreview} alt="" className="h-20 w-auto max-w-full rounded-lg border object-contain border-white/10" />
-              </div>
-            )}
           </div>
         )}
       </div>
