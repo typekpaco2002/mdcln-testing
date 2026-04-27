@@ -13,8 +13,12 @@ Repo: [mconqeuroror/mdclnworker](https://github.com/mconqeuroror/mdclnworker)
 
 | File | Source | Size | Role |
 |------|--------|------|------|
-| `vae/ae.safetensors` | `Comfy-Org/z_image_turbo` | 335MB | VAELoader node `246` |
-| `clip/qwen_3_4b.safetensors` | `Comfy-Org/z_image_turbo` | 8GB | CLIPLoader node `248` |
+| `vae/ae.safetensors` | `Comfy-Org/z_image_turbo` | 335MB | VAE for NSFW + Z-Image workflows |
+| `text_encoders/qwen_3_4b.safetensors` (+ symlink in `clip/`) | `Comfy-Org/z_image_turbo` | 8GB | Qwen text encoder / CLIPLoader compatibility |
+| `diffusion_models/z_image_turbo_bf16.safetensors` | `Comfy-Org/z_image_turbo` | ~12.3GB | Z-Image Turbo diffusion model |
+| `checkpoints/z_image_turbo_bf16.safetensors` (symlink) | local symlink to `diffusion_models/z_image_turbo_bf16.safetensors` | ~12.3GB | Classic checkpoint loader compatibility |
+| `model_patches/Z-Image-Turbo-Fun-Controlnet-Union.safetensors` | `alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union` | ~3.1GB | ControlNet patch for Z-Image Turbo |
+| `depthanything/da3_base.safetensors` | `depth-anything/DA3-BASE` | ~1.1GB | DepthAnythingV3 cache (optional prefetch) |
 | `unet/zImageTurboNSFW_62BF16.safetensors` | Place on network volume / S3 (same basename in `checkpoints/`) | ~12–23GB | UNETLoader `247` + CheckpointLoaderSimple `304` |
 | `upscale_models/4xFaceUpDAT.pth` | `Acly/Upscaler` | 148MB | UpscaleModelLoader (UltimateSDUpscale) |
 
@@ -25,13 +29,17 @@ User/pose LoRAs are loaded **by URL** via `LoadLoraFromUrlOrPath` (no bake neede
 | Need | Package (`custom_nodes.list`) |
 |------|-------------------------------|
 | `LoadLoraFromUrlOrPath` | `bollerdominik/ComfyUI-load-lora-from-url` |
+| `LoadLoraFromUrlOrPath` (alt implementation) | `a-und-b/ComfyUI_LoRA_from_URL` |
 | `CR Apply LoRA Stack`, `CR SDXL Aspect Ratio` | `Suzie1/ComfyUI_Comfyroll_CustomNodes` |
 | `Anything Everywhere` (refiner MODEL/CLIP/VAE broadcast) | `chrisgoringe/cg-use-everywhere` |
 | `Seed (rgthree)` | `rgthree/rgthree-comfy` |
 | `String Literal` | `alexopus/ComfyUI-Image-Saver` |
+| `String Literal` / saver helpers (alt) | `giriss/comfy-image-saver` |
 | `Image Film Grain` | `WASasquatch/was-node-suite-comfyui` |
 | `ETN_ApplyMaskToImage` (img2img) | `Acly/comfyui-tooling-nodes` |
 | `UltimateSDUpscale` | `ssitu/ComfyUI_UltimateSDUpscale` |
+| `DepthAnythingV3` nodes | `PozzettiAndrea/ComfyUI-DepthAnythingV3` |
+| `easy loraStackApply` helpers | `yolain/ComfyUI-Easy-Use` |
 | Core samplers / loaders | ComfyUI built-in |
 
 ## Quick deploy
@@ -59,6 +67,7 @@ docker push yourdockerhub/modelclone-worker:latest
 | `setup_custom_nodes.sh` | Clone list during image build |
 | `setup_models.sh` | Bake VAE/CLIP/upscaler; UNet must be copied separately |
 | `workflow_api.json` | Reference workflow (keep UNET filename in sync) |
+| `workflows/mcx_i2i.json` | Z-Image Turbo i2i **UI** workflow (reference). Some nodes were saved with Comfy **0.17.x** metadata; the image may pin an older Comfy — if Comfy reports unknown nodes (e.g. `ImageScaleToTotalPixels`, `QwenImageDiffsynthControlnet`), bump the ComfyUI tag in `Dockerfile` to match. |
 
 ## Troubleshooting
 
