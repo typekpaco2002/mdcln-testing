@@ -1345,11 +1345,6 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
     }
   };
 
-  const gradientPurple = 'linear-gradient(135deg, #8B5CF6, #3B82F6)';
-  const gradientCyan = 'linear-gradient(135deg, #22D3EE, #14B8A6)';
-  const gradientPink = 'linear-gradient(135deg, #EC4899, #8B5CF6)';
-  const gradientGreen = 'linear-gradient(135deg, #10B981, #22D3EE)';
-
   const animatedCredits = useCountUp(user?.credits || 0, 1200);
   const animatedImages = useCountUp(monthlyStats.images, 900);
   const animatedVideos = useCountUp(monthlyStats.videos, 700);
@@ -1459,8 +1454,8 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div
             className="absolute top-0 left-0 w-28 h-28 pointer-events-none"
             style={{
-              background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.06) 45%, transparent 70%)',
-            }}
+                  background: 'radial-gradient(ellipse 100% 100% at 0% 0%, var(--accent-soft) 0%, transparent 70%)',
+                }}
           />
           <div className="relative">
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -1512,11 +1507,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Create Content</h3>
-              <p className="text-slate-400 text-sm">Use our creator studio to create cinema grade content.</p>
+              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>Create Content</h3>
+              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>Use our creator studio to create cinema grade content.</p>
             </div>
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
-              <Wand2 className="w-6 h-6 text-white" />
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${isLightTheme ? "border-slate-200" : "border-white/20"}`}>
+              <Wand2 className={`w-6 h-6 ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
             </div>
           </div>
         </button>
@@ -1533,11 +1528,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Create Content with Avatar</h3>
-              <p className="text-slate-400 text-sm">Create personalised content with your AI avatar.</p>
+              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>Create Content with Avatar</h3>
+              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>Create personalised content with your AI avatar.</p>
             </div>
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
-              <User className="w-6 h-6 text-white" />
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${isLightTheme ? "border-slate-200" : "border-white/20"}`}>
+              <User className={`w-6 h-6 ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
             </div>
           </div>
         </button>
@@ -1559,11 +1554,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">{copy.mainCreateModelTitle}</h3>
-              <p className="text-slate-400 text-sm">{copy.mainCreateModelBody}</p>
+              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.mainCreateModelTitle}</h3>
+              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{copy.mainCreateModelBody}</p>
             </div>
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
+              className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border group-hover:border-transparent relative ${isLightTheme ? "border-slate-200" : "border-white/20"}`}
               style={{ 
                 background: 'var(--bg-elevated)',
                 boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
@@ -1577,7 +1572,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
                   boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
                 }}
               />
-              <Plus className="w-6 h-6 text-white relative z-[1]" />
+              <Plus className={`w-6 h-6 relative z-[1] ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
             </div>
           </div>
         </button>
@@ -1596,11 +1591,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">{copy.mainUploadRealTitle}</h3>
-              <p className="text-slate-400 text-sm">{copy.mainUploadRealBody}</p>
+              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.mainUploadRealTitle}</h3>
+              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{copy.mainUploadRealBody}</p>
             </div>
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
+              className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border group-hover:border-transparent relative ${isLightTheme ? "border-slate-200" : "border-white/20"}`}
               style={{ 
                 background: 'var(--bg-elevated)',
                 boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
@@ -1609,11 +1604,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
               <div 
                 className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
                 style={{ 
-                  background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(20, 184, 166, 0.12))',
+                  background: 'var(--accent-soft)',
                   boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
                 }}
               />
-              <Upload className="w-6 h-6 text-white relative z-[1]" />
+              <Upload className={`w-6 h-6 relative z-[1] ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
             </div>
           </div>
         </button>
@@ -1621,18 +1616,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
 
       {/* Getting Started Video - Dismissable */}
       {showTutorial && (
-        <div 
-          className="rounded-xl p-4 mb-6 backdrop-blur-xl"
-          style={{ 
-            background: 'rgba(139,92,246,0.04)',
-            border: '1px solid rgba(139,92,246,0.08)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
-        >
+        <div className="rounded-xl p-4 mb-6 border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[inset_0_1px_0_var(--mc-glass-inset)]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-white" />
-              <span className="text-sm font-medium text-slate-300">{copy.tutorialTitle}</span>
+              <HelpCircle className="w-4 h-4 text-[var(--text-primary)]" />
+              <span className="text-sm font-medium text-[var(--text-secondary)]">{copy.tutorialTitle}</span>
             </div>
             <button
               onClick={() => {
@@ -1646,7 +1634,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
             </button>
           </div>
           <div className="max-w-2xl mx-auto">
-            <div className="aspect-video rounded-lg overflow-hidden border border-white/5">
+            <div className="aspect-video rounded-lg overflow-hidden border border-[var(--border-subtle)]">
               <video 
                 className="w-full h-full object-cover"
                 controls
@@ -1664,10 +1652,10 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
       {recentGenerations.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.recentCreations}</label>
+            <label className="block text-[11px] uppercase tracking-[0.15em] text-[var(--text-muted)] font-medium">{copy.recentCreations}</label>
             <button
               onClick={() => { setActiveTab("history"); }}
-              className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              className="flex items-center gap-1 text-xs text-[var(--accent)] hover:opacity-90 transition-opacity"
               data-testid="button-view-all-history"
             >
               <span>{copy.viewAll}</span>
@@ -1687,7 +1675,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
                 <button
                   key={gen.id}
                   onClick={() => { setActiveTab("history"); }}
-                  className="group relative aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-purple-500/30 transition-all"
+                  className="group relative aspect-square rounded-lg overflow-hidden border border-[var(--border-subtle)] hover:border-[var(--accent)]/40 transition-all"
                   data-testid={`recent-gen-${gen.id}`}
                 >
                   {isVideo ? (
@@ -1724,7 +1712,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
 
       {/* Quick Actions Grid */}
       <div className="mb-6">
-        <label className="block text-[11px] uppercase tracking-[0.15em] text-white font-medium mb-3">{copy.quickActionsTitle}</label>
+        <label className={`block text-[11px] uppercase tracking-[0.15em] font-medium mb-3 ${isLightTheme ? "text-slate-700" : "text-[var(--text-primary)]"}`}>{copy.quickActionsTitle}</label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Go to Models */}
           <button
@@ -1740,22 +1728,22 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
             <div className="relative">
               <div className="flex items-center gap-3 mb-2">
                 <div 
-                  className="w-9 h-9 rounded-lg flex items-center justify-center border border-purple-300 relative"
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center border relative ${isLightTheme ? "border-slate-200" : "border-[var(--border-medium)]"}`}
                   style={{ background: 'transparent' }}
                 >
                   <div 
-                    className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
+                    className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-[var(--border-subtle)]"
                     style={{ 
-                      background: 'rgba(196, 181, 253, 0.12)',
+                      background: 'var(--accent-soft)',
                       boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
                     }}
                   />
-                  <User className="w-4 h-4 text-purple-300 relative z-[1]" />
+                  <User className="w-4 h-4 text-[var(--accent)] relative z-[1]" />
                 </div>
-                <span className="text-sm font-semibold text-purple-300">{copy.quickCreateModelTitle}</span>
+                <span className={`text-sm font-semibold ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.quickCreateModelTitle}</span>
               </div>
               <p className="text-xs text-slate-400 mb-3">{copy.quickCreateModelBody}</p>
-              <div className="flex items-center gap-1 text-purple-400 text-xs font-medium group-hover:gap-2 transition-all">
+              <div className="flex items-center gap-1 text-[var(--accent)] text-xs font-medium group-hover:gap-2 transition-all">
                 <span>{copy.quickGetStarted}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
@@ -1845,22 +1833,21 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
         }}
       >
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3 text-center sm:text-left">
+            <div className="flex items-center gap-3 text-center sm:text-left">
             <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/20"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${isLightTheme ? "border-slate-200" : "border-white/20"}`}
               style={{ background: 'transparent' }}
             >
-              <Zap className="w-5 h-5 text-yellow-400" />
+              <Zap className="w-5 h-5 text-amber-500" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">{copy.ctaReadyTitle}</h3>
+              <h3 className={`text-lg font-semibold ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.ctaReadyTitle}</h3>
               <p className="text-slate-400 text-sm">{copy.ctaReadyBody}</p>
             </div>
           </div>
           <button
             onClick={() => { setActiveTab("generate"); }}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-black transition-all hover:bg-slate-100 hover:scale-105"
-            style={{ background: '#ffffff' }}
+            className="btn-primary w-full sm:w-auto px-6 py-3 rounded-xl font-semibold transition-opacity hover:opacity-95"
             data-testid="button-start-generating"
           >
             <span className="flex items-center justify-center gap-2">

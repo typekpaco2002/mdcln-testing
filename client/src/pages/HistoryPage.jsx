@@ -31,20 +31,17 @@ import LazyVideo from "../components/LazyVideo";
 import { getThumbnailUrl, getMediumUrl } from "../utils/imageUtils";
 import { downloadFromPublicUrl, fetchPublicAssetBlob } from "../utils/directDownload";
 
-const gradientPurple = 'linear-gradient(135deg, #8B5CF6, #3B82F6)';
-const gradientCyan = 'linear-gradient(135deg, #22D3EE, #14B8A6)';
-
 const VIDEO_TYPES = ["video", "faceswap", "face-swap", "prompt-video", "talking-head", "recreate-video", "creator-studio-video"];
 const PAGE_SIZE = 200;
 const REFRESH_PAGE_SIZE = 60;
 const CONTENT_TYPE_OPTIONS = ["all", "image", "prompt-based", "video", "face-swap", "talking-head", "recreate-video", "creator-studio"];
 const PURPLE_CORNER_GLOW_STYLE = {
   background:
-    "radial-gradient(ellipse 100% 100% at 0% 0%, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.06) 45%, transparent 70%)",
+    "radial-gradient(ellipse 100% 100% at 0% 0%, var(--accent-soft) 0%, transparent 70%)",
 };
 const SELECTED_FILTER_STYLE = {
-  background: "rgba(255,255,255,0.05)",
-  border: "1px solid rgba(255,255,255,0.16)",
+  background: "var(--bg-surface)",
+  border: "1px solid var(--border-medium)",
 };
 const PREVIEW_BADGE_STYLE = {
   background: "rgba(255,255,255,0.04)",
@@ -667,7 +664,7 @@ export default function HistoryPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">{copy.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">{copy.title}</h1>
           <p className="text-slate-400 text-sm">{copy.subtitle}</p>
         </div>
       </div>
@@ -681,17 +678,12 @@ export default function HistoryPage() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -12, scale: 0.97 }}
             transition={{ type: "spring", stiffness: 280, damping: 24 }}
-            className="mb-5 rounded-2xl p-4 sm:p-5 flex items-center gap-4 relative overflow-hidden"
-            style={{
-              background: 'linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(59,130,246,0.15) 100%)',
-              border: '1px solid rgba(139,92,246,0.35)',
-              boxShadow: '0 0 30px rgba(139,92,246,0.15)',
-            }}
+            className="mb-5 rounded-2xl p-4 sm:p-5 flex items-center gap-4 relative overflow-hidden border border-[var(--border-subtle)] bg-[var(--accent-soft)] shadow-sm"
           >
-            <div className="absolute top-0 left-0 w-40 h-40 pointer-events-none" style={{ background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(139,92,246,0.3) 0%, transparent 70%)' }} />
+            <div className="absolute top-0 left-0 w-40 h-40 pointer-events-none" style={{ background: 'radial-gradient(ellipse 100% 100% at 0% 0%, var(--accent-soft) 0%, transparent 70%)' }} />
             <div className="relative text-3xl select-none">🎉</div>
             <div className="relative flex-1 min-w-0">
-              <p className="text-white font-bold text-base sm:text-lg">
+              <p className="text-[var(--text-primary)] font-bold text-base sm:text-lg">
                 {milestoneBanner.milestone.toLocaleString()} generations milestone!
               </p>
               <p className="text-slate-300 text-sm mt-0.5">
@@ -700,7 +692,7 @@ export default function HistoryPage() {
             </div>
             <button
               onClick={() => setMilestoneBanner(null)}
-              className="relative shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+              className="relative shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface)] transition-all"
             >
               <X className="w-4 h-4" />
             </button>
@@ -738,10 +730,7 @@ export default function HistoryPage() {
           {/* Filters */}
           <div className="mb-5 space-y-3">
             {/* Filters */}
-            <div
-              className="rounded-xl p-3 sm:p-4"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
-            >
+            <div className="rounded-xl p-3 sm:p-4 border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <div>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
@@ -754,10 +743,10 @@ export default function HistoryPage() {
                         onClick={() => { setSelectedType(type); setSelectedGenerations([]); }}
                         className={`relative overflow-hidden px-2.5 py-1 rounded-md text-xs whitespace-nowrap transition-all border ${
                           selectedType === type
-                            ? "text-white font-medium"
-                            : "text-slate-400 hover:text-white border-white/10"
+                            ? "text-[var(--text-primary)] font-medium"
+                            : "text-slate-400 hover:text-[var(--text-primary)] border-[var(--border-subtle)]"
                         }`}
-                        style={selectedType === type ? SELECTED_FILTER_STYLE : { background: "rgba(255,255,255,0.05)" }}
+                        style={selectedType === type ? SELECTED_FILTER_STYLE : { background: "var(--bg-elevated)" }}
                         data-testid={`filter-${type}`}
                       >
                         {selectedType === type && (
@@ -780,10 +769,10 @@ export default function HistoryPage() {
                       onClick={() => { setSelectedModelId("all"); setSelectedGenerations([]); }}
                       className={`relative overflow-hidden px-3 py-1.5 rounded-lg text-xs sm:text-sm whitespace-nowrap transition-all border ${
                         selectedModelId === "all"
-                          ? "text-white font-medium"
-                          : "text-slate-400 hover:text-white border-white/10"
+                          ? "text-[var(--text-primary)] font-medium"
+                          : "text-slate-400 hover:text-[var(--text-primary)] border-[var(--border-subtle)]"
                       }`}
-                      style={selectedModelId === "all" ? SELECTED_FILTER_STYLE : { background: "rgba(255,255,255,0.05)" }}
+                      style={selectedModelId === "all" ? SELECTED_FILTER_STYLE : { background: "var(--bg-elevated)" }}
                       data-testid="tab-all-models"
                     >
                       {selectedModelId === "all" && (
@@ -801,7 +790,7 @@ export default function HistoryPage() {
                     value={modelLookup}
                     onChange={(e) => setModelLookup(e.target.value)}
                     placeholder={copy.lookupPlaceholder}
-                    className="w-full px-3 py-2 rounded-lg text-sm bg-white/5 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-white/20"
+                    className="input w-full px-3 py-2 text-sm"
                     data-testid="input-model-lookup"
                   />
 
@@ -812,10 +801,10 @@ export default function HistoryPage() {
                         onClick={() => { setSelectedModelId(model.id); setSelectedGenerations([]); }}
                         className={`relative overflow-hidden w-full px-2.5 py-2 rounded-lg text-sm transition-all flex items-center gap-2 border ${
                           selectedModelId === model.id
-                            ? "text-white font-medium"
-                            : "text-slate-400 hover:text-white border-white/10"
+                            ? "text-[var(--text-primary)] font-medium"
+                            : "text-slate-400 hover:text-[var(--text-primary)] border-[var(--border-subtle)]"
                         }`}
-                        style={selectedModelId === model.id ? SELECTED_FILTER_STYLE : { background: "rgba(255,255,255,0.05)" }}
+                        style={selectedModelId === model.id ? SELECTED_FILTER_STYLE : { background: "var(--bg-elevated)" }}
                         data-testid={`tab-model-${model.id}`}
                       >
                         {selectedModelId === model.id && (
@@ -841,20 +830,17 @@ export default function HistoryPage() {
               <div className="flex-1" />
 
               {/* View Mode Toggle */}
-              <div 
-                className="flex gap-0.5 rounded-md p-0.5"
-                style={{ background: 'rgba(255,255,255,0.05)' }}
-              >
+              <div className="flex gap-0.5 rounded-md p-0.5 bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
                 <button
                   onClick={() => { setViewMode("grid"); }}
-                  className={`p-1.5 rounded transition-all ${viewMode === "grid" ? "bg-white/15 text-white" : "text-slate-500"}`}
+                  className={`p-1.5 rounded transition-all ${viewMode === "grid" ? "bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-subtle)]" : "text-slate-500"}`}
                   data-testid="view-grid"
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => { setViewMode("list"); }}
-                  className={`p-1.5 rounded transition-all ${viewMode === "list" ? "bg-white/15 text-white" : "text-slate-500"}`}
+                  className={`p-1.5 rounded transition-all ${viewMode === "list" ? "bg-[var(--bg-surface)] text-[var(--text-primary)] border border-[var(--border-subtle)]" : "text-slate-500"}`}
                   data-testid="view-list"
                 >
                   <List className="w-4 h-4" />
@@ -879,15 +865,14 @@ export default function HistoryPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="rounded-lg p-3 mb-4 flex items-center gap-3 overflow-hidden"
-                style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(59,130,246,0.1))', border: '1px solid rgba(139,92,246,0.2)' }}
+                className="rounded-lg p-3 mb-4 flex items-center gap-3 overflow-hidden border border-[var(--border-subtle)] bg-[var(--accent-soft)]"
               >
                 <button
                   onClick={toggleSelectAll}
                   className="flex items-center gap-2 text-xs text-slate-300 hover:text-white px-2 py-1 rounded"
                 >
                   {selectedGenerations.length === filteredGenerations.length ? (
-                    <CheckSquare className="w-4 h-4 text-purple-400" />
+                    <CheckSquare className="w-4 h-4 text-[var(--accent)]" />
                   ) : (
                     <Square className="w-4 h-4" />
                   )}
@@ -899,8 +884,7 @@ export default function HistoryPage() {
                 <button
                   onClick={handleBatchDownload}
                   disabled={batchDownloading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white disabled:opacity-50"
-                  style={{ background: gradientCyan }}
+                  className="btn-primary flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium disabled:opacity-50"
                   data-testid="batch-download"
                 >
                   <Download className="w-3.5 h-3.5" />
@@ -921,7 +905,7 @@ export default function HistoryPage() {
           </AnimatePresence>
 
           {/* Storage info */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.1)' }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-400 border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
             <Info className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
             {retentionMaxPerModel == null ? (
               <span>{copy.cleanupDisabled}</span>
@@ -932,12 +916,9 @@ export default function HistoryPage() {
 
           {/* Generations Grid/List */}
           {filteredGenerations.length === 0 ? (
-            <div 
-              className="rounded-xl p-10 text-center"
-              style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.08), rgba(59,130,246,0.04))', border: '1px solid rgba(139,92,246,0.15)' }}
-            >
+            <div className="rounded-xl p-10 text-center border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
               <Clock className="w-12 h-12 mx-auto mb-3 text-slate-600" />
-              <h3 className="text-lg font-semibold text-white mb-1">{copy.emptyTitle}</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">{copy.emptyTitle}</h3>
               <p className="text-slate-500 text-sm">{copy.emptySubtitle}</p>
             </div>
           ) : viewMode === "grid" ? (
@@ -980,8 +961,7 @@ export default function HistoryPage() {
               <button
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50 flex items-center gap-2"
-                style={{ background: gradientPurple, border: "1px solid rgba(139,92,246,0.35)" }}
+                className="btn-accent px-5 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
                 data-testid="history-load-more"
               >
                 {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

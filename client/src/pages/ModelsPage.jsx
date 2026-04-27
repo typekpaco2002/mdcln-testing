@@ -727,7 +727,7 @@ export default function ModelsPage({ sidebarCollapsed = false, openVoiceStudioFo
           onClick={closeEditModal}
         >
           <div
-            className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden flex flex-col glass-panel-strong"
+            className="relative w-full max-w-sm sm:max-w-md rounded-2xl overflow-hidden flex flex-col panel-strong"
             style={{ maxHeight: "calc(100dvh - 48px)" }}
             onClick={(e) => e.stopPropagation()}
           >

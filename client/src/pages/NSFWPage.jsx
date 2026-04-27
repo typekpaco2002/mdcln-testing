@@ -2792,7 +2792,7 @@ function NsfwUnlockModal({ isOpen, onClose, sidebarCollapsed = false }) {
       }`}>
       <div className="relative min-h-full flex items-center justify-center">
       <div 
-        className="relative w-full max-w-md rounded-2xl glass-panel-strong p-5 max-h-[calc(100dvh-48px)] overflow-y-auto"
+        className="relative w-full max-w-md rounded-2xl panel-strong p-5 max-h-[calc(100dvh-48px)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <button

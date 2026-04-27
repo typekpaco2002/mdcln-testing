@@ -2978,7 +2978,7 @@ function VideoGeneration() {
             {method === "2-step" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
             )}
-            {method === "2-step" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(139,92,246,0.16), transparent 50%)' }} />}
+            {method === "2-step" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, var(--accent-soft), transparent 50%)' }} />}
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">Recreate</span>
@@ -3014,7 +3014,7 @@ function VideoGeneration() {
             {method === "prompt" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
             )}
-            {method === "prompt" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(139,92,246,0.16), transparent 50%)' }} />}
+            {method === "prompt" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, var(--accent-soft), transparent 50%)' }} />}
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">Prompt</span>
@@ -3048,7 +3048,7 @@ function VideoGeneration() {
             {method === "face-swap" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
             )}
-            {method === "face-swap" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(139,92,246,0.16), transparent 50%)' }} />}
+            {method === "face-swap" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, var(--accent-soft), transparent 50%)' }} />}
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">{copy.videoMethodFaceSwapShort}</span>
@@ -3082,7 +3082,7 @@ function VideoGeneration() {
             {method === "talking-head" && (
               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
             )}
-            {method === "talking-head" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, rgba(139,92,246,0.16), transparent 50%)' }} />}
+            {method === "talking-head" && <div className="absolute inset-0 rounded-xl pointer-events-none" style={{ background: 'linear-gradient(to left, var(--accent-soft), transparent 50%)' }} />}
             <div className="relative text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <span className="font-semibold text-xs">Talking</span>
@@ -3530,7 +3530,7 @@ function VideoGeneration() {
                 <button
                   type="button"
                   onClick={() => openVoiceStudioForModel?.(selectedModel)}
-                  className="text-[10px] px-2.5 py-1.5 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-200 hover:bg-violet-600/30 transition-colors"
+                  className="text-[10px] px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--accent-soft)] text-[var(--text-primary)] hover:opacity-90 transition-opacity"
                 >
                   {copy.talkingHeadOpenVoiceStudio}
                 </button>
@@ -4245,7 +4245,7 @@ function PromptImageContent({
         </div>
 
         {!useCustomPrompt && (
-          <div className="mb-6 glass-panel rounded-xl p-4">
+          <div className="mb-6 panel rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Info className="w-4 h-4 text-white/80" />
               <span className="text-sm font-semibold text-white">

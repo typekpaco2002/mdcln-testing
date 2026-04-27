@@ -61,24 +61,9 @@ const ASPECT_OPTIONS = [
   { id: "4:3", label: "4:3", hint: "Wide" },
 ];
 
-const PAGE_BG = (isDark) =>
-  isDark
-    ? "linear-gradient(135deg, #0a0a12 0%, #0f0f1c 50%, #0a0a14 100%)"
-    : "linear-gradient(135deg, #f1f5f9 0%, #e8eef8 100%)";
-
-const accentIconWrap = (isDark) => ({
-  background: isDark
-    ? "linear-gradient(135deg, rgba(139,92,246,0.22) 0%, rgba(109,40,217,0.28) 100%)"
-    : "linear-gradient(135deg, rgba(139,92,246,0.12) 0%, rgba(109,40,217,0.16) 100%)",
-  border: isDark ? "1px solid rgba(139,92,246,0.45)" : "1px solid rgba(139,92,246,0.35)",
-  boxShadow: isDark ? "0 0 16px rgba(139,92,246,0.2)" : "0 2px 12px rgba(139,92,246,0.12)",
-});
-
-const primaryBtnStyle = (disabled) => ({
-  background: disabled ? "rgba(100,116,139,0.35)" : "rgba(124,58,237,0.92)",
-  color: "#fff",
-  boxShadow: disabled ? "none" : "0 4px 14px rgba(124,58,237,0.35)",
-});
+/** Rounded surface for small icon callouts (theme tokens, no heavy glow) */
+const accentIconClassName = (size = "w-9 h-9") =>
+  `${size} rounded-xl flex items-center justify-center border border-[var(--border-medium)] bg-[var(--accent-soft)] shrink-0`;
 
 function getModelPreview(model) {
   if (!model || typeof model !== "object") return "";
@@ -122,8 +107,8 @@ function ModelGalleryPicker({
             className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl border text-left transition-all ${
               active
                 ? isDark
-                  ? "bg-violet-500/15 border-violet-500/40"
-                  : "bg-violet-50 border-violet-200"
+                  ? "bg-[var(--accent-soft)] border-[var(--border-strong)]"
+                  : "bg-[var(--accent-soft)] border-[var(--border-medium)]"
                 : isDark
                   ? "border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/15"
                   : "border-slate-200/90 bg-white/80 hover:bg-slate-50 hover:border-slate-300"
@@ -147,7 +132,7 @@ function ModelGalleryPicker({
               <p className={`text-[11px] truncate ${isDark ? "text-slate-500" : "text-slate-500"}`}>Tap to select</p>
             </div>
             {active && (
-              <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isDark ? "text-violet-400" : "text-violet-600"}`} />
+              <CheckCircle2 className={`w-4 h-4 flex-shrink-0 text-[var(--accent)]`} />
             )}
           </button>
         );
@@ -164,8 +149,8 @@ function ControlChip({ active, onClick, children, className = "", isDark = true 
       className={`px-3 py-2 rounded-xl text-xs md:text-sm font-medium border transition-all ${
         active
           ? isDark
-            ? "text-white border-violet-500/45 bg-violet-500/20"
-            : "text-violet-800 border-violet-200 bg-violet-50"
+            ? "text-[var(--text-primary)] border-[var(--border-medium)] bg-[var(--accent-soft)]"
+            : "text-[var(--text-primary)] border-[var(--border-medium)] bg-[var(--accent-soft)]"
           : isDark
             ? "text-slate-300 border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:text-white"
             : "text-slate-600 border-slate-200 bg-white hover:bg-slate-50"
@@ -631,7 +616,7 @@ function CharacterTab({ isDark, pricing }) {
   const base = isDark ? "glass-card border border-white/[0.08]" : "bg-white/90 border border-slate-200/90 shadow-sm";
   const inputBase = isDark
     ? "w-full px-3 py-2.5 rounded-xl text-sm border outline-none glass-card border-white/[0.10] text-white placeholder:text-slate-500 focus:border-white/25"
-    : "w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:border-violet-300 focus:ring-1 focus:ring-violet-200";
+    : "w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-soft)]";
   const neutralBtn = isDark
     ? "border border-white/[0.10] text-slate-400 hover:text-white hover:border-white/18 hover:bg-white/[0.04]"
     : "border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300";
@@ -675,11 +660,8 @@ function CharacterTab({ isDark, pricing }) {
               className={`rounded-2xl border p-5 ${base}`}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={accentIconWrap(isDark)}
-                >
-                  <User className={`w-4 h-4 ${isDark ? "text-purple-300" : "text-violet-600"}`} />
+                <div className={accentIconClassName()}>
+                  <User className="w-4 h-4 text-[var(--accent)]" />
                 </div>
                 <div>
                   <p className={`text-sm font-semibold ${isDark ? "text-white" : "text-slate-900"}`}>
@@ -707,7 +689,7 @@ function CharacterTab({ isDark, pricing }) {
                       onClick={() => setTrainingMode(m)}
                       className={`flex-1 py-2 px-2 rounded-xl text-sm font-medium border transition-all flex flex-col items-center gap-0.5
                         ${trainingMode === m
-                          ? "bg-violet-500/20 border-violet-500/50 text-violet-200 shadow-[0_0_0_1px_rgba(139,92,246,0.2)]"
+                          ? "bg-[var(--accent-soft)] border-[var(--border-medium)] text-[var(--text-primary)] shadow-none"
                           : neutralBtn
                         }`}
                     >
@@ -715,7 +697,7 @@ function CharacterTab({ isDark, pricing }) {
                       <span className={`text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                         {m === "pro" ? "30 photos" : "15 photos"}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-violet-300/95">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--accent)]">
                         {m === "pro" ? proCredits : stdCredits}
                         <Coins className="w-3 h-3 opacity-90" />
                       </span>
@@ -727,14 +709,13 @@ function CharacterTab({ isDark, pricing }) {
                   type="button"
                   onClick={handleCreate}
                   disabled={creating}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-[0.97]"
-                  style={primaryBtnStyle(creating)}
+                  className="btn-accent w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="inline-flex items-center gap-2">
                     {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     Create Character Identity
                   </span>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-white/90">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--accent-foreground)]/90">
                     {createCost}
                     <Coins className="w-3.5 h-3.5 opacity-90" />
                   </span>
@@ -751,8 +732,8 @@ function CharacterTab({ isDark, pricing }) {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={accentIconWrap(isDark)}>
-                    <User className={`w-4 h-4 ${isDark ? "text-purple-300" : "text-violet-600"}`} />
+                  <div className={accentIconClassName()}>
+                    <User className="w-4 h-4 text-[var(--accent)]" />
                   </div>
                   <div>
                     <p className={`text-sm font-semibold ${isDark ? "text-white" : "text-slate-900"}`}>{character.name}</p>
@@ -818,8 +799,8 @@ function CharacterTab({ isDark, pricing }) {
                     onClick={() => fileInputRef.current?.click()}
                     className={`w-full py-6 rounded-xl border-2 border-dashed text-sm transition-colors ${
                       isDark
-                        ? "border-white/10 text-slate-500 hover:border-violet-500/35 hover:text-slate-300"
-                        : "border-slate-200 text-slate-500 hover:border-violet-300 hover:text-slate-700"
+                        ? "border-white/10 text-slate-500 hover:border-[var(--border-strong)] hover:text-slate-300"
+                        : "border-slate-200 text-slate-500 hover:border-[var(--border-medium)] hover:text-slate-700"
                     }`}
                   >
                     <Upload className="w-5 h-5 mx-auto mb-1.5 opacity-50" />
@@ -889,8 +870,7 @@ function CharacterTab({ isDark, pricing }) {
                   type="button"
                   onClick={handleTrain}
                   disabled={training || uploadedImages.length < activeRequiredTrainingImages}
-                  className="w-full py-2.5 rounded-xl text-white text-sm font-semibold transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-[0.97]"
-                  style={primaryBtnStyle(training || uploadedImages.length < activeRequiredTrainingImages)}
+                  className="btn-accent w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex flex-col items-center justify-center gap-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="inline-flex items-center gap-2">
                     {training ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
@@ -899,7 +879,7 @@ function CharacterTab({ isDark, pricing }) {
                       : (
                         <>
                           Start Training
-                          <span className="inline-flex items-center gap-1 text-xs font-bold text-white/95">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-[var(--accent-foreground)]/95">
                             ·
                             {character.trainingMode === "pro" ? proCredits : stdCredits}
                             <Coins className="w-3.5 h-3.5" />
@@ -1235,7 +1215,7 @@ function GenerateTab({ isDark, copy }) {
 
   const inputBase = isDark
     ? "glass-card border border-white/[0.10] text-white placeholder-slate-500 focus:border-white/22"
-    : "border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-violet-300 focus:ring-1 focus:ring-violet-100";
+    : "border border-slate-200 bg-white text-slate-900 placeholder-slate-400 focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-soft)]";
 
   const labelBase = `block text-xs font-semibold uppercase tracking-wider mb-2 ${isDark ? "text-slate-500" : "text-slate-500"}`;
 
@@ -1421,31 +1401,31 @@ function GenerateTab({ isDark, copy }) {
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all
                           ${selectedCharacterId === c.id
                             ? isDark
-                              ? "bg-violet-500/15 border-violet-500/40"
-                              : "bg-violet-50 border-violet-200"
+                              ? "bg-[var(--accent-soft)] border-[var(--border-medium)]"
+                              : "bg-[var(--accent-soft)] border-[var(--border-medium)]"
                             : isDark
                               ? "glass-card border border-white/[0.08] hover:border-white/18"
                               : "bg-white border border-slate-200 hover:border-slate-300"}`}
                       >
                         <div
                           className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            isDark ? "bg-violet-500/15" : "bg-violet-100"
+                            isDark ? "bg-[var(--accent-soft)]" : "bg-[var(--accent-soft)]"
                           }`}
                         >
-                          <User className={`w-3.5 h-3.5 ${isDark ? "text-violet-400" : "text-violet-600"}`} />
+                          <User className="w-3.5 h-3.5 text-[var(--accent)]" />
                         </div>
                         <span className={`text-sm font-medium flex-1 ${isDark ? "text-white" : "text-slate-900"}`}>{c.name}</span>
                         <span
                           className={`text-[10px] px-1.5 py-0.5 rounded border ${
                             c.category === "nsfw"
                               ? (isDark ? "text-fuchsia-300 border-fuchsia-500/30 bg-fuchsia-500/10" : "text-fuchsia-800 border-fuchsia-200 bg-fuchsia-50")
-                              : (isDark ? "text-violet-300 border-violet-500/30 bg-violet-500/10" : "text-violet-800 border-violet-200 bg-violet-50")
+                              : (isDark ? "text-[var(--accent)] border-[var(--border-medium)] bg-[var(--accent-soft)]" : "text-[var(--text-secondary)] border-[var(--border-medium)] bg-[var(--bg-surface)]")
                           }`}
                         >
                           {c.category === "nsfw" ? "NSFW LoRA" : "ModelClone-X LoRA"}
                         </span>
                         {selectedCharacterId === c.id && (
-                          <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isDark ? "text-violet-400" : "text-violet-600"}`} />
+                          <CheckCircle2 className={`w-4 h-4 flex-shrink-0 text-[var(--accent)]`} />
                         )}
                       </button>
                     ))}
@@ -1582,12 +1562,7 @@ function GenerateTab({ isDark, copy }) {
             || submitInFlight > 0
             || (genMode === "img" && !refImageBase64)
           }
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.99] disabled:cursor-not-allowed"
-          style={primaryBtnStyle(
-            !hasEnough
-            || submitInFlight > 0
-            || (genMode === "img" && !refImageBase64),
-          )}
+          className="btn-accent flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all active:scale-[0.99] disabled:cursor-not-allowed"
         >
           {submitInFlight > 0 ? (
             <><Loader2 className="w-4 h-4 animate-spin" /> {copy.generating}</>
@@ -1600,7 +1575,7 @@ function GenerateTab({ isDark, copy }) {
             isDark ? "glass-card border-white/[0.08]" : "bg-white border border-slate-200"
           }`}
         >
-          <Coins className={`w-4 h-4 ${isDark ? "text-violet-400" : "text-violet-600"}`} />
+          <Coins className="w-4 h-4 text-[var(--accent)]" />
           <span className={`font-bold tabular-nums ${isDark ? "text-white" : "text-slate-900"}`}>{cost}</span>
           {extraCost > 0 && (
             <span className={`text-[11px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>+{extraCost} <Coins className="w-3 h-3 inline" /></span>
@@ -1663,10 +1638,10 @@ function GenerateTab({ isDark, copy }) {
                       <div className="relative w-12 h-12 flex items-center justify-center">
                         <div
                           className={`absolute inset-0 rounded-full border-2 border-t-transparent animate-spin ${
-                            isDark ? "border-violet-500/35 border-t-violet-400" : "border-violet-200 border-t-violet-500"
+                            isDark ? "border-[var(--border-medium)] border-t-[var(--accent)]" : "border-[var(--border-medium)] border-t-[var(--accent)]"
                           }`}
                         />
-                        <Sparkles className={`relative w-5 h-5 ${isDark ? "text-violet-400" : "text-violet-600"}`} />
+                        <Sparkles className="relative w-5 h-5 text-[var(--accent)]" />
                       </div>
                       <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-600"}`}>{copy.generatingShort}</p>
                     </div>
@@ -1691,8 +1666,6 @@ export default function ModelCloneXPage() {
   const [activeTab, setActiveTab] = useState("generate");
   const pricing = useModelCloneXPricing();
 
-  const muted = isDark ? "rgba(148,163,184,0.85)" : "#64748b";
-  const titleColor = isDark ? "#e2e8f0" : "#1e293b";
   const pricingRows = [
     [copy.p1, pricing.noModel1],
     [copy.p2, pricing.withModel1],
@@ -1704,24 +1677,18 @@ export default function ModelCloneXPage() {
   ];
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{
-        background: PAGE_BG(isDark),
-        color: titleColor,
-      }}
-    >
+    <div className="min-h-screen flex flex-col bg-[var(--bg-page)] text-[var(--text-primary)]">
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 md:py-10 pb-12">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 md:mb-10">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={accentIconWrap(isDark)}>
-              <Sparkles className={`w-5 h-5 ${isDark ? "text-purple-300" : "text-violet-600"}`} />
+            <div className={accentIconClassName("w-10 h-10")}>
+              <Sparkles className="w-5 h-5 text-[var(--accent)]" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight" style={{ color: titleColor }}>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
               {copy.title}
             </h1>
           </div>
-          <p className="text-sm md:text-[15px] leading-relaxed max-w-2xl" style={{ color: muted, marginLeft: "52px" }}>
+          <p className="text-sm md:text-[15px] leading-relaxed max-w-2xl text-[var(--text-muted)]" style={{ marginLeft: "52px" }}>
             {copy.subtitle}
           </p>
         </motion.div>
@@ -1742,15 +1709,10 @@ export default function ModelCloneXPage() {
               onClick={() => setActiveTab(id)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all
                 ${activeTab === id
-                  ? "text-white shadow-sm"
+                  ? "text-[var(--accent-foreground)] bg-[var(--accent)] shadow-sm"
                   : isDark
                     ? "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
                     : "text-slate-600 hover:bg-slate-100"}`}
-              style={
-                activeTab === id
-                  ? { background: "rgba(124,58,237,0.92)", boxShadow: "0 2px 10px rgba(124,58,237,0.3)" }
-                  : undefined
-              }
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -1787,23 +1749,20 @@ export default function ModelCloneXPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className={`mt-8 rounded-xl border p-4 md:p-5 text-sm ${
-            isDark ? "border-white/[0.08] bg-white/[0.02]" : "border-slate-200/90 bg-white/90 shadow-sm"
-          }`}
+          className="mt-8 panel rounded-xl p-4 md:p-5 text-sm"
         >
           <p
-            className="text-xs font-semibold uppercase tracking-wider mb-3"
-            style={{ color: muted }}
+            className="text-xs font-semibold uppercase tracking-wider mb-3 text-[var(--text-muted)]"
           >
             {copy.pricingTitle}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2 text-xs md:text-sm">
             {pricingRows.map(([label, amount]) => (
               <div key={String(label)} className="flex justify-between gap-4 py-1">
-                <span style={{ color: muted }}>{label}</span>
-                <span className={`font-semibold tabular-nums inline-flex items-center gap-1 shrink-0 ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                <span className="text-[var(--text-muted)]">{label}</span>
+                <span className="font-semibold tabular-nums inline-flex items-center gap-1 shrink-0 text-[var(--text-primary)]">
                   {amount}
-                  <Coins className={`w-3.5 h-3.5 ${isDark ? "text-violet-400/90" : "text-violet-600"}`} />
+                  <Coins className="w-3.5 h-3.5 text-[var(--accent)]" />
                 </span>
               </div>
             ))}

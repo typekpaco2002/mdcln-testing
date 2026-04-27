@@ -394,14 +394,14 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-6">
-      <h1 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8">{t.pageTitle}</h1>
+      <h1 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8 text-[var(--text-primary)]">{t.pageTitle}</h1>
 
       <div className="space-y-4 sm:space-y-6">
         {/* Account Info */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
             <User className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -410,18 +410,18 @@ export default function SettingsPage() {
           
           <div className="space-y-2 sm:space-y-3">
             <div>
-              <label className="text-xs sm:text-sm text-gray-400">{t.name}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.name}</label>
               <div className="mt-1 flex flex-col sm:flex-row gap-2">
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg glass-card focus:border-white/20 focus:outline-none text-white"
+                  className="input w-full px-3.5 py-2 rounded-lg"
                   data-testid="input-settings-name"
                 />
                 <button
                   onClick={handleUpdateName}
                   disabled={savingName || displayName.trim() === (user?.name || '')}
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-black bg-white hover:bg-slate-100 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="btn-primary gap-2 disabled:cursor-not-allowed"
                   data-testid="button-update-name"
                 >
                   {savingName ? t.saving : t.saveName}
@@ -429,7 +429,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="text-xs sm:text-sm text-gray-400">{t.email}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.email}</label>
               <p className="text-base sm:text-lg break-all">{user?.email}</p>
               {user?.authProvider === 'email' ? (
                 <div className="mt-3 space-y-2">
@@ -438,7 +438,7 @@ export default function SettingsPage() {
                       type="email"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white"
+                      className="input w-full px-4 py-2.5 rounded-xl"
                       placeholder={t.placeholderNewEmail}
                       data-testid="input-settings-new-email"
                     />
@@ -446,7 +446,7 @@ export default function SettingsPage() {
                       type="password"
                       value={emailPassword}
                       onChange={(e) => setEmailPassword(e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white"
+                      className="input w-full px-4 py-2.5 rounded-xl"
                       placeholder={t.placeholderCurrentPassword}
                       data-testid="input-settings-email-password"
                     />
@@ -454,7 +454,7 @@ export default function SettingsPage() {
                   <button
                     onClick={handleRequestEmailChange}
                     disabled={requestingEmailChange}
-                    className="inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-black bg-white hover:bg-slate-100 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="btn-primary gap-2 disabled:cursor-not-allowed"
                     data-testid="button-request-email-change"
                   >
                     {requestingEmailChange ? t.sending : t.verifyNewEmail}
@@ -465,14 +465,14 @@ export default function SettingsPage() {
                         type="text"
                         value={emailCode}
                         onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="w-full px-4 py-2.5 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white tracking-widest"
+                        className="input w-full px-4 py-2.5 rounded-xl tracking-widest"
                         placeholder={t.placeholderEmailCode}
                         data-testid="input-settings-email-code"
                       />
                       <button
                         onClick={handleVerifyEmailChange}
                         disabled={verifyingEmailChange || emailCode.length !== 6}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-black bg-white hover:bg-slate-100 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="btn-primary gap-2 rounded-xl py-3 px-6 disabled:cursor-not-allowed"
                         data-testid="button-confirm-email-change"
                       >
                         {verifyingEmailChange ? t.verifying : t.confirmEmail}
@@ -487,7 +487,7 @@ export default function SettingsPage() {
               )}
             </div>
             <div>
-              <label className="text-xs sm:text-sm text-gray-400">{t.accountStatus}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.accountStatus}</label>
               <p className="text-base sm:text-lg flex items-center gap-2">
                 {user?.isVerified ? (
                   <>
@@ -509,22 +509,22 @@ export default function SettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
             {t.commPrefsTitle}
           </h2>
-          <p className="text-xs sm:text-sm text-gray-400 mb-4">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mb-4">
             {t.commPrefsHint}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-xs sm:text-sm text-gray-400 block mb-1">{t.regionLabel}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)] block mb-1">{t.regionLabel}</label>
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg glass-card focus:border-white/20 focus:outline-none text-white"
+                className="input w-full px-3.5 py-2 rounded-lg"
               >
                 <option value="">{t.optionNotSet}</option>
                 <option value="US">United States</option>
@@ -544,11 +544,11 @@ export default function SettingsPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs sm:text-sm text-gray-400 block mb-1">{t.marketingLangLabel}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)] block mb-1">{t.marketingLangLabel}</label>
               <select
                 value={marketingLanguage}
                 onChange={(e) => setMarketingLanguage(e.target.value)}
-                className="w-full px-3.5 py-2 rounded-lg glass-card focus:border-white/20 focus:outline-none text-white"
+                className="input w-full px-3.5 py-2 rounded-lg"
               >
                 <option value="">{t.optionAnyDefault}</option>
                 <option value="en">English</option>
@@ -578,7 +578,7 @@ export default function SettingsPage() {
               }
             }}
             disabled={savingPrefs}
-            className="inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-black bg-white hover:bg-slate-100 transition-all hover:scale-[1.02] disabled:opacity-50"
+            className="btn-primary gap-2"
           >
             {savingPrefs ? t.savingPrefs : t.savePreferences}
           </button>
@@ -588,13 +588,13 @@ export default function SettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-2 flex items-center gap-2">
-            <Key className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />
+            <Key className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--text-secondary)]" />
             {t.apiSectionTitle}
           </h2>
-          <p className="text-xs sm:text-sm text-gray-400 mb-4">{t.apiSectionIntro}</p>
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mb-4">{t.apiSectionIntro}</p>
 
           {!apiAccess && (
             <div className="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-100/90">
@@ -627,14 +627,14 @@ export default function SettingsPage() {
                     if (ok) toast.success('Full key copied');
                     else toast.error(t.toastApiCopyFailed);
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-black bg-white hover:bg-slate-100"
+                  className="btn-primary gap-2 px-4 py-2 rounded-lg text-xs"
                 >
                   {t.apiCopyToClipboard}
                 </button>
                 <button
                   type="button"
                   onClick={() => selectElementContents(newUserApiKeyTextareaRef.current)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold glass-card hover:bg-white/10"
+                  className="btn-ghost text-xs border border-[var(--border-subtle)]"
                 >
                   {t.apiSelectAll}
                 </button>
@@ -645,12 +645,12 @@ export default function SettingsPage() {
           {apiAccess && (
             <div className="space-y-3 mb-6">
               <div>
-                <label className="text-xs sm:text-sm text-gray-400">{t.apiKeyLabelOptional}</label>
+                <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.apiKeyLabelOptional}</label>
                 <input
                   value={userApiKeyNameDraft}
                   onChange={(e) => setUserApiKeyNameDraft(e.target.value)}
                   placeholder={t.apiKeyPlaceholder}
-                  className="mt-1 w-full px-3.5 py-2 rounded-lg glass-card focus:border-white/20 focus:outline-none text-white text-sm"
+                  className="input mt-1 w-full px-3.5 py-2 rounded-lg text-sm"
                 />
               </div>
               <button
@@ -669,7 +669,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowApiEnrollModal(true)}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-white bg-violet-600 hover:bg-violet-500 transition-all"
+                className="btn-accent gap-2"
               >
                 <ExternalLink className="w-4 h-4" />
                 {t.apiEnrollButton}
@@ -735,7 +735,7 @@ export default function SettingsPage() {
                             if (ok) toast.success(t.apiCopiedKey);
                             else toast.error(t.toastApiCopyFailed);
                           }}
-                          className="text-xs px-3 py-1.5 rounded-lg glass-card hover:bg-white/10"
+                          className="btn-ghost text-xs"
                         >
                           {t.apiCopyKey}
                         </button>
@@ -756,14 +756,14 @@ export default function SettingsPage() {
         </motion.div>
 
         {/* Two-Factor Authentication */}
-        <div className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6">
+        <div className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6">
           <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-slate-300" />
             {t.twoFactorTitle}
           </h2>
           
           {twoFactorLoading ? (
-            <p className="text-gray-400 text-sm">{t.twoFactorLoading}</p>
+            <p className="text-[var(--text-muted)] text-sm">{t.twoFactorLoading}</p>
           ) : twoFactorStatus?.twoFactorEnabled ? (
             // 2FA is enabled
             <div className="space-y-4">
@@ -771,7 +771,7 @@ export default function SettingsPage() {
                 <CheckCircle className="w-6 h-6 text-green-400" />
                 <div>
                   <p className="font-semibold text-green-400">{t.twoFactorEnabledTitle}</p>
-                  <p className="text-sm text-gray-400">{t.twoFactorEnabledHint}</p>
+                  <p className="text-sm text-[var(--text-muted)]">{t.twoFactorEnabledHint}</p>
                 </div>
               </div>
               
@@ -782,7 +782,7 @@ export default function SettingsPage() {
                     type="text"
                     value={disableCode}
                     onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full px-4 py-3 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white text-center tracking-widest font-mono"
+                    className="input w-full px-4 py-3 rounded-xl text-center tracking-widest font-mono"
                     placeholder={t.placeholderCode6}
                     maxLength={6}
                     data-testid="input-disable-2fa-code"
@@ -790,7 +790,7 @@ export default function SettingsPage() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => { setShowDisable2FA(false); setDisableCode(''); }}
-                      className="flex-1 px-4 py-2 rounded-xl glass-card transition font-semibold"
+                      className="btn-outline flex-1 px-4 py-2 rounded-xl font-semibold"
                     >
                       {t.cancel}
                     </button>
@@ -819,10 +819,10 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Smartphone className="w-5 h-5 text-white/70" />
+                  <Smartphone className="w-5 h-5 text-[var(--text-secondary)]" />
                   {t.step1ScanQr}
                 </h3>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-[var(--text-muted)] mb-4">
                   {t.step1Hint}
                 </p>
                 {twoFactorQR && (
@@ -832,24 +832,24 @@ export default function SettingsPage() {
                 )}
                 {twoFactorSecret && (
                   <div className="mt-4">
-                    <p className="text-xs text-gray-400 mb-1">Or enter this code manually:</p>
-                    <p className="font-mono text-sm glass-card px-3 py-2 rounded-lg select-all break-all">
+                    <p className="text-xs text-[var(--text-muted)] mb-1">Or enter this code manually:</p>
+                    <p className="font-mono text-sm panel px-3 py-2 rounded-lg select-all break-all">
                       {twoFactorSecret}
                     </p>
                   </div>
                 )}
               </div>
               
-              <div className="p-4 rounded-xl glass-card">
+              <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
                 <h3 className="font-semibold mb-2">{t.step2Verify}</h3>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-[var(--text-muted)] mb-4">
                   {t.step2Hint}
                 </p>
                 <input
                   type="text"
                   value={verifyCode}
                   onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="w-full px-4 py-3 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white text-center tracking-widest font-mono text-lg"
+                  className="input w-full px-4 py-3 rounded-xl text-center tracking-widest font-mono text-lg"
                   placeholder={t.placeholderCode6}
                   maxLength={6}
                   data-testid="input-verify-2fa-code"
@@ -859,14 +859,14 @@ export default function SettingsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => { setShow2FASetup(false); setVerifyCode(''); setTwoFactorSecret(null); setTwoFactorQR(null); }}
-                  className="flex-1 px-4 py-3 rounded-xl glass-card transition font-semibold"
+                  className="btn-outline flex-1 px-4 py-3 rounded-xl font-semibold"
                 >
                   {t.cancel}
                 </button>
                 <button
                   onClick={handleVerify2FA}
                   disabled={setting2FA || verifyCode.length !== 6}
-                  className="flex-1 px-4 py-3 rounded-xl font-semibold text-black bg-white hover:bg-white/90 transition-all disabled:opacity-50"
+                  className="btn-primary flex-1 px-4 py-3 rounded-xl disabled:opacity-50"
                   data-testid="button-verify-2fa"
                 >
                   {setting2FA ? t.verifying : t.enable2FA}
@@ -876,13 +876,13 @@ export default function SettingsPage() {
           ) : (
             // 2FA not enabled
             <div className="space-y-4">
-              <p className="text-gray-400 text-sm">
+              <p className="text-[var(--text-muted)] text-sm">
                 {t.twoFactorIntro}
               </p>
               <button
                 onClick={handleSetup2FA}
                 disabled={setting2FA}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-black bg-white hover:bg-slate-100 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="btn-primary gap-2 disabled:cursor-not-allowed"
                 data-testid="button-setup-2fa"
               >
                 {setting2FA ? t.loadingGeneric : t.setup2FA}
@@ -893,7 +893,7 @@ export default function SettingsPage() {
 
         {/* Change Password */}
         <div
-          className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
             <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -907,20 +907,20 @@ export default function SettingsPage() {
           ) : (
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div>
-              <label className="text-xs sm:text-sm text-gray-400 block mb-1">{t.currentPassword}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)] block mb-1">{t.currentPassword}</label>
               <div className="relative">
                 <input
                   type={showCurrentPassword ? "text" : "password"}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white pr-12"
+                  className="input w-full px-4 py-3 rounded-xl pr-12"
                   placeholder={t.placeholderCurrentPw}
                   data-testid="input-current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -928,20 +928,20 @@ export default function SettingsPage() {
             </div>
             
             <div>
-              <label className="text-xs sm:text-sm text-gray-400 block mb-1">{t.newPassword}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)] block mb-1">{t.newPassword}</label>
               <div className="relative">
                 <input
                   type={showNewPassword ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white pr-12"
+                  className="input w-full px-4 py-3 rounded-xl pr-12"
                   placeholder={t.placeholderNewPw}
                   data-testid="input-new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -949,12 +949,12 @@ export default function SettingsPage() {
             </div>
             
             <div>
-              <label className="text-xs sm:text-sm text-gray-400 block mb-1">{t.confirmPassword}</label>
+              <label className="text-xs sm:text-sm text-[var(--text-muted)] block mb-1">{t.confirmPassword}</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl glass-card focus:border-white/20 focus:outline-none text-white"
+                className="input w-full px-4 py-3 rounded-xl"
                 placeholder={t.placeholderConfirmPw}
                 data-testid="input-confirm-password"
               />
@@ -963,7 +963,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={changingPassword || !currentPassword || !newPassword || !confirmPassword}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-black bg-white hover:bg-slate-100 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="btn-primary gap-2 rounded-xl py-3 px-6 disabled:cursor-not-allowed"
               data-testid="button-change-password"
             >
               {changingPassword ? t.changingPassword : t.changePassword}
@@ -977,7 +977,7 @@ export default function SettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
             <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
               <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -985,28 +985,28 @@ export default function SettingsPage() {
             </h2>
             
             {subscriptionLoading && canAccessPremium ? (
-              <p className="text-gray-400 text-sm sm:text-base">{t.loadingSubscription}</p>
+              <p className="text-[var(--text-muted)] text-sm sm:text-base">{t.loadingSubscription}</p>
             ) : (
               <div className="space-y-3 sm:space-y-4">
                 {canAccessPremium && (
                   <>
                     <div className="flex items-center justify-between gap-4">
                       <div>
-                        <label className="text-xs sm:text-sm text-gray-400">{t.currentPlan}</label>
-                        <p className="text-xl sm:text-2xl font-bold text-white">
+                        <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.currentPlan}</label>
+                        <p className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
                           {getTierName(user.subscriptionTier)}
                         </p>
                       </div>
                       <div className="text-right">
-                        <label className="text-xs sm:text-sm text-gray-400">{t.price}</label>
+                        <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.price}</label>
                         <p className="text-xl sm:text-2xl font-bold">
-                          {getTierPrice(user.subscriptionTier)}<span className="text-xs sm:text-sm text-gray-400">{t.perMonth}</span>
+                          {getTierPrice(user.subscriptionTier)}<span className="text-xs sm:text-sm text-[var(--text-muted)]">{t.perMonth}</span>
                         </p>
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-xs sm:text-sm text-gray-400">{t.status}</label>
+                      <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.status}</label>
                       {subscription?.cancelAtPeriodEnd ? (
                         <p className="text-base sm:text-lg flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-orange-500" />
@@ -1026,7 +1026,7 @@ export default function SettingsPage() {
 
                     {subscription?.currentPeriodEnd && !subscription?.cancelAtPeriodEnd && (
                       <div>
-                        <label className="text-xs sm:text-sm text-gray-400">{t.nextBilling}</label>
+                        <label className="text-xs sm:text-sm text-[var(--text-muted)]">{t.nextBilling}</label>
                         <p className="text-base sm:text-lg">{new Date(subscription.currentPeriodEnd * 1000).toLocaleDateString()}</p>
                       </div>
                     )}
@@ -1034,7 +1034,7 @@ export default function SettingsPage() {
                 )}
 
                 {!canAccessPremium && (
-                  <p className="text-gray-400 text-sm sm:text-base">
+                  <p className="text-[var(--text-muted)] text-sm sm:text-base">
                     {t.billingPortalHint}
                   </p>
                 )}
@@ -1054,7 +1054,7 @@ export default function SettingsPage() {
                       }
                     }}
                     disabled={openingPortal}
-                    className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-black bg-white hover:bg-white/90 transition-all hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="btn-primary items-center justify-center gap-2 px-4 py-2.5 rounded-xl disabled:opacity-70"
                     data-testid="button-manage-billing"
                   >
                     <CreditCard className="w-4 h-4" />
@@ -1081,7 +1081,7 @@ export default function SettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass-panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
+          className="panel rounded-xl sm:rounded-2xl p-4 sm:p-6"
         >
           <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
             <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1093,21 +1093,21 @@ export default function SettingsPage() {
               to="/terms"
               className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition"
             >
-              <FileText className="w-5 h-5 text-gray-400" />
+              <FileText className="w-5 h-5 text-[var(--text-muted)]" />
               <span>{t.terms}</span>
             </Link>
             <Link
               to="/privacy"
               className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition"
             >
-              <Shield className="w-5 h-5 text-gray-400" />
+              <Shield className="w-5 h-5 text-[var(--text-muted)]" />
               <span>{t.privacy}</span>
             </Link>
             <Link
               to="/cookies"
               className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition"
             >
-              <Cookie className="w-5 h-5 text-gray-400" />
+              <Cookie className="w-5 h-5 text-[var(--text-muted)]" />
               <span>{t.cookies}</span>
             </Link>
           </div>
@@ -1128,7 +1128,7 @@ export default function SettingsPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="glass-panel-strong rounded-2xl p-6 max-w-md w-full"
+              className="panel-strong rounded-2xl p-6 max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-start mb-4">
@@ -1186,17 +1186,17 @@ export default function SettingsPage() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="glass-panel-strong rounded-2xl p-8 max-w-lg w-full"
+              className="panel-strong rounded-2xl p-8 max-w-lg w-full"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-lg glass-card">
-                    <TrendingUp className="w-8 h-8 text-white/70" />
+                  <div className="p-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
+                    <TrendingUp className="w-8 h-8 text-[var(--text-secondary)]" />
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold">{t.retentionTitle}</h3>
-                    <p className="text-gray-400">{t.retentionSubtitle}</p>
+                    <p className="text-[var(--text-muted)]">{t.retentionSubtitle}</p>
                   </div>
                 </div>
                 <button
@@ -1209,7 +1209,7 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-4 mb-6">
-                <div className="p-4 rounded-xl glass-card">
+                <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
                   <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
                     <span className="text-2xl">💎</span>
                     {t.retentionThinkTitle}
@@ -1219,7 +1219,7 @@ export default function SettingsPage() {
                   </p>
                 </div>
 
-                <div className="p-4 rounded-xl glass-card">
+                <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
                   <h4 className="font-bold mb-2">{t.retentionBenefitsTitle}</h4>
                   <ul className="text-sm text-gray-300 space-y-1">
                     <li>
@@ -1245,7 +1245,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleConfirmCancel}
                   disabled={cancelMutation.isPending}
-                  className="flex-1 px-6 py-3 glass-card rounded-xl font-semibold transition disabled:opacity-50"
+                  className="btn-outline flex-1 px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
                   data-testid="button-confirm-cancel"
                 >
                   {cancelMutation.isPending ? t.cancelling : t.cancelAnyway}
@@ -1280,13 +1280,13 @@ export default function SettingsPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-panel-strong rounded-2xl p-6 max-w-md w-full"
+              className="panel-strong rounded-2xl p-6 max-w-md w-full"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-violet-500/20">
-                    <Key className="w-6 h-6 text-violet-300" />
+                  <div className="p-2 rounded-lg bg-[var(--accent-soft)]">
+                    <Key className="w-6 h-6 text-[var(--accent)]" />
                   </div>
                   <h3 className="text-xl font-bold">{t.apiEnrollModalTitle}</h3>
                 </div>
@@ -1304,7 +1304,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => setShowApiEnrollModal(false)}
-                  className="flex-1 px-5 py-3 glass-card rounded-xl font-semibold transition"
+                  className="btn-outline flex-1 px-5 py-3 rounded-xl font-semibold"
                 >
                   {t.apiEnrollClose}
                 </button>
@@ -1312,7 +1312,7 @@ export default function SettingsPage() {
                   href={TELEGRAM_ENROLL_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white text-center rounded-xl font-semibold transition inline-flex items-center justify-center gap-2"
+                  className="btn-accent flex-1 px-5 py-3 text-center rounded-xl font-semibold inline-flex items-center justify-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
                   {t.apiEnrollTelegramCta}
