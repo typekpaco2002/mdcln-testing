@@ -251,6 +251,8 @@ import {
   isModelCloneXRunpodReady,
   submitModelCloneXJob,
   submitModelCloneXImg2ImgJob,
+  pollModelCloneXJob,
+  extractModelCloneXImages,
 } from "../services/modelcloneX.service.js";
 import { getMcxSceneJsonFromImageGrok } from "../services/mcxGrokImagePrompt.service.js";
 import { buildMcxImg2ImgPromptFromImage } from "../services/mcxImageToPrompt.service.js";
@@ -295,6 +297,29 @@ import { getAppBranding } from "../services/branding.service.js";
 import { getTutorialCatalog } from "../services/tutorial-videos.service.js";
 
 const router = express.Router();
+
+// Callback is the primary completion path, but status endpoint can do a direct
+// RunPod check when callbacks are delayed/missed (throttled per generation id).
+const _mcxStatusPollLastAt = new Map();
+const MCX_STATUS_POLL_MIN_AGE_MS = 15_000;
+const MCX_STATUS_POLL_COOLDOWN_MS = 8_000;
+
+function parseModelCloneXOutputUrls(raw) {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map((u) => String(u || "").trim()).filter(Boolean);
+  if (typeof raw !== "string") return [];
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed.map((u) => String(u || "").trim()).filter(Boolean);
+    }
+  } catch {
+    // Single-url string
+  }
+  return [trimmed];
+}
 const consumedImpersonationJtis = new Map();
 const generationIdempotencyCache = new Map();
 
@@ -3868,21 +3893,7 @@ router.get("/modelclone-x/status/:generationId", authMiddleware, async (req, res
     }
 
     if (gen.status === "completed") {
-      let imageUrls = [];
-      if (typeof gen.outputUrl === "string" && gen.outputUrl.trim()) {
-        const raw = gen.outputUrl.trim();
-        if (raw.startsWith("[")) {
-          try {
-            const arr = JSON.parse(raw);
-            if (Array.isArray(arr)) {
-              imageUrls = arr.map((u) => String(u || "").trim()).filter(Boolean);
-            }
-          } catch {
-            imageUrls = [];
-          }
-        }
-        if (!imageUrls.length) imageUrls = [raw];
-      }
+      const imageUrls = parseModelCloneXOutputUrls(gen.outputUrl);
       return res.json({
         success: true,
         status: "completed",
@@ -3894,8 +3905,66 @@ router.get("/modelclone-x/status/:generationId", authMiddleware, async (req, res
       return res.json({ success: true, status: "failed", error: gen.errorMessage });
     }
 
-    // Callback-only mode: no direct RunPod polling here.
-    // Stuck rows are reconciled by watchdog (>= 30 min).
+    // Opportunistic direct polling fallback (callbacks remain primary).
+    // This makes multi-image MCX i2i results appear immediately even if webhook
+    // delivery is delayed/missed for a specific run.
+    if (gen.status === "processing" && typeof gen.providerTaskId === "string" && gen.providerTaskId.trim()) {
+      const now = Date.now();
+      const ageMs = now - new Date(gen.createdAt).getTime();
+      const lastPolledAt = _mcxStatusPollLastAt.get(gen.id) || 0;
+      const canPoll =
+        ageMs >= MCX_STATUS_POLL_MIN_AGE_MS &&
+        now - lastPolledAt >= MCX_STATUS_POLL_COOLDOWN_MS;
+      if (canPoll) {
+        _mcxStatusPollLastAt.set(gen.id, now);
+        try {
+          const rp = await pollModelCloneXJob(gen.providerTaskId.trim());
+          const runpodStatus = String(rp?.status || "").toLowerCase();
+
+          if (runpodStatus === "completed" || runpodStatus === "success" || runpodStatus === "done") {
+            const imagePayloads = extractModelCloneXImages(rp).filter(Boolean);
+            if (imagePayloads.length > 0) {
+              const { uploadBufferToBlobOrR2 } = await import("../utils/kieUpload.js");
+              const outputUrls = [];
+              for (const imageData of imagePayloads) {
+                if (typeof imageData === "string" && imageData.startsWith("http")) {
+                  outputUrls.push(imageData);
+                  continue;
+                }
+                if (typeof imageData === "string" && imageData.trim()) {
+                  const buf = Buffer.from(imageData, "base64");
+                  const uploaded = await uploadBufferToBlobOrR2(buf, "modelclone-x", "png", "image/png");
+                  outputUrls.push(uploaded);
+                }
+              }
+              if (outputUrls.length > 0) {
+                const outputUrlValue =
+                  outputUrls.length === 1 ? outputUrls[0] : JSON.stringify(outputUrls);
+                await prisma.generation.update({
+                  where: { id: gen.id },
+                  data: {
+                    status: "completed",
+                    outputUrl: outputUrlValue,
+                    completedAt: new Date(),
+                    errorMessage: null,
+                  },
+                });
+                return res.json({
+                  success: true,
+                  status: "completed",
+                  imageUrl: outputUrls[0] || null,
+                  imageUrls: outputUrls,
+                  recoveredViaPolling: true,
+                });
+              }
+            }
+          }
+        } catch (pollErr) {
+          console.warn("[ModelCloneX] status fallback poll failed:", pollErr?.message || pollErr);
+        }
+      }
+    }
+
     return res.json({ success: true, status: "processing" });
   } catch (err) {
     console.error("[ModelCloneX] status error:", err.message);
