@@ -85,18 +85,25 @@ ${error.stack}
       {errors.map(error => (
         <div
           key={error.id}
-          className="bg-red-500/10 backdrop-blur-sm border-2 border-red-500 rounded-lg p-4 shadow-2xl animate-in slide-in-from-right"
+          className="rounded-xl p-4 animate-in slide-in-from-right"
+          style={{
+            background: 'color-mix(in srgb, var(--danger) 8%, var(--bg-content))',
+            border: '1px solid color-mix(in srgb, var(--danger) 36%, transparent)',
+            boxShadow: '0 10px 28px var(--shadow-ambient)',
+            color: 'var(--text-primary)',
+          }}
           data-testid={`error-popup-${error.id}`}
         >
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-            
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--danger)' }} />
+
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className="font-bold text-red-300">Error Occurred</h3>
+                <h3 className="font-semibold text-[13px] tracking-tight" style={{ color: 'var(--danger)' }}>Error Occurred</h3>
                 <button
                   onClick={() => dismissError(error.id)}
-                  className="text-red-300 hover:text-red-100 transition"
+                  className="transition-opacity hover:opacity-70"
+                  style={{ color: 'var(--text-muted)' }}
                   data-testid="button-dismiss-error"
                 >
                   <X className="w-4 h-4" />
@@ -104,33 +111,36 @@ ${error.stack}
               </div>
 
               {error.context && (
-                <p className="text-xs text-red-200/70 mb-1">
+                <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>
                   Context: {error.context}
                 </p>
               )}
 
-              <p className="text-sm text-red-100 font-mono mb-2 break-words">
+              <p className="text-[13px] font-mono mb-2 break-words" style={{ color: 'var(--text-primary)' }}>
                 {error.message}
               </p>
 
               {error.status && (
-                <p className="text-xs text-red-200/70 mb-2">
+                <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
                   HTTP {error.status}: {error.method} {error.url}
                 </p>
               )}
 
               {error.apiData && (
-                <div className="mb-2 p-2 bg-black/20 rounded text-xs text-red-100 font-mono max-h-24 overflow-y-auto">
+                <div
+                  className="mb-2 p-2 rounded text-xs font-mono max-h-24 overflow-y-auto"
+                  style={{ background: 'var(--bg-page)', color: 'var(--text-secondary)' }}
+                >
                   {JSON.stringify(error.apiData, null, 2)}
                 </div>
               )}
 
               {error.stack && (
                 <details className="mb-2">
-                  <summary className="text-xs text-red-300 cursor-pointer hover:text-red-100">
+                  <summary className="text-xs cursor-pointer transition-colors" style={{ color: 'var(--text-muted)' }}>
                     Stack Trace
                   </summary>
-                  <pre className="text-xs text-red-100 mt-1 p-2 bg-black/20 rounded overflow-x-auto max-h-32">
+                  <pre className="text-xs mt-1 p-2 rounded overflow-x-auto max-h-32" style={{ background: 'var(--bg-page)', color: 'var(--text-secondary)' }}>
                     {error.stack}
                   </pre>
                 </details>
@@ -138,7 +148,8 @@ ${error.stack}
 
               <button
                 onClick={() => copyError(error)}
-                className="flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded transition"
+                className="btn-outline"
+                style={{ padding: '6px 10px', fontSize: 12 }}
                 data-testid="button-copy-error"
               >
                 <Copy className="w-3 h-3" />

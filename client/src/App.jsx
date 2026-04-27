@@ -174,59 +174,78 @@ function LoraPromoBanner() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 100, y: 0 }}
-      animate={{ opacity: 1, x: 0, y: 0 }}
-      exit={{ opacity: 0, x: 100 }}
+      initial={{ opacity: 0, x: 24 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 24 }}
       className="fixed bottom-4 right-4 z-[9999] w-[320px] max-w-[calc(100vw-2rem)]"
     >
       <div
-        className="rounded-xl border border-white/10 p-4 backdrop-blur-2xl"
+        className="relative rounded-xl p-4"
         style={{
-          background: "linear-gradient(135deg, rgba(30,20,40,0.6) 0%, rgba(20,15,30,0.65) 100%)",
-          boxShadow: "0 0 0 1px rgba(255,255,255,0.18), 0 0 18px 2px rgba(255,255,255,0.12), inset 0 1px 0 rgba(255,255,255,0.09)",
+          background: "var(--bg-elevated)",
+          border: "1px solid var(--border-medium)",
+          boxShadow: "0 10px 32px var(--shadow-ambient)",
+          color: "var(--text-primary)",
         }}
       >
         <button
           onClick={handleDismiss}
-          className="absolute top-2.5 right-2.5 p-1 rounded-lg hover:bg-white/10 transition-colors"
+          className="absolute top-2.5 right-2.5 p-1 rounded-md transition-colors"
+          style={{ color: "var(--text-muted)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; }}
           data-testid="button-promo-dismiss"
         >
-          <X className="w-4 h-4 text-slate-400" />
+          <X className="w-4 h-4" />
         </button>
 
         <div className="flex items-start gap-3 mb-3">
-          <div className="p-2 rounded-lg shrink-0" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
-            <Info className="w-5 h-5 text-white" />
+          <div
+            className="p-2 rounded-md shrink-0"
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+          >
+            <Info className="w-4 h-4" style={{ color: "var(--text-primary)" }} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white mb-0.5">{copy.promoTitle}</h3>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              {copy.promoBodyPrefix} <span className="text-emerald-400 font-semibold">{copy.promoBodyHighlight}</span> {copy.promoBodySuffix}
+            <h3 className="text-[13px] font-semibold mb-0.5 tracking-tight" style={{ letterSpacing: "-0.01em" }}>
+              {copy.promoTitle}
+            </h3>
+            <p className="text-[11.5px] leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              {copy.promoBodyPrefix}{" "}
+              <span className="font-semibold" style={{ color: "var(--success)" }}>
+                {copy.promoBodyHighlight}
+              </span>{" "}
+              {copy.promoBodySuffix}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 mb-3 backdrop-blur-md bg-white/[0.04] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] border-white/10">
-          <Gift className="w-4 h-4 text-emerald-400 shrink-0" />
-          <p className="text-[11px] font-medium">
-            <span className="text-white">{copy.promoBonusPrefix} </span>
-            <span className="text-emerald-300">{copy.promoBonusHighlight}</span>
+        <div
+          className="flex items-center gap-2 p-2.5 rounded-md mb-3"
+          style={{
+            background: "color-mix(in srgb, var(--success) 10%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--success) 28%, transparent)",
+          }}
+        >
+          <Gift className="w-4 h-4 shrink-0" style={{ color: "var(--success)" }} />
+          <p className="text-[11.5px] font-medium">
+            <span style={{ color: "var(--text-primary)" }}>{copy.promoBonusPrefix} </span>
+            <span style={{ color: "var(--success)" }}>{copy.promoBonusHighlight}</span>
           </p>
         </div>
 
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={handleDontShowAgain}
-            className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
+            className="text-[11px] transition-colors"
+            style={{ color: "var(--text-muted)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-muted)"; }}
             data-testid="button-promo-dont-show"
           >
             {copy.promoDontShow}
           </button>
-          <a
-            href="/nsfw"
-            className="px-3 py-1.5 rounded-lg text-xs font-medium text-black bg-white hover:bg-slate-100 transition-all"
-            data-testid="link-promo-try-now"
-          >
+          <a href="/nsfw" className="btn-primary" style={{ padding: "6px 12px", fontSize: 12 }} data-testid="link-promo-try-now">
             {copy.promoTryNow}
           </a>
         </div>
@@ -590,17 +609,22 @@ function App() {
           toastOptions={{
             duration: 4000,
             style: {
-              background: 'var(--bg-surface)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
+              background: 'var(--bg-elevated)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
               color: 'var(--text-primary)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '10px',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '13px',
+              padding: '10px 12px',
+              boxShadow: '0 10px 32px var(--shadow-ambient)',
             },
             success: {
-              iconTheme: {
-                primary: 'var(--text-primary)',
-                secondary: 'var(--bg-page)',
-              },
+              iconTheme: { primary: 'var(--success)', secondary: 'var(--bg-elevated)' },
+            },
+            error: {
+              iconTheme: { primary: 'var(--danger)', secondary: 'var(--bg-elevated)' },
             },
           }}
         />

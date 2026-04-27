@@ -46,6 +46,7 @@ import { useTheme } from "../hooks/useTheme.jsx";
 import { usePrivateMode } from "../hooks/usePrivateMode.js";
 import { hasPremiumAccess } from "../utils/premiumAccess";
 import { sound } from "../utils/sounds";
+import BrandMark from "./BrandMark.jsx";
 
 const LOCALE_STORAGE_KEY = "app_locale";
 const SUPPORTED_LOCALES = ["en", "ru"];
@@ -307,81 +308,61 @@ export default function AppSidebar({
   return (
     <motion.aside
       initial={false}
-      animate={{ width: visuallyCollapsed ? 80 : 260 }}
-      transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-      className="fixed left-0 top-0 h-screen z-50 flex flex-col max-md:pointer-events-auto md:overflow-visible backdrop-blur-2xl rounded-r-[2rem] overflow-hidden"
+      animate={{ width: visuallyCollapsed ? 72 : 244 }}
+      transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+      className="fixed left-0 top-0 h-screen z-50 flex flex-col max-md:pointer-events-auto md:overflow-visible"
       style={{
-        background:
-          theme === "light"
-            ? "linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(241,245,249,0.62) 100%)"
-            : "linear-gradient(180deg, rgba(15,15,23,0.78) 0%, rgba(10,10,18,0.82) 100%)",
-        borderTop: "1px solid var(--border-subtle)",
-        borderBottom: "1px solid var(--border-subtle)",
-        borderLeft: "1px solid var(--border-subtle)",
-        borderRight: "none",
-        boxShadow:
-          theme === "light"
-            ? "0 12px 32px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.55)"
-            : "0 14px 34px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 38px rgba(139,92,246,0.12)",
+        background: "var(--sidebar-bg)",
+        borderRight: "1px solid var(--border-subtle)",
       }}
       onPointerEnter={handleAsidePointerEnter}
       onPointerLeave={handleAsidePointerLeave}
     >
-      {/* Subtle purple glow under glass panel */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 120% 75% at 0% 0%, rgba(139,92,246,0.16) 0%, rgba(139,92,246,0.06) 38%, transparent 72%)",
-        }}
-      />
-
-      {/* Logo Section — always returns to dashboard home (same tab stack as /dashboard) */}
-      <div className="p-5 mb-2">
+      {/* Brand row — always returns to dashboard home (same tab stack as /dashboard) */}
+      <div className={`px-4 pt-5 pb-4 ${visuallyCollapsed ? "px-3" : ""}`}>
         <Link
           to="/dashboard"
           onClick={() => setActiveTab("home")}
-          className={`flex items-center gap-3 hover:opacity-80 transition-opacity ${visuallyCollapsed ? "justify-center" : ""}`}
+          className={`flex items-center gap-2.5 transition-opacity hover:opacity-85 ${visuallyCollapsed ? "justify-center" : ""}`}
         >
-          <div className="relative flex-shrink-0">
-            <img
-              src={branding.logoUrl}
-              alt={branding.appName}
-              className="w-11 h-11 rounded-xl object-contain"
-              style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden', imageRendering: 'auto' }}
-            />
-          </div>
+          <BrandMark size={32} title={branding?.appName || "ModelClone"} />
           <AnimatePresence>
             {!visuallyCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
+              <motion.span
+                initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
+                exit={{ opacity: 0, x: -6 }}
+                transition={{ duration: 0.18 }}
+                className="text-[15px] font-semibold tracking-tight truncate"
+                style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
               >
-                <span className="text-lg font-bold text-white">
-                  {branding.appName}
-                </span>
-              </motion.div>
+                {branding.appName}
+              </motion.span>
             )}
           </AnimatePresence>
         </Link>
       </div>
 
-      {/* User Profile - above Credits */}
-      <div className="px-4 mb-3">
+      {/* User Profile */}
+      <div className={`px-3 pb-3 ${visuallyCollapsed ? "px-2" : ""}`}>
         <div className="relative">
           <button
-            onClick={() => {
-              setShowProfileMenu(!showProfileMenu);
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            className={`w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 transition-colors ${collapsedProfileRow}`}
+            style={{
+              color: "var(--text-primary)",
+              background: "transparent",
+              border: "1px solid transparent",
             }}
-            className={`w-full flex items-center gap-3 rounded-xl transition-all hover:bg-white/5 px-3 py-2.5 ${
-              collapsedProfileRow
-            }`}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.borderColor = "var(--border-subtle)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; }}
             data-testid="button-profile-menu"
           >
-            <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0" style={{ background: 'transparent' }}>
-              <User className="w-4 h-4 text-white" />
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+            >
+              <User className="w-3.5 h-3.5" style={{ color: "var(--text-secondary)" }} />
             </div>
             <AnimatePresence>
               {!visuallyCollapsed && (
@@ -391,11 +372,12 @@ export default function AppSidebar({
                   exit={{ opacity: 0, x: -6 }}
                   className="flex items-center gap-2 flex-1 min-w-0"
                 >
-                  <span className="text-sm font-medium text-white truncate">
+                  <span className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
                     {user?.name || user?.email?.split("@")[0] || "Profile"}
                   </span>
                   <div
-                    className="ml-auto inline-flex items-center rounded-md border border-white/10 bg-white/[0.03] p-0.5"
+                    className="ml-auto inline-flex items-center rounded-md p-0.5"
+                    style={{ border: "1px solid var(--border-subtle)", background: "var(--bg-surface)" }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     {SUPPORTED_LOCALES.map((code) => {
@@ -407,11 +389,11 @@ export default function AppSidebar({
                             e.stopPropagation();
                             handleLocaleChange(code);
                           }}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase transition ${
-                            active
-                              ? "bg-white text-black"
-                              : "text-slate-400 hover:text-white hover:bg-white/[0.08]"
-                          }`}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase transition-colors"
+                          style={{
+                            color: active ? "var(--accent-foreground)" : "var(--text-muted)",
+                            background: active ? "var(--text-primary)" : "transparent",
+                          }}
                           data-testid={`locale-switch-${code}`}
                         >
                           {code}
@@ -420,9 +402,8 @@ export default function AppSidebar({
                     })}
                   </div>
                   <ChevronDown
-                    className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${
-                      showProfileMenu ? "rotate-180" : ""
-                    }`}
+                    className={`w-3.5 h-3.5 flex-shrink-0 transition-transform ${showProfileMenu ? "rotate-180" : ""}`}
+                    style={{ color: "var(--text-muted)" }}
                   />
                 </motion.div>
               )}
@@ -442,73 +423,53 @@ export default function AppSidebar({
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute left-0 right-0 top-full mt-1 w-full min-w-[200px] rounded-xl overflow-hidden z-50 glass-panel"
+                  transition={{ duration: 0.14 }}
+                  className="absolute left-0 right-0 top-full mt-1 w-full min-w-[208px] rounded-lg overflow-hidden z-50"
+                  style={{
+                    background: "var(--bg-elevated)",
+                    border: "1px solid var(--border-medium)",
+                    boxShadow: "0 10px 32px var(--shadow-ambient)",
+                  }}
                 >
-                  <div className="px-4 py-3 border-b border-white/10">
-                    <p className="text-sm font-medium text-white truncate">{user?.email}</p>
+                  <div className="px-3 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+                    <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>{user?.email}</p>
                     <div className="flex items-center gap-1.5 mt-1">
-                      <span className="text-xs text-slate-400 font-semibold inline-flex items-center gap-1">
-                        {user?.credits || 0} <Coins className="w-3.5 h-3.5 text-yellow-400" />
+                      <span className="text-[11px] font-semibold inline-flex items-center gap-1 numeric" style={{ color: "var(--text-secondary)" }}>
+                        {user?.credits || 0} <Coins className="w-3 h-3" style={{ color: "var(--warning)" }} />
                       </span>
                     </div>
                   </div>
-                  <div className="py-2">
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onOpenCredits();
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                      data-testid="menu-add-credits"
-                    >
-                      <CreditCard className="w-4 h-4 text-slate-400" />
-                      {copy.addCredits}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        setActiveTab("settings");
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                      data-testid="menu-change-password"
-                    >
-                      <Lock className="w-4 h-4 text-slate-400" />
-                      {copy.changePassword}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        setActiveTab("settings");
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                      data-testid="menu-settings"
-                    >
-                      <SettingsIcon className="w-4 h-4 text-slate-400" />
-                      {copy.settings}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        setActiveTab("referral");
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors"
-                      data-testid="menu-referral-program"
-                    >
-                      <Share2 className="w-4 h-4 text-slate-400" />
-                      {copy.referralProgram}
-                    </button>
+                  <div className="py-1">
+                    {[
+                      { icon: CreditCard, label: copy.addCredits, testid: "menu-add-credits", action: () => { setShowProfileMenu(false); onOpenCredits(); } },
+                      { icon: Lock, label: copy.changePassword, testid: "menu-change-password", action: () => { setShowProfileMenu(false); setActiveTab("settings"); } },
+                      { icon: SettingsIcon, label: copy.settings, testid: "menu-settings", action: () => { setShowProfileMenu(false); setActiveTab("settings"); } },
+                      { icon: Share2, label: copy.referralProgram, testid: "menu-referral-program", action: () => { setShowProfileMenu(false); setActiveTab("referral"); } },
+                    ].map((row) => (
+                      <button
+                        key={row.testid}
+                        onClick={row.action}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors"
+                        style={{ color: "var(--text-secondary)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
+                        data-testid={row.testid}
+                      >
+                        <row.icon className="w-3.5 h-3.5" />
+                        {row.label}
+                      </button>
+                    ))}
                   </div>
-                  <div className="py-2 border-t border-white/10">
+                  <div className="py-1" style={{ borderTop: "1px solid var(--border-subtle)" }}>
                     <button
-                      onClick={() => {
-                        setShowProfileMenu(false);
-                        onLogout();
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                      onClick={() => { setShowProfileMenu(false); onLogout(); }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors"
+                      style={{ color: "var(--danger)" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--danger) 10%, transparent)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                       data-testid="menu-logout"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-3.5 h-3.5" />
                       {copy.logout}
                     </button>
                   </div>
@@ -520,85 +481,78 @@ export default function AppSidebar({
       </div>
 
       {/* Main Navigation */}
-      <nav className="flex-1 px-3 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 px-2 overflow-y-auto scrollbar-hide">
         <AnimatePresence>
           {!visuallyCollapsed && (
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-medium px-3 mb-3"
+              className="eyebrow px-3 mb-2"
             >
               {copy.navigation}
             </motion.p>
           )}
         </AnimatePresence>
 
-        <div className="space-y-1">
-          {visibleMainNavItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === "home") {
-                  navigate("/dashboard");
-                }
-                setActiveTab(item.id);
-              }}
-          className={`w-full relative flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ${
-                collapsedRow
-              } ${
-                activeTab === item.id
-                    ? "bg-white/[0.08] text-white"
-                    : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
-              }`}
-              data-testid={`sidebar-${item.id}`}
-            >
-              {/* Active indicator bar */}
-              {activeTab === item.id && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
-                />
-              )}
-              
-              <item.icon
-                className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${
-                  item.isNsfw
-                    ? "text-rose-400"
-                    : item.isCreatorStudio
-                      ? "text-purple-400"
-                      : item.id === "home"
-                        ? "text-white"
-                        : item.id === "generate"
-                          ? "text-yellow-400"
-                          : item.id === "settings"
-                            ? "text-slate-400"
-                            : (activeTab === item.id ? "text-white" : "group-hover:text-white/70")
-                }`}
-              />
-              <AnimatePresence>
-                {!visuallyCollapsed && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2 flex-1"
-                  >
-                    <span className="text-sm font-medium">{item.label}</span>
-                    {item.premium && !canAccessPremium && (
-                      <Lock className="ml-auto w-3.5 h-3.5 text-slate-500" />
-                    )}
-                    {item.comingSoon && (
-                      <span className="ml-auto px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-gradient-to-r from-rose-500/20 to-orange-500/20 text-rose-300 border border-rose-500/30">
-                        {copy.soon}
-                      </span>
-                    )}
-                  </motion.div>
+        <div className="space-y-0.5">
+          {visibleMainNavItems.map((item) => {
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.id === "home") navigate("/dashboard");
+                  setActiveTab(item.id);
+                }}
+                className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors duration-150 ${collapsedRow}`}
+                style={{
+                  color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+                  background: isActive ? "var(--bg-surface)" : "transparent",
+                }}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; } }}
+                data-testid={`sidebar-${item.id}`}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="activeTab"
+                    className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+                    style={{ background: "var(--accent)" }}
+                    transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+                  />
                 )}
-              </AnimatePresence>
-            </button>
-          ))}
+
+                <item.icon
+                  className="w-[18px] h-[18px] flex-shrink-0"
+                  style={{ color: "currentColor", opacity: isActive ? 1 : 0.75 }}
+                />
+                <AnimatePresence>
+                  {!visuallyCollapsed && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex items-center gap-2 flex-1 min-w-0"
+                    >
+                      <span className="text-[13px] font-medium truncate">{item.label}</span>
+                      {item.premium && !canAccessPremium && (
+                        <Lock className="ml-auto w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                      )}
+                      {item.comingSoon && (
+                        <span
+                          className="ml-auto px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded"
+                          style={{ color: "var(--text-muted)", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+                        >
+                          {copy.soon}
+                        </span>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </button>
+            );
+          })}
         </div>
 
         {/* Pro Studio link - only when user has proAccess */}
@@ -606,13 +560,20 @@ export default function AppSidebar({
           <div className="mt-2">
             <Link
               to="/pro"
-              className={`w-full relative flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group backdrop-blur-xl border border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10 ${collapsedRow}`}
+              className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors ${collapsedRow}`}
+              style={{
+                color: "var(--accent)",
+                background: "var(--accent-soft)",
+                border: "1px solid transparent",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "transparent"; }}
               data-testid="sidebar-pro"
             >
-              <Zap className="w-5 h-5 flex-shrink-0 text-purple-400" />
+              <Zap className="w-[18px] h-[18px] flex-shrink-0" />
               <AnimatePresence>
                 {!visuallyCollapsed && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm font-medium text-purple-300">
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
                     {copy.proStudio}
                   </motion.span>
                 )}
@@ -622,7 +583,7 @@ export default function AppSidebar({
         )}
 
         {/* Divider */}
-        <div className="my-5 mx-3 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+        <div className="my-4 mx-2 h-px" style={{ background: "var(--border-subtle)" }} />
 
         {/* Monetize Section */}
         <AnimatePresence>
@@ -631,33 +592,36 @@ export default function AppSidebar({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-medium px-3 mb-3"
+              className="eyebrow px-3 mb-2"
             >
               {copy.monetize}
             </motion.p>
           )}
         </AnimatePresence>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {promoItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => {
-                item.action();
+              onClick={() => item.action()}
+              className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors ${collapsedRow}`}
+              style={{
+                color: "var(--text-secondary)",
+                background: "transparent",
+                border: "1px solid transparent",
               }}
-              className={`w-full relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] font-medium transition-all duration-200 active:scale-[0.98] border border-emerald-400/30 shadow-[0_0_12px_rgba(52,211,153,0.15)] hover:shadow-[0_0_18px_rgba(52,211,153,0.25)] ${
-                collapsedRow
-              }`}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
               data-testid={`sidebar-${item.id}`}
             >
-              <item.icon className="w-5 h-5 flex-shrink-0 text-emerald-400 drop-shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
+              <item.icon className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "var(--success)" }} />
               <AnimatePresence>
                 {!visuallyCollapsed && (
                   <motion.span
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-sm"
+                    className="text-[13px] font-medium"
                   >
                     {item.label}
                   </motion.span>
@@ -673,7 +637,7 @@ export default function AppSidebar({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-[10px] uppercase tracking-[0.25em] text-slate-400 font-medium px-3 mt-4 mb-3"
+                className="eyebrow px-3 mt-4 mb-2"
               >
                 {copy.socials}
               </motion.p>
@@ -685,47 +649,37 @@ export default function AppSidebar({
             href="https://t.me/modelclonechat"
             target="_blank"
             rel="noopener noreferrer"
-            
-            className={`w-full relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] font-medium transition-all duration-200 active:scale-[0.98] ${
-              collapsedRow
-            }`}
+            className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors ${collapsedRow}`}
+            style={{ color: "var(--text-secondary)", background: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             data-testid="sidebar-contact"
           >
-            <SiTelegram className="w-5 h-5 flex-shrink-0 text-[#26A5E4]" />
+            <SiTelegram className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "#26A5E4" }} />
             <AnimatePresence>
               {!visuallyCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-sm"
-                >
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
                   Telegram
                 </motion.span>
               )}
             </AnimatePresence>
           </a>
 
-          {/* Discord Community */}
+          {/* Discord */}
           <a
             href="https://discord.gg/vpwGygjEaB"
             target="_blank"
             rel="noopener noreferrer"
-            
-            className={`w-full relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] font-medium transition-all duration-200 active:scale-[0.98] ${
-              collapsedRow
-            }`}
+            className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors ${collapsedRow}`}
+            style={{ color: "var(--text-secondary)", background: "transparent" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             data-testid="sidebar-discord"
           >
-            <SiDiscord className="w-5 h-5 flex-shrink-0 text-[#5865F2]" />
+            <SiDiscord className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "#5865F2" }} />
             <AnimatePresence>
               {!visuallyCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="text-sm"
-                >
+                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
                   Discord
                 </motion.span>
               )}
@@ -734,22 +688,19 @@ export default function AppSidebar({
 
           {/* Job Board - Coming Soon */}
           <div
-            className={`w-full relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 font-medium cursor-not-allowed opacity-50 ${
-              collapsedRow
-            }`}
+            className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md cursor-not-allowed ${collapsedRow}`}
+            style={{ color: "var(--text-muted)", opacity: 0.7 }}
             data-testid="sidebar-jobs"
           >
-            <Briefcase className="w-5 h-5 flex-shrink-0" />
+            <Briefcase className="w-[18px] h-[18px] flex-shrink-0" />
             <AnimatePresence>
               {!visuallyCollapsed && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center gap-2"
-                >
-                  <span className="text-sm">{copy.jobBoard}</span>
-                  <span className="px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-white/5 text-slate-400 border border-white/10">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 min-w-0">
+                  <span className="text-[13px] font-medium truncate">{copy.jobBoard}</span>
+                  <span
+                    className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded"
+                    style={{ background: "var(--bg-surface)", color: "var(--text-muted)", border: "1px solid var(--border-subtle)" }}
+                  >
                     {copy.soon}
                   </span>
                 </motion.div>
@@ -761,25 +712,19 @@ export default function AppSidebar({
         {/* Admin Link */}
         {user?.role === "admin" && (
           <>
-            <div className="my-5 mx-3 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+            <div className="my-4 mx-2 h-px" style={{ background: "var(--border-subtle)" }} />
             <button
-              onClick={() => {
-                onOpenAdmin();
-              }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] font-medium transition-all duration-200 active:scale-[0.98] ${
-                collapsedRow
-              }`}
+              onClick={() => onOpenAdmin()}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors ${collapsedRow}`}
+              style={{ color: "var(--text-secondary)", background: "transparent" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
               data-testid="sidebar-admin"
             >
-              <Shield className="w-5 h-5 flex-shrink-0 text-red-400" />
+              <Shield className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "var(--danger)" }} />
               <AnimatePresence>
                 {!visuallyCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-sm"
-                  >
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
                     {copy.adminPanel}
                   </motion.span>
                 )}
@@ -790,9 +735,9 @@ export default function AppSidebar({
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-4 space-y-2">
-        <div className={`w-full flex items-center gap-2 ${visuallyCollapsed ? "justify-center" : ""}`}>
-          <button
+      <div className="p-3 space-y-1.5" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+        <div className={`w-full flex items-center gap-1 ${visuallyCollapsed ? "justify-center" : ""}`}>
+          <IconBtn
             onClick={() => {
               const next = !sidebarPinned;
               setSidebarPinned(next);
@@ -802,47 +747,62 @@ export default function AppSidebar({
                 onDesktopHoverChange?.(false);
               }
             }}
-            className="h-10 w-10 rounded-xl inline-flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all duration-200"
             title={sidebarPinned ? copy.unpinSidebar : copy.pinSidebar}
-            aria-label={sidebarPinned ? copy.unpinSidebar : copy.pinSidebar}
-            data-testid="sidebar-pin-toggle"
+            testid="sidebar-pin-toggle"
           >
-            {sidebarPinned ? <PinOff className="w-5 h-5" /> : <Pin className="w-5 h-5" />}
-          </button>
-          <button
+            {sidebarPinned ? <PinOff className="w-[16px] h-[16px]" /> : <Pin className="w-[16px] h-[16px]" />}
+          </IconBtn>
+          <IconBtn
             onClick={() => {
               const next = sound.toggle();
               setSoundEnabled(next);
             }}
-            className="h-10 w-10 rounded-xl inline-flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all duration-200"
             title={soundEnabled ? copy.soundOn : copy.soundOff}
-            aria-label={soundEnabled ? copy.soundOn : copy.soundOff}
-            data-testid="sidebar-sound-toggle"
+            testid="sidebar-sound-toggle"
           >
-            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-          </button>
+            {soundEnabled ? <Volume2 className="w-[16px] h-[16px]" /> : <VolumeX className="w-[16px] h-[16px]" />}
+          </IconBtn>
+          <IconBtn
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+            testid="sidebar-theme-toggle"
+          >
+            {theme === "dark" ? <Sun className="w-[16px] h-[16px]" /> : <Moon className="w-[16px] h-[16px]" />}
+          </IconBtn>
+          <IconBtn
+            onClick={() => {
+              if (sidebarPinned) return;
+              if (visuallyCollapsed) {
+                setCollapsed(false);
+              } else {
+                setDesktopHovered(false);
+                onDesktopHoverChange?.(false);
+                setCollapsed(true);
+              }
+            }}
+            title={copy.collapse}
+            disabled={sidebarPinned}
+            testid="sidebar-collapse"
+          >
+            {visuallyCollapsed ? <ChevronRight className="w-[16px] h-[16px]" /> : <ChevronLeft className="w-[16px] h-[16px]" />}
+          </IconBtn>
         </div>
 
-        {/* Private Mode — persists across reloads, blurs history / input / output media */}
+        {/* Private Mode toggle */}
         <button
           onClick={() => setPrivateMode(!privateMode)}
           role="switch"
           aria-checked={privateMode}
           title={privateMode ? copy.privateModeOn : copy.privateModeOff}
           data-testid="sidebar-private-mode-toggle"
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 border ${
-            visuallyCollapsed ? "justify-center px-0 gap-0 min-h-[44px]" : ""
-          } ${
-            privateMode
-              ? "bg-violet-500/15 text-violet-100 border-violet-500/35 shadow-[0_0_18px_rgba(139,92,246,0.18)]"
-              : "bg-white/[0.02] text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] border-white/[0.06]"
-          }`}
+          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors ${visuallyCollapsed ? "justify-center px-0 gap-0 min-h-[40px]" : ""}`}
+          style={{
+            color: privateMode ? "var(--accent)" : "var(--text-secondary)",
+            background: privateMode ? "var(--accent-soft)" : "transparent",
+            border: "1px solid " + (privateMode ? "transparent" : "var(--border-subtle)"),
+          }}
         >
-          {privateMode ? (
-            <EyeOff className="w-5 h-5 flex-shrink-0 text-violet-300" />
-          ) : (
-            <Eye className="w-5 h-5 flex-shrink-0" />
-          )}
+          {privateMode ? <EyeOff className="w-[16px] h-[16px] flex-shrink-0" /> : <Eye className="w-[16px] h-[16px] flex-shrink-0" />}
           <AnimatePresence>
             {!visuallyCollapsed && (
               <motion.div
@@ -851,10 +811,10 @@ export default function AppSidebar({
                 exit={{ opacity: 0 }}
                 className="flex-1 min-w-0 text-left"
               >
-                <div className="text-sm font-semibold truncate">
+                <div className="text-[12px] font-semibold truncate">
                   {privateMode ? copy.privateModeOn : copy.privateModeOff}
                 </div>
-                <div className="text-[10px] text-slate-500 truncate leading-tight">
+                <div className="text-[10px] truncate leading-tight" style={{ color: "var(--text-muted)" }}>
                   {copy.privateModeHint}
                 </div>
               </motion.div>
@@ -862,86 +822,38 @@ export default function AppSidebar({
           </AnimatePresence>
           {!visuallyCollapsed && (
             <span
-              className={`ml-auto relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 shrink-0 ${
-                privateMode
-                  ? "bg-gradient-to-r from-violet-600 to-indigo-600"
-                  : "bg-white/[0.08]"
-              }`}
+              className="ml-auto relative inline-flex h-[18px] w-[32px] items-center rounded-full transition-colors shrink-0"
+              style={{ background: privateMode ? "var(--accent)" : "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
               aria-hidden
             >
               <span
-                className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${
-                  privateMode ? "translate-x-4" : "translate-x-0.5"
-                }`}
+                className="inline-block h-3 w-3 rounded-full transition-transform"
+                style={{
+                  background: privateMode ? "var(--accent-foreground)" : "var(--text-secondary)",
+                  transform: privateMode ? "translateX(15px)" : "translateX(2px)",
+                }}
               />
             </span>
           )}
         </button>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 hover:text-slate-300 transition-all duration-200 ${collapsedRow}`}
-          style={{ background: theme === "light" ? "var(--bg-elevated)" : undefined }}
-          data-testid="sidebar-theme-toggle"
-        >
-          {theme === "dark" ? <Sun className="w-5 h-5 flex-shrink-0" /> : <Moon className="w-5 h-5 flex-shrink-0" />}
-          <AnimatePresence>
-            {!visuallyCollapsed && (
-              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm font-medium">
-                {theme === "dark" ? "Light mode" : "Dark mode"}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
-
-        {/* Collapse Toggle */}
-        <button
-          onClick={() => {
-            if (sidebarPinned) return;
-            if (visuallyCollapsed) {
-              setCollapsed(false);
-            } else {
-              setDesktopHovered(false);
-              onDesktopHoverChange?.(false);
-              setCollapsed(true);
-            }
-          }}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-500 hover:text-slate-300 hover:bg-white/[0.04] transition-all duration-200 ${
-            collapsedRow
-          }`}
-          disabled={sidebarPinned}
-          aria-disabled={sidebarPinned}
-          data-testid="sidebar-collapse"
-        >
-          {visuallyCollapsed ? (
-            <ChevronRight className="w-5 h-5" />
-          ) : (
-            <>
-              <ChevronLeft className="w-5 h-5" />
-              <span className="text-sm font-medium">{copy.collapse}</span>
-            </>
-          )}
-        </button>
-
         {/* Logout */}
         <button
-          onClick={() => {
-            onLogout();
-          }}
-          className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all duration-200 group ${
-            collapsedRow
-          }`}
+          onClick={() => onLogout()}
+          className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors ${collapsedRow}`}
+          style={{ color: "var(--text-secondary)", background: "transparent" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "color-mix(in srgb, var(--danger) 10%, transparent)"; e.currentTarget.style.color = "var(--danger)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
           data-testid="sidebar-logout"
         >
-          <LogOut className="w-5 h-5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+          <LogOut className="w-[16px] h-[16px] flex-shrink-0" />
           <AnimatePresence>
             {!visuallyCollapsed && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="text-sm font-medium"
+                className="text-[13px] font-medium"
               >
                 {copy.logout}
               </motion.span>
@@ -950,5 +862,23 @@ export default function AppSidebar({
         </button>
       </div>
     </motion.aside>
+  );
+}
+
+function IconBtn({ children, onClick, title, testid, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="h-8 w-8 rounded-md inline-flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      style={{ color: "var(--text-muted)", background: "transparent", border: "1px solid transparent" }}
+      onMouseEnter={(e) => { if (!disabled) { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.borderColor = "var(--border-subtle)"; } }}
+      onMouseLeave={(e) => { if (!disabled) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.borderColor = "transparent"; } }}
+      title={title}
+      aria-label={title}
+      data-testid={testid}
+    >
+      {children}
+    </button>
   );
 }

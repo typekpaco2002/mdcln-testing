@@ -1,85 +1,64 @@
 import { Link } from 'react-router-dom';
 import { Mail, Twitter, Instagram, Linkedin } from 'lucide-react';
+import BrandMark from './BrandMark.jsx';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-white/10 bg-black/50 backdrop-blur-xl mt-20">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
+    <footer
+      className="mt-20"
+      style={{
+        background: 'var(--bg-page)',
+        borderTop: '1px solid var(--border-subtle)',
+      }}
+    >
+      <div className="max-w-7xl mx-auto px-6 py-14">
+        <div className="grid md:grid-cols-4 gap-10 mb-10">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <img src="/logo-512.png" alt="ModelClone" className="w-10 h-10 rounded-xl object-cover" />
-              <h3 className="text-lg font-bold">ModelClone</h3>
+            <div className="flex items-center gap-2.5 mb-4">
+              <BrandMark size={32} />
+              <h3 className="text-[15px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+                ModelClone
+              </h3>
             </div>
-            <p className="text-sm text-gray-400">
+            <p className="text-[13px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
               AI-powered identity recreation and video generation platform.
             </p>
           </div>
 
           {/* Product */}
-          <div>
-            <h4 className="text-sm font-semibold mb-4 text-gray-300">Product</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link to="/dashboard" className="hover:text-white transition">
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <a href="#features" className="hover:text-white transition">
-                  Features
-                </a>
-              </li>
-              <li>
-                <a href="#pricing" className="hover:text-white transition">
-                  Pricing
-                </a>
-              </li>
-            </ul>
-          </div>
+          <FooterCol title="Product" links={[
+            { to: "/dashboard", label: "Dashboard" },
+            { href: "#features", label: "Features" },
+            { href: "#pricing", label: "Pricing" },
+          ]} />
 
           {/* Legal */}
-          <div>
-            <h4 className="text-sm font-semibold mb-4 text-gray-300">Legal</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link to="/terms" className="hover:text-white transition">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="hover:text-white transition">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link to="/cookies" className="hover:text-white transition">
-                  Cookie Policy
-                </Link>
-              </li>
-            </ul>
-          </div>
+          <FooterCol title="Legal" links={[
+            { to: "/terms", label: "Terms of Service" },
+            { to: "/privacy", label: "Privacy Policy" },
+            { to: "/cookies", label: "Cookie Policy" },
+          ]} />
 
           {/* Contact */}
           <div>
-            <h4 className="text-sm font-semibold mb-4 text-gray-300">Contact</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <h4 className="eyebrow mb-4">Contact</h4>
+            <ul className="space-y-2 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
               <li>
-                <a href="mailto:support@modelclone.app" className="hover:text-white transition flex items-center gap-2">
+                <a href="mailto:support@modelclone.app" className="inline-flex items-center gap-2 transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
                   <Mail className="w-4 h-4" />
                   support@modelclone.app
                 </a>
               </li>
               <li>
-                <a href="mailto:support@modelclone.app" className="hover:text-white transition">
+                <a href="mailto:support@modelclone.app" className="transition-colors hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
                   Legal inquiries: support@modelclone.app
                 </a>
               </li>
               <li>
-                <a href="mailto:support@modelclone.app" className="hover:text-white transition">
+                <a href="mailto:support@modelclone.app" className="transition-colors hover:opacity-80" style={{ color: 'var(--text-muted)' }}>
                   DMCA: support@modelclone.app
                 </a>
               </li>
@@ -88,24 +67,64 @@ export default function Footer() {
         </div>
 
         {/* Social & Copyright */}
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-400">
+        <div
+          className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4"
+          style={{ borderTop: '1px solid var(--border-subtle)' }}
+        >
+          <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
             © {currentYear} ModelClone. All rights reserved.
           </p>
 
-          <div className="flex items-center gap-4">
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl glass hover:bg-white/10 transition flex items-center justify-center">
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl glass hover:bg-white/10 transition flex items-center justify-center">
-              <Instagram className="w-5 h-5" />
-            </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl glass hover:bg-white/10 transition flex items-center justify-center">
-              <Linkedin className="w-5 h-5" />
-            </a>
+          <div className="flex items-center gap-2">
+            {[
+              { href: 'https://twitter.com', Icon: Twitter, label: 'Twitter' },
+              { href: 'https://instagram.com', Icon: Instagram, label: 'Instagram' },
+              { href: 'https://linkedin.com', Icon: Linkedin, label: 'LinkedIn' },
+            ].map(({ href, Icon, label }) => (
+              <a
+                key={href}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={label}
+                className="w-9 h-9 rounded-lg inline-flex items-center justify-center transition-colors"
+                style={{
+                  color: 'var(--text-muted)',
+                  background: 'var(--bg-content)',
+                  border: '1px solid var(--border-subtle)',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--border-medium)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.borderColor = 'var(--border-subtle)'; }}
+              >
+                <Icon className="w-4 h-4" />
+              </a>
+            ))}
           </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+function FooterCol({ title, links }) {
+  return (
+    <div>
+      <h4 className="eyebrow mb-4">{title}</h4>
+      <ul className="space-y-2 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+        {links.map((link) => (
+          <li key={link.to || link.href}>
+            {link.to ? (
+              <Link to={link.to} className="transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                {link.label}
+              </Link>
+            ) : (
+              <a href={link.href} className="transition-colors hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
+                {link.label}
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

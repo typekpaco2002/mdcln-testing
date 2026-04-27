@@ -65,54 +65,55 @@ class ErrorBoundary extends React.Component {
     // ── Production: clean, user-friendly screen — NO stack traces ──────────────
     if (IS_PROD) {
       return (
-        <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
+        <div
+          className="min-h-screen flex items-center justify-center p-6"
+          style={{ background: 'var(--bg-page)', color: 'var(--text-primary)' }}
+        >
           <div className="max-w-md w-full text-center">
-            <div className="w-20 h-20 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="w-10 h-10 text-red-400" />
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-6"
+              style={{
+                background: 'color-mix(in srgb, var(--danger) 10%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
+              }}
+            >
+              <AlertTriangle className="w-7 h-7" style={{ color: 'var(--danger)' }} />
             </div>
 
-            <h1 className="text-2xl font-bold mb-3">Something went wrong</h1>
-            <p className="text-gray-400 mb-2 leading-relaxed">
+            <h1 className="text-[22px] font-semibold mb-3 tracking-tight" style={{ letterSpacing: '-0.01em' }}>
+              Something went wrong
+            </h1>
+            <p className="text-[14px] mb-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               An unexpected error occurred. Our team has been notified automatically.
             </p>
             {this.state.error?.message && (
               <details className="mb-4 text-left">
-                <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-400">Technical details</summary>
-                <p className="mt-2 text-xs font-mono text-slate-500 break-words">{this.state.error.message}</p>
+                <summary className="text-xs cursor-pointer transition-colors" style={{ color: 'var(--text-muted)' }}>
+                  Technical details
+                </summary>
+                <p className="mt-2 text-xs font-mono break-words" style={{ color: 'var(--text-muted)' }}>
+                  {this.state.error.message}
+                </p>
               </details>
             )}
-            {reported && (
-              <p className="text-xs text-purple-400 mb-6">
-                ✓ Error report sent to support
-              </p>
-            )}
-            {!reported && (
-              <p className="text-xs text-gray-600 mb-6">
-                Sending error report…
-              </p>
-            )}
+            <p className="text-[12px] mb-6" style={{ color: 'var(--text-muted)' }}>
+              {reported ? '✓ Error report sent to support' : 'Sending error report…'}
+            </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-2.5 justify-center">
               <button
                 onClick={() => window.location.reload()}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:opacity-90 transition font-medium"
+                className="btn-primary"
               >
                 <RefreshCw className="w-4 h-4" />
                 Refresh Page
               </button>
 
-              <a
-                href="/dashboard"
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] transition font-medium"
-              >
+              <a href="/dashboard" className="btn-outline">
                 Go to Dashboard
               </a>
 
-              <button
-                disabled
-                title="Support contact — coming soon"
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] text-gray-600 cursor-not-allowed select-none"
-              >
+              <button disabled title="Support contact — coming soon" className="btn-ghost" style={{ opacity: 0.5 }}>
                 <Headset className="w-4 h-4" />
                 Contact Support
               </button>
@@ -124,28 +125,45 @@ class ErrorBoundary extends React.Component {
 
     // ── Development: show full details for debugging ────────────────────────────
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full glass rounded-3xl p-8">
-          <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="w-8 h-8 text-red-400" />
+      <div
+        className="min-h-screen flex items-center justify-center p-6"
+        style={{ background: 'var(--bg-page)', color: 'var(--text-primary)' }}
+      >
+        <div className="max-w-2xl w-full panel p-8">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{
+              background: 'color-mix(in srgb, var(--danger) 12%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
+            }}
+          >
+            <AlertTriangle className="w-6 h-6" style={{ color: 'var(--danger)' }} />
           </div>
 
-          <h1 className="text-2xl font-bold mb-2 text-center">Oops! Something went wrong</h1>
-          <p className="text-gray-400 mb-6 text-center text-sm">
-            Dev mode — full error details shown below. These are hidden in production.
+          <h1 className="text-[20px] font-semibold mb-2 text-center tracking-tight" style={{ letterSpacing: '-0.01em' }}>
+            Oops! Something went wrong
+          </h1>
+          <p className="mb-6 text-center text-[13px]" style={{ color: 'var(--text-muted)' }}>
+            Dev mode — full error details shown below. Hidden in production.
           </p>
 
-          <div className="mb-6 p-4 bg-red-500/10 rounded-xl space-y-3">
-            <p className="text-sm font-mono text-red-100">
+          <div
+            className="mb-6 p-4 rounded-xl space-y-3"
+            style={{
+              background: 'color-mix(in srgb, var(--danger) 8%, transparent)',
+              border: '1px solid color-mix(in srgb, var(--danger) 22%, transparent)',
+            }}
+          >
+            <p className="text-[13px] font-mono" style={{ color: 'var(--text-primary)' }}>
               {error?.message || error?.toString() || 'Unknown error occurred'}
             </p>
 
             {errorInfo?.componentStack && (
               <details open>
-                <summary className="text-xs text-red-300 cursor-pointer hover:text-red-100 mb-2">
+                <summary className="text-xs cursor-pointer mb-2" style={{ color: 'var(--text-muted)' }}>
                   Component Stack
                 </summary>
-                <pre className="text-xs text-red-100 p-2 bg-black/30 rounded overflow-x-auto max-h-48 mt-1">
+                <pre className="text-xs p-2 rounded overflow-x-auto max-h-48 mt-1" style={{ background: 'var(--bg-page)', color: 'var(--text-secondary)' }}>
                   {errorInfo.componentStack}
                 </pre>
               </details>
@@ -153,31 +171,27 @@ class ErrorBoundary extends React.Component {
 
             {error?.stack && (
               <details open>
-                <summary className="text-xs text-red-300 cursor-pointer hover:text-red-100 mb-2">
+                <summary className="text-xs cursor-pointer mb-2" style={{ color: 'var(--text-muted)' }}>
                   Stack Trace
                 </summary>
-                <pre className="text-xs text-red-100 p-2 bg-black/30 rounded overflow-x-auto max-h-48 mt-1">
+                <pre className="text-xs p-2 rounded overflow-x-auto max-h-48 mt-1" style={{ background: 'var(--bg-page)', color: 'var(--text-secondary)' }}>
                   {error.stack}
                 </pre>
               </details>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-3 justify-center">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-105 transition flex items-center justify-center gap-2"
-            >
-              <RefreshCw className="w-5 h-5" />
+          <div className="flex flex-wrap gap-2 justify-center">
+            <button onClick={() => window.location.reload()} className="btn-primary">
+              <RefreshCw className="w-4 h-4" />
               Refresh Page
             </button>
-
             <button
               onClick={() => {
                 const text = `REACT ERROR\n===========\nMessage: ${error?.message || error?.toString()}\n\nComponent Stack:\n${errorInfo?.componentStack || 'N/A'}\n\nStack Trace:\n${error?.stack || 'N/A'}`.trim();
                 navigator.clipboard.writeText(text);
               }}
-              className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 transition flex items-center justify-center gap-2"
+              className="btn-outline"
             >
               Copy Error
             </button>
