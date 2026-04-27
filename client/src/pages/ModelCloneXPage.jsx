@@ -26,48 +26,6 @@ import { useCachedModels } from "../hooks/useCachedModels";
 
 // Light DB checks until webhook fills outputUrl (server no longer polls RunPod when webhook is set)
 const POLL_INTERVAL_MS = 5000;
-/** Shrink very large phone photos so OpenRouter vision requests do not fail on payload / token limits. */
-const GROK_IMAGE_MAX_EDGE = 1920;
-function dataUrlToDownscaledJpegBase64(dataUrl) {
-  return new Promise((resolve, reject) => {
-    if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:image")) {
-      reject(new Error("Invalid image data"));
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      let w = img.naturalWidth || img.width;
-      let h = img.naturalHeight || img.height;
-      if (!w || !h) {
-        reject(new Error("Invalid image size"));
-        return;
-      }
-      const max = GROK_IMAGE_MAX_EDGE;
-      if (w <= max && h <= max) {
-        const comma = dataUrl.indexOf(",");
-        resolve(comma >= 0 ? dataUrl.slice(comma + 1) : "");
-        return;
-      }
-      const scale = max / Math.max(w, h);
-      w = Math.round(w * scale);
-      h = Math.round(h * scale);
-      const c = document.createElement("canvas");
-      c.width = w;
-      c.height = h;
-      const x = c.getContext("2d");
-      if (!x) {
-        reject(new Error("Canvas not available"));
-        return;
-      }
-      x.drawImage(img, 0, 0, w, h);
-      const jpg = c.toDataURL("image/jpeg", 0.88);
-      const com = jpg.indexOf(",");
-      resolve(com >= 0 ? jpg.slice(com + 1) : "");
-    };
-    img.onerror = () => reject(new Error("Could not read image file"));
-    img.src = dataUrl;
-  });
-}
 
 const LOCALE_STORAGE_KEY = "app_locale";
 const DEFAULT_MODELCLONE_X_PRICING = Object.freeze({
@@ -1173,15 +1131,7 @@ function GenerateTab({ isDark, copy }) {
 
       if (genMode === "img" && mode === "character") {
         Object.assign(body, { modelcloneXImg2Img: true });
-        let b64 = refImageBase64;
-        if (refImagePreview) {
-          try {
-            b64 = await dataUrlToDownscaledJpegBase64(refImagePreview);
-          } catch (e) {
-            console.warn("[ModelCloneX] img2img downscale failed, using raw:", e?.message);
-          }
-        }
-        if (b64) Object.assign(body, { inputImageBase64: b64 });
+        if (refImageBase64) Object.assign(body, { inputImageBase64: refImageBase64 });
       }
 
       const res = await api.post("modelclone-x/generate", body, { headers: { Authorization: `Bearer ${token}` } });
