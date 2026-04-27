@@ -24,7 +24,7 @@ import { useAuthStore } from "../store";
 import { useTheme } from "../hooks/useTheme.jsx";
 import { useCachedModels } from "../hooks/useCachedModels";
 
-// Light DB checks until webhook fills outputUrl (server no longer polls RunPod when webhook is set)
+// Light DB checks until backend status returns completed output URLs.
 const POLL_INTERVAL_MS = 5000;
 
 const LOCALE_STORAGE_KEY = "app_locale";
