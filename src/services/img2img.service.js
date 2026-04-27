@@ -191,6 +191,10 @@ const NSFW_IMG2IMG_V2_GRAPH_PATHS = [
   path.join(process.cwd(), "attached_assets", "nsfw_img2img_v2promax_workflow.json"),
   path.join(__dirname, "..", "..", "attached_assets", "nsfw_img2img_v2promax_workflow.json"),
 ];
+const MCX_I2I_GRAPH_PATHS = [
+  path.join(process.cwd(), "runpod-mdcln", "workflows", "mcx_i2i.json"),
+  path.join(__dirname, "..", "..", "runpod-mdcln", "workflows", "mcx_i2i.json"),
+];
 
 /** Expand Comfy 1.12+ embedded subgraph instances (UUID `type`) to a real CheckpointLoaderSimple for API. */
 function expandEmbeddedCheckpointSubgraphs(workflowData) {
@@ -213,6 +217,7 @@ function expandEmbeddedCheckpointSubgraphs(workflowData) {
 }
 
 let nsfwImg2ImgV2GraphCache = null;
+let mcxI2iGraphCache = null;
 
 function loadNsfwImg2ImgV2GraphPrepared() {
   if (nsfwImg2ImgV2GraphCache) return JSON.parse(JSON.stringify(nsfwImg2ImgV2GraphCache));
@@ -236,6 +241,28 @@ function loadNsfwImg2ImgV2GraphPrepared() {
   expandEmbeddedCheckpointSubgraphs(data);
   nsfwImg2ImgV2GraphCache = data;
   return JSON.parse(JSON.stringify(data));
+}
+
+function loadMcxI2iGraphPrepared() {
+  if (mcxI2iGraphCache) return JSON.parse(JSON.stringify(mcxI2iGraphCache));
+  let raw = null;
+  for (const p of MCX_I2I_GRAPH_PATHS) {
+    try {
+      if (fs.existsSync(p)) {
+        raw = fs.readFileSync(p, "utf8");
+        break;
+      }
+    } catch {
+      /* try next path */
+    }
+  }
+  if (!raw) {
+    throw new Error(
+      "ModelClone-X i2i workflow missing: add runpod-mdcln/workflows/mcx_i2i.json",
+    );
+  }
+  mcxI2iGraphCache = JSON.parse(raw);
+  return JSON.parse(JSON.stringify(mcxI2iGraphCache));
 }
 
 /** Replace inputs wired as [sourceNodeId, slot] with a string, then remove the source node. */
@@ -351,6 +378,48 @@ function buildNsfwImg2ImgV2ApiPrompt({ positivePrompt, loraUrl, loraStrength, se
   }
 
   return api;
+}
+
+/**
+ * Build API prompt from `runpod-mdcln/workflows/mcx_i2i.json` (source of truth for MCX image-to-image).
+ * Upload image node: 340 (LoadImage), output node: 368 (SaveImage).
+ */
+function buildModelCloneXImg2ImgApiPrompt({ positivePrompt, loraUrl, loraStrength, seed, batchSize = 1 }) {
+  if (!String(loraUrl ?? "").trim()) {
+    throw new Error("ModelClone-X img2img requires loraUrl");
+  }
+  const graph = loadMcxI2iGraphPrepared();
+  const api = comfyUiGraphToApiPrompt(graph.nodes, graph.links, graph.extra);
+
+  inlineStringLiteralRefsInApiWorkflow(api, { "56": positivePrompt });
+  delete api["56"];
+
+  if (api["340"]?.inputs) {
+    api["340"].inputs.image = "__INPUT_IMAGE__";
+    api["340"].inputs.upload = "image";
+  }
+
+  if (api["375"]?.inputs) {
+    const s = ensureFiniteNumber(loraStrength, "loraStrength");
+    api["375"].inputs.toggle = true;
+    api["375"].inputs.mode = "advanced";
+    api["375"].inputs.num_loras = 1;
+    api["375"].inputs.lora_1_url = loraUrl;
+    api["375"].inputs.lora_1_strength = s;
+    api["375"].inputs.lora_1_model_strength = s;
+    api["375"].inputs.lora_1_clip_strength = s;
+  }
+
+  const numericBatchSize = Math.max(1, Math.min(4, Math.round(Number(batchSize) || 1)));
+  if (api["354"]?.inputs) {
+    api["354"].inputs.batch_size = numericBatchSize;
+  }
+
+  const resolvedSeed = seed ?? Math.floor(Math.random() * 1_000_000_000);
+  if (api["383"]?.inputs) api["383"].inputs.noise_seed = resolvedSeed;
+  if (api["384"]?.inputs) api["384"].inputs.noise_seed = resolvedSeed + 1;
+
+  return { api, resolvedSeed };
 }
 
 // ── RunPod API helpers ────────────────────────────────────────────────────────
@@ -602,6 +671,42 @@ export async function submitImg2ImgJob({
   }
   const runpodJobId = await runpodSubmit(runpodInput, webhookUrl);
   return { runpodJobId, resolvedSeed };
+}
+
+/**
+ * MCX image-to-image RunPod input based on `runpod-mdcln/workflows/mcx_i2i.json`.
+ */
+export async function buildModelCloneXI2IRunpodInput({
+  imageUrl,
+  imageBase64Provided,
+  prompt,
+  loraUrl,
+  loraStrength = 0.8,
+  batchSize = 1,
+  seed,
+} = {}) {
+  const imageBase64 = imageBase64Provided || (await imageUrlToBase64(imageUrl));
+  const { api, resolvedSeed } = buildModelCloneXImg2ImgApiPrompt({
+    positivePrompt: prompt,
+    loraUrl,
+    loraStrength,
+    seed,
+    batchSize,
+  });
+
+  const runpodInput = {
+    prompt: api,
+    upload_images: [
+      {
+        node_id: "340",
+        data: imageBase64,
+        filename: "img2img_input.jpg",
+      },
+    ],
+    output_type: "image",
+    output_node_id: "368",
+  };
+  return { runpodInput, resolvedSeed };
 }
 
 async function runpodPoll(jobId, timeoutMs = 300_000, intervalMs = 5_000, statusBaseUrl = RUNPOD_BASE) {

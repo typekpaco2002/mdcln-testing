@@ -8,7 +8,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { buildZImageImg2ImgRunpodInput } from "./img2img.service.js";
+import { buildModelCloneXI2IRunpodInput } from "./img2img.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -251,17 +251,14 @@ export async function submitModelCloneXImg2ImgJob({
   cfg = null,
   webhookUrl: explicitWebhook = null,
 } = {}) {
-  const { runpodInput, resolvedSeed } = await buildZImageImg2ImgRunpodInput({
+  const { runpodInput, resolvedSeed } = await buildModelCloneXI2IRunpodInput({
     imageUrl,
     imageBase64Provided,
     prompt,
     loraUrl,
     loraStrength,
     batchSize,
-    denoise,
     seed,
-    steps,
-    cfg,
   });
   const runpodJobId = await submitRunpodJob(
     { input: runpodInput },
