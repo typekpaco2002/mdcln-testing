@@ -198,6 +198,7 @@ import wavespeedCallbackRoutes from './routes/wavespeed-callback.routes.js';
 import runninghubCallbackRoutes from './routes/runninghub-callback.routes.js';
 import videoRepurposeRoutes from './routes/video-repurpose.routes.js';
 import img2imgRoutes from './routes/img2img.routes.js';
+import gptxRoutes from './routes/gptx.routes.js';
 import viralReelsRoutes from './routes/viral-reels.routes.js';
 import supportRoutes from './routes/support.routes.js';
 import runpodCallbackRoutes from './routes/runpod-callback.routes.js';
@@ -292,6 +293,7 @@ app.get('/admin-login', async (req, res) => {
 app.use('/api/viral-reels', viralReelsRoutes);
 app.use('/api/video-repurpose', videoRepurposeRoutes);
 app.use('/api/img2img', img2imgRoutes);
+app.use('/api/gptx', gptxRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/auth', telegramAuthRoutes);
 app.use('/api/telegram', telegramWebhookRoutes);

@@ -93,6 +93,7 @@ model User {
   nsfwPlanGenerationJobs        NsfwPlanGenerationJob[]
   apiKeys                       ApiKey[]
   abandonedSignupEmailOffer     AbandonedSignupEmailOffer?
+  gptxConversations             GptxConversation[]
 
   @@index([referredByUserId])
 }
@@ -984,4 +985,34 @@ model TelegramLegacyState {
 
   @@index([sessionUserId])
   @@index([updatedAt])
+}
+
+/// GPT-X: a user's chat session with the AI generation assistant.
+model GptxConversation {
+  id        String        @id @default(uuid())
+  userId    String
+  title     String        @default("New Chat")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  GptxMessage[]
+
+  @@index([userId])
+}
+
+/// GPT-X: a single message in a GptxConversation.
+/// role: "user" | "assistant"
+/// generationId: linked Generation row for the image result.
+/// videoGenId: linked Generation row for the video result.
+model GptxMessage {
+  id             String           @id @default(uuid())
+  conversationId String
+  role           String
+  content        String           @db.Text
+  generationId   String?
+  videoGenId     String?
+  createdAt      DateTime         @default(now())
+  conversation   GptxConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
 }

@@ -38,6 +38,7 @@ import {
   VolumeX,
   Eye,
   EyeOff,
+  Bot,
 } from "lucide-react";
 import { SiTelegram, SiDiscord, SiInstagram } from "react-icons/si";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -78,6 +79,7 @@ const SIDEBAR_COPY = {
     firstFrameExtractor: "First Frame Extractor",
     upscaler: "Upscaler",
     modelcloneX: "ModelClone-X",
+    gptx: "GPT-X Studio",
     history: "History",
     settings: "Settings",
     courses: "Courses",
@@ -115,6 +117,7 @@ const SIDEBAR_COPY = {
     firstFrameExtractor: "Первый кадр",
     upscaler: "Апскейлер",
     modelcloneX: "ModelClone-X",
+    gptx: "GPT-X Studio",
     history: "История",
     settings: "Настройки",
     courses: "Курсы",
@@ -278,6 +281,7 @@ export default function AppSidebar({
     { id: "frame-extractor", label: copy.firstFrameExtractor, icon: ImageIcon },
     { id: "upscaler", label: copy.upscaler, icon: ZoomIn },
     { id: "modelclone-x", label: copy.modelcloneX, icon: Wand2 },
+    { id: "gptx", label: copy.gptx, icon: Bot },
     { id: "history", label: copy.history, icon: Clock },
     { id: "settings", label: copy.settings, icon: SettingsIcon },
     { id: "course", label: copy.courses, icon: BookOpen, premium: true },
