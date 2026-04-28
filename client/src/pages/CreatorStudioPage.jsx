@@ -232,7 +232,7 @@ const IMAGE_MODELS = [
   { id: "ideogram-v3-remix", label: "Ideogram V3 Remix" },
   { id: "wan-2-7-image", label: "Wan 2.7 Image" },
   { id: "wan-2-7-image-pro", label: "Wan 2.7 Image Pro" },
-  { id: "seedream-v4-5-edit", label: "Seedream v4.5 Edit" },
+  { id: "seedream-v4-5-edit", label: "Seedream 5.0 Lite" },
   // GPT Image 2 — single id; backend auto-routes to text-to-image or
   // image-to-image based on whether input refs are present.
   { id: "gpt-image-2", label: "GPT Image 2" },
@@ -2025,7 +2025,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
       return;
     }
     if (isSeedreamImageModel && !primaryInputImage && filledRefs.length === 0) {
-      toast.error("Seedream v4.5 Edit needs at least one input image.");
+      toast.error("Seedream 5.0 Lite needs at least one input image.");
       return;
     }
     let parsedColorPalette = [];

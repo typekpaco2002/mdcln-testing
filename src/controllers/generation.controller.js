@@ -4,6 +4,7 @@ import {
 } from "../services/wavespeed.service.js";
 import {
   generateImageWithNanoBananaKie,
+  generateImageWithSeedream5Lite,
   generateTextToImageNanoBananaKie,
   generateFluxKontextKie,
   generateWan27ImageProKie,
@@ -32,7 +33,6 @@ import {
 } from "../services/runninghub.service.js";
 import {
   generateImageWithIdentityWaveSpeed,
-  generateImageWithSeedreamWaveSpeed,
 } from "../services/wavespeed.service.js";
 import {
   extractFramesFromVideo,
@@ -3059,7 +3059,7 @@ export async function generatePromptBasedImage(req, res) {
     }
 
     const providerInputCheck = useSeedream
-      ? await validateSeedreamEditImages(identityImages, "wavespeed")
+      ? await validateSeedreamEditImages(identityImages, "kie")
       : await validateNanoBananaInputImages(identityImages);
     if (!providerInputCheck.valid) {
       return res.status(400).json({ success: false, message: providerInputCheck.message });
@@ -3078,7 +3078,7 @@ export async function generatePromptBasedImage(req, res) {
       finalPrompt = applyNanoBananaPromptGuardrails(finalPrompt, prompt);
     }
 
-    const aiModel = useSeedream ? "wavespeed-seedream-v4.5-edit" : "kie-nano-banana-pro";
+    const aiModel = useSeedream ? "kie-seedream-5-lite" : "kie-nano-banana-pro";
     console.log(`\n${useSeedream ? "🌙" : "🍌"} PROMPT-BASED GENERATION (${useSeedream ? "WaveSpeed Seedream 4.5 Edit" : "KIE Nano Banana Pro"})`);
     console.log(`📸 Model: ${model.name || "Unnamed"}`);
     console.log(`💭 User prompt: ${prompt}`);
@@ -3165,7 +3165,7 @@ async function processPromptImageInBackground(
 ) {
   try {
     const emoji = useSeedream ? "🌙" : "🍌";
-    const modelName = useSeedream ? "WaveSpeed Seedream 4.5 Edit" : "KIE Nano Banana Pro";
+    const modelName = useSeedream ? "KIE Seedream 5.0 Lite" : "KIE Nano Banana Pro";
     console.log(`\n${emoji} [BG] Starting prompt image processing for ${generationId} (${modelName})`);
 
     // Upload inputs to Blob first so KIE/WaveSpeed can fetch immediately when we submit
@@ -3179,24 +3179,20 @@ async function processPromptImageInBackground(
     );
 
     const result = await requestQueue.enqueue(async () => {
+      const onTaskCreated = async (taskId) => {
+        await prisma.generation.update({
+          where: { id: generationId },
+          data: { replicateModel: `kie-task:${taskId}` },
+        });
+        await registerKieTaskForGeneration(taskId, generationId, userId, "prompt-image");
+      };
       if (useSeedream) {
-        const onTaskCreated = async (taskId) => {
-          await prisma.generation.update({
-            where: { id: generationId },
-            data: { replicateModel: `wavespeed-seedream:${taskId}` },
-          });
-        };
-        return await generateImageWithSeedreamWaveSpeed(kieImages, customPrompt, {
+        return await generateImageWithSeedream5Lite(kieImages, customPrompt, {
+          aspectRatio: "9:16",
+          quality: "basic",
           onTaskCreated,
         });
       } else {
-        const onTaskCreated = async (taskId) => {
-          await prisma.generation.update({
-            where: { id: generationId },
-            data: { replicateModel: `kie-task:${taskId}` },
-          });
-          await registerKieTaskForGeneration(taskId, generationId, userId, "prompt-image");
-        };
         return await generateImageWithNanoBananaKie(kieImages, customPrompt, {
           aspectRatio: "9:16",
           resolution: "1K",
@@ -3209,7 +3205,7 @@ async function processPromptImageInBackground(
       await prisma.generation.update({
         where: { id: generationId },
         data: {
-          replicateModel: `wavespeed-seedream:${result.taskId}`,
+          replicateModel: `kie-task:${result.taskId}`,
         },
       });
       console.log(`✅ [BG] Prompt image submitted; result will arrive via callback (task ${result.taskId})`);
@@ -4754,8 +4750,9 @@ async function processCreatorStudioInBackground(
         seedreamInputs.map((u, i) => ensureKieAccessibleUrl(u, `seedream-ref-${i + 1}`)),
       ).catch(() => seedreamInputs);
       result = await requestQueue.enqueue(() =>
-        generateImageWithSeedreamWaveSpeed(kieImages, promptText, {
-          size: String(payload?.seedreamSize || "").trim() || undefined,
+        generateImageWithSeedream5Lite(kieImages, promptText, {
+          aspectRatio: aspectRatio || "9:16",
+          quality: String(resolution || "").toLowerCase().includes("4k") ? "high" : "basic",
           onTaskCreated,
         }),
       );
@@ -4869,12 +4866,9 @@ async function processCreatorStudioInBackground(
     }
 
     if (result.success && result.deferred && result.taskId) {
-      const deferredModelTag = normalizedModel === "seedream-v4-5-edit"
-        ? `wavespeed-seedream:${result.taskId}`
-        : `kie-task:${result.taskId}`;
       await prisma.generation.update({
         where: { id: generationId },
-        data: { replicateModel: deferredModelTag },
+        data: { replicateModel: `kie-task:${result.taskId}` },
       });
       console.log(`✅ [Creator Studio] Deferred; callback expected for task ${result.taskId}`);
     } else if (result.success && result.outputUrl) {

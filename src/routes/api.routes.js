@@ -1478,7 +1478,7 @@ router.post(
         ? referencePhotos
         : [model.photo1Url, model.photo2Url, model.photo3Url].filter(Boolean);
       const providerInputCheck = engine === "seedream"
-        ? await validateSeedreamEditImages(identityImages, "wavespeed")
+        ? await validateSeedreamEditImages(identityImages, "kie")
         : await validateNanoBananaInputImages(identityImages);
       if (!providerInputCheck.valid) {
         return res.status(400).json({ success: false, error: providerInputCheck.message });
@@ -1487,7 +1487,7 @@ router.post(
       // Reference photos carry identity better than text chips — send raw user prompt only.
       const enrichedPrompt = prompt.trim();
 
-      const replicateModelLabel = engine === "seedream" ? "wavespeed-seedream-v4.5-edit" : "kie-nano-banana-pro";
+      const replicateModelLabel = engine === "seedream" ? "kie-seedream-5-lite" : "kie-nano-banana-pro";
       const generation = await prisma.generation.create({
         data: {
           userId,
@@ -1525,42 +1525,29 @@ router.post(
       res.json(successPayload);
 
       (async () => {
-        const { generateImageWithNanoBananaKie } = await import("../services/kie.service.js");
-        const { generateImageWithSeedreamWaveSpeed } = await import("../services/wavespeed.service.js");
+        const { generateImageWithNanoBananaKie, generateImageWithSeedream5Lite } = await import("../services/kie.service.js");
         const { getUserFriendlyGenerationError } = await import("../utils/generationErrorMessages.js");
         const opts = engine === "seedream"
-          ? {}
+          ? { aspectRatio: "9:16", quality: "basic" }
           : { aspectRatio: "9:16", resolution: "2K", outputFormat: "png" };
         opts.onTaskCreated = async (taskId) => {
           await prisma.generation.update({
             where: { id: generation.id },
-            data: {
-              replicateModel: engine === "seedream"
-                ? `wavespeed-seedream:${taskId}`
-                : `kie-task:${taskId}`,
-            },
+            data: { replicateModel: `kie-task:${taskId}` },
           });
-          if (engine !== "seedream") {
-            await registerKieTaskForGeneration(taskId, generation.id, userId, "advanced-image");
-          }
+          await registerKieTaskForGeneration(taskId, generation.id, userId, "advanced-image");
         };
         try {
           const result = engine === "seedream"
-            ? await generateImageWithSeedreamWaveSpeed(identityImages, enrichedPrompt, opts)
+            ? await generateImageWithSeedream5Lite(identityImages, enrichedPrompt, opts)
             : await generateImageWithNanoBananaKie(identityImages, enrichedPrompt, opts);
           if (result?.success && result?.deferred && result?.taskId) {
             await prisma.generation.update({
               where: { id: generation.id },
-              data: {
-                replicateModel: engine === "seedream"
-                  ? `wavespeed-seedream:${result.taskId}`
-                  : `kie-task:${result.taskId}`,
-              },
+              data: { replicateModel: `kie-task:${result.taskId}` },
             });
-            if (engine !== "seedream") {
-              await registerKieTaskForGeneration(result.taskId, generation.id, userId, "advanced-image");
-            }
-            console.log(`🍌 [Advanced] ${engine === "seedream" ? "WaveSpeed" : "KIE"} ${engine} submitted; result will arrive via callback (task ${result.taskId})`);
+            await registerKieTaskForGeneration(result.taskId, generation.id, userId, "advanced-image");
+            console.log(`🌸 [Advanced] KIE Seedream 5 Lite / ${engine} submitted; result will arrive via callback (task ${result.taskId})`);
           } else if (result?.success && result?.outputUrl) {
             await prisma.generation.update({
               where: { id: generation.id },

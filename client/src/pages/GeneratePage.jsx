@@ -3778,7 +3778,7 @@ function PromptImageContent({
   const [contentRating, setContentRating] = useState("sexy"); // Fixed to sexy for AI enhancer
   const [enhancing, setEnhancing] = useState(false);
   const [useCustomPrompt, setUseCustomPrompt] = useState(false); // Toggle for custom vs AI-enhanced
-  const [useNsfw, setUseNsfw] = useState(false); // SFW (Nano Banana) vs NSFW (Seedream v4.5)
+  const [useNsfw, setUseNsfw] = useState(false); // SFW (Nano Banana) vs NSFW (Seedream 5.0 Lite)
   const isNsfwMode = !hideRestrictedModes && useNsfw;
   const promptCasualCost = Number.isFinite(pricing.imagePromptCasual) ? pricing.imagePromptCasual : 20;
   const promptNsfwCost = Number.isFinite(pricing.imagePromptNsfw) ? pricing.imagePromptNsfw : 10;

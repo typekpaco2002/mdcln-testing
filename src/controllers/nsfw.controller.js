@@ -42,8 +42,7 @@ import {
   submitNsfwMotionVideo,
   isNsfwMotionConfigured,
 } from "../services/nsfw-motion.service.js";
-import { generateImageWithNanoBananaKie } from "../services/kie.service.js";
-import { generateImageWithSeedreamWaveSpeed } from "../services/wavespeed.service.js";
+import { generateImageWithNanoBananaKie, generateImageWithSeedream5Lite } from "../services/kie.service.js";
 import requestQueue from "../services/queue.service.js";
 import {
   checkAndExpireCredits,
@@ -4843,13 +4842,38 @@ export async function generateAdvancedNsfw(req, res) {
       try {
         let result;
         if (model === "seedream") {
-          console.log("Using Seedream 4.5 Edit via WaveSpeed (background)");
-          result = await generateImageWithSeedreamWaveSpeed(identityImages, prompt, {
+          console.log("Using Seedream 5.0 Lite via KIE (background)");
+          result = await generateImageWithSeedream5Lite(identityImages, prompt, {
             aspectRatio: kieAspectRatio,
+            quality: "basic",
             onTaskCreated: async (taskId) => {
               await prisma.generation.update({
                 where: { id: generationId },
-                data: { replicateModel: `wavespeed-seedream:${taskId}` },
+                data: { replicateModel: `kie-task:${taskId}` },
+              });
+              await prisma.kieTask.upsert({
+                where: { taskId },
+                update: {
+                  entityType: "generation",
+                  entityId: generationId,
+                  step: "final",
+                  userId,
+                  status: "processing",
+                  payload: { type: "nsfw" },
+                  errorMessage: null,
+                  outputUrl: null,
+                  completedAt: null,
+                },
+                create: {
+                  taskId,
+                  provider: "kie",
+                  entityType: "generation",
+                  entityId: generationId,
+                  step: "final",
+                  userId,
+                  status: "processing",
+                  payload: { type: "nsfw" },
+                },
               });
             },
           });
@@ -4894,39 +4918,32 @@ export async function generateAdvancedNsfw(req, res) {
         if (result?.success && result?.deferred && result?.taskId) {
           await prisma.generation.update({
             where: { id: generationId },
-            data: {
-              replicateModel:
-                model === "seedream"
-                  ? `wavespeed-seedream:${result.taskId}`
-                  : `kie-task:${result.taskId}`,
+            data: { replicateModel: `kie-task:${result.taskId}` },
+          });
+          await prisma.kieTask.upsert({
+            where: { taskId: result.taskId },
+            update: {
+              entityType: "generation",
+              entityId: generationId,
+              step: "final",
+              userId,
+              status: "processing",
+              payload: { type: "nsfw" },
+              errorMessage: null,
+              outputUrl: null,
+              completedAt: null,
+            },
+            create: {
+              taskId: result.taskId,
+              provider: "kie",
+              entityType: "generation",
+              entityId: generationId,
+              step: "final",
+              userId,
+              status: "processing",
+              payload: { type: "nsfw" },
             },
           });
-          if (model !== "seedream") {
-            await prisma.kieTask.upsert({
-              where: { taskId: result.taskId },
-              update: {
-                entityType: "generation",
-                entityId: generationId,
-                step: "final",
-                userId,
-                status: "processing",
-                payload: { type: "nsfw" },
-                errorMessage: null,
-                outputUrl: null,
-                completedAt: null,
-              },
-              create: {
-                taskId: result.taskId,
-                provider: "kie",
-                entityType: "generation",
-                entityId: generationId,
-                step: "final",
-                userId,
-                status: "processing",
-                payload: { type: "nsfw" },
-              },
-            });
-          }
           return;
         }
 

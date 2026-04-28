@@ -666,28 +666,60 @@ async function archiveToR2(sourceUrl) {
 // ─── Generation functions ─────────────────────────────────────────────────────
 
 /**
- * Seedream V4.5 Edit — multi-image editing/identity transfer.
+ * Seedream 5.0 Lite — identity transfer (replaces Seedream 4.5 Edit on kie.ai).
  * @param {string[]} images - array of image URLs
  * @param {string} prompt
  * @param {object} options - { aspectRatio, quality }
  */
 async function generateImageWithSeedreamKieInternal(images, prompt, options = {}) {
-  console.log(`[KIE/seedream] images=${images.length}, prompt="${prompt.slice(0, 80)}"`);
+  console.log(`[KIE/seedream5] images=${images.length}, prompt="${prompt.slice(0, 80)}"`);
   const validation = await validateSeedreamEditImages(images, "kie");
   if (!validation.valid) {
     throw new Error(validation.message);
   }
   const result = await kieRun(
     {
-      model: "seedream/4.5-edit",
+      model: "seedream/5-lite-image-to-image",
       input: {
         prompt,
         image_urls: images,
         aspect_ratio: options.aspectRatio || "9:16",
         quality: options.quality || "basic",
+        nsfw_checker: false,
       },
     },
-    "seedream-edit",
+    "seedream5-lite",
+    KIE_POLL_TIMEOUT_IMAGE_MS,
+    { onTaskCreated: options.onTaskCreated },
+  );
+  return result;
+}
+
+/**
+ * Seedream 5.0 Lite — image-to-image identity transfer (drop-in replacement for Seedream 4.5 / WaveSpeed).
+ * Model: seedream/5-lite-image-to-image on kie.ai. Accepts up to 14 images. 10 cr/image (basic quality).
+ * @param {string[]} images - identity reference image URLs (accepts up to 14)
+ * @param {string} prompt
+ * @param {object} options - { aspectRatio, quality, nsfw, onTaskCreated }
+ */
+async function generateImageWithSeedream5LiteInternal(images, prompt, options = {}) {
+  console.log(`[KIE/seedream5] images=${images.length}, prompt="${prompt.slice(0, 80)}"`);
+  const validation = await validateSeedreamEditImages(images, "kie");
+  if (!validation.valid) {
+    throw new Error(validation.message);
+  }
+  const result = await kieRun(
+    {
+      model: "seedream/5-lite-image-to-image",
+      input: {
+        prompt,
+        image_urls: images,
+        aspect_ratio: options.aspectRatio || "9:16",
+        quality: options.quality || "basic",
+        nsfw_checker: options.nsfw === true ? false : false, // always false = NSFW content allowed
+      },
+    },
+    "seedream5-lite",
     KIE_POLL_TIMEOUT_IMAGE_MS,
     { onTaskCreated: options.onTaskCreated },
   );
@@ -2090,6 +2122,9 @@ async function generateSeedance2KieInternal(payload = {}) {
 
 export function generateImageWithSeedreamKie(...args) {
   return enqueueKieJob(() => generateImageWithSeedreamKieInternal(...args));
+}
+export function generateImageWithSeedream5Lite(...args) {
+  return enqueueKieJob(() => generateImageWithSeedream5LiteInternal(...args));
 }
 export function generateImageWithIdentityKie(...args) {
   return enqueueKieJob(() => generateImageWithIdentityKieInternal(...args));
