@@ -148,6 +148,10 @@ function LoraPromoBanner() {
     if (!isAuthenticated) return;
     // Only show on /dashboard
     if (!window.location.pathname.startsWith("/dashboard")) return;
+    // Only show to users who have spent money (paying customers)
+    const hasSpent = [user?.totalSpentCents, user?.spent, user?.totalSpent]
+      .some((v) => Number(v) > 0);
+    if (!hasSpent) return;
     const dismissedLegacy = safeLocalStorageGet("loraPromo_dismissed");
     const dismissedPerUser = userPromoDismissKey ? safeLocalStorageGet(userPromoDismissKey) : null;
     const dismissed = dismissedLegacy === "true" || dismissedPerUser === "true";
@@ -155,7 +159,7 @@ function LoraPromoBanner() {
       const timer = setTimeout(() => setVisible(true), 1500);
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, userPromoDismissKey]);
+  }, [isAuthenticated, user, userPromoDismissKey]);
 
   // Both X and "Don't show again" persist the dismissal
   const handleDismiss = () => {

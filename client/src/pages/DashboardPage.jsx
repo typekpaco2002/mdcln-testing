@@ -401,10 +401,15 @@ export default function DashboardPage() {
       }
     })();
 
-    // Check if user has seen the What's New popup
+    // Check if user has seen the What's New popup — only show to paying users
     const seenVersion = safeLocalStorageGet("whats-new-seen");
     if (seenVersion !== WHATS_NEW_VERSION) {
-      setTimeout(() => setShowWhatsNew(true), 500);
+      const storeUser = useAuthStore.getState().user;
+      const hasSpent = [storeUser?.totalSpentCents, storeUser?.spent, storeUser?.totalSpent]
+        .some((v) => Number(v) > 0);
+      if (hasSpent) {
+        setTimeout(() => setShowWhatsNew(true), 500);
+      }
     }
     return () => { cancelled = true; };
   }, []);
