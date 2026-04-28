@@ -74,7 +74,6 @@ import {
 } from "../utils/fileValidation.js";
 import { waveSpeedConstraints } from "../config/providerMediaConstraints.js";
 import { getUserFriendlyGenerationError } from "../utils/generationErrorMessages.js";
-import { buildAppearancePrefix } from "../utils/appearancePrompt.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
 import { getGenerationPricing } from "../services/generation-pricing.service.js";
 import {
@@ -3070,17 +3069,11 @@ export async function generatePromptBasedImage(req, res) {
     creditsDeducted = creditsNeeded;
     console.log(`💳 Deducted ${creditsNeeded} credits upfront`);
 
-    // Inject model looks (savedAppearance + age) into prompt for character consistency
-    const appearancePrefix = buildAppearancePrefix({
-      savedAppearance: model.savedAppearance ?? undefined,
-      age: model.age ?? undefined,
-    });
-
-    // Custom prompt = raw user input, AI enhanced = add prefixes
+    // Reference photos carry identity better than text chips — omit appearance prefix entirely.
     const basePrompt = useCustomPrompt
       ? `Using reference images ${requiredReferenceCount === 2 ? "1 and 2" : "1, 2, and 3"} as identity reference for the person's face and features. Create a photo of this exact same person: ${prompt.trim()}. Keep the exact same face, facial features, hair color, eye color from the reference images. High quality, photorealistic.`
       : buildGenerationPrompt(prompt, style, contentRating, requiredReferenceCount);
-    let finalPrompt = (appearancePrefix || "") + basePrompt;
+    let finalPrompt = basePrompt;
     if (!useSeedream) {
       finalPrompt = applyNanoBananaPromptGuardrails(finalPrompt, prompt);
     }

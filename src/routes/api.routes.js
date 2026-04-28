@@ -1484,13 +1484,8 @@ router.post(
         return res.status(400).json({ success: false, error: providerInputCheck.message });
       }
 
-      // Build appearance from model's savedAppearance (single source of truth for all generations)
-      const { buildAppearancePrefix } = await import("../utils/appearancePrompt.js");
-      const appearancePrefix = buildAppearancePrefix({
-        savedAppearance: model.savedAppearance,
-        age: model.age ?? undefined,
-      });
-      const enrichedPrompt = appearancePrefix + prompt.trim();
+      // Reference photos carry identity better than text chips — send raw user prompt only.
+      const enrichedPrompt = prompt.trim();
 
       const replicateModelLabel = engine === "seedream" ? "wavespeed-seedream-v4.5-edit" : "kie-nano-banana-pro";
       const generation = await prisma.generation.create({
