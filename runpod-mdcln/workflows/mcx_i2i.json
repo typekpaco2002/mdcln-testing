@@ -1,9 +1,57 @@
 {
   "id": "d0efaa2e-cbbc-4f7c-a5b8-12d490c47050",
   "revision": 0,
-  "last_node_id": 399,
-  "last_link_id": 2467,
+  "last_node_id": 400,
+  "last_link_id": 2472,
   "nodes": [
+    {
+      "id": 400,
+      "type": "GetImageSizeAndCount",
+      "pos": [
+        -6751.334882527479,
+        -7751.662333394637
+      ],
+      "size": [
+        150.901953125,
+        86
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 2470
+        }
+      ],
+      "outputs": [
+        {
+          "name": "width",
+          "type": "INT",
+          "links": [
+            2471
+          ]
+        },
+        {
+          "name": "height",
+          "type": "INT",
+          "links": [
+            2472
+          ]
+        },
+        {
+          "name": "count",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "ComfyUI-KJNodes",
+        "Node name for S&R": "GetImageSizeAndCount"
+      },
+      "widgets_values": []
+    },
     {
       "id": 341,
       "type": "ImageScaleToTotalPixels",
@@ -56,7 +104,8 @@
           "name": "IMAGE",
           "type": "IMAGE",
           "links": [
-            2304
+            2304,
+            2470
           ]
         }
       ],
@@ -67,8 +116,8 @@
         "widget_ue_connectable": {}
       },
       "widgets_values": [
-        "nearest-exact",
-        1,
+        "lanczos",
+        2,
         1
       ]
     },
@@ -650,7 +699,7 @@
           "widget": {
             "name": "width"
           },
-          "link": null
+          "link": 2471
         },
         {
           "label": "height",
@@ -659,7 +708,7 @@
           "widget": {
             "name": "height"
           },
-          "link": null
+          "link": 2472
         },
         {
           "label": "batch_size",
@@ -1566,6 +1615,30 @@
       383,
       0,
       "MODEL"
+    ],
+    [
+      2470,
+      341,
+      0,
+      400,
+      0,
+      "IMAGE"
+    ],
+    [
+      2471,
+      400,
+      0,
+      354,
+      0,
+      "INT"
+    ],
+    [
+      2472,
+      400,
+      1,
+      354,
+      1,
+      "INT"
     ]
   ],
   "groups": [
