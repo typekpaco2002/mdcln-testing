@@ -8,6 +8,12 @@ import {
 import { getPromptTemplateValue } from "./prompt-template-config.service.js";
 import { IDENTITY_RECREATE_MODEL_CLOTHES } from "../constants/identityRecreationPrompts.js";
 import { validateSeedreamEditImages } from "../utils/fileValidation.js";
+import {
+  INSTARAW_NANO_BANANA_SYSTEM_PROMPT,
+  buildModelSelfiePrompt,
+  buildModelPortraitPrompt,
+  buildModelFullBodyPrompt,
+} from "./nanobanana-prompt.service.js";
 
 /**
  * Image APIs (Google/KIE) reject prompts that imply minors. Never emit ages under 18 in provider-facing text.
@@ -79,42 +85,23 @@ async function optimizeNanoBananaPrompt(basePrompt, context = {}) {
   const promptText = String(basePrompt || "").trim();
   if (!OPENROUTER_API_KEY || !promptText) return promptText;
 
-  let systemPrompt = `You are a senior prompt director for Nano Banana Pro image generation/editing.
+  // Use the INSTARAW-style system prompt from the prompt service (overridable via DB template).
+  // This produces the "reimagined" image-edit instruction format that Nano Banana Pro responds
+  // to with dramatically better character consistency and cinematic quality.
+  let systemPrompt = await getPromptTemplateValue(
+    "nanoBananaModelPromptEnhancerSystem",
+    INSTARAW_NANO_BANANA_SYSTEM_PROMPT,
+  );
+  if (!systemPrompt || !systemPrompt.trim()) {
+    systemPrompt = INSTARAW_NANO_BANANA_SYSTEM_PROMPT;
+  }
+  // Operation-specific addendum injected after the base system prompt.
+  const operationAddendum = `\n\nOperation-specific guidance for this call:\n- operation: ${String(context.operation || "general")}\n- aspect ratio: ${String(context.aspectRatio || "unspecified")}\n- resolution: ${String(context.resolution || "2K")}\n- reference images provided: ${String(context.referenceCount || 0)}\n${context.operation === "ai-model-selfie" ? "- ENFORCE: palm/arm-length first-person selfie POV, no visible phone, no mirror, no second photographer." : ""}${context.operation === "ai-model-fullbody" ? "- ENFORCE: full figure visible from crown to toes, include explicit footwear in outfit description." : ""}`;
+  systemPrompt = `${systemPrompt}${operationAddendum}`;
 
-Your job is to rewrite an existing prompt into a cleaner, more controllable prompt while preserving intent and identity constraints.
+  const defaultWrapper = `Convert the following base instruction into a complete INSTARAW-style image edit instruction for Nano Banana Pro. Follow the mandatory structure in your system prompt exactly. Preserve all identity and reference constraints.
 
-Best-practice rules (strict):
-1) Use positive framing and concrete specifics.
-2) Keep narrative structure: subject + action + location/context + composition + style.
-3) Use explicit camera/composition terms (angle, framing, lens feel) and one coherent lighting setup.
-4) Emphasize materiality/texture only where relevant.
-5) Keep instructions internally consistent (no conflicting camera/light directives).
-6) Preserve all identity/reference constraints exactly (especially "Using image X as identity reference..." style requirements).
-7) Keep output concise, production-ready, and free of meta text.
-8) When operation is ai-model-reference, prioritize a thumb-stopping, stunning, unique but believable real-world portrait that feels premium and cinematic, not generic AI.
-9) For ai-model-reference, prefer specific grounded scenarios and candid realism cues (for example: authentic selfie at a gas station at blue hour, street reflections, practical lighting, natural skin detail) while staying tasteful and realistic.
-10) For ai-model-reference, explicitly push for masterpiece-level visual quality: exceptional composition, premium color grading, high fidelity skin texture, and camera realism.
-
-Output format:
-- Return only the final prompt text.
-- No markdown, no bullets, no commentary.`;
-  systemPrompt = await getPromptTemplateValue("nanoBananaModelPromptEnhancerSystem", systemPrompt);
-  systemPrompt = `${systemPrompt}
-
-Non-negotiable reference-photo quality policy:
-- If operation is ai-model-reference, optimize for a stunning, unique, masterpiece-grade yet believable photo.
-- Avoid generic "AI look"; enforce grounded realism, natural skin texture, plausible lighting, and authentic camera feel.
-- Prefer specific real-world scenario direction for distinctiveness (for example: candid gas station selfie at blue hour), while keeping output tasteful and photorealistic.
-- If operation is ai-model-selfie, enforce true self-capture framing: palm/arm-length first-person selfie POV, no second photographer, no visible phone/device in hand, and no mirror unless explicitly requested.`;
-
-  const defaultWrapper = `Rewrite this Nano Banana prompt using best practices while preserving all mandatory identity and reference constraints.
-
-Operation: {{OPERATION}}
-Aspect ratio: {{ASPECT_RATIO}}
-Resolution: {{RESOLUTION}}
-Reference count: {{REFERENCE_COUNT}}
-
-Base prompt:
+Base instruction:
 {{PROMPT}}
 `;
   const wrapperTemplate = await getPromptTemplateValue(
@@ -137,8 +124,8 @@ Base prompt:
       },
       body: JSON.stringify({
         model: NANO_BANANA_PROMPT_ENHANCER_MODEL,
-        max_tokens: 700,
-        temperature: 0.35,
+        max_tokens: 900,
+        temperature: 0.4,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -1826,53 +1813,57 @@ export async function buildModelPosesPrompts(referenceImageUrl, options = {}) {
     : "";
   const extraDirection = customPrompt ? `Extra direction: ${customPrompt}.` : "";
 
-  const defaultSelfieTemplate = [
-    "Using image 1 as identity reference, create a close-up selfie of this exact same person.",
-    "{{PROFILE_SENTENCE}}",
-    "Keep the exact same face, facial features, hair color, eye color.",
-    "True self-captured palm/arm-length first-person selfie POV, front-facing camera vibe, attractive selfie pose, alluring expression, no second photographer, no visible phone/device in hand, no mirror reflection.",
-    "{{BASE_ENHANCEMENT}}.",
-    "High quality, photorealistic, natural skin texture with visible pores, clear skin without acne.",
-  ].join(" ");
-  const defaultPortraitTemplate = [
-    "Using images 1 and 2 as identity reference, create a 3/4 angle portrait of this exact same person.",
-    "{{PROFILE_SENTENCE}}",
-    "Keep the exact same face, facial features, hair color, eye color from the reference images.",
-    "Captivating look, studio lighting.",
-    "{{BASE_ENHANCEMENT}}.",
-    "High quality, photorealistic, natural skin texture with visible pores, clear skin without acne.",
-  ].join(" ");
-  const defaultFullBodyTemplate = [
-    "Using images 1 and 2 as identity references, create a full body photo of the same person.",
-    "Preserve exact identity: face structure, skin tone, hairline, eye shape and key facial details from references.",
-    "Outfit/clothing: {{OUTFIT_TEXT}}.",
-    "Body proportions: {{BODY_DESCRIPTOR}}.",
-    "Character/profile traits: {{CHARACTER_DESCRIPTOR}}.",
-    "Pose/composition: full figure visible from head to toe, natural realistic anatomy, professional lighting.",
-    "{{EXTRA_DIRECTION}}",
-    "Photorealistic, high quality details, natural skin texture.",
-  ].join(" ");
-
-  const [selfieTemplate, portraitTemplate, fullBodyTemplate] = await Promise.all([
-    getPromptTemplateValue("nanoBananaModelSelfieBasePrompt", defaultSelfieTemplate),
-    getPromptTemplateValue(
-      "nanoBananaModelPortraitBasePrompt",
-      defaultPortraitTemplate,
-    ),
-    getPromptTemplateValue("nanoBananaModelFullBodyBasePrompt", defaultFullBodyTemplate),
-  ]);
-
-  const templateVars = {
-    PROFILE_SENTENCE: profileSentence,
-    BASE_ENHANCEMENT: baseEnhancement,
-    OUTFIT_TEXT: outfitText,
-    BODY_DESCRIPTOR: bodyDescriptor,
-    CHARACTER_DESCRIPTOR: characterDescriptor,
-    EXTRA_DIRECTION: extraDirection,
+  // Build INSTARAW-style base prompts using the prompt service.
+  // These go through optimizeNanaBananaPrompt for a second AI pass.
+  const characterTraits = {
+    gender,
+    heritage,
+    age,
+    bodyType,
+    hairColor,
+    hairLength,
+    hairTexture,
+    eyeColor,
+    lipSize,
+    faceType,
+    style,
   };
-  const selfiePrompt = renderPromptTemplate(selfieTemplate, templateVars);
-  const portraitPrompt = renderPromptTemplate(portraitTemplate, templateVars);
-  const fullBodyPrompt = renderPromptTemplate(fullBodyTemplate, templateVars);
+
+  // Compose extra direction from outfit + pose + custom prompts
+  const extraDirectionForBody = [outfitText, extraDirection].filter(Boolean).join(", ");
+
+  // Allow DB-stored templates to override; fall back to INSTARAW builder output
+  const builtSelfiePrompt = buildModelSelfiePrompt(characterTraits, [baseEnhancement, customPrompt].filter(Boolean).join(", "));
+  const builtPortraitPrompt = buildModelPortraitPrompt(characterTraits, [baseEnhancement, customPrompt].filter(Boolean).join(", "));
+  const builtFullBodyPrompt = buildModelFullBodyPrompt(characterTraits, extraDirectionForBody, outfitText || undefined);
+
+  const selfiePrompt = await getPromptTemplateValue("nanoBananaModelSelfieBasePrompt", builtSelfiePrompt)
+    .then(t => t && t.trim() !== builtSelfiePrompt ? renderPromptTemplate(t, {
+      PROFILE_SENTENCE: profileSentence,
+      BASE_ENHANCEMENT: baseEnhancement,
+      OUTFIT_TEXT: outfitText,
+      BODY_DESCRIPTOR: bodyDescriptor,
+      CHARACTER_DESCRIPTOR: characterDescriptor,
+      EXTRA_DIRECTION: extraDirection,
+    }) : builtSelfiePrompt);
+  const portraitPrompt = await getPromptTemplateValue("nanoBananaModelPortraitBasePrompt", builtPortraitPrompt)
+    .then(t => t && t.trim() !== builtPortraitPrompt ? renderPromptTemplate(t, {
+      PROFILE_SENTENCE: profileSentence,
+      BASE_ENHANCEMENT: baseEnhancement,
+      OUTFIT_TEXT: outfitText,
+      BODY_DESCRIPTOR: bodyDescriptor,
+      CHARACTER_DESCRIPTOR: characterDescriptor,
+      EXTRA_DIRECTION: extraDirection,
+    }) : builtPortraitPrompt);
+  const fullBodyPrompt = await getPromptTemplateValue("nanoBananaModelFullBodyBasePrompt", builtFullBodyPrompt)
+    .then(t => t && t.trim() !== builtFullBodyPrompt ? renderPromptTemplate(t, {
+      PROFILE_SENTENCE: profileSentence,
+      BASE_ENHANCEMENT: baseEnhancement,
+      OUTFIT_TEXT: outfitText,
+      BODY_DESCRIPTOR: bodyDescriptor,
+      CHARACTER_DESCRIPTOR: characterDescriptor,
+      EXTRA_DIRECTION: extraDirection,
+    }) : builtFullBodyPrompt);
 
   return {
     referenceImageUrl,

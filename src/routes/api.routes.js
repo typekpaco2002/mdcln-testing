@@ -133,6 +133,9 @@ import {
   validateSeedreamEditImages,
 } from "../utils/fileValidation.js";
 import {
+  INSTARAW_NANO_BANANA_ENHANCE_SYSTEM,
+} from "../services/nanobanana-prompt.service.js";
+import {
   validateGenerationUploadFull,
   validateGenerationUploadSync,
   sendUploadGuardResponse,
@@ -1490,8 +1493,52 @@ router.post(
         return res.status(400).json({ success: false, error: providerInputCheck.message });
       }
 
-      // Reference photos carry identity better than text chips — send raw user prompt only.
-      const enrichedPrompt = prompt.trim();
+      // Enhance the user's raw prompt into an INSTARAW-style image edit instruction
+      // before sending to Nano Banana Pro. This significantly improves output quality
+      // by producing a structured "reimagined" prompt with cinematic details.
+      let enrichedPrompt = prompt.trim();
+      if (engine === "nano-banana") {
+        try {
+          const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+          if (OPENROUTER_API_KEY) {
+            const modelLooks = model.looks && typeof model.looks === "object" && Object.keys(model.looks).length > 0
+              ? Object.entries(model.looks)
+                  .filter(([, v]) => v)
+                  .map(([k, v]) => `• ${k}: ${v}`)
+                  .join("\n")
+              : "";
+            const userMsg = `User's idea: "${enrichedPrompt}"${modelLooks ? `\n\nCharacter appearance (incorporate as subject traits):\n${modelLooks}` : ""}\n\nWrite the full INSTARAW image edit instruction now.`;
+            const aiResp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+              },
+              body: JSON.stringify({
+                model: "x-ai/grok-4.1-fast",
+                messages: [
+                  { role: "system", content: INSTARAW_NANO_BANANA_ENHANCE_SYSTEM },
+                  { role: "user", content: userMsg },
+                ],
+                max_tokens: 700,
+                temperature: 0.35,
+              }),
+              signal: AbortSignal.timeout(28_000),
+            });
+            if (aiResp.ok) {
+              const aiData = await aiResp.json();
+              const candidate = aiData.choices?.[0]?.message?.content?.trim();
+              if (candidate && candidate.length > 50) {
+                enrichedPrompt = candidate;
+                console.log(`[Advanced/NanaBanana] Prompt enhanced via INSTARAW optimizer (${enrichedPrompt.length} chars)`);
+              }
+            }
+          }
+        } catch (enhanceErr) {
+          // Non-fatal — fall back to raw user prompt
+          console.warn("[Advanced/NanaBanana] Prompt enhancement failed, using raw prompt:", enhanceErr.message);
+        }
+      }
 
       const replicateModelLabel = engine === "seedream" ? "kie-seedream-5-lite" : "kie-nano-banana-pro";
       const generation = await prisma.generation.create({
@@ -1952,31 +1999,10 @@ router.post("/generate/enhance-prompt", authMiddleware, async (req, res) => {
     // ─────────────────────────────────────────────────────────────────────────
 
     // Shared Nano Banana Pro rules (used by both casual and ultra-realism modes)
-    const NANO_BANANA_SYSTEM = `You are a creative director prompt engineer for Nano Banana Pro.
-
-Rewrite user ideas into clear production prompts that follow Nano Banana best practices.
-
-Core rules:
-1) Be specific and concrete: subject, action, context, composition, style.
-2) Prefer positive framing ("empty street") over negative-only instructions.
-3) Include camera direction: framing, angle, lens feel, depth of field.
-4) Use one coherent lighting setup (avoid conflicting light directions).
-5) Add materiality/texture only where relevant (fabric, skin, metal, surfaces).
-6) Keep prompts internally consistent and easy for a single image model to execute.
-7) If modelLooks are provided, treat them as identity-critical and include them naturally.
-8) Preserve user intent exactly; never drift away from requested scene/action/mood.
-9) Make the result visually exceptional and distinctive while still believable and photorealistic.
-10) If the user asks for a selfie, enforce true self-capture framing: palm/arm-length POV, first-person front-camera vibe, no second photographer, no visible phone in hand, no mirror unless explicitly requested.
-11) Return only final prompt text, no headings or explanation.
-
-Suggested structure:
-[Subject + identity details] + [Action/pose] + [Location/context] + [Composition/camera] + [Lighting] + [Style/finish]
-
-Safety:
-- This mode is SFW. If input is explicit, convert to tasteful fully-clothed equivalent while preserving mood.
-
-Length target:
-- 70-160 words, one clean paragraph.`;
+    // INSTARAW-style system prompt — produces dramatically better NanaBanana results by
+    // writing prompts as image edit instructions with the "reimagined" structure that
+    // Nano Banana Pro (Gemini 3 Pro Image) responds to with best character consistency.
+    const NANO_BANANA_SYSTEM = INSTARAW_NANO_BANANA_ENHANCE_SYSTEM;
 
     let systemPrompts = {
       // Casual image generation — also uses Nano Banana Pro via kie.ai
@@ -2070,11 +2096,12 @@ NON-NEGOTIABLE QUALITY + CONSISTENCY POLICY:
       return aiData.choices?.[0]?.message?.content;
     };
 
-    // Start conservative (0.3) for reliable quality; retry creative (0.7) if empty
-    let rawContent = await callOpenRouterEnhance(0.3, 450);
+    // Start conservative (0.35) for reliable quality; retry creative (0.7) if empty.
+    // Higher token budget (700/900) accommodates verbose INSTARAW output format.
+    let rawContent = await callOpenRouterEnhance(0.35, 700);
     if (!rawContent || !String(rawContent).trim()) {
       console.warn("[enhance-prompt] Empty first response; retrying with higher temperature");
-      rawContent = await callOpenRouterEnhance(0.7, 550);
+      rawContent = await callOpenRouterEnhance(0.7, 900);
     }
     if (!rawContent || !String(rawContent).trim()) {
       throw new Error("AI service returned empty response");
