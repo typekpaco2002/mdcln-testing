@@ -75,11 +75,45 @@ function shortBufferSha16(buf) {
 }
 
 /**
+ * Audio mux options shared by both VHS transcode profiles. We keep the source audio so RunningHub's
+ * VHS_LoadVideo emits a real `audio` output that downstream VHS_VideoCombine nodes can save into the
+ * final MP4 (otherwise every Motion X output is silent regardless of how the workflow is wired).
+ *
+ * `-map 0:v:0 -map 0:a:0?` keeps things deterministic when the source has multiple streams and stays
+ * silent when the source has no audio at all (the `?` suffix makes the audio map optional). AAC LC at
+ * 128 kbps stereo @ 48 kHz is the safest baseline that ComfyUI / VHS_LoadVideo + downstream
+ * VHS_VideoCombine accept on every RunningHub instance type. Override with `NSFW_MOTION_VHS_AUDIO=off`
+ * to fall back to silent uploads (legacy behaviour).
+ */
+function getMotionVhsAudioOpts() {
+  const raw = String(process.env.NSFW_MOTION_VHS_AUDIO ?? "aac").toLowerCase();
+  const off = raw === "0" || raw === "off" || raw === "false" || raw === "no" || raw === "none" || raw === "an";
+  if (off) return ["-an"];
+  return [
+    "-map",
+    "0:v:0",
+    "-map",
+    "0:a:0?",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    "-ac",
+    "2",
+    "-ar",
+    "48000",
+  ];
+}
+
+/**
  * H.264 "main" MP4 with explicit avc1 tag + bt.709 color + CFR + repeated parameter sets. This is
  * the widest-compatibility cv2 profile — broader than baseline for some headless OpenCV builds
  * that only ship avc1/main support. Use for VHS_LoadVideo on ComfyUI/RunningHub.
+ *
+ * Audio: pass-through-then-AAC mux via {@link getMotionVhsAudioOpts} so the source audio survives
+ * into the RunningHub upload (and therefore into the final Motion X MP4).
  */
-const MOTION_VHS_X264_OUT = [
+const MOTION_VHS_X264_OUT_BASE = [
   "-c:v",
   "libx264",
   "-profile:v",
@@ -110,12 +144,11 @@ const MOTION_VHS_X264_OUT = [
   "bt709",
   "-tag:v",
   "avc1",
-  "-an",
   "-movflags",
   "+faststart",
 ];
 /** MPEG-4 Part 2 fallback — sometimes works where libx264 doesn't, but less reliable overall. */
-const MOTION_VHS_MPEG4_OUT = [
+const MOTION_VHS_MPEG4_OUT_BASE = [
   "-c:v",
   "mpeg4",
   "-vtag",
@@ -124,7 +157,6 @@ const MOTION_VHS_MPEG4_OUT = [
   "5",
   "-pix_fmt",
   "yuv420p",
-  "-an",
   "-movflags",
   "+faststart",
 ];
@@ -167,7 +199,9 @@ function getMotionVhsCfrFps() {
  * @returns {string[]}
  */
 function getMotionVhsFfmpegOutputOpts() {
-  return getMotionVhsVideoCodec() === "libx264" ? [...MOTION_VHS_X264_OUT] : [...MOTION_VHS_MPEG4_OUT];
+  const baseOpts =
+    getMotionVhsVideoCodec() === "libx264" ? [...MOTION_VHS_X264_OUT_BASE] : [...MOTION_VHS_MPEG4_OUT_BASE];
+  return [...baseOpts, ...getMotionVhsAudioOpts()];
 }
 
 /**
