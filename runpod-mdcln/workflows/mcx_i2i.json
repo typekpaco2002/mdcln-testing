@@ -6,7 +6,7 @@
   "nodes": [
     {
       "id": 400,
-      "type": "GetImageSizeAndCount",
+      "type": "easy imageSize",
       "pos": [
         -6751.334882527479,
         -7751.662333394637
@@ -27,11 +27,6 @@
       ],
       "outputs": [
         {
-          "name": "image_passthrough",
-          "type": "IMAGE",
-          "links": null
-        },
-        {
           "name": "width",
           "type": "INT",
           "links": [
@@ -44,16 +39,11 @@
           "links": [
             2472
           ]
-        },
-        {
-          "name": "count",
-          "type": "INT",
-          "links": null
         }
       ],
       "properties": {
-        "cnr_id": "ComfyUI-KJNodes",
-        "Node name for S&R": "GetImageSizeAndCount"
+        "cnr_id": "comfyui-easy-use",
+        "Node name for S&R": "easy imageSize"
       },
       "widgets_values": []
     },
@@ -1632,7 +1622,7 @@
     [
       2471,
       400,
-      1,
+      0,
       354,
       0,
       "INT"
@@ -1640,7 +1630,7 @@
     [
       2472,
       400,
-      2,
+      1,
       354,
       1,
       "INT"
