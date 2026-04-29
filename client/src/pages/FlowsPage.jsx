@@ -292,6 +292,11 @@ function FlowCanvas({ flowId, embedded = false }) {
   }, [currentRunId]);
 
   const isValidConnection = useCallback((connection) => {
+    // Never connect a node to itself.
+    if (connection.source === connection.target) return false;
+    // If the registry hasn't loaded yet, be permissive so the user can still
+    // wire things up — port-type validation kicks in once it loads.
+    if (!nodeTypes.length) return true;
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
     if (!sourceNode || !targetNode) return true;
@@ -299,6 +304,7 @@ function FlowCanvas({ flowId, embedded = false }) {
     const targetReg = nodeTypes.find((t) => t.type === targetNode.type);
     const sourcePort = sourceReg?.outputs?.find((p) => p.id === connection.sourceHandle);
     const targetPort = targetReg?.inputs?.find((p) => p.id === connection.targetHandle);
+    // If either port can't be resolved (custom node, missing handle), allow it.
     if (!sourcePort || !targetPort) return true;
     if (targetPort.type === "any" || sourcePort.type === "any") return true;
     return sourcePort.type === targetPort.type;
@@ -588,14 +594,15 @@ function FlowCanvas({ flowId, embedded = false }) {
             fitViewOptions={{ padding: 0.4, maxZoom: 1.2 }}
             proOptions={{ hideAttribution: true }}
             deleteKeyCode={["Delete", "Backspace"]}
-            multiSelectionKeyCode={["Shift", "Meta", "Control"]}
-            selectionKeyCode={null}
-            selectionOnDrag
-            panOnDrag={[1, 2]}
-            selectNodesOnDrag={false}
+            // Hold Shift to draw a selection box; Cmd/Ctrl-click adds to it.
+            // Left-mouse on empty canvas pans (default), and left-mouse from a
+            // handle creates a connection — we don't override panOnDrag here.
+            multiSelectionKeyCode={["Meta", "Control"]}
+            selectionKeyCode={["Shift"]}
             selectionMode="partial"
-            connectionLineStyle={{ stroke: "#a78bfa", strokeWidth: 2, strokeDasharray: "5 5", strokeLinecap: "round" }}
-            defaultEdgeOptions={{ type: "default", animated: false }}
+            connectionLineType="bezier"
+            connectionLineStyle={{ stroke: "#a78bfa", strokeWidth: 2.25, strokeDasharray: "5 5", strokeLinecap: "round" }}
+            defaultEdgeOptions={{ type: "default", animated: false, style: { stroke: "#a78bfa" } }}
             minZoom={0.25}
             maxZoom={2}
           >

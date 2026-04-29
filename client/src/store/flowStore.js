@@ -53,7 +53,10 @@ export const useFlowStore = create((set, get) => ({
           );
 
       return {
-        edges: addEdge({ ...connection, animated: false }, filtered),
+        edges: addEdge(
+          { ...connection, type: "default", animated: false },
+          filtered
+        ),
         isDirty: true,
       };
     }),
