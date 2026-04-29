@@ -15,7 +15,7 @@
 
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
-import { authenticateToken } from "../middleware/auth.js";
+import { authMiddleware } from "../middleware/auth.middleware.js";
 import {
   executeFlow,
   cancelFlowRun,
@@ -30,7 +30,7 @@ import { NODE_REGISTRY, NODE_CATEGORIES, estimateFlowCredits } from "../services
 const router = Router();
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(authMiddleware);
 
 // ── Node registry / credit estimator (frontend reads this) ─────────────────
 
