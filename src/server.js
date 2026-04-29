@@ -81,6 +81,14 @@ const app = express();
 
 // Apple Pay domain verification — mount first (before CORS, auth, /api rate limits).
 // Apple's crawler GETs /.well-known/... with no session; must not sit behind auth.
+//
+// Two layers, in order:
+//   1. Static directory (if anyone drops a real association file in
+//      client/public/.well-known/ it always wins).
+//   2. Proxy fallback to Stripe's hosted file. The Stripe Apple Pay merchant ID
+//      is shared across all Stripe accounts, so this single file works for
+//      every Stripe-registered domain. Lets us register Apple Pay domains on
+//      the new US LLC account without dashboard-side file downloads.
 const wellKnownDirs = [
   path.join(__dirname, 'public', '.well-known'),
   path.join(__dirname, '..', 'client', 'public', '.well-known'),
@@ -92,6 +100,47 @@ for (const dir of wellKnownDirs) {
     break;
   }
 }
+
+const APPLE_PAY_FILE_URL =
+  'https://stripe.com/files/apple-pay/apple-developer-merchantid-domain-association';
+const applePayCache = { body: null, fetchedAt: 0 };
+const APPLE_PAY_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+app.get(
+  '/.well-known/apple-developer-merchantid-domain-association',
+  async (req, res) => {
+    try {
+      const now = Date.now();
+      if (
+        !applePayCache.body ||
+        now - applePayCache.fetchedAt > APPLE_PAY_CACHE_TTL_MS
+      ) {
+        const upstream = await fetch(APPLE_PAY_FILE_URL, {
+          headers: { Accept: 'text/plain, */*' },
+        });
+        if (!upstream.ok) {
+          console.error(
+            `❌ Apple Pay proxy: upstream returned ${upstream.status}`,
+          );
+          return res.status(502).type('text/plain').send('Bad Gateway');
+        }
+        applePayCache.body = await upstream.text();
+        applePayCache.fetchedAt = now;
+        console.log(
+          `📎 Apple Pay association file refreshed from Stripe (${applePayCache.body.length} bytes)`,
+        );
+      }
+      res
+        .status(200)
+        .type('text/plain')
+        .set('Cache-Control', 'public, max-age=86400')
+        .send(applePayCache.body);
+    } catch (err) {
+      console.error('❌ Apple Pay proxy error:', err.message);
+      res.status(502).type('text/plain').send('Bad Gateway');
+    }
+  },
+);
 
 // Prefer SERVER_PORT so the backend never binds to a platform-assigned "frontend" PORT (e.g. Replit 3001)
 const PORT = Number(process.env.SERVER_PORT || process.env.PORT || 5000) || 5000;
