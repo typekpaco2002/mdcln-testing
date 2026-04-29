@@ -29,6 +29,25 @@ import {
 const KIE_API_KEY = process.env.KIE_API_KEY;
 const KIE_API_URL = "https://api.kie.ai/api/v1";
 
+/**
+ * KIE prompt length safety cap.
+ * NanaBanana Pro / Seedream 5 Lite both error with HTTP 500 ("text length cannot
+ * exceed the maximum limit") when the prompt is too long. Empirically ~2000 chars
+ * is safe; we cap at 1800 with sentence-aware trimming to leave headroom.
+ */
+const KIE_PROMPT_MAX_CHARS = 1800;
+function truncatePromptSafe(prompt, maxChars = KIE_PROMPT_MAX_CHARS) {
+  if (typeof prompt !== "string") return prompt;
+  if (prompt.length <= maxChars) return prompt;
+  // Try to cut at the last sentence boundary within the limit
+  const slice = prompt.slice(0, maxChars);
+  const lastPeriod = Math.max(slice.lastIndexOf(". "), slice.lastIndexOf("! "), slice.lastIndexOf("? "));
+  const cutAt = lastPeriod > maxChars * 0.7 ? lastPeriod + 1 : slice.lastIndexOf(", ") > maxChars * 0.7 ? slice.lastIndexOf(", ") + 1 : maxChars;
+  const truncated = prompt.slice(0, cutAt).trimEnd();
+  console.warn(`[KIE] prompt truncated from ${prompt.length} → ${truncated.length} chars`);
+  return truncated;
+}
+
 function buildKieUrl(path = "") {
   const base = KIE_API_URL.replace(/\/$/, "");
   const raw = String(path || "").trim();
@@ -672,6 +691,7 @@ async function archiveToR2(sourceUrl) {
  * @param {object} options - { aspectRatio, quality }
  */
 async function generateImageWithSeedreamKieInternal(images, prompt, options = {}) {
+  prompt = truncatePromptSafe(prompt);
   console.log(`[KIE/seedream5] images=${images.length}, prompt="${prompt.slice(0, 80)}"`);
   const validation = await validateSeedreamEditImages(images, "kie");
   if (!validation.valid) {
@@ -703,6 +723,7 @@ async function generateImageWithSeedreamKieInternal(images, prompt, options = {}
  * @param {object} options - { aspectRatio, quality, nsfw, onTaskCreated }
  */
 async function generateImageWithSeedream5LiteInternal(images, prompt, options = {}) {
+  prompt = truncatePromptSafe(prompt);
   console.log(`[KIE/seedream5] images=${images.length}, prompt="${prompt.slice(0, 80)}"`);
   const validation = await validateSeedreamEditImages(images, "kie");
   if (!validation.valid) {
@@ -750,6 +771,7 @@ async function generateImageWithIdentityKieInternal(identityImages, targetImage,
  * @param {object} options - { aspectRatio, resolution, outputFormat }
  */
 async function generateImageWithNanoBananaKieInternal(images, prompt, options = {}) {
+  prompt = truncatePromptSafe(prompt);
   console.log(`[KIE/nano-banana] images=${images.length}`);
   console.log(`[KIE/nano-banana] image URLs:`, images.map(u => u.slice(0, 80)));
   console.log(`[KIE/nano-banana] prompt="${prompt.slice(0, 80)}"`);
@@ -780,6 +802,7 @@ async function generateImageWithNanoBananaKieInternal(images, prompt, options = 
  * Nano Banana Pro — text-to-image (no identity images). Uses Pro model for best quality.
  */
 async function generateTextToImageNanoBananaKieInternal(prompt, options = {}) {
+  prompt = truncatePromptSafe(prompt);
   const modelName = "nano-banana-pro";
   console.log(`[KIE/${modelName}] text-to-image prompt="${prompt.slice(0, 80)}"`);
   const result = await kieRun(
