@@ -32,6 +32,7 @@ import {
   RUNNINGHUB_TASK_PREFIX,
 } from "../services/runninghub.service.js";
 import {
+  generateImageWithSeedreamWaveSpeed,
   generateImageWithIdentityWaveSpeed,
 } from "../services/wavespeed.service.js";
 import {
@@ -3062,7 +3063,7 @@ export async function generatePromptBasedImage(req, res) {
     }
 
     const providerInputCheck = useSeedream
-      ? await validateSeedreamEditImages(identityImages, "kie")
+      ? await validateSeedreamEditImages(identityImages, "wavespeed")
       : await validateNanoBananaInputImages(identityImages);
     if (!providerInputCheck.valid) {
       return res.status(400).json({ success: false, message: providerInputCheck.message });
@@ -3081,8 +3082,8 @@ export async function generatePromptBasedImage(req, res) {
       finalPrompt = applyNanoBananaPromptGuardrails(finalPrompt, prompt);
     }
 
-    const aiModel = useSeedream ? "kie-seedream-5-lite" : "kie-nano-banana-pro";
-    console.log(`\n${useSeedream ? "🌙" : "🍌"} PROMPT-BASED GENERATION (${useSeedream ? "WaveSpeed Seedream 4.5 Edit" : "KIE Nano Banana Pro"})`);
+    const aiModel = useSeedream ? "wavespeed-seedream-v4.5-edit" : "kie-nano-banana-pro";
+    console.log(`\n${useSeedream ? "🌙" : "🍌"} PROMPT-BASED GENERATION (${useSeedream ? "WaveSpeed Seedream 4.5 Edit (NSFW default)" : "KIE Nano Banana Pro"})`);
     console.log(`📸 Model: ${model.name || "Unnamed"}`);
     console.log(`💭 User prompt: ${prompt}`);
     console.log(`📝 Final prompt: ${finalPrompt}`);
@@ -3168,7 +3169,7 @@ async function processPromptImageInBackground(
 ) {
   try {
     const emoji = useSeedream ? "🌙" : "🍌";
-    const modelName = useSeedream ? "KIE Seedream 5.0 Lite" : "KIE Nano Banana Pro";
+    const modelName = useSeedream ? "WaveSpeed Seedream 4.5 Edit" : "KIE Nano Banana Pro";
     console.log(`\n${emoji} [BG] Starting prompt image processing for ${generationId} (${modelName})`);
 
     // Upload inputs to Blob first so KIE/WaveSpeed can fetch immediately when we submit
@@ -3183,6 +3184,13 @@ async function processPromptImageInBackground(
 
     const result = await requestQueue.enqueue(async () => {
       const onTaskCreated = async (taskId) => {
+        if (useSeedream) {
+          await prisma.generation.update({
+            where: { id: generationId },
+            data: { replicateModel: `wavespeed-seedream:${taskId}` },
+          });
+          return;
+        }
         await prisma.generation.update({
           where: { id: generationId },
           data: { replicateModel: `kie-task:${taskId}` },
@@ -3190,9 +3198,9 @@ async function processPromptImageInBackground(
         await registerKieTaskForGeneration(taskId, generationId, userId, "prompt-image");
       };
       if (useSeedream) {
-        return await generateImageWithSeedream5Lite(kieImages, customPrompt, {
-          aspectRatio: "9:16",
-          quality: "basic",
+        // NSFW mode defaults to WaveSpeed Seedream (looser moderation than KIE Seedream 5 Lite).
+        return await generateImageWithSeedreamWaveSpeed(kieImages, customPrompt, {
+          forcePolling: false,
           onTaskCreated,
         });
       } else {
@@ -3205,10 +3213,13 @@ async function processPromptImageInBackground(
     });
 
     if (result.success && result.deferred && result.taskId) {
+      const taskReplicateModel = useSeedream
+        ? `wavespeed-seedream:${result.taskId}`
+        : `kie-task:${result.taskId}`;
       await prisma.generation.update({
         where: { id: generationId },
         data: {
-          replicateModel: `kie-task:${result.taskId}`,
+          replicateModel: taskReplicateModel,
         },
       });
       console.log(`✅ [BG] Prompt image submitted; result will arrive via callback (task ${result.taskId})`);
@@ -4699,12 +4710,18 @@ async function processCreatorStudioInBackground(
   console.log(`\n🍌 [Creator Studio] gen=${generationId} refs=${refs.length} model=${modelName} ${aspectRatio} ${resolution}`);
 
   try {
-    const onTaskCreated = async (taskId) => {
+    const onKieTaskCreated = async (taskId) => {
       await prisma.generation.update({
         where: { id: generationId },
         data: { replicateModel: `kie-task:${taskId}` },
       });
       await registerKieTaskForGeneration(taskId, generationId, userId, "creator-studio");
+    };
+    const onWaveSpeedTaskCreated = async (taskId) => {
+      await prisma.generation.update({
+        where: { id: generationId },
+        data: { replicateModel: `wavespeed-seedream:${taskId}` },
+      });
     };
 
     const generation = await prisma.generation.findUnique({
@@ -4731,7 +4748,7 @@ async function processCreatorStudioInBackground(
             aspectRatio,
             resolution,
             model: normalizedModel,
-            onTaskCreated,
+            onKieTaskCreated,
           }),
         );
       } else {
@@ -4743,7 +4760,7 @@ async function processCreatorStudioInBackground(
             aspectRatio,
             resolution,
             model: normalizedModel,
-            onTaskCreated,
+            onKieTaskCreated,
           }),
         );
       }
@@ -4753,10 +4770,9 @@ async function processCreatorStudioInBackground(
         seedreamInputs.map((u, i) => ensureKieAccessibleUrl(u, `seedream-ref-${i + 1}`)),
       ).catch(() => seedreamInputs);
       result = await requestQueue.enqueue(() =>
-        generateImageWithSeedream5Lite(kieImages, promptText, {
-          aspectRatio: aspectRatio || "9:16",
-          quality: String(resolution || "").toLowerCase().includes("4k") ? "high" : "basic",
-          onTaskCreated,
+        generateImageWithSeedreamWaveSpeed(kieImages, promptText, {
+          forcePolling: false,
+          onTaskCreated: onWaveSpeedTaskCreated,
         }),
       );
     } else if (normalizedModel === "flux-kontext-pro" || normalizedModel === "flux-kontext-max") {
@@ -4774,7 +4790,7 @@ async function processCreatorStudioInBackground(
           uploadCn: payload?.uploadCn === true,
           watermark: String(payload?.watermark || "").trim() || undefined,
           safetyTolerance: Number(payload?.safetyTolerance ?? 2),
-          onTaskCreated,
+          onKieTaskCreated,
         }),
       );
     } else if (normalizedModel === "wan-2-7-image" || normalizedModel === "wan-2-7-image-pro") {
@@ -4794,7 +4810,7 @@ async function processCreatorStudioInBackground(
           thinkingMode: payload?.thinkingMode === true,
           colorPalette: Array.isArray(payload?.colorPalette) ? payload.colorPalette : [],
           bboxList: Array.isArray(payload?.bboxList) ? payload.bboxList : [],
-          onTaskCreated,
+          onKieTaskCreated,
         }),
       );
     } else if (normalizedModel.startsWith("ideogram-v3-")) {
@@ -4814,7 +4830,7 @@ async function processCreatorStudioInBackground(
           strength: Number(payload?.ideogramStrength ?? 0.8),
           numImages: normalizedNumImages,
           expandPrompt: payload?.ideogramExpandPrompt !== false,
-          onTaskCreated,
+          onKieTaskCreated,
         }),
       );
     } else if (normalizedModel === "gpt-image-2") {
@@ -4861,7 +4877,7 @@ async function processCreatorStudioInBackground(
           inputUrls: kieInputUrls,
           aspectRatio,
           nsfwChecker: payload?.nsfwChecker === true,
-          onTaskCreated,
+          onKieTaskCreated,
         }),
       );
     } else {
@@ -4869,9 +4885,13 @@ async function processCreatorStudioInBackground(
     }
 
     if (result.success && result.deferred && result.taskId) {
+      const taskReplicateModel =
+        normalizedModel === "seedream-v4-5-edit"
+          ? `wavespeed-seedream:${result.taskId}`
+          : `kie-task:${result.taskId}`;
       await prisma.generation.update({
         where: { id: generationId },
-        data: { replicateModel: `kie-task:${result.taskId}` },
+        data: { replicateModel: taskReplicateModel },
       });
       console.log(`✅ [Creator Studio] Deferred; callback expected for task ${result.taskId}`);
     } else if (result.success && result.outputUrl) {
