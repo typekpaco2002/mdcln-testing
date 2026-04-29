@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -184,97 +184,97 @@ const COPY = {
     purchaseTierFallback: "Your Plan",
   },
   ru: {
-    toastCreditsAlreadyAdded: "Кредиты уже зачислены на ваш счёт.",
-    toastVerifyPaymentFailed: "Не удалось подтвердить платёж",
-    toastProcessVerificationFailed: "Не удалось обработать подтверждение платежа",
-    toastLoggedOut: "Вы успешно вышли из системы",
-    mobileNavDashboard: "Панель управления",
-    mobileNavModels: "Мои аватары",
-    mobileNavGenerate: "Создать с аватаром",
-    mobileNavCreatorStudio: "Студия автора",
-    mobileNavVoiceStudio: "Голосовая студия",
-    mobileNavReformatter: "Рефоматер",
-    mobileNavFirstFrame: "1-й кадр",
-    mobileNavHistory: "История",
-    mobileNavSettings: "Настройки",
-    mobileNavCourses: "Курсы",
+    toastCreditsAlreadyAdded: "╨Ü╤Ç╨╡╨┤╨╕╤é╤ï ╤â╨╢╨╡ ╨╖╨░╤ç╨╕╤ü╨╗╨╡╨╜╤ï ╨╜╨░ ╨▓╨░╤ê ╤ü╤ç╤æ╤é.",
+    toastVerifyPaymentFailed: "╨¥╨╡ ╤â╨┤╨░╨╗╨╛╤ü╤î ╨┐╨╛╨┤╤é╨▓╨╡╤Ç╨┤╨╕╤é╤î ╨┐╨╗╨░╤é╤æ╨╢",
+    toastProcessVerificationFailed: "╨¥╨╡ ╤â╨┤╨░╨╗╨╛╤ü╤î ╨╛╨▒╤Ç╨░╨▒╨╛╤é╨░╤é╤î ╨┐╨╛╨┤╤é╨▓╨╡╤Ç╨╢╨┤╨╡╨╜╨╕╨╡ ╨┐╨╗╨░╤é╨╡╨╢╨░",
+    toastLoggedOut: "╨Æ╤ï ╤â╤ü╨┐╨╡╤ê╨╜╨╛ ╨▓╤ï╤ê╨╗╨╕ ╨╕╨╖ ╤ü╨╕╤ü╤é╨╡╨╝╤ï",
+    mobileNavDashboard: "╨ƒ╨░╨╜╨╡╨╗╤î ╤â╨┐╤Ç╨░╨▓╨╗╨╡╨╜╨╕╤Å",
+    mobileNavModels: "╨£╨╛╨╕ ╨░╨▓╨░╤é╨░╤Ç╤ï",
+    mobileNavGenerate: "╨í╨╛╨╖╨┤╨░╤é╤î ╤ü ╨░╨▓╨░╤é╨░╤Ç╨╛╨╝",
+    mobileNavCreatorStudio: "╨í╤é╤â╨┤╨╕╤Å ╨░╨▓╤é╨╛╤Ç╨░",
+    mobileNavVoiceStudio: "╨ô╨╛╨╗╨╛╤ü╨╛╨▓╨░╤Å ╤ü╤é╤â╨┤╨╕╤Å",
+    mobileNavReformatter: "╨á╨╡╤ä╨╛╨╝╨░╤é╨╡╤Ç",
+    mobileNavFirstFrame: "1-╨╣ ╨║╨░╨┤╤Ç",
+    mobileNavHistory: "╨ÿ╤ü╤é╨╛╤Ç╨╕╤Å",
+    mobileNavSettings: "╨¥╨░╤ü╤é╤Ç╨╛╨╣╨║╨╕",
+    mobileNavCourses: "╨Ü╤â╤Ç╤ü╤ï",
     mobileNavNsfw: "NSFW",
-    mobileNavPhotoVideoRepurposer: "Переработка фото/видео",
-    mobileNavReelFinder: "Поиск рилс",
-    badgeSoon: "Скоро",
-    mobileEarnWithAi: "Заработок с ИИ",
-    mobileReferAndEarn: "Приглашай и зарабатывай",
+    mobileNavPhotoVideoRepurposer: "╨ƒ╨╡╤Ç╨╡╤Ç╨░╨▒╨╛╤é╨║╨░ ╤ä╨╛╤é╨╛/╨▓╨╕╨┤╨╡╨╛",
+    mobileNavReelFinder: "╨ƒ╨╛╨╕╤ü╨║ ╤Ç╨╕╨╗╤ü",
+    badgeSoon: "╨í╨║╨╛╤Ç╨╛",
+    mobileEarnWithAi: "╨ù╨░╤Ç╨░╨▒╨╛╤é╨╛╨║ ╤ü ╨ÿ╨ÿ",
+    mobileReferAndEarn: "╨ƒ╤Ç╨╕╨│╨╗╨░╤ê╨░╨╣ ╨╕ ╨╖╨░╤Ç╨░╨▒╨░╤é╤ï╨▓╨░╨╣",
     mobileTelegram: "Telegram",
     mobileDiscord: "Discord",
-    mobilePrivateModeOn: "Приватный режим включен",
-    mobilePrivateModeOff: "Приватный режим выключен",
-    mobilePrivateModeHint: "Размыть все фото и видео",
-    mobileJobBoard: "Биржа заказов",
-    badgeNew: "Новое",
-    mobileAdmin: "Администратор",
-    mobileLogout: "Выйти",
-    premiumGateTitle: "Премиум-функция",
+    mobilePrivateModeOn: "╨ƒ╤Ç╨╕╨▓╨░╤é╨╜╤ï╨╣ ╤Ç╨╡╨╢╨╕╨╝ ╨▓╨║╨╗╤Ä╤ç╨╡╨╜",
+    mobilePrivateModeOff: "╨ƒ╤Ç╨╕╨▓╨░╤é╨╜╤ï╨╣ ╤Ç╨╡╨╢╨╕╨╝ ╨▓╤ï╨║╨╗╤Ä╤ç╨╡╨╜",
+    mobilePrivateModeHint: "╨á╨░╨╖╨╝╤ï╤é╤î ╨▓╤ü╨╡ ╤ä╨╛╤é╨╛ ╨╕ ╨▓╨╕╨┤╨╡╨╛",
+    mobileJobBoard: "╨æ╨╕╤Ç╨╢╨░ ╨╖╨░╨║╨░╨╖╨╛╨▓",
+    badgeNew: "╨¥╨╛╨▓╨╛╨╡",
+    mobileAdmin: "╨É╨┤╨╝╨╕╨╜╨╕╤ü╤é╤Ç╨░╤é╨╛╤Ç",
+    mobileLogout: "╨Æ╤ï╨╣╤é╨╕",
+    premiumGateTitle: "╨ƒ╤Ç╨╡╨╝╨╕╤â╨╝-╤ä╤â╨╜╨║╤å╨╕╤Å",
     premiumGateDescription:
-      "Оформите подписку, чтобы получить доступ к премиум-функциям: Курсам, Переработке фото/видео и Поиску рилс.",
-    premiumGateViewPlans: "Посмотреть планы подписки",
-    premiumGateMaybeLater: "Позже",
-    earnModalTitle: "Зарабатывайте с вашей ИИ-моделью",
+      "╨₧╤ä╨╛╤Ç╨╝╨╕╤é╨╡ ╨┐╨╛╨┤╨┐╨╕╤ü╨║╤â, ╤ç╤é╨╛╨▒╤ï ╨┐╨╛╨╗╤â╤ç╨╕╤é╤î ╨┤╨╛╤ü╤é╤â╨┐ ╨║ ╨┐╤Ç╨╡╨╝╨╕╤â╨╝-╤ä╤â╨╜╨║╤å╨╕╤Å╨╝: ╨Ü╤â╤Ç╤ü╨░╨╝, ╨ƒ╨╡╤Ç╨╡╤Ç╨░╨▒╨╛╤é╨║╨╡ ╤ä╨╛╤é╨╛/╨▓╨╕╨┤╨╡╨╛ ╨╕ ╨ƒ╨╛╨╕╤ü╨║╤â ╤Ç╨╕╨╗╤ü.",
+    premiumGateViewPlans: "╨ƒ╨╛╤ü╨╝╨╛╤é╤Ç╨╡╤é╤î ╨┐╨╗╨░╨╜╤ï ╨┐╨╛╨┤╨┐╨╕╤ü╨║╨╕",
+    premiumGateMaybeLater: "╨ƒ╨╛╨╖╨╢╨╡",
+    earnModalTitle: "╨ù╨░╤Ç╨░╨▒╨░╤é╤ï╨▓╨░╨╣╤é╨╡ ╤ü ╨▓╨░╤ê╨╡╨╣ ╨ÿ╨ÿ-╨╝╨╛╨┤╨╡╨╗╤î╤Ä",
     earnModalBody1:
-      "Монетизируйте ваш ИИ-контент на Fanvue — платформе, где вы можете создавать ИИ-модели и продавать их контент.",
+      "╨£╨╛╨╜╨╡╤é╨╕╨╖╨╕╤Ç╤â╨╣╤é╨╡ ╨▓╨░╤ê ╨ÿ╨ÿ-╨║╨╛╨╜╤é╨╡╨╜╤é ╨╜╨░ Fanvue ΓÇö ╨┐╨╗╨░╤é╤ä╨╛╤Ç╨╝╨╡, ╨│╨┤╨╡ ╨▓╤ï ╨╝╨╛╨╢╨╡╤é╨╡ ╤ü╨╛╨╖╨┤╨░╨▓╨░╤é╤î ╨ÿ╨ÿ-╨╝╨╛╨┤╨╡╨╗╨╕ ╨╕ ╨┐╤Ç╨╛╨┤╨░╨▓╨░╤é╤î ╨╕╤à ╨║╨╛╨╜╤é╨╡╨╜╤é.",
     earnModalBody2:
-      "ИИ-модели официально разрешены! Сохраняйте 100% дохода без проблем с реальными моделями.",
-    earnModalChipKeepProfits: "Забирайте всю прибыль",
-    earnModalChipNoRealModels: "Без реальных моделей",
-    earnModalChipEarn247: "Зарабатывайте 24/7",
-    earnModalCta: "Начать зарабатывать на Fanvue",
-    earnModalDiscordText: "Узнайте, как продвигать вашу ИИ-модель совершенно бесплатно",
-    earnModalDiscordCta: "Вступить в Discord ModelClone",
-    referralModalTitle: "Реферальная программа",
-    referralModalSubtitle: "Зарабатывайте 15% с первой покупки каждого приглашённого пользователя",
-    referralModalHowItWorks: "Как это работает",
-    referralModalStep1: "Создайте уникальную реферальную ссылку",
-    referralModalStep2: "Поделитесь ею и привлекайте новых пользователей",
-    referralModalStep3: "Запросите выплату, когда ваше вознаграждение достигнет $100+",
-    referralModalCta: "Открыть реферальную программу",
-    referralModalChipCommission: "15% комиссия с первой покупки",
-    referralModalChipPayouts: "Выплаты через администратора",
-    referralModalChipUnlimited: "Неограниченное количество рефералов",
-    whatsNewTitle: "NSFW-студия доступна",
-    whatsNewSubtitle: "Для всех авторов",
-    whatsNewFeatureTitle: "NSFW-студия",
+      "╨ÿ╨ÿ-╨╝╨╛╨┤╨╡╨╗╨╕ ╨╛╤ä╨╕╤å╨╕╨░╨╗╤î╨╜╨╛ ╤Ç╨░╨╖╤Ç╨╡╤ê╨╡╨╜╤ï! ╨í╨╛╤à╤Ç╨░╨╜╤Å╨╣╤é╨╡ 100% ╨┤╨╛╤à╨╛╨┤╨░ ╨▒╨╡╨╖ ╨┐╤Ç╨╛╨▒╨╗╨╡╨╝ ╤ü ╤Ç╨╡╨░╨╗╤î╨╜╤ï╨╝╨╕ ╨╝╨╛╨┤╨╡╨╗╤Å╨╝╨╕.",
+    earnModalChipKeepProfits: "╨ù╨░╨▒╨╕╤Ç╨░╨╣╤é╨╡ ╨▓╤ü╤Ä ╨┐╤Ç╨╕╨▒╤ï╨╗╤î",
+    earnModalChipNoRealModels: "╨æ╨╡╨╖ ╤Ç╨╡╨░╨╗╤î╨╜╤ï╤à ╨╝╨╛╨┤╨╡╨╗╨╡╨╣",
+    earnModalChipEarn247: "╨ù╨░╤Ç╨░╨▒╨░╤é╤ï╨▓╨░╨╣╤é╨╡ 24/7",
+    earnModalCta: "╨¥╨░╤ç╨░╤é╤î ╨╖╨░╤Ç╨░╨▒╨░╤é╤ï╨▓╨░╤é╤î ╨╜╨░ Fanvue",
+    earnModalDiscordText: "╨ú╨╖╨╜╨░╨╣╤é╨╡, ╨║╨░╨║ ╨┐╤Ç╨╛╨┤╨▓╨╕╨│╨░╤é╤î ╨▓╨░╤ê╤â ╨ÿ╨ÿ-╨╝╨╛╨┤╨╡╨╗╤î ╤ü╨╛╨▓╨╡╤Ç╤ê╨╡╨╜╨╜╨╛ ╨▒╨╡╤ü╨┐╨╗╨░╤é╨╜╨╛",
+    earnModalDiscordCta: "╨Æ╤ü╤é╤â╨┐╨╕╤é╤î ╨▓ Discord ModelClone",
+    referralModalTitle: "╨á╨╡╤ä╨╡╤Ç╨░╨╗╤î╨╜╨░╤Å ╨┐╤Ç╨╛╨│╤Ç╨░╨╝╨╝╨░",
+    referralModalSubtitle: "╨ù╨░╤Ç╨░╨▒╨░╤é╤ï╨▓╨░╨╣╤é╨╡ 15% ╤ü ╨┐╨╡╤Ç╨▓╨╛╨╣ ╨┐╨╛╨║╤â╨┐╨║╨╕ ╨║╨░╨╢╨┤╨╛╨│╨╛ ╨┐╤Ç╨╕╨│╨╗╨░╤ê╤æ╨╜╨╜╨╛╨│╨╛ ╨┐╨╛╨╗╤î╨╖╨╛╨▓╨░╤é╨╡╨╗╤Å",
+    referralModalHowItWorks: "╨Ü╨░╨║ ╤ì╤é╨╛ ╤Ç╨░╨▒╨╛╤é╨░╨╡╤é",
+    referralModalStep1: "╨í╨╛╨╖╨┤╨░╨╣╤é╨╡ ╤â╨╜╨╕╨║╨░╨╗╤î╨╜╤â╤Ä ╤Ç╨╡╤ä╨╡╤Ç╨░╨╗╤î╨╜╤â╤Ä ╤ü╤ü╤ï╨╗╨║╤â",
+    referralModalStep2: "╨ƒ╨╛╨┤╨╡╨╗╨╕╤é╨╡╤ü╤î ╨╡╤Ä ╨╕ ╨┐╤Ç╨╕╨▓╨╗╨╡╨║╨░╨╣╤é╨╡ ╨╜╨╛╨▓╤ï╤à ╨┐╨╛╨╗╤î╨╖╨╛╨▓╨░╤é╨╡╨╗╨╡╨╣",
+    referralModalStep3: "╨ù╨░╨┐╤Ç╨╛╤ü╨╕╤é╨╡ ╨▓╤ï╨┐╨╗╨░╤é╤â, ╨║╨╛╨│╨┤╨░ ╨▓╨░╤ê╨╡ ╨▓╨╛╨╖╨╜╨░╨│╤Ç╨░╨╢╨┤╨╡╨╜╨╕╨╡ ╨┤╨╛╤ü╤é╨╕╨│╨╜╨╡╤é $100+",
+    referralModalCta: "╨₧╤é╨║╤Ç╤ï╤é╤î ╤Ç╨╡╤ä╨╡╤Ç╨░╨╗╤î╨╜╤â╤Ä ╨┐╤Ç╨╛╨│╤Ç╨░╨╝╨╝╤â",
+    referralModalChipCommission: "15% ╨║╨╛╨╝╨╕╤ü╤ü╨╕╤Å ╤ü ╨┐╨╡╤Ç╨▓╨╛╨╣ ╨┐╨╛╨║╤â╨┐╨║╨╕",
+    referralModalChipPayouts: "╨Æ╤ï╨┐╨╗╨░╤é╤ï ╤ç╨╡╤Ç╨╡╨╖ ╨░╨┤╨╝╨╕╨╜╨╕╤ü╤é╤Ç╨░╤é╨╛╤Ç╨░",
+    referralModalChipUnlimited: "╨¥╨╡╨╛╨│╤Ç╨░╨╜╨╕╤ç╨╡╨╜╨╜╨╛╨╡ ╨║╨╛╨╗╨╕╤ç╨╡╤ü╤é╨▓╨╛ ╤Ç╨╡╤ä╨╡╤Ç╨░╨╗╨╛╨▓",
+    whatsNewTitle: "NSFW-╤ü╤é╤â╨┤╨╕╤Å ╨┤╨╛╤ü╤é╤â╨┐╨╜╨░",
+    whatsNewSubtitle: "╨ö╨╗╤Å ╨▓╤ü╨╡╤à ╨░╨▓╤é╨╛╤Ç╨╛╨▓",
+    whatsNewFeatureTitle: "NSFW-╤ü╤é╤â╨┤╨╕╤Å",
     whatsNewFeatureBody:
-      "Создавайте контент для взрослых с вашими ИИ-моделями. Обучайте собственные LoRA-модели и генерируйте откровенные изображения с технологией замены лица.",
-    whatsNewNote: "Вкладка NSFW в боковой панели или /nsfw. Доступ по-прежнему требует подходящих моделей по правилам продукта.",
-    whatsNewCta: "Открыть NSFW-студию",
-    whatsNewMaybeLater: "Позже",
-    homeWelcomeBack: "С возвращением,",
-    homeFallbackCreator: "Автор",
-    homeSubtitle: "Ваш центр создания ИИ-контента",
-    statsCredits: "Кредиты",
-    statsAddCredits: "Пополнить кредиты",
-    statsImages: "Изображения",
-    statsVideos: "Видео",
-    statsThisMonth: "в этом месяце",
-    mainCreateModelTitle: "Создать ИИ-модель",
-    mainCreateModelBody: "Укажите имя, характеристики и загрузите 3 фото",
-    mainUploadRealTitle: "Загрузить реальную модель",
-    mainUploadRealBody: "Загрузите фотографии реального человека",
-    tutorialTitle: "Быстрое руководство",
-    recentCreations: "Последние работы",
-    viewAll: "Смотреть все",
-    quickActionsTitle: "Быстрые действия",
-    quickCreateModelTitle: "Создать аватар",
-    quickCreateModelBody: "Загрузите 3 фото для обучения модели",
-    quickGetStarted: "Начать",
-    quickStartEarningTitle: "Начать зарабатывать",
-    quickStartEarningBody: "Монетизируйте контент на Fanvue",
-    quickLearnMore: "Узнать больше",
-    quickAffiliateTitle: "Партнёрская программа",
-    quickAffiliateBody: "Получайте 15% комиссии с первой покупки каждого реферала",
-    ctaReadyTitle: "Готовы создавать?",
-    ctaReadyBody: "Генерируйте впечатляющие ИИ-изображения и видео",
-    ctaStartGenerating: "Начать генерацию",
-    purchaseTierFallback: "Ваш план",
+      "╨í╨╛╨╖╨┤╨░╨▓╨░╨╣╤é╨╡ ╨║╨╛╨╜╤é╨╡╨╜╤é ╨┤╨╗╤Å ╨▓╨╖╤Ç╨╛╤ü╨╗╤ï╤à ╤ü ╨▓╨░╤ê╨╕╨╝╨╕ ╨ÿ╨ÿ-╨╝╨╛╨┤╨╡╨╗╤Å╨╝╨╕. ╨₧╨▒╤â╤ç╨░╨╣╤é╨╡ ╤ü╨╛╨▒╤ü╤é╨▓╨╡╨╜╨╜╤ï╨╡ LoRA-╨╝╨╛╨┤╨╡╨╗╨╕ ╨╕ ╨│╨╡╨╜╨╡╤Ç╨╕╤Ç╤â╨╣╤é╨╡ ╨╛╤é╨║╤Ç╨╛╨▓╨╡╨╜╨╜╤ï╨╡ ╨╕╨╖╨╛╨▒╤Ç╨░╨╢╨╡╨╜╨╕╤Å ╤ü ╤é╨╡╤à╨╜╨╛╨╗╨╛╨│╨╕╨╡╨╣ ╨╖╨░╨╝╨╡╨╜╤ï ╨╗╨╕╤å╨░.",
+    whatsNewNote: "╨Æ╨║╨╗╨░╨┤╨║╨░ NSFW ╨▓ ╨▒╨╛╨║╨╛╨▓╨╛╨╣ ╨┐╨░╨╜╨╡╨╗╨╕ ╨╕╨╗╨╕ /nsfw. ╨ö╨╛╤ü╤é╤â╨┐ ╨┐╨╛-╨┐╤Ç╨╡╨╢╨╜╨╡╨╝╤â ╤é╤Ç╨╡╨▒╤â╨╡╤é ╨┐╨╛╨┤╤à╨╛╨┤╤Å╤ë╨╕╤à ╨╝╨╛╨┤╨╡╨╗╨╡╨╣ ╨┐╨╛ ╨┐╤Ç╨░╨▓╨╕╨╗╨░╨╝ ╨┐╤Ç╨╛╨┤╤â╨║╤é╨░.",
+    whatsNewCta: "╨₧╤é╨║╤Ç╤ï╤é╤î NSFW-╤ü╤é╤â╨┤╨╕╤Ä",
+    whatsNewMaybeLater: "╨ƒ╨╛╨╖╨╢╨╡",
+    homeWelcomeBack: "╨í ╨▓╨╛╨╖╨▓╤Ç╨░╤ë╨╡╨╜╨╕╨╡╨╝,",
+    homeFallbackCreator: "╨É╨▓╤é╨╛╤Ç",
+    homeSubtitle: "╨Æ╨░╤ê ╤å╨╡╨╜╤é╤Ç ╤ü╨╛╨╖╨┤╨░╨╜╨╕╤Å ╨ÿ╨ÿ-╨║╨╛╨╜╤é╨╡╨╜╤é╨░",
+    statsCredits: "╨Ü╤Ç╨╡╨┤╨╕╤é╤ï",
+    statsAddCredits: "╨ƒ╨╛╨┐╨╛╨╗╨╜╨╕╤é╤î ╨║╤Ç╨╡╨┤╨╕╤é╤ï",
+    statsImages: "╨ÿ╨╖╨╛╨▒╤Ç╨░╨╢╨╡╨╜╨╕╤Å",
+    statsVideos: "╨Æ╨╕╨┤╨╡╨╛",
+    statsThisMonth: "╨▓ ╤ì╤é╨╛╨╝ ╨╝╨╡╤ü╤Å╤å╨╡",
+    mainCreateModelTitle: "╨í╨╛╨╖╨┤╨░╤é╤î ╨ÿ╨ÿ-╨╝╨╛╨┤╨╡╨╗╤î",
+    mainCreateModelBody: "╨ú╨║╨░╨╢╨╕╤é╨╡ ╨╕╨╝╤Å, ╤à╨░╤Ç╨░╨║╤é╨╡╤Ç╨╕╤ü╤é╨╕╨║╨╕ ╨╕ ╨╖╨░╨│╤Ç╤â╨╖╨╕╤é╨╡ 3 ╤ä╨╛╤é╨╛",
+    mainUploadRealTitle: "╨ù╨░╨│╤Ç╤â╨╖╨╕╤é╤î ╤Ç╨╡╨░╨╗╤î╨╜╤â╤Ä ╨╝╨╛╨┤╨╡╨╗╤î",
+    mainUploadRealBody: "╨ù╨░╨│╤Ç╤â╨╖╨╕╤é╨╡ ╤ä╨╛╤é╨╛╨│╤Ç╨░╤ä╨╕╨╕ ╤Ç╨╡╨░╨╗╤î╨╜╨╛╨│╨╛ ╤ç╨╡╨╗╨╛╨▓╨╡╨║╨░",
+    tutorialTitle: "╨æ╤ï╤ü╤é╤Ç╨╛╨╡ ╤Ç╤â╨║╨╛╨▓╨╛╨┤╤ü╤é╨▓╨╛",
+    recentCreations: "╨ƒ╨╛╤ü╨╗╨╡╨┤╨╜╨╕╨╡ ╤Ç╨░╨▒╨╛╤é╤ï",
+    viewAll: "╨í╨╝╨╛╤é╤Ç╨╡╤é╤î ╨▓╤ü╨╡",
+    quickActionsTitle: "╨æ╤ï╤ü╤é╤Ç╤ï╨╡ ╨┤╨╡╨╣╤ü╤é╨▓╨╕╤Å",
+    quickCreateModelTitle: "╨í╨╛╨╖╨┤╨░╤é╤î ╨░╨▓╨░╤é╨░╤Ç",
+    quickCreateModelBody: "╨ù╨░╨│╤Ç╤â╨╖╨╕╤é╨╡ 3 ╤ä╨╛╤é╨╛ ╨┤╨╗╤Å ╨╛╨▒╤â╤ç╨╡╨╜╨╕╤Å ╨╝╨╛╨┤╨╡╨╗╨╕",
+    quickGetStarted: "╨¥╨░╤ç╨░╤é╤î",
+    quickStartEarningTitle: "╨¥╨░╤ç╨░╤é╤î ╨╖╨░╤Ç╨░╨▒╨░╤é╤ï╨▓╨░╤é╤î",
+    quickStartEarningBody: "╨£╨╛╨╜╨╡╤é╨╕╨╖╨╕╤Ç╤â╨╣╤é╨╡ ╨║╨╛╨╜╤é╨╡╨╜╤é ╨╜╨░ Fanvue",
+    quickLearnMore: "╨ú╨╖╨╜╨░╤é╤î ╨▒╨╛╨╗╤î╤ê╨╡",
+    quickAffiliateTitle: "╨ƒ╨░╤Ç╤é╨╜╤æ╤Ç╤ü╨║╨░╤Å ╨┐╤Ç╨╛╨│╤Ç╨░╨╝╨╝╨░",
+    quickAffiliateBody: "╨ƒ╨╛╨╗╤â╤ç╨░╨╣╤é╨╡ 15% ╨║╨╛╨╝╨╕╤ü╤ü╨╕╨╕ ╤ü ╨┐╨╡╤Ç╨▓╨╛╨╣ ╨┐╨╛╨║╤â╨┐╨║╨╕ ╨║╨░╨╢╨┤╨╛╨│╨╛ ╤Ç╨╡╤ä╨╡╤Ç╨░╨╗╨░",
+    ctaReadyTitle: "╨ô╨╛╤é╨╛╨▓╤ï ╤ü╨╛╨╖╨┤╨░╨▓╨░╤é╤î?",
+    ctaReadyBody: "╨ô╨╡╨╜╨╡╤Ç╨╕╤Ç╤â╨╣╤é╨╡ ╨▓╨┐╨╡╤ç╨░╤é╨╗╤Å╤Ä╤ë╨╕╨╡ ╨ÿ╨ÿ-╨╕╨╖╨╛╨▒╤Ç╨░╨╢╨╡╨╜╨╕╤Å ╨╕ ╨▓╨╕╨┤╨╡╨╛",
+    ctaStartGenerating: "╨¥╨░╤ç╨░╤é╤î ╨│╨╡╨╜╨╡╤Ç╨░╤å╨╕╤Ä",
+    purchaseTierFallback: "╨Æ╨░╤ê ╨┐╨╗╨░╨╜",
   },
 };
 
@@ -417,7 +417,7 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, []);
 
-  /** Mobile bottom tab bar height + safe area — support FAB and scroll padding read this */
+  /** Mobile bottom tab bar height + safe area ΓÇö support FAB and scroll padding read this */
   useEffect(() => {
     document.documentElement.style.setProperty(
       "--dashboard-mobile-tab-stack",
@@ -597,7 +597,7 @@ export default function DashboardPage() {
       {/* Desktop Top Header - hidden on mobile (empty; profile moved to sidebar) */}
 
 
-      {/* Mobile Header — compact glass pill */}
+      {/* Mobile Header ΓÇö compact glass pill */}
       <header className="md:hidden fixed z-50 top-1.5 left-2 right-2 pointer-events-none" aria-label="App bar">
         <div
           className="pointer-events-auto rounded-xl backdrop-blur-2xl backdrop-saturate-150"
@@ -863,7 +863,7 @@ export default function DashboardPage() {
       )}
       </AnimatePresence>
 
-      {/* Mobile bottom nav — compact pill */}
+      {/* Mobile bottom nav ΓÇö compact pill */}
       <nav
         className="md:hidden fixed bottom-1.5 left-2 right-2 z-[45] flex items-center justify-around gap-0.5 rounded-xl px-1.5 py-0.5 pb-[max(0.125rem,env(safe-area-inset-bottom))] backdrop-blur-2xl"
         style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
@@ -893,9 +893,9 @@ export default function DashboardPage() {
 
       {/* Content - with left margin for sidebar on desktop; bottom padding clears mobile tab bar */}
       <main
-        className={`pt-[4.5rem] md:pt-14 max-md:pb-[calc(2.75rem+env(safe-area-inset-bottom)+1.25rem)] md:pb-12 min-h-screen transition-[margin] duration-300 ease-out overflow-x-hidden ${sidebarNarrow ? "md:ml-[80px]" : "md:ml-[260px]"}`}
+        className={`relative z-10 pt-[4.5rem] md:pt-14 max-md:pb-[calc(2.75rem+env(safe-area-inset-bottom)+1.25rem)] md:pb-12 min-h-screen transition-[margin] duration-300 ease-out overflow-x-hidden bg-none [background-clip:unset] [-webkit-background-clip:unset] ${sidebarNarrow ? "md:ml-[80px]" : "md:ml-[260px]"}`}
       >
-        <div className={`p-3 sm:p-4 md:p-6 ${sidebarNarrow ? "mx-auto w-full max-w-[1600px]" : ""}`}>
+        <div className={`relative z-10 p-3 sm:p-4 md:p-6 ${sidebarNarrow ? "mx-auto w-full max-w-[1600px]" : ""}`}>
           {activeTab === "home" && <HomePage copy={copy} theme={theme} setActiveTab={setActiveTab} setShowEarnModal={setShowEarnModal} setShowReferralModal={setShowReferralModal} onOpenCreateModel={() => { setUploadRealMode(false); setShowCreateModelModal(true); }} onOpenUploadReal={() => { setUploadRealMode(true); setShowCreateModelModal(true); }} onOpenCredits={() => setShowAddCredits(true)} />}
           {activeTab === "models" && <ModelsPage sidebarCollapsed={sidebarNarrow} openVoiceStudioForModel={openVoiceStudioForModel} />}
 {activeTab === "generate" && <GeneratePage setActiveTab={setActiveTab} openVoiceStudioForModel={openVoiceStudioForModel} />}
@@ -1370,6 +1370,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
     }
   };
 
+  const gradientPurple = 'linear-gradient(135deg, #8B5CF6, #3B82F6)';
+  const gradientCyan = 'linear-gradient(135deg, #22D3EE, #14B8A6)';
+  const gradientPink = 'linear-gradient(135deg, #EC4899, #8B5CF6)';
+  const gradientGreen = 'linear-gradient(135deg, #10B981, #22D3EE)';
+
   const animatedCredits = useCountUp(user?.credits || 0, 1200);
   const animatedImages = useCountUp(monthlyStats.images, 900);
   const animatedVideos = useCountUp(monthlyStats.videos, 700);
@@ -1479,8 +1484,8 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div
             className="absolute top-0 left-0 w-28 h-28 pointer-events-none"
             style={{
-                  background: 'radial-gradient(ellipse 100% 100% at 0% 0%, var(--accent-soft) 0%, transparent 70%)',
-                }}
+              background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.06) 45%, transparent 70%)',
+            }}
           />
           <div className="relative">
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -1532,11 +1537,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>Create Content</h3>
-              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>Use our creator studio to create cinema grade content.</p>
+              <h3 className="text-lg font-bold text-white mb-1">Create Content</h3>
+              <p className="text-slate-400 text-sm">Use our creator studio to create cinema grade content.</p>
             </div>
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${isLightTheme ? "border-slate-200" : "border-white/20"}`}>
-              <Wand2 className={`w-6 h-6 ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
+              <Wand2 className="w-6 h-6 text-white" />
             </div>
           </div>
         </button>
@@ -1553,11 +1558,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>Create Content with Avatar</h3>
-              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>Create personalised content with your AI avatar.</p>
+              <h3 className="text-lg font-bold text-white mb-1">Create Content with Avatar</h3>
+              <p className="text-slate-400 text-sm">Create personalised content with your AI avatar.</p>
             </div>
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border ${isLightTheme ? "border-slate-200" : "border-white/20"}`}>
-              <User className={`w-6 h-6 ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
+              <User className="w-6 h-6 text-white" />
             </div>
           </div>
         </button>
@@ -1579,11 +1584,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.mainCreateModelTitle}</h3>
-              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{copy.mainCreateModelBody}</p>
+              <h3 className="text-lg font-bold text-white mb-1">{copy.mainCreateModelTitle}</h3>
+              <p className="text-slate-400 text-sm">{copy.mainCreateModelBody}</p>
             </div>
             <div 
-              className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border group-hover:border-transparent relative ${isLightTheme ? "border-slate-200" : "border-white/20"}`}
+              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
               style={{ 
                 background: 'var(--bg-elevated)',
                 boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
@@ -1597,7 +1602,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
                   boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
                 }}
               />
-              <Plus className={`w-6 h-6 relative z-[1] ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
+              <Plus className="w-6 h-6 text-white relative z-[1]" />
             </div>
           </div>
         </button>
@@ -1616,11 +1621,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
-              <h3 className={`text-lg font-bold mb-1 ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.mainUploadRealTitle}</h3>
-              <p className={`text-sm ${isLightTheme ? "text-slate-600" : "text-slate-400"}`}>{copy.mainUploadRealBody}</p>
+              <h3 className="text-lg font-bold text-white mb-1">{copy.mainUploadRealTitle}</h3>
+              <p className="text-slate-400 text-sm">{copy.mainUploadRealBody}</p>
             </div>
             <div 
-              className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border group-hover:border-transparent relative ${isLightTheme ? "border-slate-200" : "border-white/20"}`}
+              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
               style={{ 
                 background: 'var(--bg-elevated)',
                 boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
@@ -1629,11 +1634,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
               <div 
                 className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
                 style={{ 
-                  background: 'var(--accent-soft)',
+                  background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(20, 184, 166, 0.12))',
                   boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
                 }}
               />
-              <Upload className={`w-6 h-6 relative z-[1] ${isLightTheme ? "text-slate-800" : "text-[var(--text-primary)]"}`} />
+              <Upload className="w-6 h-6 text-white relative z-[1]" />
             </div>
           </div>
         </button>
@@ -1641,11 +1646,18 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
 
       {/* Getting Started Video - Dismissable */}
       {showTutorial && (
-        <div className="rounded-xl p-4 mb-6 border border-[var(--border-subtle)] bg-[var(--bg-surface)] shadow-[inset_0_1px_0_var(--mc-glass-inset)]">
+        <div 
+          className="rounded-xl p-4 mb-6 backdrop-blur-xl"
+          style={{ 
+            background: 'rgba(139,92,246,0.04)',
+            border: '1px solid rgba(139,92,246,0.08)',
+            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
+          }}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-[var(--text-primary)]" />
-              <span className="text-sm font-medium text-[var(--text-secondary)]">{copy.tutorialTitle}</span>
+              <HelpCircle className="w-4 h-4 text-white" />
+              <span className="text-sm font-medium text-slate-300">{copy.tutorialTitle}</span>
             </div>
             <button
               onClick={() => {
@@ -1659,7 +1671,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
             </button>
           </div>
           <div className="max-w-2xl mx-auto">
-            <div className="aspect-video rounded-lg overflow-hidden border border-[var(--border-subtle)]">
+            <div className="aspect-video rounded-lg overflow-hidden border border-white/5">
               <video 
                 className="w-full h-full object-cover"
                 controls
@@ -1677,10 +1689,10 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
       {recentGenerations.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <label className="block text-[11px] uppercase tracking-[0.15em] text-[var(--text-muted)] font-medium">{copy.recentCreations}</label>
+            <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.recentCreations}</label>
             <button
               onClick={() => { setActiveTab("history"); }}
-              className="flex items-center gap-1 text-xs text-[var(--accent)] hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
               data-testid="button-view-all-history"
             >
               <span>{copy.viewAll}</span>
@@ -1700,7 +1712,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
                 <button
                   key={gen.id}
                   onClick={() => { setActiveTab("history"); }}
-                  className="group relative aspect-square rounded-lg overflow-hidden border border-[var(--border-subtle)] hover:border-[var(--accent)]/40 transition-all"
+                  className="group relative aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-purple-500/30 transition-all"
                   data-testid={`recent-gen-${gen.id}`}
                 >
                   {isVideo ? (
@@ -1737,7 +1749,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
 
       {/* Quick Actions Grid */}
       <div className="mb-6">
-        <label className={`block text-[11px] uppercase tracking-[0.15em] font-medium mb-3 ${isLightTheme ? "text-slate-700" : "text-[var(--text-primary)]"}`}>{copy.quickActionsTitle}</label>
+        <label className="block text-[11px] uppercase tracking-[0.15em] text-white font-medium mb-3">{copy.quickActionsTitle}</label>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Go to Models */}
           <button
@@ -1753,22 +1765,22 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
             <div className="relative">
               <div className="flex items-center gap-3 mb-2">
                 <div 
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center border relative ${isLightTheme ? "border-slate-200" : "border-[var(--border-medium)]"}`}
+                  className="w-9 h-9 rounded-lg flex items-center justify-center border border-purple-300 relative"
                   style={{ background: 'transparent' }}
                 >
                   <div 
-                    className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-[var(--border-subtle)]"
+                    className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
                     style={{ 
-                      background: 'var(--accent-soft)',
+                      background: 'rgba(196, 181, 253, 0.12)',
                       boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
                     }}
                   />
-                  <User className="w-4 h-4 text-[var(--accent)] relative z-[1]" />
+                  <User className="w-4 h-4 text-purple-300 relative z-[1]" />
                 </div>
-                <span className={`text-sm font-semibold ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.quickCreateModelTitle}</span>
+                <span className="text-sm font-semibold text-purple-300">{copy.quickCreateModelTitle}</span>
               </div>
               <p className="text-xs text-slate-400 mb-3">{copy.quickCreateModelBody}</p>
-              <div className="flex items-center gap-1 text-[var(--accent)] text-xs font-medium group-hover:gap-2 transition-all">
+              <div className="flex items-center gap-1 text-purple-400 text-xs font-medium group-hover:gap-2 transition-all">
                 <span>{copy.quickGetStarted}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
@@ -1851,28 +1863,29 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
 
       {/* Start Creating CTA */}
       <div 
-        className="rounded-2xl p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+        className="rounded-2xl p-5 backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
         style={{ 
           background: 'var(--bg-elevated)',
           border: '1px solid var(--mc-glass-border)',
         }}
       >
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-center sm:text-left">
+          <div className="flex items-center gap-3 text-center sm:text-left">
             <div 
-              className={`w-10 h-10 rounded-xl flex items-center justify-center border ${isLightTheme ? "border-slate-200" : "border-white/20"}`}
+              className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/20"
               style={{ background: 'transparent' }}
             >
-              <Zap className="w-5 h-5 text-amber-500" />
+              <Zap className="w-5 h-5 text-yellow-400" />
             </div>
             <div>
-              <h3 className={`text-lg font-semibold ${isLightTheme ? "text-slate-900" : "text-[var(--text-primary)]"}`}>{copy.ctaReadyTitle}</h3>
+              <h3 className="text-lg font-semibold text-white">{copy.ctaReadyTitle}</h3>
               <p className="text-slate-400 text-sm">{copy.ctaReadyBody}</p>
             </div>
           </div>
           <button
             onClick={() => { setActiveTab("generate"); }}
-            className="btn-primary w-full sm:w-auto px-6 py-3 rounded-xl font-semibold"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-black transition-all hover:bg-slate-100 hover:scale-105"
+            style={{ background: '#ffffff' }}
             data-testid="button-start-generating"
           >
             <span className="flex items-center justify-center gap-2">
