@@ -811,9 +811,21 @@ export default function FlowsPage({ embedded = false }) {
         /* Custom minimap */
         .flow-minimap { margin: 12px !important; }
 
-        /* Edge */
-        .react-flow__edge-path { stroke-linecap: round; }
-        .react-flow__edge:hover .react-flow__edge-path { stroke-width: 2.5px; }
+        /* Edge — safety net: every edge path gets a visible stroke even
+           if a custom edge component fails to mount one. */
+        .react-flow__edge-path,
+        .react-flow__connection-path {
+          stroke: #a78bfa !important;
+          stroke-width: 2px;
+          stroke-linecap: round;
+          fill: none;
+        }
+        .react-flow__edge:hover .react-flow__edge-path { stroke-width: 2.75px !important; }
+        .react-flow__edge.selected .react-flow__edge-path,
+        .react-flow__edge:focus .react-flow__edge-path,
+        .react-flow__edge:focus-visible .react-flow__edge-path {
+          stroke-width: 2.75px !important;
+        }
 
         /* Handle hover */
         .react-flow__handle {
