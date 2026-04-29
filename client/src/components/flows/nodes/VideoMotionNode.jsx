@@ -9,8 +9,8 @@ export default function VideoMotionNode({ id, data, selected }) {
       type="video-motion"
       data={data}
       selected={selected}
-      headerColor="#d97706"
-      label="Motion Control"
+      headerColor="#f59e0b"
+      label={data.label || "Motion Control"}
       inputs={[
         { id: "image", type: "image", label: "Source Image" },
         { id: "video", type: "video", label: "Motion Ref" },

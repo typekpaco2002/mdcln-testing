@@ -29,8 +29,8 @@ export default function MCXNode({ id, data, selected }) {
       type="mcx-img2img"
       data={data}
       selected={selected}
-      headerColor="#7c3aed"
-      label="ModelClone-X"
+      headerColor="#a78bfa"
+      label={data.label || "ModelClone-X"}
       inputs={[
         { id: "image", type: "image", label: "Input Image" },
         { id: "model", type: "model", label: "Model (opt)" },

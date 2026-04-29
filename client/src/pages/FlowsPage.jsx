@@ -1,11 +1,9 @@
 /**
- * AI Flows Builder — Main Canvas Page
+ * AI Flows Builder — main canvas page.
  *
- * Full-screen layout:
- *  - Left sidebar: node palette (collapsible)
- *  - Center: React Flow canvas with dark dot-grid, mini-map
- *  - Right panel: Flow Library | Execution Panel (tabbed, collapsible)
- *  - Top toolbar: flow name, save, undo/redo, credit estimate, run button
+ * Aesthetic direction: "AI Lab Workshop" — refined dark glass, Syne for the
+ * brand mark, JetBrains Mono for technical labels, Inter for UI body, with
+ * a subtle aurora gradient mesh on the canvas background.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,36 +20,47 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import {
-  Save, Undo2, Redo2, ChevronLeft, ChevronRight,
-  GitBranch, Workflow, Loader2, Coins, ArrowLeft,
+  Save,
+  Undo2,
+  Redo2,
+  ChevronLeft,
+  ChevronRight,
+  GitBranch,
+  Loader2,
+  Coins,
+  Play,
+  ArrowLeft,
+  Workflow,
+  Library,
+  Terminal,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
 import { useFlowStore } from "../store/flowStore";
 import { useAuthStore } from "../store";
-import { FLOW_TEMPLATES } from "../data/flow-templates";
 import { NodePalette } from "../components/flows/NodePalette";
 import { FlowLibrary } from "../components/flows/FlowLibrary";
 import { ExecutionPanel } from "../components/flows/ExecutionPanel";
+import FlowEdge from "../components/flows/FlowEdge";
 
-// Node type component map for React Flow
-import ImageInputNode   from "../components/flows/nodes/ImageInputNode";
-import TextInputNode    from "../components/flows/nodes/TextInputNode";
+// Node types
+import ImageInputNode from "../components/flows/nodes/ImageInputNode";
+import TextInputNode from "../components/flows/nodes/TextInputNode";
 import ModelSelectorNode from "../components/flows/nodes/ModelSelectorNode";
 import EnhancePromptNode from "../components/flows/nodes/EnhancePromptNode";
-import NanaBananaNode   from "../components/flows/nodes/NanaBananaNode";
-import SeedreamNode     from "../components/flows/nodes/SeedreamNode";
-import MCXNode          from "../components/flows/nodes/MCXNode";
+import NanaBananaNode from "../components/flows/nodes/NanaBananaNode";
+import SeedreamNode from "../components/flows/nodes/SeedreamNode";
+import MCXNode from "../components/flows/nodes/MCXNode";
 import CreatorStudioNode from "../components/flows/nodes/CreatorStudioNode";
-import UpscalerNode     from "../components/flows/nodes/UpscalerNode";
-import SynthIDNode      from "../components/flows/nodes/SynthIDNode";
-import FaceSwapNode     from "../components/flows/nodes/FaceSwapNode";
-import VideoPromptNode  from "../components/flows/nodes/VideoPromptNode";
-import VideoMotionNode  from "../components/flows/nodes/VideoMotionNode";
-import TalkingHeadNode  from "../components/flows/nodes/TalkingHeadNode";
-import NSFWGenNode      from "../components/flows/nodes/NSFWGenNode";
-import NSFWVideoNode    from "../components/flows/nodes/NSFWVideoNode";
-import NSFWMotionNode   from "../components/flows/nodes/NSFWMotionNode";
+import UpscalerNode from "../components/flows/nodes/UpscalerNode";
+import SynthIDNode from "../components/flows/nodes/SynthIDNode";
+import FaceSwapNode from "../components/flows/nodes/FaceSwapNode";
+import VideoPromptNode from "../components/flows/nodes/VideoPromptNode";
+import VideoMotionNode from "../components/flows/nodes/VideoMotionNode";
+import TalkingHeadNode from "../components/flows/nodes/TalkingHeadNode";
+import NSFWGenNode from "../components/flows/nodes/NSFWGenNode";
+import NSFWVideoNode from "../components/flows/nodes/NSFWVideoNode";
+import NSFWMotionNode from "../components/flows/nodes/NSFWMotionNode";
 import OutputViewerNode from "../components/flows/nodes/OutputViewerNode";
 
 const NODE_TYPE_MAP = {
@@ -75,12 +84,14 @@ const NODE_TYPE_MAP = {
   "output-viewer":      OutputViewerNode,
 };
 
+const EDGE_TYPES = { default: FlowEdge, smoothstep: FlowEdge, bezier: FlowEdge };
+
 function authHeader() {
   const token = useAuthStore.getState().token;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-// ── Inner canvas component (needs to be inside ReactFlowProvider) ──────────
+// ─── Inner canvas (inside ReactFlowProvider) ───────────────────────────────
 
 function FlowCanvas({ flowId, embedded = false }) {
   const { screenToFlowPosition } = useReactFlow();
@@ -94,11 +105,11 @@ function FlowCanvas({ flowId, embedded = false }) {
     rightPanelOpen, toggleRightPanel,
     rightPanelTab, setRightPanelTab,
     currentFlowId, currentFlowName, isDirty,
-    setFlowName, markClean, setSavedFlows, savedFlows,
+    setFlowName, markClean, setSavedFlows,
     setNodeTypeRegistry, nodeTypes,
     startRun, resetRun, handleSSEEvent,
     undo, redo,
-    runStatus, currentRunId, creditsUsed,
+    runStatus, currentRunId,
   } = store;
 
   const [libLoading, setLibLoading] = useState(false);
@@ -106,11 +117,11 @@ function FlowCanvas({ flowId, embedded = false }) {
   const [editingName, setEditingName] = useState(false);
   const sseRef = useRef(null);
   const creditEstimate = nodeTypes.reduce((sum, t) => {
-    const found = nodes.find((n) => n.type === t.type);
-    return found ? sum + (t.creditCost || 0) : sum;
+    const matches = nodes.filter((n) => n.type === t.type).length;
+    return sum + matches * (t.creditCost || 0);
   }, 0);
 
-  // Load node type registry from server once
+  // Load node type registry once
   useEffect(() => {
     if (nodeTypes.length > 0) return;
     fetch("/api/flows/node-types", { headers: authHeader() })
@@ -119,7 +130,6 @@ function FlowCanvas({ flowId, embedded = false }) {
       .catch(() => {});
   }, []);
 
-  // Load flows list
   const loadFlowList = useCallback(async () => {
     setLibLoading(true);
     try {
@@ -132,7 +142,7 @@ function FlowCanvas({ flowId, embedded = false }) {
 
   useEffect(() => { loadFlowList(); }, []);
 
-  // Load specific flow by ID (from URL param or prop)
+  // Load flow by id
   useEffect(() => {
     if (!flowId || flowId === currentFlowId) return;
     fetch(`/api/flows/${flowId}`, { headers: authHeader() })
@@ -141,7 +151,7 @@ function FlowCanvas({ flowId, embedded = false }) {
       .catch(() => {});
   }, [flowId]);
 
-  // Subscribe to SSE stream when run is active
+  // SSE
   useEffect(() => {
     if (!currentRunId || (runStatus !== "pending" && runStatus !== "running")) {
       sseRef.current?.close();
@@ -159,7 +169,6 @@ function FlowCanvas({ flowId, embedded = false }) {
     return () => { es.close(); sseRef.current = null; };
   }, [currentRunId, runStatus]);
 
-  // Drag-drop from palette onto canvas
   const onDragOver = useCallback((e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
@@ -194,7 +203,6 @@ function FlowCanvas({ flowId, embedded = false }) {
     return () => window.removeEventListener("keydown", handler);
   }, [currentFlowId, currentFlowName, nodes, edges]);
 
-  // Save flow
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
@@ -221,14 +229,12 @@ function FlowCanvas({ flowId, embedded = false }) {
     finally { setSaving(false); }
   }, [currentFlowId, currentFlowName, nodes, edges]);
 
-  // New blank flow
   const handleNew = useCallback(() => {
     setCurrentFlow({ id: null, name: "Untitled Flow", nodes: [], edges: [] });
     resetRun();
     markClean();
   }, []);
 
-  // Load a saved flow
   const handleLoadFlow = useCallback(async (id) => {
     try {
       const res = await fetch(`/api/flows/${id}`, { headers: authHeader() });
@@ -238,7 +244,6 @@ function FlowCanvas({ flowId, embedded = false }) {
     } catch { /* ignore */ }
   }, []);
 
-  // Delete a flow
   const handleDeleteFlow = useCallback(async (id) => {
     if (!window.confirm("Delete this flow?")) return;
     await fetch(`/api/flows/${id}`, { method: "DELETE", headers: authHeader() });
@@ -246,7 +251,12 @@ function FlowCanvas({ flowId, embedded = false }) {
     loadFlowList();
   }, [currentFlowId]);
 
-  // Run the flow
+  const handleLoadTemplate = useCallback((template) => {
+    setCurrentFlow({ id: null, name: template.name, nodes: template.nodes, edges: template.edges });
+    resetRun();
+    markDirty();
+  }, [setCurrentFlow, resetRun]);
+
   const handleRun = useCallback(async () => {
     if (!currentFlowId) {
       await handleSave();
@@ -254,7 +264,6 @@ function FlowCanvas({ flowId, embedded = false }) {
     }
     const fid = useFlowStore.getState().currentFlowId;
     if (!fid) return;
-
     const res = await fetch(`/api/flows/${fid}/run`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeader() },
@@ -266,26 +275,12 @@ function FlowCanvas({ flowId, embedded = false }) {
     }
   }, [currentFlowId, nodes]);
 
-  // Load a template into the canvas
-  const handleLoadTemplate = useCallback((template) => {
-    setCurrentFlow({
-      id: null,
-      name: template.name,
-      nodes: template.nodes,
-      edges: template.edges,
-    });
-    resetRun();
-    markDirty();
-  }, [setCurrentFlow, resetRun]);
-
-  // Cancel a run
   const handleCancel = useCallback(async () => {
     if (!currentRunId) return;
     await fetch(`/api/flows/runs/${currentRunId}`, { method: "DELETE", headers: authHeader() });
     resetRun();
   }, [currentRunId]);
 
-  // Edge connection validation (type matching)
   const isValidConnection = useCallback((connection) => {
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
@@ -299,44 +294,84 @@ function FlowCanvas({ flowId, embedded = false }) {
     return sourcePort.type === targetPort.type;
   }, [nodes, nodeTypes]);
 
+  const isRunning = runStatus === "running" || runStatus === "pending";
+
   return (
-    <div className="flex h-full w-full overflow-hidden">
-      {/* Left palette */}
+    <div className="flex h-full w-full overflow-hidden" style={{ background: "#08080b", color: "#f4f4f5" }}>
+      {/* ── Left palette ── */}
       <div
-        className={`flex-shrink-0 border-r border-white/[0.06] bg-[#0c0c12] flex flex-col transition-all duration-200 ${paletteOpen ? "w-48" : "w-0 overflow-hidden border-r-0"}`}
+        className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out
+          ${paletteOpen ? "w-[210px]" : "w-0 overflow-hidden"}`}
+        style={{
+          background: "linear-gradient(180deg, #0c0c10 0%, #08080b 100%)",
+          borderRight: "1px solid rgba(255,255,255,0.04)",
+        }}
       >
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-3 py-3 border-b border-white/[0.04]">
           <div className="flex items-center gap-2">
-            <Workflow size={13} className="text-violet-400" />
-            <span className="text-[11px] font-semibold text-white/70">Nodes</span>
+            <div
+              className="w-5 h-5 rounded flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(124,58,237,0.08) 100%)", border: "1px solid rgba(167,139,250,0.2)" }}
+            >
+              <Workflow size={11} className="text-violet-300" strokeWidth={2} />
+            </div>
+            <span
+              className="text-[8px] uppercase tracking-[0.2em] font-bold text-white/55"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              Nodes
+            </span>
           </div>
         </div>
         <NodePalette />
       </div>
 
-      {/* Canvas area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Toolbar */}
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] bg-[#0c0c12] flex-shrink-0">
-          {/* Back button — only on standalone route */}
+      {/* ── Canvas area ── */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* ── Toolbar ── */}
+        <div
+          className="flex items-center gap-2 px-3 py-2 flex-shrink-0 z-20 relative"
+          style={{
+            background: "rgba(10,10,14,0.85)",
+            backdropFilter: "blur(20px) saturate(150%)",
+            WebkitBackdropFilter: "blur(20px) saturate(150%)",
+            borderBottom: "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
           {!embedded && (
             <button
               onClick={() => navigate("/dashboard")}
-              className="p-1.5 rounded-md hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors flex-shrink-0"
-              title="Back to dashboard"
+              className="p-1.5 rounded-md hover:bg-white/[0.05] text-white/35 hover:text-white/75 transition-colors flex-shrink-0"
+              title="Back"
             >
-              <ArrowLeft size={14} />
+              <ArrowLeft size={13} strokeWidth={1.8} />
             </button>
           )}
 
-          {/* Palette toggle */}
           <button
             onClick={togglePalette}
-            className="p-1.5 rounded-md hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors flex-shrink-0"
+            className="p-1.5 rounded-md hover:bg-white/[0.05] text-white/35 hover:text-white/75 transition-colors flex-shrink-0"
             title="Toggle palette"
           >
-            {paletteOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+            {paletteOpen
+              ? <ChevronLeft size={13} strokeWidth={1.8} />
+              : <ChevronRight size={13} strokeWidth={1.8} />}
           </button>
+
+          {/* Brand mark */}
+          <div className="hidden md:flex items-center gap-2 ml-1 mr-2 pr-2 border-r border-white/[0.05]">
+            <span
+              className="text-[16px] font-bold tracking-[-0.03em] leading-none"
+              style={{
+                fontFamily: "var(--font-syne)",
+                background: "linear-gradient(135deg, #fff 0%, #a78bfa 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Flows
+            </span>
+          </div>
 
           {/* Flow name */}
           {editingName ? (
@@ -346,72 +381,161 @@ function FlowCanvas({ flowId, embedded = false }) {
               onChange={(e) => setFlowName(e.target.value)}
               onBlur={() => setEditingName(false)}
               onKeyDown={(e) => e.key === "Enter" && setEditingName(false)}
-              className="flex-1 bg-white/5 border border-white/20 rounded-md px-2 py-1 text-[12px] 
-                text-white/90 outline-none focus:border-violet-500/50 min-w-0 max-w-xs"
+              className="bg-white/[0.04] border border-violet-400/40 rounded-md px-2.5 py-1.5 text-[12px]
+                text-white/95 outline-none min-w-0 max-w-xs font-medium"
+              style={{ fontFamily: "var(--font-sans)" }}
             />
           ) : (
             <button
               onClick={() => setEditingName(true)}
-              className="flex items-center gap-1.5 hover:bg-white/[0.04] rounded-md px-2 py-1 group"
+              className="flex items-center gap-2 hover:bg-white/[0.03] rounded-md px-2 py-1.5 group max-w-xs"
+              title="Click to rename"
             >
-              <span className="text-[12px] font-medium text-white/80 max-w-[180px] truncate">{currentFlowName}</span>
-              {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Unsaved changes" />}
+              <span className="text-[12px] font-medium text-white/85 truncate">{currentFlowName}</span>
+              {isDirty && (
+                <span
+                  className="w-1 h-1 rounded-full flex-shrink-0"
+                  style={{ background: "#f59e0b", boxShadow: "0 0 4px rgba(245,158,11,0.6)" }}
+                  title="Unsaved changes"
+                />
+              )}
             </button>
           )}
 
           <div className="flex-1" />
 
-          {/* Undo/Redo */}
-          <button onClick={undo} title="Undo (Ctrl+Z)" className="p-1.5 rounded hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors">
-            <Undo2 size={13} />
-          </button>
-          <button onClick={redo} title="Redo (Ctrl+Y)" className="p-1.5 rounded hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors">
-            <Redo2 size={13} />
-          </button>
+          {/* Tech metrics */}
+          <div className="hidden sm:flex items-center gap-3 px-3 py-1 rounded-md bg-white/[0.025] border border-white/[0.05]">
+            <div className="flex items-center gap-1.5">
+              <span
+                className="text-[8px] uppercase tracking-[0.15em] text-white/30"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                N
+              </span>
+              <span
+                className="text-[10px] text-white/65 tabular-nums"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {String(nodes.length).padStart(2, "0")}
+              </span>
+            </div>
+            <div className="w-px h-3 bg-white/[0.08]" />
+            <div className="flex items-center gap-1.5">
+              <span
+                className="text-[8px] uppercase tracking-[0.15em] text-white/30"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                E
+              </span>
+              <span
+                className="text-[10px] text-white/65 tabular-nums"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {String(edges.length).padStart(2, "0")}
+              </span>
+            </div>
+            <div className="w-px h-3 bg-white/[0.08]" />
+            <div className="flex items-center gap-1.5">
+              <Coins size={9} className="text-amber-300/70" strokeWidth={2} />
+              <span
+                className="text-[10px] text-white/65 tabular-nums"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                ~{creditEstimate}
+              </span>
+            </div>
+          </div>
 
-          {/* Credit estimate */}
-          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
-            <Coins size={10} className="text-amber-400" />
-            <span className="text-[10px] text-white/50">~{creditEstimate} cr</span>
+          {/* Undo/Redo */}
+          <div className="flex items-center bg-white/[0.025] border border-white/[0.05] rounded-md overflow-hidden">
+            <button
+              onClick={undo}
+              title="Undo (Ctrl+Z)"
+              className="p-1.5 hover:bg-white/[0.04] text-white/35 hover:text-white/75 transition-colors"
+            >
+              <Undo2 size={12} strokeWidth={1.8} />
+            </button>
+            <div className="w-px h-3 bg-white/[0.05]" />
+            <button
+              onClick={redo}
+              title="Redo (Ctrl+Y)"
+              className="p-1.5 hover:bg-white/[0.04] text-white/35 hover:text-white/75 transition-colors"
+            >
+              <Redo2 size={12} strokeWidth={1.8} />
+            </button>
           </div>
 
           {/* Save */}
           <button
             onClick={handleSave}
             disabled={saving || !isDirty}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.05] hover:bg-white/[0.08]
-              border border-white/[0.08] text-[11px] text-white/60 hover:text-white/80 
-              disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.06]
+              border border-white/[0.06] text-[10px] font-semibold text-white/65 hover:text-white/90
+              disabled:opacity-30 disabled:cursor-not-allowed transition-all tracking-[0.05em]"
+            style={{ fontFamily: "var(--font-mono)" }}
           >
-            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
-            Save
+            {saving ? <Loader2 size={11} className="animate-spin" strokeWidth={2} /> : <Save size={11} strokeWidth={1.8} />}
+            SAVE
           </button>
 
           {/* Run */}
           <button
             onClick={handleRun}
-            disabled={nodes.length === 0 || runStatus === "running" || runStatus === "pending"}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500
-              text-white text-[11px] font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            disabled={nodes.length === 0 || isRunning}
+            className="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[10px] font-bold tracking-[0.08em]
+              transition-all disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "#fff",
+              background: isRunning
+                ? "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)"
+                : "linear-gradient(135deg, #a78bfa 0%, #7c3aed 100%)",
+              boxShadow: isRunning
+                ? "0 0 18px rgba(96,165,250,0.45), inset 0 1px 0 0 rgba(255,255,255,0.15)"
+                : "0 4px 14px -4px rgba(124,58,237,0.55), inset 0 1px 0 0 rgba(255,255,255,0.15)",
+            }}
           >
-            {(runStatus === "running" || runStatus === "pending")
-              ? <><Loader2 size={11} className="animate-spin" /> Running…</>
-              : "▶ Run"
-            }
+            {isRunning
+              ? <><Loader2 size={11} className="animate-spin" strokeWidth={2.4} /> RUNNING</>
+              : <><Play size={10} fill="currentColor" strokeWidth={0} /> EXECUTE</>}
           </button>
 
-          {/* Right panel toggle */}
           <button
             onClick={toggleRightPanel}
-            className="p-1.5 rounded-md hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors flex-shrink-0"
+            className="p-1.5 rounded-md hover:bg-white/[0.05] text-white/35 hover:text-white/75 transition-colors flex-shrink-0"
             title="Toggle panel"
           >
-            {rightPanelOpen ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            {rightPanelOpen
+              ? <ChevronRight size={13} strokeWidth={1.8} />
+              : <ChevronLeft size={13} strokeWidth={1.8} />}
           </button>
         </div>
 
-        {/* ReactFlow canvas */}
-        <div className="flex-1 relative" style={{ background: "#0c0c12" }}>
+        {/* ── ReactFlow canvas ── */}
+        <div
+          className="flex-1 relative"
+          style={{ background: "#08080b" }}
+        >
+          {/* Aurora background mesh */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `
+                radial-gradient(40% 35% at 25% 35%, rgba(124, 58, 237, 0.10) 0%, transparent 60%),
+                radial-gradient(35% 30% at 80% 70%, rgba(245, 158, 11, 0.06) 0%, transparent 60%),
+                radial-gradient(45% 40% at 60% 20%, rgba(34, 211, 238, 0.04) 0%, transparent 70%)
+              `,
+            }}
+          />
+          {/* Grain texture overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.018] mix-blend-overlay"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E")`,
+            }}
+          />
+
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -421,39 +545,88 @@ function FlowCanvas({ flowId, embedded = false }) {
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={NODE_TYPE_MAP}
+            edgeTypes={EDGE_TYPES}
             isValidConnection={isValidConnection}
             fitView
+            fitViewOptions={{ padding: 0.4, maxZoom: 1.2 }}
             proOptions={{ hideAttribution: true }}
             deleteKeyCode={["Delete", "Backspace"]}
             multiSelectionKeyCode="Shift"
-            connectionLineStyle={{ stroke: "#7c3aed", strokeWidth: 1.5, strokeDasharray: "4" }}
-            defaultEdgeOptions={{ style: { stroke: "#7c3aed55", strokeWidth: 1.5 }, type: "smoothstep" }}
+            connectionLineStyle={{ stroke: "#a78bfa", strokeWidth: 2, strokeDasharray: "4 4" }}
+            defaultEdgeOptions={{ type: "default", animated: false }}
+            minZoom={0.25}
+            maxZoom={2}
           >
-            <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#ffffff0a" />
+            <Background
+              variant={BackgroundVariant.Dots}
+              gap={24}
+              size={1}
+              color="rgba(255,255,255,0.045)"
+            />
+
             <Controls
-              className="!bg-[#111118] !border-white/10 !rounded-xl !shadow-xl"
+              position="bottom-left"
+              className="flow-controls"
               showInteractive={false}
             />
+
             <MiniMap
-              style={{ background: "#0c0c12", border: "1px solid rgba(255,255,255,0.06)" }}
-              maskColor="rgba(0,0,0,0.6)"
+              position="bottom-right"
+              className="flow-minimap"
+              maskColor="rgba(0,0,0,0.7)"
+              maskStrokeColor="rgba(167,139,250,0.3)"
+              maskStrokeWidth={1}
               nodeColor={(n) => {
                 const reg = nodeTypes.find((t) => t.type === n.type);
-                return reg?.color || "#7c3aed";
+                return reg?.color || "#a78bfa";
+              }}
+              nodeBorderRadius={4}
+              nodeStrokeWidth={2}
+              nodeStrokeColor="#08080b"
+              style={{
+                background: "linear-gradient(135deg, rgba(12,12,16,0.95) 0%, rgba(8,8,12,0.95) 100%)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 8,
+                overflow: "hidden",
               }}
             />
 
             {/* Empty state */}
             {nodes.length === 0 && (
               <Panel position="top-center" className="pointer-events-none">
-                <div className="mt-32 flex flex-col items-center gap-3 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] 
-                    flex items-center justify-center">
-                    <GitBranch size={24} className="text-white/15" />
+                <div className="mt-32 flex flex-col items-center gap-4 text-center">
+                  <div
+                    className="w-20 h-20 rounded-2xl flex items-center justify-center relative"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(167,139,250,0.08) 0%, rgba(124,58,237,0.02) 100%)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      boxShadow: "0 12px 32px -16px rgba(124,58,237,0.4)",
+                    }}
+                  >
+                    <GitBranch size={28} className="text-white/20" strokeWidth={1.4} />
+                    <div
+                      className="absolute -inset-2 rounded-3xl opacity-40 -z-10"
+                      style={{ background: "radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)" }}
+                    />
                   </div>
-                  <div>
-                    <p className="text-[13px] font-medium text-white/30">Drag nodes from the palette</p>
-                    <p className="text-[11px] text-white/15 mt-0.5">to start building your flow</p>
+                  <div className="space-y-1.5">
+                    <h2
+                      className="text-[24px] font-bold tracking-[-0.02em]"
+                      style={{
+                        fontFamily: "var(--font-syne)",
+                        background: "linear-gradient(135deg, #fff 0%, rgba(167,139,250,0.7) 100%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                      }}
+                    >
+                      Compose your pipeline
+                    </h2>
+                    <p
+                      className="text-[11px] text-white/35 tracking-[0.05em]"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                    >
+                      drag nodes from the palette · or pick a template ↗
+                    </p>
                   </div>
                 </div>
               </Panel>
@@ -462,24 +635,55 @@ function FlowCanvas({ flowId, embedded = false }) {
         </div>
       </div>
 
-      {/* Right panel */}
+      {/* ── Right panel ── */}
       <div
-        className={`flex-shrink-0 border-l border-white/[0.06] bg-[#0c0c12] flex flex-col transition-all duration-200 ${rightPanelOpen ? "w-52" : "w-0 overflow-hidden border-l-0"}`}
+        className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out
+          ${rightPanelOpen ? "w-[240px]" : "w-0 overflow-hidden"}`}
+        style={{
+          background: "linear-gradient(180deg, #0c0c10 0%, #08080b 100%)",
+          borderLeft: "1px solid rgba(255,255,255,0.04)",
+        }}
       >
         {/* Tabs */}
-        <div className="flex border-b border-white/[0.06] flex-shrink-0">
-          {["library", "execution"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setRightPanelTab(tab)}
-              className={`flex-1 py-2.5 text-[10px] font-semibold uppercase tracking-wider transition-colors
-                ${rightPanelTab === tab
-                  ? "text-violet-400 border-b border-violet-500"
-                  : "text-white/30 hover:text-white/50"}`}
-            >
-              {tab === "library" ? "Library" : "Run"}
-            </button>
-          ))}
+        <div className="flex border-b border-white/[0.04] flex-shrink-0">
+          <button
+            onClick={() => setRightPanelTab("library")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[8px] font-bold uppercase tracking-[0.18em]
+              transition-colors relative
+              ${rightPanelTab === "library" ? "text-white/85" : "text-white/30 hover:text-white/55"}`}
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            <Library size={10} strokeWidth={2} />
+            Library
+            {rightPanelTab === "library" && (
+              <span
+                className="absolute bottom-0 left-2 right-2 h-px rounded-full"
+                style={{ background: "linear-gradient(90deg, transparent, #a78bfa, transparent)" }}
+              />
+            )}
+          </button>
+          <button
+            onClick={() => setRightPanelTab("execution")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[8px] font-bold uppercase tracking-[0.18em]
+              transition-colors relative
+              ${rightPanelTab === "execution" ? "text-white/85" : "text-white/30 hover:text-white/55"}`}
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            <Terminal size={10} strokeWidth={2} />
+            Run
+            {isRunning && (
+              <span
+                className="w-1.5 h-1.5 rounded-full ml-0.5"
+                style={{ background: "#60a5fa", boxShadow: "0 0 6px rgba(96,165,250,0.7)" }}
+              />
+            )}
+            {rightPanelTab === "execution" && (
+              <span
+                className="absolute bottom-0 left-2 right-2 h-px rounded-full"
+                style={{ background: "linear-gradient(90deg, transparent, #a78bfa, transparent)" }}
+              />
+            )}
+          </button>
         </div>
 
         <div className="flex-1 overflow-hidden">
@@ -492,11 +696,7 @@ function FlowCanvas({ flowId, embedded = false }) {
               loading={libLoading}
             />
           ) : (
-            <ExecutionPanel
-              onRun={handleRun}
-              onCancel={handleCancel}
-              creditEstimate={creditEstimate}
-            />
+            <ExecutionPanel onRun={handleRun} onCancel={handleCancel} creditEstimate={creditEstimate} />
           )}
         </div>
       </div>
@@ -507,7 +707,6 @@ function FlowCanvas({ flowId, embedded = false }) {
 // ── Page wrapper (provides ReactFlow context) ──────────────────────────────
 
 export default function FlowsPage({ embedded = false }) {
-  // Extract flowId from URL hash/path if needed (standalone route only)
   const flowId = !embedded
     ? (window.location.pathname.split("/flows/")[1] || null)
     : null;
@@ -515,12 +714,12 @@ export default function FlowsPage({ embedded = false }) {
   return (
     <div
       className={embedded
-        ? "relative w-full bg-[#0c0c12] overflow-hidden"
-        : "fixed inset-0 bg-[#0c0c12] overflow-hidden"
+        ? "relative w-full overflow-hidden"
+        : "fixed inset-0 overflow-hidden"
       }
       style={embedded
-        ? { height: "calc(100vh - 4.5rem)" }
-        : { top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }
+        ? { height: "calc(100vh - 4.5rem)", background: "#08080b", zIndex: 1 }
+        : { top: 0, left: 0, right: 0, bottom: 0, background: "#08080b", zIndex: 1 }
       }
     >
       <ReactFlowProvider>
@@ -529,22 +728,79 @@ export default function FlowsPage({ embedded = false }) {
 
       <style>{`
         .react-flow__attribution { display: none !important; }
-        .react-flow__controls button {
-          background: #111118 !important;
-          border-color: rgba(255,255,255,0.08) !important;
+
+        /* Edge dash flow animation */
+        @keyframes flow-dash {
+          to { stroke-dashoffset: -12; }
+        }
+
+        /* Custom controls */
+        .flow-controls {
+          background: linear-gradient(135deg, rgba(12,12,16,0.95) 0%, rgba(8,8,12,0.95) 100%) !important;
+          border: 1px solid rgba(255,255,255,0.06) !important;
+          border-radius: 8px !important;
+          overflow: hidden;
+          box-shadow: 0 8px 24px -8px rgba(0,0,0,0.6) !important;
+        }
+        .flow-controls button {
+          background: transparent !important;
+          border: none !important;
+          border-bottom: 1px solid rgba(255,255,255,0.04) !important;
           color: rgba(255,255,255,0.4) !important;
+          width: 28px !important;
+          height: 28px !important;
+          padding: 0 !important;
+          transition: all 0.15s ease;
         }
-        .react-flow__controls button:hover {
-          background: rgba(255,255,255,0.06) !important;
-          color: rgba(255,255,255,0.7) !important;
+        .flow-controls button:last-child { border-bottom: none !important; }
+        .flow-controls button:hover {
+          background: rgba(167,139,250,0.08) !important;
+          color: rgba(167,139,250,0.9) !important;
         }
-        .react-flow__edge-path { stroke-width: 1.5px; }
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .flow-controls button svg { fill: currentColor; max-width: 12px; max-height: 12px; }
+
+        /* Custom minimap */
+        .flow-minimap { margin: 12px !important; }
+
+        /* Edge */
+        .react-flow__edge-path { stroke-linecap: round; }
+        .react-flow__edge:hover .react-flow__edge-path { stroke-width: 2.5px; }
+
+        /* Handle hover */
+        .react-flow__handle {
+          transition: all 0.15s ease;
+          cursor: crosshair !important;
+        }
+        .react-flow__handle:hover {
+          transform: scale(1.6);
+        }
+        .react-flow__handle-connecting { background: #fbbf24 !important; }
+        .react-flow__handle-valid { background: #34d399 !important; }
+
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 999px; }
-        .react-flow__handle { transition: transform 0.1s; }
-        .react-flow__handle:hover { transform: scale(1.5); }
-        .react-flow__minimap-mask { fill: rgba(0,0,0,0.6); }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.06);
+          border-radius: 999px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(167,139,250,0.25);
+        }
+
+        /* Selection box */
+        .react-flow__nodesselection-rect,
+        .react-flow__selection {
+          background: rgba(167,139,250,0.08) !important;
+          border: 1px dashed rgba(167,139,250,0.4) !important;
+        }
+
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
       `}</style>
     </div>
   );

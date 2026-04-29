@@ -7,13 +7,18 @@ export default function SynthIDNode({ id, data, selected }) {
       type="synthid-remover"
       data={data}
       selected={selected}
-      headerColor="#7c3aed"
-      label="SynthID Remover"
+      headerColor="#a78bfa"
+      label={data.label || "SynthID Remover"}
       inputs={[{ id: "image", type: "image", label: "Image" }]}
-      outputs={[{ id: "image", type: "image", label: "Clean Image" }]}
+      outputs={[{ id: "image", type: "image", label: "Clean" }]}
       creditCost={20}
     >
-      <p className="text-[9px] text-white/40">Removes SynthID or NanaBanana digital watermarks.</p>
+      <p
+        className="text-[9px] text-white/40 leading-relaxed"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        // strips SynthID watermark
+      </p>
     </BaseNode>
   );
 }

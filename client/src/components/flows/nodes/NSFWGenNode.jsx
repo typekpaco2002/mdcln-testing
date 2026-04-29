@@ -9,8 +9,8 @@ export default function NSFWGenNode({ id, data, selected }) {
       type="nsfw-gen"
       data={data}
       selected={selected}
-      headerColor="#dc2626"
-      label="NSFW Generation"
+      headerColor="#f87171"
+      label={data.label || "NSFW Generation"}
       inputs={[
         { id: "model", type: "model", label: "Model" },
         { id: "text", type: "text", label: "Prompt" },

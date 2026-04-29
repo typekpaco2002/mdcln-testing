@@ -22,8 +22,8 @@ export default function ModelSelectorNode({ id, data, selected }) {
       type="model-selector"
       data={data}
       selected={selected}
-      headerColor="#2563eb"
-      label="Model Selector"
+      headerColor="#60a5fa"
+      label={data.label || "Model Selector"}
       inputs={[]}
       outputs={[{ id: "model", type: "model", label: "Model" }]}
       creditCost={0}

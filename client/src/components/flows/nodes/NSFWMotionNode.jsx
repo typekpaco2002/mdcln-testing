@@ -7,17 +7,22 @@ export default function NSFWMotionNode({ id, data, selected }) {
       type="nsfw-motion"
       data={data}
       selected={selected}
-      headerColor="#dc2626"
-      label="NSFW Motion"
+      headerColor="#f87171"
+      label={data.label || "NSFW Motion"}
       inputs={[
-        { id: "image", type: "image", label: "Source Image" },
-        { id: "video", type: "video", label: "Motion Ref" },
+        { id: "image", type: "image", label: "Image" },
+        { id: "video", type: "video", label: "Motion" },
         { id: "model", type: "model", label: "Model" },
       ]}
       outputs={[{ id: "video", type: "video", label: "Video" }]}
       creditCost={90}
     >
-      <p className="text-[9px] text-white/40">NSFW video generation with motion reference control.</p>
+      <p
+        className="text-[9px] text-white/40 leading-relaxed"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        // NSFW + motion control
+      </p>
     </BaseNode>
   );
 }

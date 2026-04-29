@@ -7,16 +7,21 @@ export default function FaceSwapNode({ id, data, selected }) {
       type="face-swap"
       data={data}
       selected={selected}
-      headerColor="#7c3aed"
-      label="Face Swap"
+      headerColor="#a78bfa"
+      label={data.label || "Face Swap"}
       inputs={[
         { id: "image", type: "image", label: "Target" },
-        { id: "face", type: "image", label: "Face Source" },
+        { id: "face", type: "image", label: "Face" },
       ]}
       outputs={[{ id: "image", type: "image", label: "Result" }]}
       creditCost={10}
     >
-      <p className="text-[9px] text-white/40">Swaps the face from source onto the target image.</p>
+      <p
+        className="text-[9px] text-white/40 leading-relaxed"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        // swap face → target
+      </p>
     </BaseNode>
   );
 }

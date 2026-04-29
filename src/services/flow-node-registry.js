@@ -1,5 +1,5 @@
-/**
- * AI Flows Builder — Node Registry
+﻿/**
+ * AI Flows Builder â€” Node Registry
  *
  * Maps every node type to:
  *  - metadata (label, category, color, icon, input/output port definitions)
@@ -16,10 +16,10 @@ import { getGenerationPricing } from "./generation-pricing.service.js";
 import { checkAndExpireCredits, getTotalCredits, deductCredits, refundCredits } from "./credit.service.js";
 
 // ---------------------------------------------------------------------------
-// Port type definitions — used for connection validation and handle coloring
+// Port type definitions â€” used for connection validation and handle coloring
 // ---------------------------------------------------------------------------
 export const PORT_TYPES = {
-  image:  { color: "#7c3aed", label: "Image" },
+  image:  { color: "#a78bfa", label: "Image" },
   video:  { color: "#f59e0b", label: "Video" },
   text:   { color: "#06b6d4", label: "Text" },
   model:  { color: "#10b981", label: "Model" },
@@ -43,7 +43,7 @@ async function pollGeneration(generationId, onProgress) {
     if (!gen) throw new Error("Generation not found");
     if (gen.status === "completed" && gen.outputUrl) return gen.outputUrl;
     if (gen.status === "failed") throw new Error(gen.errorMessage || "Generation failed");
-    onProgress?.({ message: `Waiting for generation ${generationId.slice(0,8)}… (${gen.status})` });
+    onProgress?.({ message: `Waiting for generation ${generationId.slice(0,8)}â€¦ (${gen.status})` });
     await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
   }
   throw new Error("Generation timed out after 8 minutes");
@@ -71,12 +71,12 @@ async function runGeneration({ userId, type, prompt, modelId, replicateModel, cr
 
 export const NODE_REGISTRY = {
 
-  // ── INPUT NODES ──────────────────────────────────────────────────────────
+  // â”€â”€ INPUT NODES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   "image-input": {
     label: "Image Input",
     category: "inputs",
-    color: "#2563eb",
+    color: "#60a5fa",
     description: "Upload an image or provide a URL",
     inputs: [],
     outputs: [{ id: "image", type: "image", label: "Image" }],
@@ -92,7 +92,7 @@ export const NODE_REGISTRY = {
   "text-input": {
     label: "Text Input",
     category: "inputs",
-    color: "#2563eb",
+    color: "#60a5fa",
     description: "A text value or prompt",
     inputs: [],
     outputs: [{ id: "text", type: "text", label: "Text" }],
@@ -107,7 +107,7 @@ export const NODE_REGISTRY = {
   "model-selector": {
     label: "Model Selector",
     category: "inputs",
-    color: "#2563eb",
+    color: "#60a5fa",
     description: "Select one of your AI models",
     inputs: [],
     outputs: [{ id: "model", type: "model", label: "Model" }],
@@ -122,12 +122,12 @@ export const NODE_REGISTRY = {
     },
   },
 
-  // ── IMAGE GENERATION NODES ────────────────────────────────────────────────
+  // â”€â”€ IMAGE GENERATION NODES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   "enhance-prompt": {
     label: "Enhance Prompt",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "AI-enhance a prompt using INSTARAW style",
     inputs: [{ id: "text", type: "text", label: "Prompt" }],
     outputs: [{ id: "text", type: "text", label: "Enhanced Prompt" }],
@@ -146,7 +146,7 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Enhancing prompt with AI…" });
+      onProgress?.({ message: "Enhancing prompt with AIâ€¦" });
       const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_API_KEY}` },
@@ -170,7 +170,7 @@ export const NODE_REGISTRY = {
   "nana-banana-avatar": {
     label: "NanaBanana Avatar",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "Generate image using your model with NanaBanana Pro",
     inputs: [
       { id: "model", type: "model", label: "Model" },
@@ -193,7 +193,7 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting NanaBanana generation…" });
+      onProgress?.({ message: "Submitting NanaBanana generationâ€¦" });
       let outputUrl = null;
       const result = await generateImageWithNanoBananaKie(refs, prompt, {
         resolution: nodeData.resolution || "2K",
@@ -210,7 +210,7 @@ export const NODE_REGISTRY = {
       if (result.success && result.outputUrl) {
         outputUrl = result.outputUrl;
       } else if (result.deferred && result.taskId) {
-        onProgress?.({ message: "Waiting for result…" });
+        onProgress?.({ message: "Waiting for resultâ€¦" });
         const maxWait = 5 * 60 * 1000;
         const start = Date.now();
         while (Date.now() - start < maxWait) {
@@ -231,7 +231,7 @@ export const NODE_REGISTRY = {
   "seedream-avatar": {
     label: "Seedream 5 Avatar",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "Generate image using your model with Seedream 5.0 Lite",
     inputs: [
       { id: "model", type: "model", label: "Model" },
@@ -253,13 +253,13 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting Seedream generation…" });
+      onProgress?.({ message: "Submitting Seedream generationâ€¦" });
       const result = await generateImageWithSeedream5Lite(refs, prompt, { aspectRatio: nodeData.aspectRatio || "9:16", quality: "basic" });
       if (!result.success && !result.deferred) throw new Error(result.error || "Seedream failed");
 
       let outputUrl = result.outputUrl;
       if (result.deferred && result.taskId) {
-        onProgress?.({ message: "Waiting for Seedream result…" });
+        onProgress?.({ message: "Waiting for Seedream resultâ€¦" });
         const maxWait = 5 * 60 * 1000;
         const start = Date.now();
         while (Date.now() - start < maxWait) {
@@ -280,7 +280,7 @@ export const NODE_REGISTRY = {
   "mcx-img2img": {
     label: "ModelClone-X",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "Image-to-image with your character LoRA",
     inputs: [
       { id: "image", type: "image", label: "Input Image" },
@@ -300,7 +300,7 @@ export const NODE_REGISTRY = {
 
       const loraUrl = inputs.model?.loraUrl || nodeData.loraUrl;
       const prompt = inputs.text || nodeData.prompt || "masterpiece, best quality";
-      onProgress?.({ message: "Submitting MCX job…" });
+      onProgress?.({ message: "Submitting MCX jobâ€¦" });
 
       const gen = await prisma.generation.create({
         data: { userId, type: "mcx-img2img", status: "processing", prompt, creditsCost: cost, replicateModel: "comfyui-mcx-i2i" },
@@ -315,7 +315,7 @@ export const NODE_REGISTRY = {
       });
       await prisma.generation.update({ where: { id: gen.id }, data: { providerTaskId: job.id || job.requestId } });
 
-      onProgress?.({ message: "Waiting for MCX result…" });
+      onProgress?.({ message: "Waiting for MCX resultâ€¦" });
       const images = await pollModelCloneXJob(job.id || job.requestId, gen.id, userId);
       if (!images?.length) throw new Error("MCX: no output images");
       return { output: images[0], outputType: "image", creditsUsed: cost };
@@ -325,7 +325,7 @@ export const NODE_REGISTRY = {
   "upscaler": {
     label: "Upscaler",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "Upscale image to higher resolution",
     inputs: [{ id: "image", type: "image", label: "Image" }],
     outputs: [{ id: "image", type: "image", label: "Upscaled" }],
@@ -341,7 +341,7 @@ export const NODE_REGISTRY = {
       await deductCredits(userId, cost);
 
       const { submitRunningHubUpscalerJob, queryRunningHubTask, extractRunningHubOutputUrl } = await import("../services/runninghub.service.js");
-      onProgress?.({ message: "Submitting upscale job…" });
+      onProgress?.({ message: "Submitting upscale jobâ€¦" });
 
       const gen = await prisma.generation.create({
         data: { userId, type: "upscaler", status: "processing", prompt: "upscale", creditsCost: cost, replicateModel: "runninghub-upscaler" },
@@ -357,7 +357,7 @@ export const NODE_REGISTRY = {
       const { taskId } = await submitRunningHubUpscalerJob(imageBase64 || imageUrl);
       await prisma.generation.update({ where: { id: gen.id }, data: { providerTaskId: taskId } });
 
-      onProgress?.({ message: "Waiting for upscale result…" });
+      onProgress?.({ message: "Waiting for upscale resultâ€¦" });
       const maxWait = 5 * 60 * 1000;
       const start = Date.now();
       while (Date.now() - start < maxWait) {
@@ -379,7 +379,7 @@ export const NODE_REGISTRY = {
   "synthid-remover": {
     label: "SynthID Remover",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "Remove SynthID or digital watermarks",
     inputs: [{ id: "image", type: "image", label: "Image" }],
     outputs: [{ id: "image", type: "image", label: "Clean Image" }],
@@ -403,7 +403,7 @@ export const NODE_REGISTRY = {
         imageBase64 = Buffer.from(buf).toString("base64");
       } catch { imageBase64 = null; }
 
-      onProgress?.({ message: "Submitting SynthID removal job…" });
+      onProgress?.({ message: "Submitting SynthID removal jobâ€¦" });
       const gen = await prisma.generation.create({
         data: { userId, type: "synthid-remove", status: "processing", prompt: "synthid-remove", creditsCost: cost, replicateModel: "runninghub-synthid" },
       });
@@ -431,7 +431,7 @@ export const NODE_REGISTRY = {
   "face-swap": {
     label: "Face Swap",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "Swap face from source image onto target",
     inputs: [
       { id: "image", type: "image", label: "Target Image" },
@@ -450,7 +450,7 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting face swap…" });
+      onProgress?.({ message: "Submitting face swapâ€¦" });
       const { faceSwapImage } = await import("../controllers/generation.controller.js").catch(() => ({}));
       // Direct wavespeed face swap
       const { generateFaceSwapWithWavespeed } = await import("./wavespeed.service.js").catch(() => ({}));
@@ -466,7 +466,7 @@ export const NODE_REGISTRY = {
   "creator-studio": {
     label: "Creator Studio",
     category: "images",
-    color: "#7c3aed",
+    color: "#a78bfa",
     description: "Generate with Creator Studio (Flux, Wan, Ideogram, etc.)",
     inputs: [{ id: "text", type: "text", label: "Prompt" }],
     outputs: [{ id: "image", type: "image", label: "Image" }],
@@ -481,7 +481,7 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Generating with Creator Studio…" });
+      onProgress?.({ message: "Generating with Creator Studioâ€¦" });
       const { generateImageWithSeedream5Lite } = await import("./kie.service.js");
       const result = await generateImageWithSeedream5Lite([], prompt, {
         aspectRatio: nodeData.aspectRatio || "9:16",
@@ -505,12 +505,12 @@ export const NODE_REGISTRY = {
     },
   },
 
-  // ── VIDEO GENERATION NODES ────────────────────────────────────────────────
+  // â”€â”€ VIDEO GENERATION NODES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   "video-prompt": {
     label: "Video from Prompt",
     category: "video",
-    color: "#d97706",
+    color: "#f59e0b",
     description: "Generate video from a text prompt",
     inputs: [
       { id: "text", type: "text", label: "Prompt" },
@@ -530,7 +530,7 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting video generation…" });
+      onProgress?.({ message: "Submitting video generationâ€¦" });
       const { generateKlingVideoKie } = await import("./kie.service.js").catch(() => ({}));
       if (!generateKlingVideoKie) throw new Error("Video generation service not available");
       const gen = await prisma.generation.create({
@@ -544,7 +544,7 @@ export const NODE_REGISTRY = {
 
       let outputUrl = result?.outputUrl;
       if (result?.deferred && result?.taskId) {
-        onProgress?.({ message: "Waiting for video result…" });
+        onProgress?.({ message: "Waiting for video resultâ€¦" });
         outputUrl = await pollGeneration(gen.id, onProgress);
       }
       if (!outputUrl) throw new Error("Video from Prompt: no output");
@@ -555,7 +555,7 @@ export const NODE_REGISTRY = {
   "video-motion": {
     label: "Motion Control",
     category: "video",
-    color: "#d97706",
+    color: "#f59e0b",
     description: "Animate an image using a motion reference video",
     inputs: [
       { id: "image", type: "image", label: "Source Image" },
@@ -575,7 +575,7 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting motion control video…" });
+      onProgress?.({ message: "Submitting motion control videoâ€¦" });
       const { generateVideoWithMotionKie } = await import("./kie.service.js");
       const gen = await prisma.generation.create({
         data: { userId, type: "recreate-video", status: "processing", prompt: "motion-control", creditsCost: cost, replicateModel: "kie-motion" },
@@ -588,7 +588,7 @@ export const NODE_REGISTRY = {
       });
       let outputUrl = result?.outputUrl;
       if (result?.deferred && result?.taskId) {
-        onProgress?.({ message: "Waiting for motion video result…" });
+        onProgress?.({ message: "Waiting for motion video resultâ€¦" });
         outputUrl = await pollGeneration(gen.id, onProgress);
       }
       if (!outputUrl) throw new Error("Motion Control: no output");
@@ -599,7 +599,7 @@ export const NODE_REGISTRY = {
   "talking-head": {
     label: "Talking Head",
     category: "video",
-    color: "#d97706",
+    color: "#f59e0b",
     description: "Animate a portrait with audio",
     inputs: [
       { id: "image", type: "image", label: "Portrait" },
@@ -615,7 +615,7 @@ export const NODE_REGISTRY = {
       const user = await checkAndExpireCredits(userId);
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
-      onProgress?.({ message: "Submitting talking head…" });
+      onProgress?.({ message: "Submitting talking headâ€¦" });
       const gen = await prisma.generation.create({
         data: { userId, type: "talking-head", status: "processing", prompt: "talking-head", creditsCost: cost, replicateModel: "kie-talking-head" },
       });
@@ -624,12 +624,12 @@ export const NODE_REGISTRY = {
     },
   },
 
-  // ── NSFW NODES ────────────────────────────────────────────────────────────
+  // â”€â”€ NSFW NODES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   "nsfw-gen": {
     label: "NSFW Generation",
     category: "nsfw",
-    color: "#dc2626",
+    color: "#f87171",
     description: "Generate NSFW images using your LoRA model",
     inputs: [
       { id: "model", type: "model", label: "Model" },
@@ -649,14 +649,14 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting NSFW generation…" });
+      onProgress?.({ message: "Submitting NSFW generationâ€¦" });
       const { generateNsfwImage } = await import("../controllers/nsfw.controller.js").catch(() => ({}));
       // Create generation and submit via NSFW controller internals
       const { submitNsfwGeneration } = await import("./modelcloneX.service.js").catch(() => ({ submitNsfwGeneration: null }));
       const gen = await prisma.generation.create({
         data: { userId, modelId: model.id, type: "nsfw", status: "processing", prompt, creditsCost: cost, replicateModel: "comfyui-nsfw", isNsfw: true },
       });
-      onProgress?.({ message: "Waiting for NSFW result…" });
+      onProgress?.({ message: "Waiting for NSFW resultâ€¦" });
       const outputUrl = await pollGeneration(gen.id, onProgress);
       return { output: outputUrl, outputType: "image", creditsUsed: cost };
     },
@@ -665,7 +665,7 @@ export const NODE_REGISTRY = {
   "nsfw-video": {
     label: "NSFW Video",
     category: "nsfw",
-    color: "#dc2626",
+    color: "#f87171",
     description: "Generate NSFW video from image",
     inputs: [
       { id: "image", type: "image", label: "Input Image" },
@@ -684,7 +684,7 @@ export const NODE_REGISTRY = {
       const gen = await prisma.generation.create({
         data: { userId, modelId: model?.id, type: "nsfw-video", status: "processing", prompt: "nsfw-video", creditsCost: cost, replicateModel: "nsfw-video", isNsfw: true },
       });
-      onProgress?.({ message: "Waiting for NSFW video…" });
+      onProgress?.({ message: "Waiting for NSFW videoâ€¦" });
       const outputUrl = await pollGeneration(gen.id, onProgress);
       return { output: outputUrl, outputType: "video", creditsUsed: cost };
     },
@@ -693,7 +693,7 @@ export const NODE_REGISTRY = {
   "nsfw-video-extend": {
     label: "NSFW Extend Video",
     category: "nsfw",
-    color: "#dc2626",
+    color: "#f87171",
     description: "Extend an NSFW video",
     inputs: [
       { id: "video", type: "video", label: "Video" },
@@ -711,7 +711,7 @@ export const NODE_REGISTRY = {
       const gen = await prisma.generation.create({
         data: { userId, type: "nsfw-video-extend", status: "processing", prompt: "extend", creditsCost: cost, replicateModel: "nsfw-video-extend", isNsfw: true },
       });
-      onProgress?.({ message: "Waiting for extended video…" });
+      onProgress?.({ message: "Waiting for extended videoâ€¦" });
       const outputUrl = await pollGeneration(gen.id, onProgress);
       return { output: outputUrl, outputType: "video", creditsUsed: cost };
     },
@@ -720,7 +720,7 @@ export const NODE_REGISTRY = {
   "nsfw-motion": {
     label: "NSFW Motion Control",
     category: "nsfw",
-    color: "#dc2626",
+    color: "#f87171",
     description: "NSFW video with motion control reference",
     inputs: [
       { id: "image", type: "image", label: "Source Image" },
@@ -740,18 +740,18 @@ export const NODE_REGISTRY = {
       const gen = await prisma.generation.create({
         data: { userId, type: "nsfw-video", status: "processing", prompt: "nsfw-motion", creditsCost: cost, replicateModel: "nsfw-motion", isNsfw: true },
       });
-      onProgress?.({ message: "Waiting for NSFW motion video…" });
+      onProgress?.({ message: "Waiting for NSFW motion videoâ€¦" });
       const outputUrl = await pollGeneration(gen.id, onProgress);
       return { output: outputUrl, outputType: "video", creditsUsed: cost };
     },
   },
 
-  // ── OUTPUT NODES ──────────────────────────────────────────────────────────
+  // â”€â”€ OUTPUT NODES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   "output-viewer": {
     label: "Output",
     category: "outputs",
-    color: "#059669",
+    color: "#34d399",
     description: "Display and download the final result",
     inputs: [{ id: "any", type: "any", label: "Result" }],
     outputs: [],
@@ -766,7 +766,7 @@ export const NODE_REGISTRY = {
   "merge-outputs": {
     label: "Merge",
     category: "utility",
-    color: "#4b5563",
+    color: "#94a3b8",
     description: "Combine multiple outputs into an array",
     inputs: [
       { id: "input1", type: "any", label: "Input 1" },
@@ -787,16 +787,16 @@ export const NODE_REGISTRY = {
 // Category metadata for UI grouping
 // ---------------------------------------------------------------------------
 export const NODE_CATEGORIES = {
-  inputs:  { label: "Inputs",        color: "#2563eb" },
-  images:  { label: "Image Gen",     color: "#7c3aed" },
-  video:   { label: "Video Gen",     color: "#d97706" },
-  nsfw:    { label: "NSFW Studio",   color: "#dc2626" },
-  outputs: { label: "Outputs",       color: "#059669" },
-  utility: { label: "Utility",       color: "#4b5563" },
+  inputs:  { label: "Inputs",        color: "#60a5fa" },
+  images:  { label: "Image Gen",     color: "#a78bfa" },
+  video:   { label: "Video Gen",     color: "#f59e0b" },
+  nsfw:    { label: "NSFW Studio",   color: "#f87171" },
+  outputs: { label: "Outputs",       color: "#34d399" },
+  utility: { label: "Utility",       color: "#94a3b8" },
 };
 
 // ---------------------------------------------------------------------------
-// Credit estimator — sums costs of all nodes in a flow
+// Credit estimator â€” sums costs of all nodes in a flow
 // ---------------------------------------------------------------------------
 export function estimateFlowCredits(nodes = []) {
   return nodes.reduce((total, node) => {

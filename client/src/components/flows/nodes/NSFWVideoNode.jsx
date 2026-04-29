@@ -7,16 +7,21 @@ export default function NSFWVideoNode({ id, data, selected }) {
       type="nsfw-video"
       data={data}
       selected={selected}
-      headerColor="#dc2626"
-      label="NSFW Video"
+      headerColor="#f87171"
+      label={data.label || "NSFW Video"}
       inputs={[
-        { id: "image", type: "image", label: "Input Image" },
+        { id: "image", type: "image", label: "Image" },
         { id: "model", type: "model", label: "Model" },
       ]}
       outputs={[{ id: "video", type: "video", label: "Video" }]}
       creditCost={80}
     >
-      <p className="text-[9px] text-white/40">Generate NSFW video from an image.</p>
+      <p
+        className="text-[9px] text-white/40 leading-relaxed"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        // NSFW image → video
+      </p>
     </BaseNode>
   );
 }

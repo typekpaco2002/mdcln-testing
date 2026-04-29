@@ -11,8 +11,8 @@ export default function VideoPromptNode({ id, data, selected }) {
       type="video-prompt"
       data={data}
       selected={selected}
-      headerColor="#d97706"
-      label="Video from Prompt"
+      headerColor="#f59e0b"
+      label={data.label || "Video from Prompt"}
       inputs={[
         { id: "text", type: "text", label: "Prompt" },
         { id: "image", type: "image", label: "Ref (opt)" },

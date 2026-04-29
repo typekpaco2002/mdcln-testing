@@ -11,8 +11,8 @@ export default function CreatorStudioNode({ id, data, selected }) {
       type="creator-studio"
       data={data}
       selected={selected}
-      headerColor="#7c3aed"
-      label="Creator Studio"
+      headerColor="#a78bfa"
+      label={data.label || "Creator Studio"}
       inputs={[{ id: "text", type: "text", label: "Prompt" }]}
       outputs={[{ id: "image", type: "image", label: "Image" }]}
       creditCost={10}

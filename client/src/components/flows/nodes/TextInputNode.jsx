@@ -9,8 +9,8 @@ export default function TextInputNode({ id, data, selected }) {
       type="text-input"
       data={data}
       selected={selected}
-      headerColor="#2563eb"
-      label="Text Input"
+      headerColor="#60a5fa"
+      label={data.label || "Text Input"}
       inputs={[]}
       outputs={[{ id: "text", type: "text", label: "Text" }]}
       creditCost={0}

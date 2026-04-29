@@ -7,8 +7,8 @@ export default function TalkingHeadNode({ id, data, selected }) {
       type="talking-head"
       data={data}
       selected={selected}
-      headerColor="#d97706"
-      label="Talking Head"
+      headerColor="#f59e0b"
+      label={data.label || "Talking Head"}
       inputs={[
         { id: "image", type: "image", label: "Portrait" },
         { id: "audio", type: "audio", label: "Audio" },
@@ -16,7 +16,12 @@ export default function TalkingHeadNode({ id, data, selected }) {
       outputs={[{ id: "video", type: "video", label: "Video" }]}
       creditCost={50}
     >
-      <p className="text-[9px] text-white/40">Animate a portrait with an audio track.</p>
+      <p
+        className="text-[9px] text-white/40 leading-relaxed"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        // animate portrait + audio
+      </p>
     </BaseNode>
   );
 }

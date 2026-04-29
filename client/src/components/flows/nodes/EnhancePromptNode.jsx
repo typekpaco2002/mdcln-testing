@@ -7,14 +7,17 @@ export default function EnhancePromptNode({ id, data, selected }) {
       type="enhance-prompt"
       data={data}
       selected={selected}
-      headerColor="#7c3aed"
-      label="Enhance Prompt"
+      headerColor="#a78bfa"
+      label={data.label || "Enhance Prompt"}
       inputs={[{ id: "text", type: "text", label: "Prompt" }]}
       outputs={[{ id: "text", type: "text", label: "Enhanced" }]}
       creditCost={1}
     >
-      <p className="text-[9px] text-white/40 leading-relaxed">
-        AI-refines your prompt using INSTARAW style for maximum visual quality.
+      <p
+        className="text-[9px] text-white/40 leading-relaxed"
+        style={{ fontFamily: "var(--font-mono)" }}
+      >
+        // refines prompt with INSTARAW
       </p>
     </BaseNode>
   );
