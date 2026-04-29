@@ -919,7 +919,17 @@ export default function DashboardPage() {
           {!hideRestrictedTabs && activeTab === "course" && <CoursePage setActiveTab={setActiveTab} onOpenCredits={() => setShowAddCredits(true)} initialVideoId={courseVideoId} onVideoIdConsumed={() => setCourseVideoId(null)} />}
           {activeTab === "jobs" && <JobBoardPage />}
           {activeTab === "repurposer" && <VideoRepurposerPage embedded />}
-          {activeTab === "reelfinder" && <ViralReelFinderPage embedded sidebarCollapsed={sidebarNarrow} onUpgrade={() => setActiveTab("settings")} onRecreate={(caption) => { setCreatorStudioInitialPrompt(caption); setActiveTab("creator-studio"); }} />}
+          {activeTab === "reelfinder" && (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-6">
+              <div className="w-16 h-16 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-medium)] flex items-center justify-center">
+                <TrendingUp className="w-8 h-8 text-[var(--text-muted)]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Reel Finder</h2>
+                <p className="text-[var(--text-muted)] text-sm max-w-sm">This feature is coming soon. Stay tuned.</p>
+              </div>
+            </div>
+          )}
           {activeTab === "referral" && <ReferralProgramPage />}
         </div>
       </main>

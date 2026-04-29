@@ -4295,11 +4295,8 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
     if (d.chipSelections && typeof d.chipSelections === "object") setChipSelections(d.chipSelections);
     if (d.selectedPreset) setSelectedPreset(d.selectedPreset);
     if (d.selectedAspectRatio) setSelectedAspectRatio(d.selectedAspectRatio);
-    if (d.nsfwGenerateMode === "simple" || d.nsfwGenerateMode === "custom") {
+    if (d.nsfwGenerateMode === "simple" || d.nsfwGenerateMode === "custom" || d.nsfwGenerateMode === "advanced") {
       setNsfwGenerateMode(d.nsfwGenerateMode);
-    } else if (d.nsfwGenerateMode === "advanced") {
-      // Advanced mode removed — fall back to custom (closest equivalent)
-      setNsfwGenerateMode("custom");
     }
     if (d.simplePlanReady !== undefined) setSimplePlanReady(!!d.simplePlanReady);
     if (d.generatedPrompt !== undefined) setGeneratedPrompt(d.generatedPrompt);
@@ -5700,11 +5697,29 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                     >
                       Custom prompt
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNsfwGenerateMode("advanced");
+                        setSimplePlanReady(false);
+                        setGeneratedPrompt("");
+                      }}
+                      className={`flex-1 px-2 sm:px-3 py-2 text-xs font-semibold transition-colors border-l border-[var(--border-subtle)] ${
+                        nsfwGenerateMode === "advanced"
+                          ? "bg-[var(--text-primary)] text-[var(--bg-page)]"
+                          : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      }`}
+                      data-testid="button-nsfw-flow-advanced"
+                    >
+                      Advanced
+                    </button>
                   </div>
                 </div>
                 <p className="text-[11px] text-[var(--text-muted)] mb-4">
                   {nsfwGenerateMode === "simple"
                     ? "Describe or pick a preset, then confirm — AI picks detail chips and writes the prompt. You only choose resolution and hit generate."
+                    : nsfwGenerateMode === "advanced"
+                    ? "Describe the scene, pick presets and detail chips manually, then generate."
                     : "Paste or type the full prompt yourself (Danbooru-style tags work best). Your LoRA trigger is added automatically if missing. Use Advanced Settings below to tune LoRA strength."}
                 </p>
 

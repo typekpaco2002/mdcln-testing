@@ -281,7 +281,7 @@ export default function AppSidebar({
     { id: "frame-extractor", label: copy.firstFrameExtractor, icon: ImageIcon },
     { id: "upscaler", label: copy.upscaler, icon: ZoomIn },
     { id: "modelclone-x", label: copy.modelcloneX, icon: Wand2 },
-    { id: "gptx", label: copy.gptx, icon: Bot },
+    // { id: "gptx", label: copy.gptx, icon: Bot }, // hidden until approved for live
     { id: "history", label: copy.history, icon: Clock },
     { id: "settings", label: copy.settings, icon: SettingsIcon },
     { id: "course", label: copy.courses, icon: BookOpen, premium: true },

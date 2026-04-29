@@ -1483,6 +1483,10 @@ router.post(
         ? await validateSeedreamEditImages(identityImages, "kie")
         : await validateNanoBananaInputImages(identityImages);
       if (!providerInputCheck.valid) {
+        // Refund before early return — credits were already deducted above
+        await refundCredits(userId, creditsNeeded).catch((e) =>
+          console.error(`🚨 Failed to refund ${creditsNeeded} credits for user ${userId} after invalid image URL:`, e.message)
+        );
         return res.status(400).json({ success: false, error: providerInputCheck.message });
       }
 
