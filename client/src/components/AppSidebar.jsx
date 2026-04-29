@@ -40,6 +40,7 @@ import {
   EyeOff,
   Bot,
   ShieldOff,
+  Workflow,
 } from "lucide-react";
 import { SiTelegram, SiDiscord, SiInstagram } from "react-icons/si";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -283,6 +284,7 @@ export default function AppSidebar({
     { id: "upscaler", label: copy.upscaler, icon: ZoomIn },
     { id: "synthid-remove", label: "Watermark Remover", icon: ShieldOff },
     { id: "modelclone-x", label: copy.modelcloneX, icon: Wand2 },
+    { id: "flows", label: "AI Flows", icon: Workflow },
     // { id: "gptx", label: copy.gptx, icon: Bot }, // hidden until approved for live
     { id: "history", label: copy.history, icon: Clock },
     { id: "settings", label: copy.settings, icon: SettingsIcon },
@@ -509,6 +511,7 @@ export default function AppSidebar({
                 key={item.id}
                 onClick={() => {
                   if (item.id === "home") navigate("/dashboard");
+                  else if (item.id === "flows") navigate("/flows");
                   setActiveTab(item.id);
                 }}
                 className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors duration-150 ${collapsedRow}`}

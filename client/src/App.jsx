@@ -49,6 +49,7 @@ import NsfwStudioRoute from './pages/NsfwStudioRoute';
 import FreeCourseFunnelPage from './pages/FreeCourseFunnelPage';
 import ContentReformatterPage from './pages/ContentReformatterPage';
 import UpscalerPage from './pages/UpscalerPage';
+import FlowsPage from './pages/FlowsPage';
 import LanderNewPage from './pages/LanderNewPage';
 import AdminLanderEditorPage from './pages/AdminLanderEditorPage';
 import AdminLanderPreviewFrame from './pages/AdminLanderPreviewFrame';
@@ -747,6 +748,22 @@ function App() {
             element={
               <ProtectedRouteWithOnboarding>
                 <UpscalerPage />
+              </ProtectedRouteWithOnboarding>
+            }
+          />
+          <Route
+            path="/flows"
+            element={
+              <ProtectedRouteWithOnboarding>
+                <FlowsPage />
+              </ProtectedRouteWithOnboarding>
+            }
+          />
+          <Route
+            path="/flows/:id"
+            element={
+              <ProtectedRouteWithOnboarding>
+                <FlowsPage />
               </ProtectedRouteWithOnboarding>
             }
           />
