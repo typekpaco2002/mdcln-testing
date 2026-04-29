@@ -82,7 +82,7 @@ function authHeader() {
 
 // ── Inner canvas component (needs to be inside ReactFlowProvider) ──────────
 
-function FlowCanvas({ flowId }) {
+function FlowCanvas({ flowId, embedded = false }) {
   const { screenToFlowPosition } = useReactFlow();
   const navigate = useNavigate();
   const store = useFlowStore();
@@ -318,14 +318,16 @@ function FlowCanvas({ flowId }) {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Toolbar */}
         <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] bg-[#0c0c12] flex-shrink-0">
-          {/* Back button */}
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="p-1.5 rounded-md hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors flex-shrink-0"
-            title="Back to dashboard"
-          >
-            <ArrowLeft size={14} />
-          </button>
+          {/* Back button — only on standalone route */}
+          {!embedded && (
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="p-1.5 rounded-md hover:bg-white/[0.06] text-white/30 hover:text-white/60 transition-colors flex-shrink-0"
+              title="Back to dashboard"
+            >
+              <ArrowLeft size={14} />
+            </button>
+          )}
 
           {/* Palette toggle */}
           <button
@@ -504,17 +506,25 @@ function FlowCanvas({ flowId }) {
 
 // ── Page wrapper (provides ReactFlow context) ──────────────────────────────
 
-export default function FlowsPage() {
-  // Extract flowId from URL hash/path if needed
-  const flowId = window.location.pathname.split("/flows/")[1] || null;
+export default function FlowsPage({ embedded = false }) {
+  // Extract flowId from URL hash/path if needed (standalone route only)
+  const flowId = !embedded
+    ? (window.location.pathname.split("/flows/")[1] || null)
+    : null;
 
   return (
     <div
-      className="fixed inset-0 bg-[#0c0c12] overflow-hidden"
-      style={{ top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}
+      className={embedded
+        ? "relative w-full bg-[#0c0c12] overflow-hidden"
+        : "fixed inset-0 bg-[#0c0c12] overflow-hidden"
+      }
+      style={embedded
+        ? { height: "calc(100vh - 4.5rem)" }
+        : { top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }
+      }
     >
       <ReactFlowProvider>
-        <FlowCanvas flowId={flowId} />
+        <FlowCanvas flowId={flowId} embedded={embedded} />
       </ReactFlowProvider>
 
       <style>{`

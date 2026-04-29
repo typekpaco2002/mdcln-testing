@@ -511,7 +511,6 @@ export default function AppSidebar({
                 key={item.id}
                 onClick={() => {
                   if (item.id === "home") navigate("/dashboard");
-                  else if (item.id === "flows") navigate("/flows");
                   setActiveTab(item.id);
                 }}
                 className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors duration-150 ${collapsedRow}`}
