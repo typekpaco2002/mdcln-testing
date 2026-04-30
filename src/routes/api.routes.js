@@ -60,7 +60,12 @@ import {
 } from "../controllers/generation.controller.js";
 import { processPendingBlobRemirrorQueue } from "../services/blob-remirror-queue.service.js";
 import { runSignupNoPurchaseWinbackCampaign } from "../services/signup-winback-email.service.js";
-import { runPiapiWatchdog, runWavespeedSeedreamWatchdog } from "../services/generation-poller.service.js";
+import {
+  runPiapiWatchdog,
+  runRunpodWatchdog,
+  runRunningHubWatchdog,
+  runWavespeedSeedreamWatchdog,
+} from "../services/generation-poller.service.js";
 import {
   createModel,
   getUserModels,
@@ -2347,6 +2352,17 @@ router.get("/cron/kie-recovery", async (req, res) => {
     await runWavespeedSeedreamWatchdog();
   } catch (error) {
     console.error("[cron/kie-recovery] WaveSpeed Seedream watchdog failed:", error?.message || error);
+  }
+  // Serverless (Vercel): no long-lived generationPoller loop — poll RunningHub + motion recovery here.
+  try {
+    await runRunningHubWatchdog();
+  } catch (error) {
+    console.error("[cron/kie-recovery] RunningHub watchdog failed:", error?.message || error);
+  }
+  try {
+    await runRunpodWatchdog({ limit: 80 });
+  } catch (error) {
+    console.error("[cron/kie-recovery] RunPod/motion reconcile watchdog failed:", error?.message || error);
   }
   return cleanupStuckGenerations(req, res);
 });

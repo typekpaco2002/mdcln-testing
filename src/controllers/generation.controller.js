@@ -2701,13 +2701,19 @@ export async function cleanupStuckGenerations(req, res) {
       45,
       Math.min(300, Number(process.env.NSFW_STUCK_CLEANUP_MINUTES) || 200),
     );
+    /** Motion X (RunningHub workflow) often exceeds 15–45m; must not hit image-timeout cleanup before webhook/poller. */
+    const NSFW_MOTION_HUB_STUCK_MINUTES = Math.max(
+      75,
+      Math.min(300, Number(process.env.NSFW_MOTION_STUCK_CLEANUP_MINUTES) || 90),
+    );
     const nowMs = Date.now();
     const imageCutoffMs = nowMs - IMAGE_TIMEOUT_MINUTES * 60 * 1000;
     const videoCutoffMs = nowMs - VIDEO_TIMEOUT_MINUTES * 60 * 1000;
     const nsfwCutoffMs = nowMs - NSFW_CLEANUP_TIMEOUT_MINUTES * 60 * 1000;
+    const nsfwMotionHubCutoffMs = nowMs - NSFW_MOTION_HUB_STUCK_MINUTES * 60 * 1000;
 
     console.log(
-      `\n🔍 Checking for stuck generations (image>${IMAGE_TIMEOUT_MINUTES}m, video>${VIDEO_TIMEOUT_MINUTES}m, nsfw>${NSFW_CLEANUP_TIMEOUT_MINUTES}m)...`,
+      `\n🔍 Checking for stuck generations (image>${IMAGE_TIMEOUT_MINUTES}m, video>${VIDEO_TIMEOUT_MINUTES}m, nsfw>${NSFW_CLEANUP_TIMEOUT_MINUTES}m, nsfw-motion-hub>${NSFW_MOTION_HUB_STUCK_MINUTES}m)...`,
     );
 
     // Cleanup temp creator-studio masks (target 1h lifetime).
@@ -2745,6 +2751,7 @@ export async function cleanupStuckGenerations(req, res) {
       const createdMs = new Date(gen.createdAt).getTime();
       const t = String(gen.type || "");
       const isVideoLike = videoLikeTypes.has(t);
+      if (t === "nsfw-video-motion") return createdMs < nsfwMotionHubCutoffMs;
       if (isVideoLike) return createdMs < videoCutoffMs;
       if (t === "nsfw") return createdMs < nsfwCutoffMs;
       return createdMs < imageCutoffMs;
@@ -2782,11 +2789,14 @@ export async function cleanupStuckGenerations(req, res) {
       }
 
       const gt = String(gen.type || "");
-      const timeoutMinutes = videoLikeTypes.has(gt)
-        ? VIDEO_TIMEOUT_MINUTES
-        : gt === "nsfw"
-          ? NSFW_CLEANUP_TIMEOUT_MINUTES
-          : IMAGE_TIMEOUT_MINUTES;
+      const timeoutMinutes =
+        gt === "nsfw-video-motion"
+          ? NSFW_MOTION_HUB_STUCK_MINUTES
+          : videoLikeTypes.has(gt)
+            ? VIDEO_TIMEOUT_MINUTES
+            : gt === "nsfw"
+              ? NSFW_CLEANUP_TIMEOUT_MINUTES
+              : IMAGE_TIMEOUT_MINUTES;
 
       // Mark as failed
       await prisma.generation.update({
