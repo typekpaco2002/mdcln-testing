@@ -2,6 +2,12 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
+  parseGenerationOutput,
+  resolveGenerationPoster,
+  isVideoMediaUrl,
+  VIDEO_OUTPUT_TYPES,
+} from "../utils/generationMedia";
+import {
   Zap,
   LogOut,
   Coins,
@@ -1701,13 +1707,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
             {recentGenerations.map((gen) => {
-              const isVideo = ["video", "prompt-video", "face-swap", "recreate-video", "talking-head", "nsfw-video", "nsfw-video-extend", "creator-studio-video"].includes(gen.type);
               const rawUrl = gen.resultUrl || gen.outputUrl || "";
-              let mediaUrl = rawUrl;
-              try {
-                const parsed = JSON.parse(rawUrl);
-                if (Array.isArray(parsed) && parsed.length > 0) mediaUrl = parsed[0];
-              } catch {}
+              const { primaryUrl: mediaUrl, posterUrl: outPoster } = parseGenerationOutput(rawUrl);
+              const isVideo =
+                VIDEO_OUTPUT_TYPES.includes(gen.type) || isVideoMediaUrl(mediaUrl);
+              const poster = resolveGenerationPoster(gen, outPoster);
               return (
                 <button
                   key={gen.id}
@@ -1716,19 +1720,35 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
                   data-testid={`recent-gen-${gen.id}`}
                 >
                   {isVideo ? (
-                    <video
-                      src={mediaUrl}
-                      poster={gen.providerResponse?.thumbnailUrl || gen.providerResponse?.thumbnail || gen.inputImageUrl || undefined}
-                      preload="metadata"
-                      className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                      onMouseEnter={(e) => e.target.play().catch(() => {})}
-                      onMouseLeave={(e) => { e.target.pause(); e.target.currentTime = 0; }}
-                    />
+                    mediaUrl ? (
+                      <video
+                        src={mediaUrl}
+                        poster={poster}
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        onMouseEnter={(e) => e.target.play().catch(() => {})}
+                        onMouseLeave={(e) => {
+                          e.target.pause();
+                          e.target.currentTime = 0;
+                        }}
+                      />
+                    ) : poster ? (
+                      <img
+                        src={poster}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                        <Video className="w-6 h-6 text-slate-600" />
+                      </div>
+                    )
                   ) : (
                     <img
-                      src={mediaUrl}
+                      src={mediaUrl || poster || ""}
                       alt=""
                       className="w-full h-full object-cover"
                       loading="lazy"
