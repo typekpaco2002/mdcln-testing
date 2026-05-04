@@ -122,7 +122,7 @@ export const BaseNode = memo(function BaseNode({
         className="relative rounded-[12px] overflow-hidden backdrop-blur-xl transition-shadow duration-300 w-full h-full flex flex-col"
         style={{
           background:
-            "linear-gradient(180deg, rgba(22,22,28,0.96) 0%, rgba(15,15,20,0.96) 100%)",
+            "linear-gradient(180deg, rgba(26,26,34,0.98) 0%, rgba(18,18,24,0.98) 100%)",
           border: `1px solid ${
             selected
               ? "rgba(167,139,250,0.45)"
@@ -132,7 +132,7 @@ export const BaseNode = memo(function BaseNode({
               ? "rgba(52,211,153,0.30)"
               : status === "failed"
               ? "rgba(248,113,113,0.35)"
-              : "rgba(255,255,255,0.08)"
+              : "rgba(255,255,255,0.16)"
           }`,
           boxShadow: selected
             ? `0 0 0 1px ${headerColor}33, 0 16px 48px -12px rgba(0,0,0,0.7), 0 4px 16px -4px ${headerColor}22`
@@ -145,7 +145,7 @@ export const BaseNode = memo(function BaseNode({
           onClick={() => setCollapsed((c) => !c)}
           style={{
             background: `linear-gradient(180deg, ${headerColor}22 0%, ${headerColor}08 100%)`,
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: "1px solid rgba(255,255,255,0.14)",
           }}
         >
           {/* category color stripe */}
@@ -171,7 +171,7 @@ export const BaseNode = memo(function BaseNode({
 
             <div className="min-w-0 flex flex-col leading-none">
               <span
-                className="text-[7.5px] uppercase tracking-[0.18em] text-white/35 font-medium truncate"
+                className="text-[7.5px] uppercase tracking-[0.18em] text-white/60 font-medium truncate"
                 style={{ fontFamily: "var(--font-mono)" }}
               >
                 {type}
@@ -229,6 +229,13 @@ export const BaseNode = memo(function BaseNode({
             <div className="flex flex-col gap-1">
               {inputs.map((p) => (
                 <div key={p.id} className="flex items-center gap-1.5 -ml-1">
+                  <Handle
+                    type="target"
+                    position={Position.Left}
+                    id={p.id}
+                    style={{ ...handleStyle(p.type), left: -5 }}
+                    title={`${p.label} · ${p.type}`}
+                  />
                   <span
                     className="w-1 h-1 rounded-full flex-shrink-0"
                     style={{ background: PORT_COLORS[p.type] || PORT_COLORS.any }}
@@ -254,6 +261,13 @@ export const BaseNode = memo(function BaseNode({
                   <span
                     className="w-1 h-1 rounded-full flex-shrink-0"
                     style={{ background: PORT_COLORS[p.type] || PORT_COLORS.any }}
+                  />
+                  <Handle
+                    type="source"
+                    position={Position.Right}
+                    id={p.id}
+                    style={{ ...handleStyle(p.type), right: -5 }}
+                    title={`${p.label} · ${p.type}`}
                   />
                 </div>
               ))}
