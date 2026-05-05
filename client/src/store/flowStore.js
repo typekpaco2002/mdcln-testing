@@ -17,6 +17,89 @@ const MAX_HISTORY = 50;
 // (image/video/model/audio) replace the existing connection on re-connect.
 const MULTI_CONNECT_TYPES = new Set(["any", "text"]);
 
+// ComfyUI-style wire colors per port data type.
+const PORT_COLORS = {
+  image: "#a78bfa",
+  video: "#f59e0b",
+  text:  "#22d3ee",
+  model: "#34d399",
+  audio: "#f472b6",
+  any:   "#94a3b8",
+};
+const DEFAULT_WIRE = "#a78bfa";
+const DEFAULT_NODE_WIDTH = 260;
+const DEFAULT_NODE_HEIGHT = 180;
+
+function resolveEdgeColor(state, connection) {
+  const srcNode = state.nodes.find((n) => n.id === connection.source);
+  if (!srcNode) return DEFAULT_WIRE;
+  const reg = state.nodeTypes.find((t) => t.type === srcNode.type);
+  const port =
+    reg?.outputs?.find((p) => p.id === connection.sourceHandle) ||
+    reg?.outputs?.[0];
+  if (port?.type && PORT_COLORS[port.type]) return PORT_COLORS[port.type];
+  return DEFAULT_WIRE;
+}
+
+function normaliseNodeSize(node) {
+  if (!node || node.type === "group") return node;
+
+  const width =
+    typeof node.width === "number"
+      ? node.width
+      : typeof node.style?.width === "number"
+      ? node.style.width
+      : DEFAULT_NODE_WIDTH;
+  const height =
+    typeof node.height === "number"
+      ? node.height
+      : typeof node.style?.height === "number"
+      ? node.style.height
+      : DEFAULT_NODE_HEIGHT;
+
+  return {
+    ...node,
+    width,
+    height,
+    style: {
+      ...(node.style || {}),
+      width: node.style?.width ?? width,
+      height: node.style?.height ?? height,
+    },
+  };
+}
+
+/**
+ * Port compatibility check used by both the live drag preview
+ * (FlowsPage `isValidConnection`) and the commit-time guard in `onConnect`.
+ *
+ * Rules:
+ *   - missing endpoints / self-loop  → invalid
+ *   - either side typed "any"        → valid (permissive routing nodes)
+ *   - registry not yet loaded or
+ *     ports unresolved               → valid (don't punish first-paint
+ *                                              before /node-types loads)
+ *   - otherwise                      → source.type must equal target.type
+ */
+export function isCompatibleConnection(connection, nodes, nodeTypes) {
+  if (!connection?.source || !connection?.target) return false;
+  if (connection.source === connection.target) return false;
+  if (!Array.isArray(nodeTypes) || nodeTypes.length === 0) return true;
+
+  const sourceNode = nodes.find((n) => n.id === connection.source);
+  const targetNode = nodes.find((n) => n.id === connection.target);
+  if (!sourceNode || !targetNode) return true;
+
+  const sourceReg = nodeTypes.find((t) => t.type === sourceNode.type);
+  const targetReg = nodeTypes.find((t) => t.type === targetNode.type);
+  const sourcePort = sourceReg?.outputs?.find((p) => p.id === connection.sourceHandle);
+  const targetPort = targetReg?.inputs?.find((p) => p.id === connection.targetHandle);
+  if (!sourcePort || !targetPort) return true;
+
+  if (sourcePort.type === "any" || targetPort.type === "any") return true;
+  return sourcePort.type === targetPort.type;
+}
+
 export const useFlowStore = create((set, get) => ({
   // ── Canvas ──────────────────────────────────────────────────────────────
   nodes: [],
@@ -35,6 +118,14 @@ export const useFlowStore = create((set, get) => ({
   onConnect: (connection) =>
     set((state) => {
       const { nodeTypes } = state;
+      if (!connection.source || !connection.target) return state;
+      if (connection.source === connection.target) return state;
+
+      // Hard-reject type-mismatched connections (text → audio, image → text, etc.).
+      // `isCompatibleConnection` returns true while the registry is still loading
+      // so first-paint connections aren't dropped silently.
+      if (!isCompatibleConnection(connection, state.nodes, nodeTypes)) return state;
+
       const targetNode = state.nodes.find((n) => n.id === connection.target);
       const targetReg = nodeTypes.find((t) => t.type === targetNode?.type);
       const targetPort = targetReg?.inputs?.find((p) => p.id === connection.targetHandle);
@@ -52,11 +143,29 @@ export const useFlowStore = create((set, get) => ({
             (e) => !(e.target === connection.target && e.targetHandle === connection.targetHandle)
           );
 
+      // Explicit edge id so React Flow never falls back to nanoid/auto-id
+      // mid-render (which can cause a race where the new edge briefly has no
+      // type and is skipped by the custom edgeTypes map).
+      const edgeId = `e-${connection.source}_${connection.sourceHandle || "out"}-${connection.target}_${connection.targetHandle || "in"}-${Date.now()}`;
+
+      // Bake the port-typed color straight into the edge at creation time.
+      // FlowEdge just reads `style.stroke` — no per-render registry lookup,
+      // no race against `nodeTypes` load order, the wire is ALWAYS visible.
+      const stroke = resolveEdgeColor(state, connection);
+
+      const newEdge = {
+        id: edgeId,
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle ?? null,
+        targetHandle: connection.targetHandle ?? null,
+        type: "default",
+        animated: false,
+        style: { stroke, strokeWidth: 2.5 },
+      };
+
       return {
-        edges: addEdge(
-          { ...connection, type: "default", animated: false },
-          filtered
-        ),
+        edges: addEdge(newEdge, filtered),
         isDirty: true,
       };
     }),
@@ -66,7 +175,7 @@ export const useFlowStore = create((set, get) => ({
 
   addNode: (node) => {
     get()._pushHistory();
-    set((state) => ({ nodes: [...state.nodes, node] }));
+    set((state) => ({ nodes: [...state.nodes, normaliseNodeSize(node)] }));
   },
 
   updateNodeData: (nodeId, data) => {
@@ -213,12 +322,32 @@ export const useFlowStore = create((set, get) => ({
   isDirty: false,
 
   setCurrentFlow: (flow) =>
-    set({
-      currentFlowId: flow.id,
-      currentFlowName: flow.name,
-      nodes: flow.nodes || [],
-      edges: flow.edges || [],
-      isDirty: false,
+    set((state) => {
+      // Normalise loaded edges: ensure every one has a `style.stroke` so
+      // the wire is visible even if the flow was saved before we started
+      // baking port colours into the edge.
+      const incomingNodes = (flow.nodes || []).map(normaliseNodeSize);
+      const rawEdges = flow.edges || [];
+      const tempState = { ...state, nodes: incomingNodes };
+      const normalisedEdges = rawEdges.map((e) => {
+        if (e.style?.stroke) return { ...e, type: e.type || "default" };
+        const stroke = resolveEdgeColor(tempState, {
+          source: e.source,
+          sourceHandle: e.sourceHandle,
+        });
+        return {
+          ...e,
+          type: e.type || "default",
+          style: { ...(e.style || {}), stroke, strokeWidth: 2.5 },
+        };
+      });
+      return {
+        currentFlowId: flow.id,
+        currentFlowName: flow.name,
+        nodes: incomingNodes,
+        edges: normalisedEdges,
+        isDirty: false,
+      };
     }),
 
   setFlowName: (name) => set({ currentFlowName: name, isDirty: true }),

@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
-import { useFlowStore } from "../store/flowStore";
+import { useFlowStore, isCompatibleConnection } from "../store/flowStore";
 import { useAuthStore } from "../store";
 import { NodePalette } from "../components/flows/NodePalette";
 import { FlowLibrary } from "../components/flows/FlowLibrary";
@@ -303,15 +303,13 @@ function FlowCanvas({ flowId, embedded = false }) {
     resetRun();
   }, [currentRunId]);
 
-  // Connection guard. We stay permissive here and do the final validation
-  // inside onConnect (flowStore) — that way a partially-loaded registry, a
-  // fresh node, or an "any"-typed port never silently rejects a drop. Only
-  // self-loops are hard-blocked.
-  const isValidConnection = useCallback((connection) => {
-    if (!connection?.source || !connection?.target) return false;
-    if (connection.source === connection.target) return false;
-    return true;
-  }, []);
+  // Live connection guard: gives the user red/green feedback while dragging
+  // a wire. Same compatibility rules as the commit-time guard in
+  // flowStore.onConnect so the two never disagree.
+  const isValidConnection = useCallback(
+    (connection) => isCompatibleConnection(connection, nodes, nodeTypes),
+    [nodes, nodeTypes]
+  );
 
   const isRunning = runStatus === "running" || runStatus === "pending";
 
