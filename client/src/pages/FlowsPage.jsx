@@ -314,19 +314,21 @@ function FlowCanvas({ flowId, embedded = false }) {
   const isRunning = runStatus === "running" || runStatus === "pending";
 
   return (
-    <div className="flex h-full w-full overflow-hidden" style={{ background: "#06060a", color: "#f4f4f5" }}>
+    <div
+      className="flex h-full w-full overflow-hidden flows-page-root"
+      style={{ background: "var(--fp-page-bg)", color: "var(--fp-text)" }}
+    >
       {/* ── Left palette (frosted glass rail) ── */}
       <div
         className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out relative z-30
           ${paletteOpen ? "w-[218px]" : "w-0 overflow-hidden"}`}
         style={{
-          background:
-            "linear-gradient(180deg, rgba(20,20,30,0.72) 0%, rgba(10,10,16,0.78) 100%)",
+          background: "var(--fp-rail-bg)",
           backdropFilter: "blur(28px) saturate(170%)",
           WebkitBackdropFilter: "blur(28px) saturate(170%)",
-          borderRight: "1px solid rgba(255,255,255,0.10)",
+          borderRight: "1px solid var(--fp-border)",
           boxShadow:
-            "inset -1px 0 0 0 rgba(255,255,255,0.05), 8px 0 32px -16px rgba(0,0,0,0.6)",
+            "inset -1px 0 0 0 var(--fp-rail-sheen), 8px 0 32px -16px var(--fp-rail-shadow)",
         }}
       >
         <div className="flex items-center justify-between px-3 py-3 border-b border-white/[0.04]">
@@ -354,13 +356,12 @@ function FlowCanvas({ flowId, embedded = false }) {
         <div
           className="flex items-center gap-2 px-3 py-2 flex-shrink-0 z-20 relative"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(20,20,30,0.55) 0%, rgba(10,10,16,0.62) 100%)",
+            background: "var(--fp-toolbar-bg)",
             backdropFilter: "blur(28px) saturate(170%)",
             WebkitBackdropFilter: "blur(28px) saturate(170%)",
-            borderBottom: "1px solid rgba(255,255,255,0.10)",
+            borderBottom: "1px solid var(--fp-border)",
             boxShadow:
-              "inset 0 1px 0 0 rgba(255,255,255,0.06), 0 8px 28px -16px rgba(0,0,0,0.55)",
+              "inset 0 1px 0 0 var(--fp-rail-sheen), 0 8px 28px -16px var(--fp-rail-shadow)",
           }}
         >
           {!embedded && (
@@ -606,7 +607,7 @@ function FlowCanvas({ flowId, embedded = false }) {
             obscure thin edge strokes at low opacity. */}
         <div
           className="flex-1 relative"
-            style={{ background: "#0b0b10" }}
+            style={{ background: "var(--fp-canvas-bg)" }}
         >
           {/* Aurora background mesh */}
           <div
@@ -778,13 +779,12 @@ function FlowCanvas({ flowId, embedded = false }) {
         className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out relative z-30
           ${rightPanelOpen ? "w-[252px]" : "w-0 overflow-hidden"}`}
         style={{
-          background:
-            "linear-gradient(180deg, rgba(20,20,30,0.72) 0%, rgba(10,10,16,0.78) 100%)",
+          background: "var(--fp-rail-bg)",
           backdropFilter: "blur(28px) saturate(170%)",
           WebkitBackdropFilter: "blur(28px) saturate(170%)",
-          borderLeft: "1px solid rgba(255,255,255,0.10)",
+          borderLeft: "1px solid var(--fp-border)",
           boxShadow:
-            "inset 1px 0 0 0 rgba(255,255,255,0.05), -8px 0 32px -16px rgba(0,0,0,0.6)",
+            "inset 1px 0 0 0 var(--fp-rail-sheen), -8px 0 32px -16px var(--fp-rail-shadow)",
         }}
       >
         {/* Tabs */}
@@ -856,13 +856,10 @@ export default function FlowsPage({ embedded = false }) {
 
   return (
     <div
-      className={embedded
-        ? "relative w-full overflow-hidden"
-        : "fixed inset-0 overflow-hidden"
-      }
+      className={`flows-page-shell ${embedded ? "relative w-full overflow-hidden" : "fixed inset-0 overflow-hidden"}`}
       style={embedded
-        ? { height: "calc(100vh - 4.5rem)", background: "#08080b", zIndex: 1 }
-        : { top: 0, left: 0, right: 0, bottom: 0, background: "#08080b", zIndex: 1 }
+        ? { height: "calc(100vh - 4.5rem)", background: "var(--fp-page-bg, #08080b)", zIndex: 1 }
+        : { top: 0, left: 0, right: 0, bottom: 0, background: "var(--fp-page-bg, #08080b)", zIndex: 1 }
       }
     >
       <ReactFlowProvider>
@@ -871,6 +868,149 @@ export default function FlowsPage({ embedded = false }) {
 
       <style>{`
         .react-flow__attribution { display: none !important; }
+
+        /* ── Theme tokens (dark default) ───────────────────────────────── */
+        .flows-page-root,
+        .flows-page-shell {
+          --fp-page-bg: #06060a;
+          --fp-canvas-bg: #0b0b10;
+          --fp-text: #f4f4f5;
+          --fp-text-muted: #a1a1aa;
+          --fp-border: rgba(255,255,255,0.10);
+          --fp-border-strong: rgba(255,255,255,0.22);
+          --fp-rail-bg: linear-gradient(180deg, rgba(20,20,30,0.72) 0%, rgba(10,10,16,0.78) 100%);
+          --fp-toolbar-bg: linear-gradient(180deg, rgba(20,20,30,0.55) 0%, rgba(10,10,16,0.62) 100%);
+          --fp-rail-sheen: rgba(255,255,255,0.05);
+          --fp-rail-shadow: rgba(0,0,0,0.6);
+          --fp-glass-chip-bg: rgba(255,255,255,0.06);
+          --fp-glass-chip-border: rgba(255,255,255,0.14);
+
+          --fp-node-bg: linear-gradient(180deg, rgba(34,32,48,0.55) 0%, rgba(18,18,28,0.62) 100%);
+          --fp-node-border: rgba(255,255,255,0.22);
+          --fp-node-border-selected: rgba(167,139,250,0.6);
+          --fp-node-shadow: rgba(0,0,0,0.7);
+          --fp-node-shadow-soft: rgba(0,0,0,0.45);
+          --fp-node-sheen: rgba(255,255,255,0.07);
+
+          --fp-input-bg: rgba(255,255,255,0.10);
+          --fp-input-border: rgba(255,255,255,0.30);
+          --fp-input-text: rgba(255,255,255,0.92);
+          --fp-input-placeholder: rgba(255,255,255,0.40);
+        }
+
+        /* ── Theme tokens (light) ──────────────────────────────────────── */
+        html[data-theme="light"] .flows-page-root,
+        html.light .flows-page-root,
+        html[data-theme="light"] .flows-page-shell,
+        html.light .flows-page-shell {
+          --fp-page-bg: #eef0f6;
+          --fp-canvas-bg: #f5f6fa;
+          --fp-text: #0f172a;
+          --fp-text-muted: #475569;
+          --fp-border: rgba(15,23,42,0.14);
+          --fp-border-strong: rgba(15,23,42,0.20);
+          --fp-rail-bg: linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(238,240,246,0.82) 100%);
+          --fp-toolbar-bg: linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(245,246,250,0.72) 100%);
+          --fp-rail-sheen: rgba(255,255,255,0.7);
+          --fp-rail-shadow: rgba(15,23,42,0.16);
+          --fp-glass-chip-bg: rgba(15,23,42,0.05);
+          --fp-glass-chip-border: rgba(15,23,42,0.14);
+
+          --fp-node-bg: linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(245,246,250,0.82) 100%);
+          --fp-node-border: rgba(15,23,42,0.18);
+          --fp-node-border-selected: rgba(124,58,237,0.55);
+          --fp-node-shadow: rgba(15,23,42,0.16);
+          --fp-node-shadow-soft: rgba(15,23,42,0.10);
+          --fp-node-sheen: rgba(255,255,255,0.7);
+
+          --fp-input-bg: rgba(255,255,255,0.85);
+          --fp-input-border: rgba(15,23,42,0.18);
+          --fp-input-text: #0f172a;
+          --fp-input-placeholder: rgba(15,23,42,0.40);
+        }
+
+        /* ── Light-mode tactical overrides for Tailwind text/border/bg ── */
+        html[data-theme="light"] .flows-page-root .text-white,
+        html.light .flows-page-root .text-white,
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/95"],
+        html.light .flows-page-root [class*="text-white\\/95"],
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/9"],
+        html.light .flows-page-root [class*="text-white\\/9"] { color: #0f172a !important; }
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/8"],
+        html.light .flows-page-root [class*="text-white\\/8"] { color: #1e293b !important; }
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/7"],
+        html.light .flows-page-root [class*="text-white\\/7"] { color: #334155 !important; }
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/6"],
+        html.light .flows-page-root [class*="text-white\\/6"] { color: #475569 !important; }
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/5"],
+        html.light .flows-page-root [class*="text-white\\/5"] { color: #64748b !important; }
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/4"],
+        html.light .flows-page-root [class*="text-white\\/4"] { color: #64748b !important; }
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/3"],
+        html.light .flows-page-root [class*="text-white\\/3"] { color: #94a3b8 !important; }
+        html[data-theme="light"] .flows-page-root [class*="text-white\\/2"],
+        html.light .flows-page-root [class*="text-white\\/2"] { color: #94a3b8 !important; }
+
+        html[data-theme="light"] .flows-page-root [class*="border-white"],
+        html.light .flows-page-root [class*="border-white"] {
+          border-color: rgba(15,23,42,0.16) !important;
+        }
+        html[data-theme="light"] .flows-page-root [class*="bg-white\\/"],
+        html.light .flows-page-root [class*="bg-white\\/"] {
+          background-color: rgba(15,23,42,0.05) !important;
+        }
+        html[data-theme="light"] .flows-page-root .hover\\:bg-white\\/10:hover,
+        html.light .flows-page-root .hover\\:bg-white\\/10:hover,
+        html[data-theme="light"] .flows-page-root [class*="hover\\:bg-white"]:hover,
+        html.light .flows-page-root [class*="hover\\:bg-white"]:hover {
+          background-color: rgba(15,23,42,0.10) !important;
+        }
+
+        /* ── Dropdown contrast (fixes white-text-on-white-bg) ──────────── */
+        .flows-page-root select,
+        .flows-page-shell select,
+        .flow-node-card select {
+          background-color: var(--fp-input-bg);
+          color: var(--fp-input-text);
+          border-color: var(--fp-input-border);
+        }
+        .flows-page-root select option,
+        .flows-page-shell select option,
+        .flow-node-card select option {
+          background: #1a1a26;
+          color: #e4e4e7;
+        }
+        html[data-theme="light"] .flows-page-root select option,
+        html.light .flows-page-root select option,
+        html[data-theme="light"] .flow-node-card select option,
+        html.light .flow-node-card select option {
+          background: #ffffff;
+          color: #0f172a;
+        }
+        .flows-page-root textarea::placeholder,
+        .flows-page-root input::placeholder,
+        .flow-node-card textarea::placeholder,
+        .flow-node-card input::placeholder {
+          color: var(--fp-input-placeholder);
+        }
+
+        /* ── Light-mode adjustments for the React Flow canvas itself ──── */
+        html[data-theme="light"] .flows-page-root .react-flow,
+        html.light .flows-page-root .react-flow {
+          --xy-edge-stroke: #7c3aed;
+          --xy-edge-stroke-default: #7c3aed;
+          --xy-edge-stroke-selected: #5b21b6;
+          --xy-edge-stroke-selected-default: #5b21b6;
+          --xy-connectionline-stroke: #7c3aed;
+          --xy-connectionline-stroke-default: #7c3aed;
+          --xy-background-pattern-color-props: rgba(15,23,42,0.10);
+        }
+        html[data-theme="light"] .flows-page-root .react-flow__edge-path,
+        html.light .flows-page-root .react-flow__edge-path,
+        html[data-theme="light"] .flows-page-root .react-flow__connection-path,
+        html.light .flows-page-root .react-flow__connection-path {
+          stroke: #7c3aed;
+        }
 
         /* Edge dash flow animation */
         @keyframes flow-dash {

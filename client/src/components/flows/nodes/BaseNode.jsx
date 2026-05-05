@@ -129,26 +129,26 @@ export const BaseNode = memo(function BaseNode({
 
       {/* The node card — frosted glass shell */}
       <div
-        className="relative rounded-[14px] transition-shadow duration-300 w-full h-full flex flex-col"
+        className="flow-node-card relative rounded-[14px] transition-shadow duration-300 w-full h-full flex flex-col"
         style={{
-          background:
-            "linear-gradient(180deg, rgba(34,32,48,0.55) 0%, rgba(18,18,28,0.62) 100%)",
+          background: "var(--fp-node-bg)",
           backdropFilter: "blur(22px) saturate(170%)",
           WebkitBackdropFilter: "blur(22px) saturate(170%)",
+          overflow: "hidden",
           border: `1px solid ${
             selected
-              ? "rgba(167,139,250,0.6)"
+              ? "var(--fp-node-border-selected)"
               : status === "running"
               ? `${dot.bg}cc`
               : status === "completed"
               ? "rgba(52,211,153,0.45)"
               : status === "failed"
               ? "rgba(248,113,113,0.5)"
-              : "rgba(255,255,255,0.22)"
+              : "var(--fp-node-border)"
           }`,
           boxShadow: selected
-            ? `0 0 0 1px ${headerColor}55, 0 18px 56px -12px rgba(0,0,0,0.75), 0 6px 22px -6px ${headerColor}55, inset 0 1px 0 0 rgba(255,255,255,0.08)`
-            : "0 14px 38px -14px rgba(0,0,0,0.7), 0 2px 6px -2px rgba(0,0,0,0.45), inset 0 1px 0 0 rgba(255,255,255,0.07)",
+            ? `0 0 0 1px ${headerColor}55, 0 18px 56px -12px var(--fp-node-shadow), 0 6px 22px -6px ${headerColor}55, inset 0 1px 0 0 var(--fp-node-sheen)`
+            : "0 14px 38px -14px var(--fp-node-shadow), 0 2px 6px -2px var(--fp-node-shadow-soft), inset 0 1px 0 0 var(--fp-node-sheen)",
         }}
       >
         {/* ── Header bar ── */}
@@ -161,9 +161,9 @@ export const BaseNode = memo(function BaseNode({
             boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.06)",
           }}
         >
-          {/* category color stripe */}
+          {/* category color stripe — clipped by the card's overflow:hidden */}
           <div
-            className="absolute left-0 top-0 bottom-0 w-[2px] rounded-tl-[12px]"
+            className="absolute left-0 top-0 bottom-0 w-[2px]"
             style={{ background: `linear-gradient(180deg, ${headerColor} 0%, ${headerColor}40 100%)` }}
           />
 

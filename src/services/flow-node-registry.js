@@ -1188,16 +1188,17 @@ export const NODE_REGISTRY = {
   },
 
   "merge-outputs": {
-    label: "Merge",
+    label: "Merge / Batch",
     category: "utility",
     color: "#94a3b8",
-    description: "Combine multiple outputs into an array",
+    description:
+      "Combine up to 3 outputs into a single batch (e.g. send 3 generated images at once into Upscaler, Face Swap, or Output Viewer).",
     inputs: [
       { id: "input1", type: "any", label: "Input 1" },
       { id: "input2", type: "any", label: "Input 2" },
       { id: "input3", type: "any", label: "Input 3" },
     ],
-    outputs: [{ id: "array", type: "any", label: "Array" }],
+    outputs: [{ id: "array", type: "any", label: "Batch" }],
     defaultData: {},
     creditCost: 0,
     execute: async (inputs) => {
