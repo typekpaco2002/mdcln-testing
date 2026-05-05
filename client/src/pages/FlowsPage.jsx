@@ -43,7 +43,6 @@ import { useAuthStore } from "../store";
 import { NodePalette } from "../components/flows/NodePalette";
 import { FlowLibrary } from "../components/flows/FlowLibrary";
 import { ExecutionPanel } from "../components/flows/ExecutionPanel";
-import FlowEdge from "../components/flows/FlowEdge";
 
 // Node types
 import ImageInputNode from "../components/flows/nodes/ImageInputNode";
@@ -66,12 +65,16 @@ import NSFWVideoExtendNode from "../components/flows/nodes/NSFWVideoExtendNode";
 import NSFWMotionNode from "../components/flows/nodes/NSFWMotionNode";
 import OutputViewerNode from "../components/flows/nodes/OutputViewerNode";
 import GroupNode from "../components/flows/nodes/GroupNode";
+import AudioInputNode from "../components/flows/nodes/AudioInputNode";
+import VoiceGenNode from "../components/flows/nodes/VoiceGenNode";
+import SfxGenNode from "../components/flows/nodes/SfxGenNode";
 
 const NODE_TYPE_MAP = {
   group:                GroupNode,
   "image-input":        ImageInputNode,
   "text-input":         TextInputNode,
   "model-selector":     ModelSelectorNode,
+  "audio-input":        AudioInputNode,
   "enhance-prompt":     EnhancePromptNode,
   "nana-banana-avatar": NanaBananaNode,
   "seedream-avatar":    SeedreamNode,
@@ -83,6 +86,8 @@ const NODE_TYPE_MAP = {
   "video-prompt":       VideoPromptNode,
   "video-motion":       VideoMotionNode,
   "talking-head":       TalkingHeadNode,
+  "voice-gen":          VoiceGenNode,
+  "sfx-gen":            SfxGenNode,
   "nsfw-gen":           NSFWGenNode,
   "nsfw-video":         NSFWVideoNode,
   "nsfw-video-extend":  NSFWVideoExtendNode,
@@ -90,7 +95,9 @@ const NODE_TYPE_MAP = {
   "output-viewer":      OutputViewerNode,
 };
 
-const EDGE_TYPES = { default: FlowEdge, smoothstep: FlowEdge, bezier: FlowEdge };
+// No custom EDGE_TYPES — we rely on React Flow's built-in default edge
+// renderer and style it via CSS vars. Per-port colour is carried on each
+// edge's `style.stroke` which the default renderer respects.
 
 function authHeader() {
   const token = useAuthStore.getState().token;
@@ -195,6 +202,9 @@ function FlowCanvas({ flowId, embedded = false }) {
       id: `${type}-${Date.now()}`,
       type,
       position,
+      width: 260,
+      height: 180,
+      style: { width: 260, height: 180 },
       data: { ...(def?.defaultData || {}), label: def?.label || type },
     };
     addNode(newNode);
@@ -293,36 +303,32 @@ function FlowCanvas({ flowId, embedded = false }) {
     resetRun();
   }, [currentRunId]);
 
+  // Connection guard. We stay permissive here and do the final validation
+  // inside onConnect (flowStore) — that way a partially-loaded registry, a
+  // fresh node, or an "any"-typed port never silently rejects a drop. Only
+  // self-loops are hard-blocked.
   const isValidConnection = useCallback((connection) => {
-    // Never connect a node to itself.
+    if (!connection?.source || !connection?.target) return false;
     if (connection.source === connection.target) return false;
-    // If the registry hasn't loaded yet, be permissive so the user can still
-    // wire things up — port-type validation kicks in once it loads.
-    if (!nodeTypes.length) return true;
-    const sourceNode = nodes.find((n) => n.id === connection.source);
-    const targetNode = nodes.find((n) => n.id === connection.target);
-    if (!sourceNode || !targetNode) return true;
-    const sourceReg = nodeTypes.find((t) => t.type === sourceNode.type);
-    const targetReg = nodeTypes.find((t) => t.type === targetNode.type);
-    const sourcePort = sourceReg?.outputs?.find((p) => p.id === connection.sourceHandle);
-    const targetPort = targetReg?.inputs?.find((p) => p.id === connection.targetHandle);
-    // If either port can't be resolved (custom node, missing handle), allow it.
-    if (!sourcePort || !targetPort) return true;
-    if (targetPort.type === "any" || sourcePort.type === "any") return true;
-    return sourcePort.type === targetPort.type;
-  }, [nodes, nodeTypes]);
+    return true;
+  }, []);
 
   const isRunning = runStatus === "running" || runStatus === "pending";
 
   return (
-    <div className="flex h-full w-full overflow-hidden" style={{ background: "#08080b", color: "#f4f4f5" }}>
-      {/* ── Left palette ── */}
+    <div className="flex h-full w-full overflow-hidden" style={{ background: "#06060a", color: "#f4f4f5" }}>
+      {/* ── Left palette (frosted glass rail) ── */}
       <div
-        className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out
-          ${paletteOpen ? "w-[210px]" : "w-0 overflow-hidden"}`}
+        className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out relative z-30
+          ${paletteOpen ? "w-[218px]" : "w-0 overflow-hidden"}`}
         style={{
-          background: "linear-gradient(180deg, #0c0c10 0%, #08080b 100%)",
-          borderRight: "1px solid rgba(255,255,255,0.04)",
+          background:
+            "linear-gradient(180deg, rgba(20,20,30,0.72) 0%, rgba(10,10,16,0.78) 100%)",
+          backdropFilter: "blur(28px) saturate(170%)",
+          WebkitBackdropFilter: "blur(28px) saturate(170%)",
+          borderRight: "1px solid rgba(255,255,255,0.10)",
+          boxShadow:
+            "inset -1px 0 0 0 rgba(255,255,255,0.05), 8px 0 32px -16px rgba(0,0,0,0.6)",
         }}
       >
         <div className="flex items-center justify-between px-3 py-3 border-b border-white/[0.04]">
@@ -350,10 +356,13 @@ function FlowCanvas({ flowId, embedded = false }) {
         <div
           className="flex items-center gap-2 px-3 py-2 flex-shrink-0 z-20 relative"
           style={{
-            background: "rgba(10,10,14,0.85)",
-            backdropFilter: "blur(20px) saturate(150%)",
-            WebkitBackdropFilter: "blur(20px) saturate(150%)",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            background:
+              "linear-gradient(180deg, rgba(20,20,30,0.55) 0%, rgba(10,10,16,0.62) 100%)",
+            backdropFilter: "blur(28px) saturate(170%)",
+            WebkitBackdropFilter: "blur(28px) saturate(170%)",
+            borderBottom: "1px solid rgba(255,255,255,0.10)",
+            boxShadow:
+              "inset 0 1px 0 0 rgba(255,255,255,0.06), 0 8px 28px -16px rgba(0,0,0,0.55)",
           }}
         >
           {!embedded && (
@@ -422,8 +431,17 @@ function FlowCanvas({ flowId, embedded = false }) {
 
           <div className="flex-1" />
 
-          {/* Tech metrics */}
-          <div className="hidden sm:flex items-center gap-3 px-3 py-1 rounded-md bg-white/[0.025] border border-white/[0.05]">
+          {/* Tech metrics — glass chip */}
+          <div
+            className="hidden sm:flex items-center gap-3 px-3 py-1 rounded-md"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.06)",
+            }}
+          >
             <div className="flex items-center gap-1.5">
               <span
                 className="text-[8px] uppercase tracking-[0.15em] text-white/30"
@@ -465,8 +483,17 @@ function FlowCanvas({ flowId, embedded = false }) {
             </div>
           </div>
 
-          {/* Undo/Redo */}
-          <div className="flex items-center bg-white/[0.025] border border-white/[0.05] rounded-md overflow-hidden">
+          {/* Undo/Redo — glass chip */}
+          <div
+            className="flex items-center rounded-md overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.06)",
+            }}
+          >
             <button
               onClick={undo}
               title="Undo (Ctrl+Z)"
@@ -486,7 +513,16 @@ function FlowCanvas({ flowId, embedded = false }) {
 
           {/* Group / Ungroup — visible only when relevant selection exists */}
           {(selectedNonGroupCount >= 2 || selectedGroupCount > 0) && (
-            <div className="flex items-center bg-white/[0.025] border border-white/[0.05] rounded-md overflow-hidden">
+            <div
+              className="flex items-center rounded-md overflow-hidden"
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.06)",
+              }}
+            >
               {selectedNonGroupCount >= 2 && (
                 <button
                   onClick={groupSelection}
@@ -511,14 +547,21 @@ function FlowCanvas({ flowId, embedded = false }) {
             </div>
           )}
 
-          {/* Save */}
+          {/* Save — glass button */}
           <button
             onClick={handleSave}
             disabled={saving || !isDirty}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.06]
-              border border-white/[0.06] text-[10px] font-semibold text-white/65 hover:text-white/90
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md
+              text-[10px] font-semibold text-white/80 hover:text-white
               disabled:opacity-30 disabled:cursor-not-allowed transition-all tracking-[0.05em]"
-            style={{ fontFamily: "var(--font-mono)" }}
+            style={{
+              fontFamily: "var(--font-mono)",
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.16)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.07)",
+            }}
           >
             {saving ? <Loader2 size={11} className="animate-spin" strokeWidth={2} /> : <Save size={11} strokeWidth={1.8} />}
             SAVE
@@ -557,7 +600,12 @@ function FlowCanvas({ flowId, embedded = false }) {
           </button>
         </div>
 
-        {/* ── ReactFlow canvas ── */}
+        {/* ── ReactFlow canvas ──
+            Aurora + grain overlays are pushed BEHIND the react-flow viewport
+            by explicit z-index; otherwise the absolute-positioned overlays
+            would stack on top of the (static-flow) ReactFlow component and
+            — even though they're "pointer-events: none" — can visually
+            obscure thin edge strokes at low opacity. */}
         <div
           className="flex-1 relative"
             style={{ background: "#0b0b10" }}
@@ -566,6 +614,7 @@ function FlowCanvas({ flowId, embedded = false }) {
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
+              zIndex: 0,
               background: `
                 radial-gradient(40% 35% at 25% 35%, rgba(124, 58, 237, 0.14) 0%, transparent 60%),
                 radial-gradient(35% 30% at 80% 70%, rgba(245, 158, 11, 0.09) 0%, transparent 60%),
@@ -577,11 +626,13 @@ function FlowCanvas({ flowId, embedded = false }) {
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay"
             style={{
+              zIndex: 0,
               backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E")`,
             }}
           />
 
           <ReactFlow
+            style={{ position: "absolute", inset: 0, zIndex: 10 }}
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
@@ -590,7 +641,11 @@ function FlowCanvas({ flowId, embedded = false }) {
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={NODE_TYPE_MAP}
-            edgeTypes={EDGE_TYPES}
+            // No custom edgeTypes — using React Flow's built-in default edge
+            // renderer (known-good, battle-tested). Per-port colour still
+            // comes through via each edge's `style.stroke` which the default
+            // renderer honours. This eliminates an entire failure mode
+            // (custom edge component never rendering / being mis-mapped).
             isValidConnection={isValidConnection}
             fitView
             fitViewOptions={{ padding: 0.4, maxZoom: 1.2 }}
@@ -603,8 +658,12 @@ function FlowCanvas({ flowId, embedded = false }) {
             selectionKeyCode={["Shift"]}
             selectionMode="partial"
             connectionLineType="bezier"
-            connectionLineStyle={{ stroke: "#a78bfa", strokeWidth: 2.25, strokeDasharray: "5 5", strokeLinecap: "round" }}
-            defaultEdgeOptions={{ type: "default", animated: false, style: { stroke: "#a78bfa" } }}
+            connectionLineStyle={{ stroke: "#a78bfa", strokeWidth: 2.5, strokeLinecap: "round", opacity: 0.95 }}
+            defaultEdgeOptions={{
+              type: "default",
+              animated: false,
+              style: { stroke: "#a78bfa", strokeWidth: 3 },
+            }}
             minZoom={0.25}
             maxZoom={2}
           >
@@ -642,6 +701,32 @@ function FlowCanvas({ flowId, embedded = false }) {
               }}
             />
 
+            {/* Live debug badge — shows how many edges are in state right
+                now. If you connect two nodes and this increments but no
+                wire appears, the bug is in the edge RENDERER. If it stays
+                at 0, the bug is in the CONNECT handler. Remove once fixed. */}
+            <Panel position="top-left" className="pointer-events-none">
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  padding: "5px 10px",
+                  borderRadius: 8,
+                  background: "rgba(20,20,30,0.55)",
+                  backdropFilter: "blur(14px) saturate(160%)",
+                  WebkitBackdropFilter: "blur(14px) saturate(160%)",
+                  color: "#c4b5fd",
+                  border: "1px solid rgba(167,139,250,0.4)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  boxShadow:
+                    "inset 0 1px 0 0 rgba(255,255,255,0.08), 0 6px 18px -8px rgba(124,58,237,0.35)",
+                }}
+              >
+                edges: {edges.length} · nodes: {nodes.length}
+              </div>
+            </Panel>
+
             {/* Empty state */}
             {nodes.length === 0 && (
               <Panel position="top-center" className="pointer-events-none">
@@ -649,9 +734,13 @@ function FlowCanvas({ flowId, embedded = false }) {
                   <div
                     className="w-20 h-20 rounded-2xl flex items-center justify-center relative"
                     style={{
-                      background: "linear-gradient(135deg, rgba(167,139,250,0.08) 0%, rgba(124,58,237,0.02) 100%)",
-                      border: "1px solid rgba(255,255,255,0.06)",
-                      boxShadow: "0 12px 32px -16px rgba(124,58,237,0.4)",
+                      background:
+                        "linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(124,58,237,0.06) 100%)",
+                      backdropFilter: "blur(20px) saturate(160%)",
+                      WebkitBackdropFilter: "blur(20px) saturate(160%)",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      boxShadow:
+                        "0 16px 40px -16px rgba(124,58,237,0.55), inset 0 1px 0 0 rgba(255,255,255,0.1)",
                     }}
                   >
                     <GitBranch size={28} className="text-white/20" strokeWidth={1.4} />
@@ -686,13 +775,18 @@ function FlowCanvas({ flowId, embedded = false }) {
         </div>
       </div>
 
-      {/* ── Right panel ── */}
+      {/* ── Right panel (frosted glass rail) ── */}
       <div
-        className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out
-          ${rightPanelOpen ? "w-[240px]" : "w-0 overflow-hidden"}`}
+        className={`flex-shrink-0 flex flex-col transition-[width] duration-200 ease-out relative z-30
+          ${rightPanelOpen ? "w-[252px]" : "w-0 overflow-hidden"}`}
         style={{
-          background: "linear-gradient(180deg, #0c0c10 0%, #08080b 100%)",
-          borderLeft: "1px solid rgba(255,255,255,0.04)",
+          background:
+            "linear-gradient(180deg, rgba(20,20,30,0.72) 0%, rgba(10,10,16,0.78) 100%)",
+          backdropFilter: "blur(28px) saturate(170%)",
+          WebkitBackdropFilter: "blur(28px) saturate(170%)",
+          borderLeft: "1px solid rgba(255,255,255,0.10)",
+          boxShadow:
+            "inset 1px 0 0 0 rgba(255,255,255,0.05), -8px 0 32px -16px rgba(0,0,0,0.6)",
         }}
       >
         {/* Tabs */}
@@ -842,20 +936,24 @@ export default function FlowsPage({ embedded = false }) {
           stroke-linejoin: round;
           fill: none;
         }
-        /* The live drag preview while the user is pulling a wire. */
+        /* Hover / selection widen the wire. */
+        .react-flow__edge:hover .react-flow__edge-path {
+          stroke-width: 4px;
+        }
+        .react-flow__edge.selected .react-flow__edge-path {
+          stroke: #c4b5fd;
+          stroke-width: 4px;
+        }
+        /* Live drag preview while user is pulling a wire. */
         .react-flow__connection-path {
           opacity: 1;
         }
-        .react-flow__edge:hover .react-flow__edge-path,
-        .react-flow__edge.selected .react-flow__edge-path,
-        .react-flow__edge:focus .react-flow__edge-path,
-        .react-flow__edge:focus-visible .react-flow__edge-path {
-          stroke-width: 2.75px;
-        }
-        /* Make the edge group itself never invisible — guards against any
-           Tailwind reset or external rule setting visibility:hidden. */
-        .react-flow__edge { visibility: visible; opacity: 1; }
-        .react-flow__edges { z-index: 1; }
+        /* Defensive: nothing clips or hides the edge SVG. */
+        .react-flow svg         { max-width: none !important; max-height: none !important; }
+        .react-flow__edge       { visibility: visible !important; opacity: 1 !important; pointer-events: stroke; }
+        .react-flow__edges      { z-index: 1; overflow: visible !important; }
+        .react-flow__edges svg  { overflow: visible !important; }
+        svg.react-flow__edges   { overflow: visible !important; }
 
         /* Handle hover */
         .react-flow__handle {
