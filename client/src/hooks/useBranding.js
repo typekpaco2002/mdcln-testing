@@ -9,8 +9,8 @@ export function useBranding() {
   return useMemo(
     () => ({
       appName: LOCAL_BRANDING.appName || "ModelClone",
-      logoUrl: LOCAL_BRANDING.logoUrl || "/logo-512.png",
-      faviconUrl: LOCAL_BRANDING.faviconUrl || LOCAL_BRANDING.logoUrl || "/logo-512.png",
+      logoUrl: LOCAL_BRANDING.logoUrl || "/modelclone-logo.png",
+      faviconUrl: LOCAL_BRANDING.faviconUrl || LOCAL_BRANDING.logoUrl || "/modelclone-logo.png",
       baseUrl: LOCAL_BRANDING.baseUrl || "https://modelclone.app",
     }),
     [],

@@ -4,23 +4,25 @@
   "description": "The AI studio that produces the most cinematic images and videos on the market. Built for creators, agencies, and brands.",
   "start_url": "/",
   "display": "standalone",
-  "theme_color": "#a855f7",
+  "theme_color": "#000000",
   "background_color": "#000000",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/modelclone-logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/modelclone-logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/modelclone-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ]

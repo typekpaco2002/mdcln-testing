@@ -4,7 +4,7 @@
  */
 export const LOCAL_BRANDING = {
   appName: "ModelClone",
-  logoUrl: "/logo-512.png",
-  faviconUrl: "/logo-512.png",
+  logoUrl: "/modelclone-logo.png",
+  faviconUrl: "/modelclone-logo.png",
   baseUrl: "https://modelclone.app",
 };

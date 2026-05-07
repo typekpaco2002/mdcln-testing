@@ -541,18 +541,32 @@ function App() {
     setErrorDisplay(showErrorDetails);
   }, []);
 
-  // Hide splash after hydration. Do NOT call refreshUserCredits here — it can 401 with stale
+  // SplashScreen now plays the boot GIF for its full duration and calls onFinish when the
+  // animation completes one playthrough. We still ensure auth has hydrated before dismissing
+  // (auth hydration is typically <100ms and finishes well before the GIF ends, so the GIF
+  // duration normally dominates). Do NOT call refreshUserCredits here — it can 401 with stale
   // session and trigger forceLogout → redirect loop. Let protected pages (e.g. Dashboard) fetch on mount.
-  useEffect(() => {
-    const hideSplash = () => setTimeout(() => setShowSplash(false), 300);
+  const authHydratedRef = useRef(useAuthStore.persist.hasHydrated());
+  const splashFinishedRef = useRef(false);
 
-    if (useAuthStore.persist.hasHydrated()) {
-      hideSplash();
-      return;
-    }
-    const unsubscribe = useAuthStore.persist.onFinishHydration(hideSplash);
+  useEffect(() => {
+    if (authHydratedRef.current) return undefined;
+    const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
+      authHydratedRef.current = true;
+      if (splashFinishedRef.current) setShowSplash(false);
+    });
     return unsubscribe;
   }, []);
+
+  const handleSplashFinish = () => {
+    splashFinishedRef.current = true;
+    if (authHydratedRef.current) {
+      setShowSplash(false);
+    } else {
+      // Hard cap so a stalled hydration can't keep the splash up forever.
+      setTimeout(() => setShowSplash(false), 1500);
+    }
+  };
 
   useEffect(() => {
     let lastRefreshAt = 0;
@@ -599,7 +613,13 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <AnimatePresence mode="wait">
-            {showSplash && <SplashScreen logoUrl={branding?.logoUrl} appName={branding?.appName || "ModelClone"} />}
+            {showSplash && (
+              <SplashScreen
+                logoUrl={branding?.logoUrl}
+                appName={branding?.appName || "ModelClone"}
+                onFinish={handleSplashFinish}
+              />
+            )}
           </AnimatePresence>
           <ErrorDisplay />
           <LoraPromoBanner />
