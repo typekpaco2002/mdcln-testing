@@ -613,13 +613,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <AnimatePresence mode="wait">
-            {showSplash && (
-              <SplashScreen
-                logoUrl={branding?.logoUrl}
-                appName={branding?.appName || "ModelClone"}
-                onFinish={handleSplashFinish}
-              />
-            )}
+            {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
           </AnimatePresence>
           <ErrorDisplay />
           <LoraPromoBanner />
