@@ -206,6 +206,22 @@ export const NODE_REGISTRY = {
     },
   },
 
+  "audio-input": {
+    label: "Audio Input",
+    category: "inputs",
+    color: "#60a5fa",
+    description: "Upload an audio file or provide a URL",
+    inputs: [],
+    outputs: [{ id: "audio", type: "audio", label: "Audio" }],
+    defaultData: { audioUrl: "", mode: "url" },
+    creditCost: 0,
+    execute: async (inputs, nodeData) => {
+      const url = nodeData.audioUrl || inputs.audioUrl;
+      if (!url) throw new Error("Audio Input: no audio URL provided");
+      return { output: url, outputType: "audio" };
+    },
+  },
+
   // â”€â”€ IMAGE GENERATION NODES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   "enhance-prompt": {
@@ -252,10 +268,10 @@ export const NODE_REGISTRY = {
   },
 
   "nana-banana-avatar": {
-    label: "NanaBanana Avatar",
+    label: "Avatar Generator",
     category: "images",
     color: "#a78bfa",
-    description: "Generate image using your model with NanaBanana Pro",
+    description: "Generate image using your model",
     inputs: [
       { id: "model", type: "model", label: "Model" },
       { id: "text", type: "text", label: "Prompt" },
@@ -267,7 +283,7 @@ export const NODE_REGISTRY = {
     execute: async (inputs, nodeData, userId, onProgress) => {
       const { generateImageWithNanoBananaKie } = await import("./kie.service.js");
       const model = inputs.model;
-      if (!model) throw new Error("NanaBanana Avatar: model required");
+      if (!model) throw new Error("Avatar Generator: model required");
       const prompt = await maybeEnhancePrompt(inputs.text || nodeData.prompt || "", nodeData, userId, onProgress);
       const refs = [inputs.image, model.photo1Url, model.photo2Url, model.photo3Url].filter(Boolean).slice(0, 4);
 
@@ -277,13 +293,13 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting NanaBanana generation..." });
+      onProgress?.({ message: "Submitting image generation..." });
       let outputUrl = null;
-      const result = await generateImageWithNanoBananaKie(refs, prompt, {
+      const result = await generateImageWithNanaBananaKie(refs, prompt, {
         resolution: nodeData.resolution || "2K",
         aspectRatio: nodeData.aspectRatio || "9:16",
         onTaskCreated: async (taskId) => {
-          onProgress?.({ message: `KIE task created: ${taskId}` });
+          onProgress?.({ message: "Processing..." });
           // Create generation record for tracking
           await prisma.generation.create({
             data: { userId, modelId: model.id, type: "advanced-image", status: "processing",
@@ -304,19 +320,19 @@ export const NODE_REGISTRY = {
             orderBy: { createdAt: "desc" },
           });
           if (gen?.status === "completed" && gen.outputUrl) { outputUrl = gen.outputUrl; break; }
-          if (gen?.status === "failed") throw new Error("NanaBanana generation failed");
+          if (gen?.status === "failed") throw new Error("Image generation failed");
         }
       }
-      if (!outputUrl) throw new Error("NanaBanana: no output URL received");
+      if (!outputUrl) throw new Error("Image generation: no output URL received");
       return { output: outputUrl, outputType: "image", creditsUsed: cost };
     },
   },
 
   "seedream-avatar": {
-    label: "Seedream 5 Avatar",
+    label: "Avatar Generator HD",
     category: "images",
     color: "#a78bfa",
-    description: "Generate image using your model with Seedream 5.0 Lite",
+    description: "Generate image using your model (fast mode)",
     inputs: [
       { id: "model", type: "model", label: "Model" },
       { id: "text", type: "text", label: "Prompt" },
@@ -327,7 +343,7 @@ export const NODE_REGISTRY = {
     execute: async (inputs, nodeData, userId, onProgress) => {
       const { generateImageWithSeedream5Lite } = await import("./kie.service.js");
       const model = inputs.model;
-      if (!model) throw new Error("Seedream Avatar: model required");
+      if (!model) throw new Error("Avatar Generator HD: model required");
       const prompt = await maybeEnhancePrompt(inputs.text || nodeData.prompt || "", nodeData, userId, onProgress);
       const refs = [model.photo1Url, model.photo2Url, model.photo3Url].filter(Boolean);
 
@@ -337,13 +353,13 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: "Submitting Seedream generation..." });
+      onProgress?.({ message: "Submitting image generation..." });
       const result = await generateImageWithSeedream5Lite(refs, prompt, { aspectRatio: nodeData.aspectRatio || "9:16", quality: "basic" });
-      if (!result.success && !result.deferred) throw new Error(result.error || "Seedream failed");
+      if (!result.success && !result.deferred) throw new Error(result.error || "Image generation failed");
 
       let outputUrl = result.outputUrl;
       if (result.deferred && result.taskId) {
-        onProgress?.({ message: "Waiting for Seedream result..." });
+        onProgress?.({ message: "Waiting for result..." });
         const maxWait = 5 * 60 * 1000;
         const start = Date.now();
         while (Date.now() - start < maxWait) {
@@ -353,10 +369,10 @@ export const NODE_REGISTRY = {
             orderBy: { createdAt: "desc" },
           });
           if (gen?.status === "completed" && gen.outputUrl) { outputUrl = gen.outputUrl; break; }
-          if (gen?.status === "failed") throw new Error("Seedream generation failed");
+          if (gen?.status === "failed") throw new Error("Image generation failed");
         }
       }
-      if (!outputUrl) throw new Error("Seedream: no output received");
+      if (!outputUrl) throw new Error("Image generation: no output received");
       return { output: outputUrl, outputType: "image", creditsUsed: cost };
     },
   },
@@ -643,7 +659,7 @@ export const NODE_REGISTRY = {
         await registerKieTaskForGeneration(taskId, generation.id, userId, "creator-studio");
       };
 
-      onProgress?.({ message: `Generating with ${generationModel}…` });
+      onProgress?.({ message: "Generating image..." });
       let result = null;
       if (generationModel === "nano-banana-pro") {
         result = mode === "i2i"
@@ -701,7 +717,7 @@ export const NODE_REGISTRY = {
           onTaskCreated,
         });
       } else {
-        throw new Error(`Creator Studio: unsupported model ${generationModel}`);
+        throw new Error("Creator Studio: unsupported model selected");
       }
 
       let outputUrl = result.outputUrl;
@@ -750,7 +766,7 @@ export const NODE_REGISTRY = {
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
 
-      onProgress?.({ message: `Submitting ${videoModel} video generation…` });
+      onProgress?.({ message: "Submitting video generation..." });
       const {
         generateVideoWithKlingTextKie,
         generateVideoWithKling26Kie,
@@ -814,7 +830,7 @@ export const NODE_REGISTRY = {
           onTaskSubmitted,
         });
       } else {
-        throw new Error(`Unsupported video model: ${videoModel}`);
+        throw new Error("Unsupported video model selected");
       }
 
       let outputUrl = result?.outputUrl;
@@ -875,10 +891,11 @@ export const NODE_REGISTRY = {
     label: "Talking Head",
     category: "video",
     color: "#f59e0b",
-    description: "Animate a portrait with audio",
+    description: "Lip-sync a portrait to audio",
     inputs: [
       { id: "image", type: "image", label: "Portrait" },
       { id: "audio", type: "audio", label: "Audio" },
+      { id: "text", type: "text", label: "Prompt (opt)" },
     ],
     outputs: [{ id: "video", type: "video", label: "Video" }],
     defaultData: {},
@@ -890,16 +907,133 @@ export const NODE_REGISTRY = {
       const user = await checkAndExpireCredits(userId);
       if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
       await deductCredits(userId, cost);
-      onProgress?.({ message: "Submitting talking headâ€¦" });
+      onProgress?.({ message: "Submitting talking head…" });
+      const { generateTalkingHead } = await import("./wavespeed.service.js");
       const gen = await prisma.generation.create({
-        data: { userId, type: "talking-head", status: "processing", prompt: "talking-head", creditsCost: cost, replicateModel: "kie-talking-head" },
+        data: {
+          userId,
+          type: "talking-head",
+          status: "processing",
+          prompt: (inputs.text || nodeData.prompt || "talking-head").slice(0, 500),
+          creditsCost: cost,
+          replicateModel: "wavespeed-kling-v2-avatar",
+        },
       });
-      const outputUrl = await pollGeneration(gen.id, onProgress);
-      return { output: outputUrl, outputType: "video", creditsUsed: cost };
+      try {
+        const result = await generateTalkingHead(inputs.image, inputs.audio, inputs.text || nodeData.prompt || null);
+        const outputUrl = result?.outputUrl;
+        if (!outputUrl) throw new Error("Talking Head: no output URL returned");
+        await prisma.generation.update({
+          where: { id: gen.id },
+          data: { status: "completed", outputUrl, completedAt: new Date() },
+        });
+        return { output: outputUrl, outputType: "video", creditsUsed: cost };
+      } catch (err) {
+        await prisma.generation.update({
+          where: { id: gen.id },
+          data: { status: "failed", errorMessage: err.message },
+        }).catch(() => {});
+        throw err;
+      }
     },
   },
 
-  // â”€â”€ NSFW NODES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── AUDIO / VOICE NODES ───────────────────────────────────────────────────
+
+  "voice-gen": {
+    label: "Voice Generation",
+    category: "audio",
+    color: "#f472b6",
+    description: "Generate speech with your model's cloned voice",
+    inputs: [
+      { id: "model", type: "model", label: "Model" },
+      { id: "text", type: "text", label: "Script" },
+    ],
+    outputs: [{ id: "audio", type: "audio", label: "Audio" }],
+    defaultData: { stability: 0.5, similarityBoost: 0.75, style: 0.0 },
+    creditCost: 25,
+    execute: async (inputs, nodeData, userId, onProgress) => {
+      const { textToSpeech, uploadAudioToR2 } = await import("./elevenlabs.service.js");
+      const { VOICE_TTS_MODEL_ID, estimateVoiceAudioCredits } =
+        await import("./voice-platform.service.js");
+      const model = inputs.model;
+      if (!model) throw new Error("Voice Gen: model required");
+      const script = (inputs.text || nodeData.script || "").trim();
+      if (!script) throw new Error("Voice Gen: script text is empty");
+
+      // Resolve the best voice id: prefer the default ModelVoice row, fall
+      // back to the legacy elevenLabsVoiceId on SavedModel.
+      let voiceId = null;
+      const defaultVoice = await prisma.modelVoice.findFirst({
+        where: { modelId: model.id, isDefault: true },
+      });
+      voiceId = defaultVoice?.elevenLabsVoiceId || model.elevenLabsVoiceId;
+      if (!voiceId) throw new Error("Voice Gen: model has no voice configured");
+
+      const cost = estimateVoiceAudioCredits(script.length, false);
+      const user = await checkAndExpireCredits(userId);
+      if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
+      await deductCredits(userId, cost);
+
+      onProgress?.({ message: "Generating voice audio…" });
+      const audioBuffer = await textToSpeech(script, voiceId, {
+        modelId: VOICE_TTS_MODEL_ID,
+        stability: nodeData.stability ?? 0.5,
+        similarityBoost: nodeData.similarityBoost ?? 0.75,
+        style: nodeData.style ?? 0.0,
+      });
+      onProgress?.({ message: "Uploading audio…" });
+      const { url } = await uploadAudioToR2(audioBuffer);
+      return { output: url, outputType: "audio", creditsUsed: cost };
+    },
+  },
+
+  "sfx-gen": {
+    label: "Sound Effect",
+    category: "audio",
+    color: "#f472b6",
+    description: "Generate a sound effect or ambient audio from a description",
+    inputs: [{ id: "text", type: "text", label: "Prompt" }],
+    outputs: [{ id: "audio", type: "audio", label: "Audio" }],
+    defaultData: { durationSeconds: 5 },
+    creditCost: 12,
+    execute: async (inputs, nodeData, userId, onProgress) => {
+      const prompt = (inputs.text || nodeData.prompt || "").trim();
+      if (!prompt) throw new Error("SFX: prompt required");
+      const cost = 12;
+      const user = await checkAndExpireCredits(userId);
+      if (getTotalCredits(user) < cost) throw new Error(`Not enough credits (need ${cost})`);
+      await deductCredits(userId, cost);
+
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+      if (!apiKey) throw new Error("SFX: ELEVENLABS_API_KEY not set");
+
+      onProgress?.({ message: "Generating sound effect…" });
+      const res = await fetch("https://api.elevenlabs.io/v1/sound-generation", {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          "Accept": "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text: prompt,
+          duration_seconds: Math.min(22, Math.max(0.5, Number(nodeData.durationSeconds) || 5)),
+          prompt_influence: 0.3,
+        }),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(`SFX: audio service error ${res.status}: ${errText.slice(0, 200)}`);
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      const { uploadAudioToR2 } = await import("./elevenlabs.service.js");
+      const { url } = await uploadAudioToR2(buf);
+      return { output: url, outputType: "audio", creditsUsed: cost };
+    },
+  },
+
+  // ── NSFW NODES ────────────────────────────────────────────────────────────
 
   "nsfw-gen": {
     label: "NSFW Generation",
@@ -1188,17 +1322,16 @@ export const NODE_REGISTRY = {
   },
 
   "merge-outputs": {
-    label: "Merge / Batch",
+    label: "Merge",
     category: "utility",
     color: "#94a3b8",
-    description:
-      "Combine up to 3 outputs into a single batch (e.g. send 3 generated images at once into Upscaler, Face Swap, or Output Viewer).",
+    description: "Combine multiple outputs into an array",
     inputs: [
       { id: "input1", type: "any", label: "Input 1" },
       { id: "input2", type: "any", label: "Input 2" },
       { id: "input3", type: "any", label: "Input 3" },
     ],
-    outputs: [{ id: "array", type: "any", label: "Batch" }],
+    outputs: [{ id: "array", type: "any", label: "Array" }],
     defaultData: {},
     creditCost: 0,
     execute: async (inputs) => {
@@ -1230,6 +1363,7 @@ export const NODE_CATEGORIES = {
   inputs:  { label: "Inputs",        color: "#60a5fa" },
   images:  { label: "Image Gen",     color: "#a78bfa" },
   video:   { label: "Video Gen",     color: "#f59e0b" },
+  audio:   { label: "Audio / Voice", color: "#f472b6" },
   nsfw:    { label: "NSFW Studio",   color: "#f87171" },
   outputs: { label: "Outputs",       color: "#34d399" },
   utility: { label: "Utility",       color: "#94a3b8" },
