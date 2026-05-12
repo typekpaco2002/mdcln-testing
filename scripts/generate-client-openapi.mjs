@@ -1,22 +1,23 @@
 #!/usr/bin/env node
 /**
- * Build a single exhaustive OpenAPI 3.0 spec for SPA + integrator–usable HTTP APIs.
- *
- * Uses the same literal route scan as docs:registry (`router.get('/path')`…),
- * resolves Express mount prefixes from `server.js` + `api.routes.js`, and writes:
- *   docs/openapi/client-api.openapi.yaml
+ * Merge `docs/openapi/client-api.base.yaml` with exhaustive route scan +
+ * curated operation overrides (`openapi-client-operation-overrides.mjs`),
+ * then emit `docs/openapi/client-api.openapi.yaml`.
  *
  * Run: npm run openapi:client
  */
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import YAML from "yaml";
+import { getClientOpenApiOverride } from "./openapi-client-operation-overrides.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const ROUTES_DIR = path.join(ROOT, "src", "routes");
 const SERVER_FILE = path.join(ROOT, "src", "server.js");
 const API_ROUTES_FILE = path.join(ROUTES_DIR, "api.routes.js");
+const BASE_FILE = path.join(ROOT, "docs", "openapi", "client-api.base.yaml");
 const OUT_FILE = path.join(ROOT, "docs", "openapi", "client-api.openapi.yaml");
 
 /** Route files that are provider / infra webhooks only — not app or integrator clients. */
@@ -48,6 +49,13 @@ function routeRelKey(absPath) {
   return path.relative(ROUTES_DIR, absPath).replace(/\\/g, "/");
 }
 
+/**
+ * Express `:id` segments → OpenAPI `{id}` paths.
+ */
+function expressPathToOpenApi(exprPath) {
+  return exprPath.replace(/:([A-Za-z_][A-Za-z0-9_]*)/g, "{$1}");
+}
+
 function extractExpressPaths(content, fileRel) {
   const rows = [];
   const scan = (text) => {
@@ -70,8 +78,7 @@ function extractExpressPaths(content, fileRel) {
 function parseDefaultImports(src, baseDir) {
   /** @type {Map<string, string>} symbol -> relative path from ROUTES_DIR */
   const map = new Map();
-  const re =
-    /import\s+(\w+)\s+from\s+["'](\.[^"']+)["']\s*;?/g;
+  const re = /import\s+(\w+)\s+from\s+["'](\.[^"']+)["']\s*;?/g;
   let m;
   while ((m = re.exec(src)) !== null) {
     const sym = m[1];
@@ -183,25 +190,157 @@ function tagForPath(fullPath) {
   return "API";
 }
 
-function operationId(method, fullPath) {
-  const raw = `${method}_${fullPath}`.toLowerCase();
-  return raw.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 120) || "op";
+function defaultResponseRefs() {
+  return {
+    "200": { $ref: "#/components/responses/SuccessOk" },
+    "400": { $ref: "#/components/responses/ValidationFailed400" },
+    "401": { $ref: "#/components/responses/Unauthorized" },
+    "402": { $ref: "#/components/responses/PaymentRequired402" },
+    "403": { $ref: "#/components/responses/Forbidden403" },
+    "409": { $ref: "#/components/responses/Conflict409" },
+    "413": { $ref: "#/components/responses/PayloadTooLarge413" },
+    "429": { $ref: "#/components/responses/RateLimited429" },
+    "500": { $ref: "#/components/responses/Internal500" },
+    "503": { $ref: "#/components/responses/ServiceUnavailable503" },
+  };
 }
 
-function yamlEscape(str) {
-  if (/[:#@[\]{}&*!|>'"%]/.test(str) || str.includes("\n")) {
-    return JSON.stringify(str);
+/** @typedef {{ operationId: string, summary: string, description: string, tags: string[], responses: Record<string, unknown>, security?: unknown[], requestBody?: unknown }} GeneratedOp */
+
+function semanticApiPath(openapiPath) {
+  return openapiPath.startsWith("/api/v1/")
+    ? `/api/${openapiPath.slice("/api/v1/".length)}`
+    : openapiPath;
+}
+
+/** Public SPA auth routes — do not annotate with session/API-key schemes. */
+function isPublicLoginOrSignupPost(verb, openapiPath) {
+  const sem = semanticApiPath(openapiPath);
+  return (
+    verb === "POST" && (sem === "/api/auth/login" || sem === "/api/auth/signup")
+  );
+}
+
+/**
+ * Default operation before overrides.
+ * @param {string} verb HTTP verb uppercase
+ * @param {string} openapiPath OpenAPI path `{param}`
+ */
+function buildDefaultOperation(verb, openapiPath, sourceFile, tag) {
+  const mutating =
+    verb === "POST" || verb === "PUT" || verb === "PATCH" || verb === "DELETE";
+  const rawOpId =
+    `${verb}_${openapiPath.replace(/\{([^}]+)\}/g, ":$1")}`.toLowerCase();
+
+  /** @type {GeneratedOp} */
+  const base = {
+    operationId: rawOpId.replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 120) || "op",
+    summary: `${verb} ${openapiPath}`,
+    description:
+      `Auto-discovered from \`${sourceFile}\`. Coverage follows literal Express path strings — alternate mounts may be missing. Run \`npm run openapi:client\` after route edits and \`npm run docs:registry\` for \`HTTP_ROUTES.md\`.`,
+    tags: [tag],
+    responses: defaultResponseRefs(),
+  };
+
+  const sem = semanticApiPath(openapiPath);
+
+  if (openapiPath === "/health") {
+    // no schemes
+  } else if (
+    openapiPath.startsWith("/api/admin/") ||
+    openapiPath.startsWith("/api/admin") ||
+    sem.startsWith("/api/admin/")
+  ) {
+    base.security = [{ SessionCookieAuth: [] }];
+    base.description +=
+      "\n\n**Integrators:** Admin JSON rejects **`mcl_`**‑only callers with **`ADMIN_SESSION_ONLY`** — use browser admin session JWT.";
+  } else if (
+    openapiPath.startsWith("/api/") &&
+    !isPublicLoginOrSignupPost(verb, openapiPath)
+  ) {
+    base.security = [{ SessionCookieAuth: [] }, { ApiKeyAuth: [] }, { BearerAuth: [] }];
   }
-  return str;
+
+  if (verb === "GET" || !mutating) {
+    delete base.requestBody;
+  }
+
+  return base;
+}
+
+/**
+ * Merge scanner op with handwritten override fragments.
+ */
+function mergeOperation(base, overlay) {
+  if (!overlay) return base;
+
+  /** @type {GeneratedOp & Record<string, unknown>} */
+  const out = /** @type {any} */ ({ ...base });
+  const { responses: overlayResponses, tags: overlayTags, ...restOverlay } = overlay;
+
+  Object.assign(out, restOverlay);
+
+  if (overlayTags !== undefined) {
+    const merged = [...new Set([...(base.tags || []), ...overlayTags])];
+    merged.sort((a, b) => a.localeCompare(b));
+    out.tags = merged;
+  }
+
+  if (overlayResponses !== undefined) {
+    out.responses = {
+      ...(base.responses ?? {}),
+      ...overlayResponses,
+    };
+  }
+
+  return out;
+}
+
+function stripUndefinedDeep(node) {
+  if (node === undefined) return node;
+  if (Array.isArray(node)) {
+    return node.map(stripUndefinedDeep).filter((x) => x !== undefined);
+  }
+  if (node !== null && typeof node === "object") {
+    /** @type {Record<string, unknown>} */
+    const out = {};
+    for (const [k, v] of Object.entries(node)) {
+      if (v === undefined) continue;
+      const nv = stripUndefinedDeep(v);
+      out[k] = nv;
+    }
+    return out;
+  }
+  return node;
 }
 
 function main() {
+  if (!fs.existsSync(BASE_FILE)) {
+    console.error("[openapi:client] Missing base YAML:", BASE_FILE);
+    process.exitCode = 1;
+    return;
+  }
+
+  const baseText = fs.readFileSync(BASE_FILE, "utf8");
+  /** @type {Record<string, any>} */
+  const doc = YAML.parse(baseText) || {};
+  if (!doc.openapi) {
+    console.error("[openapi:client] Base YAML missing `openapi:`");
+    process.exitCode = 1;
+    return;
+  }
+
+  doc.paths = {};
+  doc.info ||= {};
+  doc.info["x-openapi-client-generated-at"] = new Date().toISOString();
+
   const prefixByFile = buildPrefixMap();
 
   const routeFiles = [SERVER_FILE, ...walkRouteFiles(ROUTES_DIR)];
   const allRows = [];
   for (const f of routeFiles) {
-    const rel = f === SERVER_FILE ? "src/server.js" : `src/routes/${routeRelKey(f)}`;
+    const rel =
+      f === SERVER_FILE ? "src/server.js" : `src/routes/${routeRelKey(f)}`;
     const key = f === SERVER_FILE ? null : routeRelKey(f);
     if (
       key &&
@@ -209,7 +348,9 @@ function main() {
     )
       continue;
     const content = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n");
-    extractExpressPaths(content, rel).forEach((row) => allRows.push({ ...row, routeKey: key }));
+    extractExpressPaths(content, rel).forEach((row) =>
+      allRows.push({ ...row, routeKey: key }),
+    );
   }
 
   const seen = new Set();
@@ -237,8 +378,12 @@ function main() {
       continue;
     }
 
-    for (const base of prefixes) {
-      const fullPath = joinUrlPrefix(base || "", p === "/" && base ? "" : p).replace(/\/+/g, "/") || "/";
+    for (const basePrefix of prefixes) {
+      const fullPath =
+        joinUrlPrefix(basePrefix || "", p === "/" && basePrefix ? "" : p).replace(
+          /\/+/g,
+          "/",
+        ) || "/";
       if (shouldExcludeFullPath(verb, fullPath)) continue;
 
       const opKey = `${verb} ${fullPath}`;
@@ -259,127 +404,69 @@ function main() {
     const ia = a[0].indexOf(" ");
     const ib = b[0].indexOf(" ");
     const ma = a[0].slice(0, ia);
-    const pa = a[0].slice(ia + 1);
+    const pa = expressPathToOpenApi(a[0].slice(ia + 1));
     const mb = b[0].slice(0, ib);
-    const pb = b[0].slice(ib + 1);
+    const pb = expressPathToOpenApi(b[0].slice(ib + 1));
     if (pa !== pb) return pa.localeCompare(pb);
     const order = { get: 0, post: 1, put: 2, patch: 3, delete: 4 };
     return (order[ma.toLowerCase()] ?? 99) - (order[mb.toLowerCase()] ?? 99);
   });
 
-  const generatedAt = new Date().toISOString();
-  const pathBlocks = [];
-
-  /** @type Map<string, object> */
+  /** @type {Map<string, Record<string, GeneratedOp>>} */
   const pathObjects = new Map();
 
   for (const [key, meta] of sortedOps) {
     const sp = key.indexOf(" ");
     const verb = key.slice(0, sp);
-    const openapiPath = key.slice(sp + 1);
-    const method = verb.toLowerCase();
-    const oid = operationId(verb, openapiPath);
+    const absoluteExpressPath = key.slice(sp + 1);
+    const openapiPath = expressPathToOpenApi(absoluteExpressPath);
 
     let pathKey = openapiPath;
     if (!pathKey.startsWith("/")) pathKey = `/${pathKey}`;
 
     if (!pathObjects.has(pathKey)) pathObjects.set(pathKey, {});
-
+    const method = meta.method;
     const tagsArr = [...meta.tags].sort();
-    pathObjects.get(pathKey)[method] = {
-      operationId: oid,
-      summary: `${verb} ${pathKey}`,
-      description:
-        `Auto-discovered from \`${meta.source}\`. Literal path scan — dynamic routes may be missing; see \`docs/generated/HTTP_ROUTES.md\` after \`npm run docs:registry\`.`,
-      tags: tagsArr,
-      responses: {
-        "200": { description: "Success (shape varies by endpoint)" },
-        "400": { description: "Bad request" },
-        "401": { description: "Unauthorized (session or API key required for most routes)" },
-        "429": { description: "Rate limited" },
-        "500": { description: "Server error" },
-      },
-    };
+    let op = buildDefaultOperation(verb, pathKey, meta.source, tagsArr[0] || "API");
+    op.tags = tagsArr.length ? tagsArr : ["API"];
+
+    const ov = getClientOpenApiOverride(pathKey, method);
+    op = mergeOperation(op, ov);
+    pathObjects.get(pathKey)[method] = op;
   }
 
-  for (const [pathKey, methods] of [...pathObjects.entries()].sort((a, b) =>
-    a[0].localeCompare(b[0])
-  )) {
-    const lines = [`  ${yamlEscape(pathKey)}:`];
-    for (const method of Object.keys(methods).sort()) {
-      const op = methods[method];
-      lines.push(`    ${method}:`);
-      lines.push(`      operationId: ${op.operationId}`);
-      lines.push(`      summary: ${yamlEscape(op.summary)}`);
-      lines.push(`      description: ${yamlEscape(op.description)}`);
-      lines.push(`      tags:`);
-      for (const t of op.tags) lines.push(`        - ${yamlEscape(t)}`);
-      lines.push(`      responses:`);
-      for (const [code, spec] of Object.entries(op.responses)) {
-        lines.push(`        "${code}":`);
-        lines.push(`          description: ${yamlEscape(spec.description)}`);
-      }
+  const sortedPaths = [...pathObjects.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  );
+
+  for (const [pathKey, methods] of sortedPaths) {
+    const sortedMethods = Object.keys(methods).sort((a, b) => {
+      const ord = { get: 0, post: 1, put: 2, patch: 3, delete: 4 };
+      return (ord[a] ?? 99) - (ord[b] ?? 99);
+    });
+    doc.paths[pathKey] = {};
+    for (const m of sortedMethods) {
+      doc.paths[pathKey][m] = stripUndefinedDeep(methods[m]);
     }
-    pathBlocks.push(lines.join("\n"));
   }
 
-  const yaml = [
-    "openapi: 3.0.3",
-    "info:",
-    "  title: ModelClone Client & integration API",
-    '  version: "1.0.0"',
-    `  description: |`,
-    "    Generated OpenAPI surface for the ModelClone web app and HTTP integrations.",
-    "    **Production base URL:** https://modelclone.app",
-    "    **Auth:** Most routes require a browser session cookie from login, or `X-Api-Key` / `Authorization: Bearer` with an `mcl_` API key (paid plans). Admin routes require an admin session (not API-key only).",
-    "    **v1 mirror:** The same REST handlers are also mounted under `/api/v1/...` (except Flow Studio — use `/api/flows/...` only).",
-    `    **Generated at:** ${generatedAt}`,
-    "    **Coverage:** Literal Express path strings only; template-literal routes and some dynamic mounts may be absent. Regenerate with `npm run openapi:client` after route changes.",
-    "",
-    "servers:",
-    "  - url: https://modelclone.app",
-    "    description: Production",
-    "",
-    "tags:",
-    "  - name: API",
-    "    description: General HTTP API",
-    "  - name: Auth",
-    "    description: Signup, login, tokens, password, Telegram link",
-    "  - name: Billing",
-    "    description: Stripe, crypto checkout, subscriptions",
-    "  - name: AI & media",
-    "    description: Models, generations, NSFW, LoRA",
-    "  - name: Flows Studio",
-    "    description: Flow automation (mounted under /api/flows only)",
-    "  - name: Tools",
-    "    description: img2img, GPT-X, repurposer satellites",
-    "  - name: Account",
-    "    description: Support chat, referrals, profile-adjacent",
-    "  - name: Admin",
-    "    description: Staff-only administration",
-    "",
-    "components:",
-    "  securitySchemes:",
-    "    ApiKeyAuth:",
-    "      type: apiKey",
-    "      in: header",
-    "      name: X-Api-Key",
-    "      description: Self-serve API keys (prefix `mcl_`; eligible paid plans)",
-    "    BearerAuth:",
-    "      type: http",
-    "      scheme: bearer",
-    "      bearerFormat: mcl_<secret>",
-    "      description: Same token as ApiKeyAuth; use Authorization header instead of X-Api-Key.",
-    "",
-    "paths:",
-    ...pathBlocks,
-    "",
-  ].join("\n");
+  const yamlBody = YAML.stringify(doc, {
+    indent: 2,
+    lineWidth: 0,
+    simpleKeys: false,
+  });
 
   fs.mkdirSync(path.dirname(OUT_FILE), { recursive: true });
-  fs.writeFileSync(OUT_FILE, yaml, "utf8");
+  fs.writeFileSync(
+    OUT_FILE,
+    `# GENERATED FILE — edit docs/openapi/client-api.base.yaml or scripts/, then npm run openapi:client\n\n${yamlBody}`,
+    "utf8",
+  );
   console.log(
-    `[openapi:client] Wrote ${path.relative(ROOT, OUT_FILE)} (${operations.size} operations, ${pathObjects.size} paths)`
+    `[openapi:client] Wrote ${path.relative(
+      ROOT,
+      OUT_FILE,
+    )} (${operations.size} operations, ${sortedPaths.length} paths)`,
   );
 
   /** Warn orphan route files without prefixes */
@@ -389,7 +476,9 @@ function main() {
       continue;
     if (k.startsWith("telegram/legacy/")) continue;
     if (!prefixByFile.has(k)) {
-      console.warn(`[openapi:client] No mount resolved for routes file: ${k} (might be reachable only indirectly — check manually)`);
+      console.warn(
+        `[openapi:client] No mount resolved for routes file: ${k} (might be reachable only indirectly — check manually)`,
+      );
     }
   }
 }

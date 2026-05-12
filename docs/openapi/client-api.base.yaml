@@ -1,0 +1,439 @@
+# Base OpenAPI skeleton for ModelClone production docs.
+# Paths are merged by scripts/generate-client-openapi.mjs (literal route scan).
+
+openapi: 3.0.3
+info:
+  title: ModelClone Client & integration API
+  version: "1.1.0"
+  license:
+    name: Proprietary
+    url: https://modelclone.app/terms
+  description: |
+    Production-oriented catalog of HTTP routes used by **`https://modelclone.app`** (web app),
+    integrations, and self-serve **`mcl_`** API keys.
+
+    ### Base URLs
+    - **Primary:** `https://modelclone.app/api/...`
+    - **Stable mirror:** `https://modelclone.app/api/v1/...` (same handlers; **Flows Studio stays** ` /api/flows/... ` only.)
+
+    ### Authentication
+    **Browser:** session cookie from `POST /api/auth/login` (or signup + verify). **`credentials: include`** on fetches.
+
+    **API key / integrations:** Header **`X-Api-Key: mcl_...`** **or** **`Authorization: Bearer mcl_...`**. Paid-plan eligibility applies (see **`API_KEY_REQUIRES_PAID_PLAN`**). Admin JSON routes require an **admin user session**, not API-key-only (**`ADMIN_SESSION_ONLY`**).
+
+    ### Typical JSON envelopes
+    Many routes respond with **`{ success: boolean, ... }`**. Errors may use **`error`** or **`message`**. Upload validation failures often include **`solution`** (how to resolve).
+
+    **express-validator failures (400):** `{ success: false, message: "Validation failed", errors: [{ field, message }] }`
+
+    ### File uploads — three patterns
+    1. **Vercel Blob (recommended for large/binary):** **`POST /api/upload/blob`** — client obtains a Blob upload token (`handleUpload`), uploads **direct-to-Blob**, then completes via **`type: blob.upload-completed`** in the JSON body.
+
+    2. **Multipart to API (memory):** **`POST /api/upload`** — `multipart/form-data` field **`file`**. Validates type/size (**`generationUploadGuards`**); uploads to Blob or R2 when configured.
+
+    3. **JSON + hosted URL:** many generation routes prefer **`inputImageUrl` / URLs** pointing at **`blob.vercel-storage.com`**, **`r2.dev`**, etc. (SSR-safe allowlist applies).
+
+    Specialized multipart:
+    - **Upscaler** `POST /api/upscale` — **`application/json`** `{ "inputImageUrl": "..." }` **or** multipart field **`image`** (≤ 20 MB JPEG/PNG/WebP).
+    - **Voice clone** `POST /api/models/{modelId}/voice/clone` and **`.../voices/clone`** — multipart field **`audio`** (`.mp3` / `audio/mpeg`; server limit applies).
+
+    ### Operational error codes (`code` field)
+    | Code | When | Fix |
+    |------|------|-----|
+    | **`NO_FILE`** | Multipart guard, empty file part | Retry with **`file`** / **`audio`** / **`image`** populated. |
+    | **`INVALID_FILE_TYPE`** | MIME/extension not accepted | Match allowed image/video MIME types (`generationUploadGuards`). |
+    | **`INVALID_IMAGE_TYPE`** | Image MIME mismatch | JPG, PNG, WebP, GIF. |
+    | **`INVALID_VIDEO_TYPE`** | Video MIME mismatch | MP4, WebM, MOV. |
+    | **`INVALID_LORA_TRAINING_FILE_TYPE`** | LoRA training slot | PNG only. |
+    | **`FILE_TOO_LARGE`** / **`LORA_TRAINING_FILE_TOO_LARGE`** | Over Blob limit or 5 MB PNG for LoRA training | Compress; raise **`BLOB_CLIENT_UPLOAD_MAX_BYTES`** only when storage allows (**413**). |
+    | **`VIDEO_TOO_SHORT`** / **`VIDEO_TOO_LONG`** | ffprobe constraints | Trim or lengthen clip within limits. |
+    | **`GENERATION_QUEUE_FULL`** | Too many concurrent in-flight generations | Wait and retry (**429**-style queue). |
+    | **`API_KEY_REQUIRES_PAID_PLAN`** | API key tier | Upgrade Starter+ or trial; see Settings → API. |
+    | **`ADMIN_SESSION_ONLY`** | Admin route with **`mcl_`** auth | Use admin-browser session JWT. |
+    | **`openapi_unavailable`** | Spec YAML missing from disk | Deploy **`docs/openapi/`** or set **`PUBLIC_*_OPENAPI_PATH`**. |
+
+    Many downstream AI failures are normalized via **`src/lib/userError.js`**: **`message`** + **`solution`** (no raw provider dumps).
+
+    ### Limits & outages
+    - **413** multipart: Multer **`LIMIT_FILE_SIZE`** returns explicit **`FILE_TOO_LARGE`**, **`maxUploadBytes`**.
+    - **429:** Global IP **`/api`** limiter (`rateLimiter`). Generation burst limits when Redis configured.
+    - **409:** Storage mode conflicts (e.g. presign disabled when Blob-only).
+    - **402:** Insufficient credits (common on Stripe/upscaler/video routes).
+
+    ### Further reading (repo)
+    - **`docs/API_REFERENCE.md`**, **`docs/API_PUBLIC_LAUNCH.md`**, **`docs/API_CHANGELOG.md`**
+    - **`docs/API_GENERATION_UX_PARITY.md`** — JSON bodies for generations / MCX-style fields.
+
+    ---
+    Path inventory is merged by **`npm run openapi:client`** (**`x-openapi-client-generated-at`** ISO timestamp on each run).
+
+  x-doc-class: production
+  termsOfService: https://modelclone.app/terms
+
+externalDocs:
+  description: UX ↔ JSON parity (generations / MCX) — see repo `docs/API_GENERATION_UX_PARITY.md`
+  url: https://modelclone.app
+
+servers:
+  - url: https://modelclone.app
+    description: Production
+
+tags:
+  - name: API
+    description: General HTTP API surface
+  - name: Auth
+    description: Signup, login, sessions, Telegram link
+  - name: Billing
+    description: Stripe, crypto checkout, subscriptions
+  - name: AI & media
+    description: Models, generations, NSFW pipeline, LoRA
+  - name: Flows Studio
+    description: Flow automation (**`/api/flows`**, not mirrored under `/api/v1/flows`)
+  - name: Tools
+    description: img2img, GPT-X, repurposer, upscaler satellites
+  - name: Account
+    description: Support chat, referrals, profile-adjacent
+  - name: Admin
+    description: Staff-only administration
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+      description: Self-serve integration keys (**`mcl_`…**).
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: mcl_<secret>
+      description: Same credential as **`X-Api-Key`** in Authorization header form.
+    SessionCookieAuth:
+      type: apiKey
+      in: cookie
+      name: refreshToken
+      description: >-
+        JWT session cookie from login/signup (**HttpOnly**, browser). SPA must send **`credentials: 'include'`**.
+
+  schemas:
+    AnyJsonPayload:
+      type: object
+      additionalProperties: true
+      description: Arbitrary JSON (route-specific contract).
+
+    SuccessFlag:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+      additionalProperties: true
+
+    PlainErrorBody:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        message:
+          type: string
+      additionalProperties: true
+
+    ValidationErrorBody:
+      type: object
+      required:
+        - success
+        - message
+        - errors
+      properties:
+        success:
+          type: boolean
+          enum:
+            - false
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    UploadGuardError:
+      type: object
+      required:
+        - success
+        - code
+        - message
+        - solution
+      properties:
+        success:
+          type: boolean
+          enum:
+            - false
+        code:
+          type: string
+          enum:
+            - NO_FILE
+            - INVALID_FILE_TYPE
+            - INVALID_IMAGE_TYPE
+            - INVALID_VIDEO_TYPE
+            - INVALID_LORA_TRAINING_FILE_TYPE
+            - FILE_TOO_LARGE
+            - LORA_TRAINING_FILE_TOO_LARGE
+            - VIDEO_TOO_SHORT
+            - VIDEO_TOO_LONG
+        message:
+          type: string
+        solution:
+          type: string
+        status:
+          type: integer
+
+    CreditsShortage402:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+        creditsNeeded:
+          type: number
+        creditsAvailable:
+          type: number
+
+    MulterTooLarge413:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        code:
+          type: string
+          example: FILE_TOO_LARGE
+        message:
+          type: string
+        maxUploadBytes:
+          type: integer
+        maxUploadLabel:
+          type: string
+        solution:
+          type: string
+
+    StripeCheckoutRequestExample:
+      type: object
+      required:
+        - tierId
+        - billingCycle
+      properties:
+        tierId:
+          type: string
+          description: Internal tier slug / id advertised by **`GET /pricing`** clients.
+          example: pro
+        billingCycle:
+          type: string
+          enum:
+            - monthly
+            - annual
+        referralCode:
+          type: string
+          nullable: true
+          description: Optional referral slug for discounted checkout validation.
+        discountCode:
+          type: string
+          nullable: true
+
+    BlobUploadHandshakeRequest:
+      type: object
+      description: First leg of **`@vercel/blob/client`** **`handleUpload`** contract.
+      additionalProperties: true
+
+    BlobUploadCompletedRequest:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - blob.upload-completed
+          description: Webhook-shaped completion payload from **`handleUpload`**.
+      additionalProperties: true
+
+    PresignRequestExample:
+      type: object
+      required:
+        - contentType
+      properties:
+        contentType:
+          type: string
+          example: image/jpeg
+        folder:
+          type: string
+          enum:
+            - uploads
+            - training
+            - support-attachments
+            - generations
+
+    UploadUrlResponseExample:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        url:
+          type: string
+          format: uri
+
+    PresignUrlsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        uploadUrl:
+          type: string
+          format: uri
+          description: Time-limited PUT target (R2).
+        publicUrl:
+          type: string
+          format: uri
+          description: Stable read URL after upload completes.
+
+    AuthLoginExample:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 6
+
+    AuthSignupExample:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        name:
+          type: string
+      description: Mirrors **`validateSignup`** — see **`src/middleware/validation.js`**.
+
+    UpscaleRequestJson:
+      type: object
+      required:
+        - inputImageUrl
+      properties:
+        inputImageUrl:
+          type: string
+          format: uri
+          description: Preferred — image already uploaded to Blob/CDN reachable by backend.
+
+    HealthQueueExample:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        queue:
+          type: object
+
+  responses:
+    SuccessOk:
+      description: Ok — inspect route-specific **`application/json`** body.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessFlag"
+
+    Unauthorized:
+      description: Missing/invalid session or **`mcl_`** key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlainErrorBody"
+          examples:
+            apiKeyMissing:
+              value:
+                success: false
+                error: Unauthorized
+
+    ValidationFailed400:
+      description: express-validator (**`validation.js`**) aggregation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorBody"
+
+    UploadRejected400:
+      description: File guard (`generationUploadGuards`) — actionable **`solution`**.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/UploadGuardError"
+
+    PayloadTooLarge413:
+      description: Storage / multer size cap — follow **`solution`** field.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MulterTooLarge413"
+
+    PaymentRequired402:
+      description: Credits shortfall vs route price.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CreditsShortage402"
+
+    Forbidden403:
+      description: Forbidden (role, impersonation mismatch, Stripe permission, …).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlainErrorBody"
+
+    Conflict409:
+      description: State conflict — e.g. presign disabled (**Blob-only**) or duplicate resource.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlainErrorBody"
+
+    RateLimited429:
+      description: IP / burst / concurrency limit (**`GENERATION_QUEUE_FULL`** on generation queue middleware).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlainErrorBody"
+
+    Internal500:
+      description: Unhandled error — sanitized user message when present.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlainErrorBody"
+
+    ServiceUnavailable503:
+      description: Dependencies missing (**R2/Blob**/provider) or degraded mode.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlainErrorBody"

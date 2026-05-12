@@ -18,6 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Bump **Unrelease
 
 ### Changed
 
+- **Production-grade client OpenAPI** (`docs/openapi/client-api.openapi.yaml`): merge **`docs/openapi/client-api.base.yaml`** + programmatic path scan + **`scripts/openapi-client-operation-overrides.mjs`**. Canonical **`{parameter}`** keys, **`components.responses`** with realistic upload / billing / concurrency failure shapes, and curated request examples for Blob, multipart uploads, Stripe checkout, upscale, voice clone.
 - **Throttle defaults** unchanged — tune via **`GENERATION_RATE_LIMIT_MAX`**, **`API_RATE_LIMIT_MAX`**, **`API_RATE_LIMIT_WINDOW_MS`** (`src/middleware/rateLimiter.js`).
 
 ### Removed
