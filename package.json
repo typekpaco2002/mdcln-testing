@@ -31,6 +31,8 @@
     "openapi:generate": "node scripts/generate-openapi.mjs",
     "docs:api-full-integrator": "node scripts/build-api-full-integrator-doc.mjs",
     "openapi:routes": "node scripts/openapi-extract-routes.mjs",
+    "docs:registry": "node scripts/generate-registry.mjs",
+    "verify:api-changelog": "node scripts/verify-api-changelog.mjs",
     "reel-worker:sync": "node scripts/sync-easypanel-reel-worker.mjs"
   },
   "dependencies": {

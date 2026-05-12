@@ -14,6 +14,8 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
+import { generationLimiter } from "../middleware/rateLimiter.js";
+import { generationConcurrencyMiddleware } from "../middleware/generation-concurrency.middleware.js";
 import {
   runImg2ImgPipeline,
   extractPromptFromImage,
@@ -195,7 +197,7 @@ setInterval(() => {
 // image, then runs the Grok inject step to produce the final ZIT-ready prompt.
 // The describe Generation row is created already-completed so the existing
 // client polling loop (`/describe-status/:id`) resolves on the first poll.
-router.post("/describe", LARGE_JSON, authMiddleware, async (req, res) => {
+router.post("/describe", LARGE_JSON, authMiddleware, generationConcurrencyMiddleware, generationLimiter, async (req, res) => {
   const userId = req.user.userId || req.user.id;
   const { inputImageUrl, inputImageBase64, triggerWord, lookDescription = "" } = req.body;
 
@@ -324,7 +326,7 @@ router.get("/describe-status/:id", authMiddleware, async (req, res) => {
 });
 
 // ── POST /api/img2img/generate ────────────────────────────────────────────────
-router.post("/generate", LARGE_JSON, authMiddleware, async (req, res) => {
+router.post("/generate", LARGE_JSON, authMiddleware, generationConcurrencyMiddleware, generationLimiter, async (req, res) => {
   const userId = req.user.userId || req.user.id;
   const {
     inputImageUrl,

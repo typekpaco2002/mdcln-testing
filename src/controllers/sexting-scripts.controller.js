@@ -20,6 +20,8 @@
  */
 
 import prisma from "../lib/prisma.js";
+import { seedBuiltInSextingScripts } from "../seeds/sexting-scripts.seed.js";
+import { TIER_PRICING } from "../lib/sexting-script-pricing.js";
 import {
   deductCredits,
   checkAndExpireCredits,
@@ -30,18 +32,6 @@ import {
 import { submitNsfwGeneration } from "../services/fal.service.js";
 import { resolveRunpodWebhookUrl } from "../lib/runpodWebhookUrl.js";
 import { resolveNsfwResolution } from "../utils/nsfwResolution.js";
-
-/* ─────────────────────────────────────────────────────────────────────── */
-/*  Pricing tiers                                                          */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-/** Allowed pic-count → credits-per-pic mapping. Keep in sync with the
- *  frontend picker. */
-export const TIER_PRICING = {
-  5:  20,
-  10: 15,
-  15: 13,
-};
 
 export function isValidTier(picCount) {
   return Object.prototype.hasOwnProperty.call(TIER_PRICING, picCount);
@@ -194,7 +184,7 @@ function validateTier(picCount, creditsPerPic) {
 export async function listSextingScripts(req, res) {
   try {
     const userId = req.user.userId;
-    const scripts = await prisma.sextingScript.findMany({
+    let scripts = await prisma.sextingScript.findMany({
       where: {
         OR: [
           { isBuiltIn: true },
@@ -206,6 +196,29 @@ export async function listSextingScripts(req, res) {
         { createdAt: "desc" },
       ],
     });
+
+    // Safety net: if built-ins are missing (e.g. cold environment where startup
+    // seed has not run yet), seed them on-demand and re-query once.
+    if (!scripts.some((s) => s.isBuiltIn)) {
+      try {
+        await seedBuiltInSextingScripts();
+        scripts = await prisma.sextingScript.findMany({
+          where: {
+            OR: [
+              { isBuiltIn: true },
+              { userId },
+            ],
+          },
+          orderBy: [
+            { isBuiltIn: "desc" },
+            { createdAt: "desc" },
+          ],
+        });
+      } catch (seedErr) {
+        console.warn("[sexting-scripts] on-demand built-in seed failed:", seedErr?.message || seedErr);
+      }
+    }
+
     const serialized = scripts.map((s) => ({
       ...serializeScript(s),
       isOwner: s.userId === userId,

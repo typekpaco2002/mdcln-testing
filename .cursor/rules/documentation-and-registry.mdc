@@ -1,0 +1,20 @@
+---
+description: Keep AGENTS.md, docs/generated registry, and API docs synchronized with code
+alwaysApply: true
+---
+
+# Documentation discipline (blocking)
+
+Before you **finish** a task that changes any of the following:
+
+- `src/server.js`, `src/routes/**`, `src/controllers/**`, `prisma/schema.prisma`, `client/src/App.jsx`, `client/src/pages/**`, `client/src/components/**`, `scripts/**`, Flows nodes under `client/src/components/flows/nodes/**`, `client/src/hooks/**`, `client/src/store/**`, billing/credits/Stripe webhook behavior described in **`AGENTS.md`**, or **public/API contracts**  
+
+you **must**:
+
+1. Run **`npm run docs:registry`** (includes **`docs/generated/API_GENERATION_CATALOG.md`**) and commit **`docs/generated/`**.
+2. Update **`AGENTS.md`** prose if **invariants**, mount points, user flows, credit rules, or dual-Stripe behavior changed.
+3. If the change touches an endpoint that belongs in the **published HTTP API**, update **`docs/API_PUBLIC_LAUNCH.md`**, **`docs/openapi/v1.openapi.yaml`**, and **`docs/API_CHANGELOG.md`** (`[Unreleased]`) — **same branch**. Run **`npm run verify:api-changelog`** when applicable.
+
+Treat missing doc updates like a failing test—do not hand off “code-only” PRs.
+
+If **`docs:registry`** misses a route (multi-line path, template literal), add a bullet to **`docs/COVERAGE_INDEX.md`** §Manual supplement **or** improve **`scripts/generate-registry.mjs`**.

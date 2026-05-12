@@ -266,6 +266,7 @@ import {
   apiLimiter,
   downloadLimiter,
 } from "../middleware/rateLimiter.js";
+import { generationConcurrencyMiddleware } from "../middleware/generation-concurrency.middleware.js";
 import { getGenerationPricing, getGenerationPricingContract } from "../services/generation-pricing.service.js";
 import {
   getLoraTrainingTier,
@@ -466,21 +467,21 @@ router.get(
 );
 
 // NSFW Routes - Multi-LoRA management
-router.post("/nsfw/lora/create", authMiddleware, generationLimiter, createLora);
+router.post("/nsfw/lora/create", authMiddleware, generationConcurrencyMiddleware, generationLimiter, createLora);
 router.get("/nsfw/loras/:modelId", authMiddleware, getModelLoras);
-router.post("/nsfw/lora/set-active", authMiddleware, generationLimiter, setActiveLora);
-router.delete("/nsfw/lora/:loraId", authMiddleware, generationLimiter, deleteLora);
+router.post("/nsfw/lora/set-active", authMiddleware, generationConcurrencyMiddleware, generationLimiter, setActiveLora);
+router.delete("/nsfw/lora/:loraId", authMiddleware, generationConcurrencyMiddleware, generationLimiter, deleteLora);
 router.put("/nsfw/lora/:loraId/appearance", authMiddleware, updateLoraAppearance);
 router.post("/nsfw/lora/:loraId/auto-appearance", authMiddleware, autoDetectLoraAppearance);
 router.post("/nsfw/appearance/save", authMiddleware, saveAppearance);
 router.get("/nsfw/appearance/:modelId", authMiddleware, getAppearance);
 
 // NSFW Routes - Legacy & training
-router.post("/nsfw/initialize-training", authMiddleware, generationLimiter, initializeTrainingSession);
-router.post("/nsfw/generate-training-images", authMiddleware, generationLimiter, generateTrainingImages);
-router.post("/nsfw/start-training-session", authMiddleware, generationLimiter, startTrainingSession);
-router.post("/nsfw/regenerate-training-image", authMiddleware, generationLimiter, regenerateTrainingImage);
-router.post("/nsfw/assign-training-images", authMiddleware, generationLimiter, assignTrainingImages);
+router.post("/nsfw/initialize-training", authMiddleware, generationConcurrencyMiddleware, generationLimiter, initializeTrainingSession);
+router.post("/nsfw/generate-training-images", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateTrainingImages);
+router.post("/nsfw/start-training-session", authMiddleware, generationConcurrencyMiddleware, generationLimiter, startTrainingSession);
+router.post("/nsfw/regenerate-training-image", authMiddleware, generationConcurrencyMiddleware, generationLimiter, regenerateTrainingImage);
+router.post("/nsfw/assign-training-images", authMiddleware, generationConcurrencyMiddleware, generationLimiter, assignTrainingImages);
 
 // Register pre-uploaded training images (uploaded via presigned URLs directly to R2)
 router.post("/nsfw/register-training-images", authMiddleware, async (req, res) => {
@@ -671,22 +672,22 @@ router.post("/nsfw/upload-training-images", authMiddleware, upload.array("photos
   }
 });
 router.get("/nsfw/training-images/:modelId", authMiddleware, getTrainingImages);
-router.post("/nsfw/train-lora", authMiddleware, generationLimiter, trainLora);
+router.post("/nsfw/train-lora", authMiddleware, generationConcurrencyMiddleware, generationLimiter, trainLora);
 router.get("/nsfw/training-status/:modelId", authMiddleware, getLoraTrainingStatus);
-router.post("/nsfw/generate", authMiddleware, generationLimiter, generateNsfwImage);
-router.post("/nsfw/nudes-pack", authMiddleware, generationLimiter, generateNudesPack);
+router.post("/nsfw/generate", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateNsfwImage);
+router.post("/nsfw/nudes-pack", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateNudesPack);
 router.get("/nsfw/nudes-pack-poses", authMiddleware, getNudesPackPoses);
-router.post("/nsfw/generate-prompt", authMiddleware, generationLimiter, generateNsfwPrompt);
-router.post("/nsfw/plan-generation", authMiddleware, generationLimiter, planNsfwGeneration);
+router.post("/nsfw/generate-prompt", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateNsfwPrompt);
+router.post("/nsfw/plan-generation", authMiddleware, generationConcurrencyMiddleware, generationLimiter, planNsfwGeneration);
 router.get("/nsfw/plan-generation/status/:jobId", authMiddleware, getNsfwPlanGenerationJobStatus);
-router.post("/nsfw/auto-select", authMiddleware, generationLimiter, autoSelectChips);
+router.post("/nsfw/auto-select", authMiddleware, generationConcurrencyMiddleware, generationLimiter, autoSelectChips);
 router.get("/nsfw/auto-select/status/:jobId", authMiddleware, getNsfwAutoSelectJobStatus);
-router.post("/nsfw/generate-advanced", authMiddleware, generationLimiter, generateAdvancedNsfw);
-router.post("/nsfw/test-face-ref", authMiddleware, generationLimiter, testFaceRefGeneration);
+router.post("/nsfw/generate-advanced", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateAdvancedNsfw);
+router.post("/nsfw/test-face-ref", authMiddleware, generationConcurrencyMiddleware, generationLimiter, testFaceRefGeneration);
 router.get("/nsfw/test-face-ref-status/:requestId", authMiddleware, testFaceRefStatus);
-router.post("/nsfw/generate-video", authMiddleware, generationLimiter, generateNsfwVideoFromImage);
-router.post("/nsfw/extend-video", authMiddleware, generationLimiter, extendNsfwVideo);
-router.post("/nsfw/generate-motion-video", authMiddleware, generationLimiter, generateNsfwMotionVideo);
+router.post("/nsfw/generate-video", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateNsfwVideoFromImage);
+router.post("/nsfw/extend-video", authMiddleware, generationConcurrencyMiddleware, generationLimiter, extendNsfwVideo);
+router.post("/nsfw/generate-motion-video", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateNsfwMotionVideo);
 
 // ── Sexting Scripts (NSFW Studio) ────────────────────────────────────────
 // A sexting script is a reusable N-pic blueprint: scene descriptions + AI-expanded
@@ -696,12 +697,12 @@ router.get("/nsfw/sexting-scripts", authMiddleware, listSextingScripts);
 router.get("/nsfw/sexting-scripts/runs", authMiddleware, listSextingScriptRuns);
 router.get("/nsfw/sexting-scripts/runs/:runId", authMiddleware, getSextingScriptRun);
 router.get("/nsfw/sexting-scripts/:id", authMiddleware, getSextingScript);
-router.post("/nsfw/sexting-scripts/generate-base-prompts", authMiddleware, generationLimiter, generateScriptBasePrompts);
-router.post("/nsfw/sexting-scripts", authMiddleware, generationLimiter, createSextingScript);
+router.post("/nsfw/sexting-scripts/generate-base-prompts", authMiddleware, generationConcurrencyMiddleware, generationLimiter, generateScriptBasePrompts);
+router.post("/nsfw/sexting-scripts", authMiddleware, generationConcurrencyMiddleware, generationLimiter, createSextingScript);
 router.patch("/nsfw/sexting-scripts/:id", authMiddleware, updateSextingScript);
-router.post("/nsfw/sexting-scripts/:id/regenerate-pic-prompt", authMiddleware, generationLimiter, regenerateScriptPicPrompt);
+router.post("/nsfw/sexting-scripts/:id/regenerate-pic-prompt", authMiddleware, generationConcurrencyMiddleware, generationLimiter, regenerateScriptPicPrompt);
 router.delete("/nsfw/sexting-scripts/:id", authMiddleware, deleteSextingScript);
-router.post("/nsfw/sexting-scripts/:id/run", authMiddleware, generationLimiter, runSextingScript);
+router.post("/nsfw/sexting-scripts/:id/run", authMiddleware, generationConcurrencyMiddleware, generationLimiter, runSextingScript);
 
 // ============================================
 // AUTH ROUTES (with rate limiting and input validation)
@@ -1041,12 +1042,14 @@ router.post(
 router.post(
   "/models/:modelId/voice/design-confirm",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   postModelVoiceDesignConfirm,
 );
 router.post(
   "/models/:modelId/voice/clone",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   voiceCloneUpload.single("audio"),
   postModelVoiceClone,
@@ -1066,12 +1069,14 @@ router.post(
 router.post(
   "/models/:modelId/voices/design-confirm",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   postModelVoicesDesignConfirm,
 );
 router.post(
   "/models/:modelId/voices/clone",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   voiceCloneUpload.single("audio"),
   postModelVoicesClone,
@@ -1079,18 +1084,21 @@ router.post(
 router.post(
   "/models/:modelId/voices/:voiceId/select",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   postSelectModelVoice,
 );
 router.delete(
   "/models/:modelId/voices/:voiceId",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   deleteModelVoice,
 );
 router.post(
   "/models/:modelId/voices/generate-audio",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   postGenerateModelVoiceAudio,
 );
@@ -1291,6 +1299,7 @@ router.get(
 router.post(
   "/generate/image-identity",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateImageWithIdentity,
@@ -1304,6 +1313,7 @@ router.post(
 router.post(
   "/generate/describe-target",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   describeTargetImage,
 );
@@ -1320,6 +1330,7 @@ router.post(
 router.post(
   "/generate/video-motion",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateVideoWithMotion,
@@ -1338,6 +1349,7 @@ router.post(
 router.post(
   "/generate/complete-recreation",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateCompleteRecreation,
@@ -1358,6 +1370,7 @@ router.post(
 router.post(
   "/generate/extract-frames",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   extractVideoFrames,
@@ -1374,6 +1387,7 @@ router.post(
 router.post(
   "/generate/prepare-video",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   prepareVideoGeneration,
@@ -1390,6 +1404,7 @@ router.post(
 router.post(
   "/generate/complete-video",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   completeVideoGeneration,
@@ -1407,6 +1422,7 @@ router.post(
 router.post(
   "/generate/video-directly",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateVideoDirectly,
@@ -1425,6 +1441,7 @@ router.post(
 router.post(
   "/generate/video-prompt",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateVideoFromPrompt,
@@ -1446,6 +1463,7 @@ router.post(
 router.post(
   "/generate/face-swap",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateFaceSwap,
@@ -1454,6 +1472,7 @@ router.post(
 router.post(
   "/generate/face-swap-video",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateFaceSwap,
@@ -1471,6 +1490,7 @@ router.post(
 router.post(
   "/generate/image-faceswap",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   faceSwapImage,
@@ -1484,6 +1504,7 @@ router.post(
 router.post(
   "/generate/advanced",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   async (req, res) => {
@@ -2232,6 +2253,7 @@ NON-NEGOTIABLE QUALITY + CONSISTENCY POLICY:
 router.post(
   "/generate/prompt-image",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generatePromptBasedImage,
@@ -2244,6 +2266,7 @@ router.post(
 router.post(
   "/generate/creator-studio",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateCreatorStudio,
@@ -2252,6 +2275,7 @@ router.post(
 router.post(
   "/generate/creator-studio/video",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateCreatorStudioVideo,
@@ -2260,6 +2284,7 @@ router.post(
 router.post(
   "/generate/creator-studio/video/extend",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   extendCreatorStudioVideo,
@@ -2268,6 +2293,7 @@ router.post(
 router.post(
   "/generate/creator-studio/video/4k",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   getCreatorStudioVideo4k,
@@ -2283,6 +2309,7 @@ router.get(
 router.post(
   "/generate/creator-studio/mask-upload",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   uploadCreatorStudioMask,
 );
@@ -2296,6 +2323,7 @@ router.get(
 router.post(
   "/generate/creator-studio/assets",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   createCreatorStudioAsset,
 );
@@ -2331,6 +2359,7 @@ router.get("/voices/:voiceId/preview", authMiddleware, getVoicePreview);
 router.post(
   "/generate/talking-head",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   validateGeneration,
   generateTalkingHeadVideo,
@@ -2966,6 +2995,7 @@ const upscalerUpload = multer({
 router.post(
   "/upscale",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   upscalerUpload.single("image"),
   async (req, res) => {
@@ -3178,6 +3208,7 @@ import { submitSynthIdRemoveJob, queryRunningHubTask, extractRunningHubOutputUrl
 router.post(
   "/synthid-remove",
   authMiddleware,
+  generationConcurrencyMiddleware,
   generationLimiter,
   upscalerUpload.single("image"), // reuse image-upload multer config (20 MB)
   async (req, res) => {
@@ -3756,7 +3787,7 @@ async function buildMcxPromptFromImagePipeline(
 }
 
 // POST /api/modelclone-x/prompt-from-image
-router.post("/modelclone-x/prompt-from-image", authMiddleware, generationLimiter, async (req, res) => {
+router.post("/modelclone-x/prompt-from-image", authMiddleware, generationConcurrencyMiddleware, generationLimiter, async (req, res) => {
   try {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ success: false, error: "Unauthorized" });
@@ -3871,7 +3902,7 @@ router.get("/modelclone-x/config", authMiddleware, async (_req, res) => {
   }
 });
 
-router.post("/modelclone-x/generate", authMiddleware, generationLimiter, async (req, res) => {
+router.post("/modelclone-x/generate", authMiddleware, generationConcurrencyMiddleware, generationLimiter, async (req, res) => {
   const userId = req.user?.userId;
   if (!userId) return res.status(401).json({ success: false, error: "Unauthorized" });
 
@@ -4241,7 +4272,7 @@ function isModelCloneXLoraCategory(category) {
 }
 
 // POST /api/modelclone-x/character/create
-router.post("/modelclone-x/character/create", authMiddleware, generationLimiter, async (req, res) => {
+router.post("/modelclone-x/character/create", authMiddleware, generationConcurrencyMiddleware, generationLimiter, async (req, res) => {
   try {
     const { modelId, name, trainingMode, defaultAppearance } = req.body;
     const userId = req.user.userId;
@@ -4585,7 +4616,7 @@ router.get("/modelclone-x/character/training-pool/:modelId", authMiddleware, asy
 
 // POST /api/modelclone-x/character/assign-images
 // Body: { modelId, loraId, images: [{ generationId?, customImageId?, imageUrl?, outputUrl? }] }
-router.post("/modelclone-x/character/assign-images", authMiddleware, generationLimiter, async (req, res) => {
+router.post("/modelclone-x/character/assign-images", authMiddleware, generationConcurrencyMiddleware, generationLimiter, async (req, res) => {
   try {
     const { modelId, loraId, images } = req.body;
     const userId = req.user.userId;
@@ -4734,7 +4765,7 @@ router.post("/modelclone-x/character/assign-images", authMiddleware, generationL
 });
 
 // POST /api/modelclone-x/character/train  → fal.ai training (same worker as NSFW LoRA)
-router.post("/modelclone-x/character/train", authMiddleware, generationLimiter, async (req, res) => {
+router.post("/modelclone-x/character/train", authMiddleware, generationConcurrencyMiddleware, generationLimiter, async (req, res) => {
   const { trainLora } = await import("../controllers/nsfw.controller.js");
   return trainLora(req, res);
 });

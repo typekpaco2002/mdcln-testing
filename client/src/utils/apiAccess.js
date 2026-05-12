@@ -1,8 +1,6 @@
-/** Business tier + paid subscription — required for self-serve HTTP API keys. */
-export function hasBusinessApiAccess(user) {
-  if (!user) return false;
-  const tier = String(user.subscriptionTier || '').toLowerCase();
-  const status = String(user.subscriptionStatus || '').toLowerCase();
-  const subscriptionActive = ['active', 'trialing'].includes(status);
-  return tier === 'business' && subscriptionActive;
+import { subscriptionAllowsSelfServeApiKey } from "@shared/apiKeyEligibility.js";
+
+/** Starter+ with active subscription — mint keys in Settings; API calls use the normal account pool. */
+export function hasSelfServeApiAccess(user) {
+  return subscriptionAllowsSelfServeApiKey(user ?? {});
 }

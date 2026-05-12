@@ -21,6 +21,7 @@ import {
   runMonthlyVoiceBillingForAllUsers,
 } from "../services/voice-monthly-billing.service.js";
 import { decryptApiKey, encryptApiKey } from "../utils/apiKeyVault.js";
+import { subscriptionAllowsSelfServeApiKey } from "../../shared/apiKeyEligibility.js";
 import {
   gatherSubscriptionCandidatesFromDualAccounts,
   findFirstCustomerByEmailDualAccount,
@@ -3078,15 +3079,12 @@ export async function createUserApiKey(req, res) {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    const tier = String(user.subscriptionTier || "").toLowerCase();
-    const subStatus = String(user.subscriptionStatus || "").toLowerCase();
-    const subscriptionActive = ["active", "trialing"].includes(subStatus);
-    if (!planOverrideActive && (tier !== "business" || !subscriptionActive)) {
+    if (!planOverrideActive && !subscriptionAllowsSelfServeApiKey(user)) {
       return res.status(403).json({
         success: false,
-        code: "API_KEY_REQUIRES_BUSINESS_PLAN",
+        code: "API_KEY_REQUIRES_PAID_PLAN",
         message:
-          "API keys require an active Business plan (subscription status active or trialing). Enable “Plan override” below to issue a key anyway, or upgrade the account first.",
+          "API keys require an active Starter, Pro, or Business plan (subscription active or trialing). Enable plan override below to issue a key anyway, or upgrade the account first.",
       });
     }
     const plain = `mcl_${randomBytes(32).toString("base64url")}`;
@@ -3229,6 +3227,19 @@ export async function regenerateMyApiKey(req, res) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     const { keyId } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscriptionTier: true, subscriptionStatus: true },
+    });
+    if (!user || !subscriptionAllowsSelfServeApiKey(user)) {
+      return res.status(403).json({
+        success: false,
+        code: "API_KEY_REQUIRES_PAID_PLAN",
+        message:
+          "API access requires an active Starter plan or higher. Upgrade in Billing or use Enroll for API to discuss access.",
+      });
+    }
+
     const existing = await prisma.apiKey.findFirst({
       where: { id: keyId, userId, revokedAt: null },
       select: { id: true, name: true, corsOrigins: true },
@@ -3276,7 +3287,7 @@ export async function regenerateMyApiKey(req, res) {
 }
 
 /**
- * Create API key for the logged-in user. Requires Business + active/trialing (no admin override).
+ * Create API key for the logged-in user. Starter+ with active/trialing subscription.
  */
 export async function createMyApiKey(req, res) {
   try {
@@ -3297,15 +3308,12 @@ export async function createMyApiKey(req, res) {
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
-    const tier = String(user.subscriptionTier || "").toLowerCase();
-    const subStatus = String(user.subscriptionStatus || "").toLowerCase();
-    const subscriptionActive = ["active", "trialing"].includes(subStatus);
-    if (tier !== "business" || !subscriptionActive) {
+    if (!subscriptionAllowsSelfServeApiKey(user)) {
       return res.status(403).json({
         success: false,
-        code: "API_KEY_REQUIRES_BUSINESS_PLAN",
+        code: "API_KEY_REQUIRES_PAID_PLAN",
         message:
-          "API access requires an active Business plan. Upgrade in Billing or use Enroll for API to request access.",
+          "API access requires an active Starter plan or higher. Upgrade in Billing or use Enroll for API to request partner access.",
       });
     }
     const plain = `mcl_${randomBytes(32).toString("base64url")}`;

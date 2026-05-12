@@ -1,0 +1,111 @@
+# Generated: React pages (filenames)
+
+**Generated at:** 2026-05-12T11:23:48.049Z
+
+53 files:
+
+- `client/src/pages/AdminAffiliateLanderEditorPage.jsx`
+- `client/src/pages/AdminAffiliateLanderPreviewFrame.jsx`
+- `client/src/pages/AdminLanderEditorPage.jsx`
+- `client/src/pages/AdminLanderPreviewFrame.jsx`
+- `client/src/pages/AdminLoginPage.jsx`
+- `client/src/pages/AdminPage.jsx`
+- `client/src/pages/AffiliateLanderPublicPage.jsx`
+- `client/src/pages/ContentReformatterPage.jsx`
+- `client/src/pages/CookiesPage.jsx`
+- `client/src/pages/CoursePage.jsx`
+- `client/src/pages/CreateAIModelLandingPage.jsx`
+- `client/src/pages/CreateAIModelLandingPageSk.jsx`
+- `client/src/pages/CreatorStudioPage.jsx`
+- `client/src/pages/DashboardPage.jsx`
+- `client/src/pages/DesignerStudioPage.jsx`
+- `client/src/pages/FaceRefTestPage.jsx`
+- `client/src/pages/FirstFrameExtractorPage.jsx`
+- `client/src/pages/FlowsPage.jsx`
+- `client/src/pages/ForgotPasswordPage.jsx`
+- `client/src/pages/FreeCourseFunnelPage.jsx`
+- `client/src/pages/GPTXTab.jsx`
+- `client/src/pages/GeneratePage.jsx`
+- `client/src/pages/HistoryPage.jsx`
+- `client/src/pages/JobBoardPage.jsx`
+- `client/src/pages/LanderNewPage.jsx`
+- `client/src/pages/LandingPage.jsx`
+- `client/src/pages/LoginPage.jsx`
+- `client/src/pages/ModelCloneXPage.jsx`
+- `client/src/pages/ModelsPage.jsx`
+- `client/src/pages/NSFWPage.jsx`
+- `client/src/pages/NsfwStudioRoute.jsx`
+- `client/src/pages/OnboardingPage.jsx`
+- `client/src/pages/PrivacyPage.jsx`
+- `client/src/pages/Pro/ProDashboardPage.jsx`
+- `client/src/pages/Pro/ProGenerationPage.jsx`
+- `client/src/pages/Pro/ProLayout.jsx`
+- `client/src/pages/Pro/ProModelsPage.jsx`
+- `client/src/pages/Pro/ProNSFWPage.jsx`
+- `client/src/pages/ReferralCapturePage.jsx`
+- `client/src/pages/ReferralProgramPage.jsx`
+- `client/src/pages/ReplicateTestPage.jsx`
+- `client/src/pages/ResetPasswordPage.jsx`
+- `client/src/pages/SelectUserTypePage.jsx`
+- `client/src/pages/SettingsPage.jsx`
+- `client/src/pages/SignupPage.jsx`
+- `client/src/pages/SynthIDRemoverPage.jsx`
+- `client/src/pages/TermsPage.jsx`
+- `client/src/pages/UpscalerPage.jsx`
+- `client/src/pages/VerifyEmailPage.jsx`
+- `client/src/pages/VerifyFirebasePage.jsx`
+- `client/src/pages/VideoRepurposerPage.jsx`
+- `client/src/pages/ViralReelFinderPage.jsx`
+- `client/src/pages/VoiceTestPage.jsx`
+
+## Routes from App.jsx (static path props)
+
+- **`/`** — (see JSX)
+- **`/landing`** — (see JSX)
+- **`/admin-login`** — (see JSX)
+- **`/login`** — (see JSX)
+- **`/signup`** — (see JSX)
+- **`/verify`** — (see JSX)
+- **`/forgot-password`** — (see JSX)
+- **`/reset-password`** — (see JSX)
+- **`/terms`** — (see JSX)
+- **`/privacy`** — (see JSX)
+- **`/cookies`** — (see JSX)
+- **`/create-ai-model`** — (see JSX)
+- **`/sk/vytvor-ai-model`** — (see JSX)
+- **`/r/:suffix`** — (see JSX)
+- **`/free-course`** — (see JSX)
+- **`/lander-new`** — (see JSX)
+- **`/admin/lander-preview-frame`** — (see JSX)
+- **`/admin/affiliate-lander-preview-frame`** — (see JSX)
+- **`/aff/:suffix`** — (see JSX)
+- **`/voice-test`** — (see JSX)
+- **`/test-replicate`** — (see JSX)
+- **`/test-face-ref`** — (see JSX)
+- **`/onboarding`** — (see JSX)
+- **`/dashboard`** — (see JSX)
+- **`/admin`** — (see JSX)
+- **`/designer-studio`** — (see JSX)
+- **`/admin/lander-editor`** — (see JSX)
+- **`/admin/affiliate-lander-editor/:suffix`** — (see JSX)
+- **`/nsfw`** — (see JSX)
+- **`/reformatter`** — (see JSX)
+- **`/upscaler`** — (see JSX)
+- **`/flows`** — (see JSX)
+- **`/flows/:id`** — (see JSX)
+- **`/pro`** — (see JSX)
+- **`models`** — (see JSX)
+- **`nsfw`** — (see JSX)
+- **`generation`** — (see JSX)
+- **`*`** — (see JSX)
+- **`(redirect)→/login`** — Navigate
+- **`(redirect)→/login`** — Navigate
+- **`(redirect)→/dashboard`** — Navigate
+- **`(redirect)→/login`** — Navigate
+- **`(redirect)→/dashboard`** — Navigate
+- **`(redirect)→/login`** — Navigate
+- **`(redirect)→/onboarding`** — Navigate
+- **`(redirect)→/`** — Navigate
+- **`(redirect)→/`** — Navigate
+- **`(redirect)→/`** — Navigate
+

@@ -9,6 +9,14 @@ export const adminMiddleware = async (req, res, next) => {
       });
     }
 
+    if (req.user?.authViaApiKey) {
+      return res.status(403).json({
+        success: false,
+        code: 'ADMIN_SESSION_ONLY',
+        message: 'Admin operations require an interactive session. API keys cannot access admin routes.',
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: req.user.userId },
       select: { id: true, email: true, name: true, role: true }

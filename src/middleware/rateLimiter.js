@@ -14,6 +14,9 @@ const userOrIpKey = (req) => {
 /**
  * When UPSTASH_REDIS_REST_URL + TOKEN (or Vercel KV_REST_*) are set, per-user and
  * global limits are shared across all API instances.
+ *
+ * Related: **GENERATION_MAX_IN_FLIGHT_PER_USER** (in-flight DB rows) —
+ * `src/middleware/generation-concurrency.middleware.js` (not Redis).
  */
 function makeRedisStore(prefix) {
   const redis = getSharedUpstashRedis();

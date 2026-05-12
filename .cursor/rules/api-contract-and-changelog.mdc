@@ -1,0 +1,28 @@
+---
+description: Mandatory HTTP API changelog + docs when touching integration surface or generation routes (enforced locally via npm run verify:api-changelog)
+globs:
+  - src/routes/**/*.js
+  - src/server.js
+  - src/middleware/auth.middleware.js
+  - src/middleware/admin.middleware.js
+  - src/middleware/generation*.js
+  - src/middleware/generation-concurrency.middleware.js
+  - src/middleware/rateLimiter.js
+  - src/controllers/generation.controller.js
+  - src/controllers/model.controller.js
+  - src/controllers/nsfw.controller.js
+  - src/controllers/public-api-v1.controller.js
+  - docs/openapi/**
+alwaysApply: false
+---
+
+# HTTP API contracts (blocking)
+
+Finish only when ALL apply:
+
+1. **`docs/API_CHANGELOG.md`** — extend **`[Unreleased]`** (routes, limits, error **`code`** s, SPA parity impacts).
+2. **`npm run docs:registry`** — regenerates inventories + **`docs/generated/API_GENERATION_CATALOG.md`**.
+3. If partners read **`openapi`**, update **`docs/openapi/v1.openapi.yaml`** same branch.
+4. If ModelClone-X / enhance behavior changed, sync **`docs/API_GENERATION_UX_PARITY.md`**.
+
+Run **`npm run verify:api-changelog`** before hand-off (**`SKIP_API_CHANGELOG_VERIFY=1`** escape hatch).

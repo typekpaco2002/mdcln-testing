@@ -131,7 +131,7 @@ export const SETTINGS_PAGE_COPY = {
     toastGladYouStay: "Great choice! We're glad to have you stay",
     apiSectionTitle: "API access",
     apiSectionIntro:
-      "Use HTTP API keys for integrations and scripts. Keys use your credits and the same limits as the web app. The full secret is only shown once when you create a key.",
+      "Use HTTP API keys for integrations — they act on your real account (credits and generations match the dashboard). Prefer the REST base path /api/v1/… with the same route suffixes as /api/…; Flow Studio calls stay on /api/flows only. The full secret is only shown once.",
     apiActiveKeys: "Active API keys",
     apiNoKeys: "No API keys yet.",
     apiKeyLabelOptional: "Label (optional)",
@@ -152,7 +152,7 @@ export const SETTINGS_PAGE_COPY = {
     apiEnrollButton: "Enroll for API",
     apiEnrollModalTitle: "Request API access",
     apiEnrollModalBody:
-      "API access is included on the Business plan, or you can reach us on Telegram to discuss partner / beta access.",
+      "API access ships with Starter+ while your subscription is active. Use Telegram below for partner setups or bespoke limits.",
     apiEnrollTelegramCta: "Continue on Telegram",
     apiEnrollClose: "Close",
     toastApiKeyCreated: "API key created — copy it now; it will not be shown again.",
@@ -294,7 +294,7 @@ export const SETTINGS_PAGE_COPY = {
     toastGladYouStay: "Отлично! Рады, что вы остались",
     apiSectionTitle: "Доступ к API",
     apiSectionIntro:
-      "HTTP API-ключи для интеграций и скриптов. Ключи списывают ваши кредиты с теми же лимитами, что и веб. Полный секрет показывается только один раз при создании.",
+      "HTTP API-ключи для интеграций — работают от вашего реального аккаунта (кредиты и генерации совпадают с кабинетом). Используйте базовый путь REST /api/v1/… с теми же суффиксами, что и /api/…; Flow Studio — только на /api/flows. Полный секрет показывается один раз.",
     apiActiveKeys: "Активные API-ключи",
     apiNoKeys: "Пока нет API-ключей.",
     apiKeyLabelOptional: "Название (необязательно)",
@@ -311,11 +311,11 @@ export const SETTINGS_PAGE_COPY = {
       "Копирование полного API-ключа доступно для новых ключей. Старые ключи, созданные до обновления, нужно перевыпустить.",
     apiLastUsed: "Последнее использование",
     apiRequiresBusiness:
-      "Самостоятельное создание ключей доступно на тарифе Business. Оформите подписку в разделе оплаты или запросите доступ ниже.",
+      "API-ключи доступны при активном тарифе Starter, Pro или Business (включая пробный период). Оформите подписку в разделе оплаты или запросите доступ ниже.",
     apiEnrollButton: "Запросить доступ к API",
     apiEnrollModalTitle: "Запрос доступа к API",
     apiEnrollModalBody:
-      "Доступ к API включён в тариф Business, либо напишите нам в Telegram для партнёрского / бета-доступа.",
+      "API включён в тарифы Starter+ при активной подписке. Напишите в Telegram для особых условий партнёров.",
     apiEnrollTelegramCta: "Перейти в Telegram",
     apiEnrollClose: "Закрыть",
     toastApiKeyCreated: "Ключ создан — скопируйте сейчас; больше он не будет показан.",

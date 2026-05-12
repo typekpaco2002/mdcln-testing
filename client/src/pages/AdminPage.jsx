@@ -6163,7 +6163,7 @@ ${emailBuilder.ctaText && emailBuilder.ctaUrl ? `<div class="cta-wrap"><a class=
                 <span className="text-[11px] text-gray-400 leading-snug">
                   <span className="text-gray-300 font-medium">Plan override</span>
                   {' — '}
-                  Allow creating a key without an active Business plan (e.g. beta partners on other tiers).
+                  Allow creating a key without an eligible paid plan (Starter+ active/trialing; e.g. beta partners).
                 </span>
               </label>
               <button

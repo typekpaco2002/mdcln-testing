@@ -1,0 +1,84 @@
+# Generated: Client components (all matching files)
+
+**Generated at:** 2026-05-12T11:23:48.049Z
+
+Extensions: `.jsx, .tsx, .js, .ts, .css, .scss` — under `client/src/components/` only.
+
+**Count:** 76
+
+- `client/src/components/AddCreditsAdminModal.jsx`
+- `client/src/components/AddCreditsModal.jsx`
+- `client/src/components/AppSidebar.jsx`
+- `client/src/components/BrandMark.jsx`
+- `client/src/components/CheckoutModal.jsx`
+- `client/src/components/Confetti.jsx`
+- `client/src/components/CourseTipBanner.jsx`
+- `client/src/components/CreateModelModal.jsx`
+- `client/src/components/CreatorStudioVoiceTab.jsx`
+- `client/src/components/CursorGlow.jsx`
+- `client/src/components/EditUserSettingsModal.jsx`
+- `client/src/components/ErrorBoundary.jsx`
+- `client/src/components/ErrorDisplay.jsx`
+- `client/src/components/FileUpload.jsx`
+- `client/src/components/Footer.jsx`
+- `client/src/components/GenerateAIModelForm.jsx`
+- `client/src/components/GenerationHistory.jsx`
+- `client/src/components/GenerationResults.jsx`
+- `client/src/components/LazyImage.jsx`
+- `client/src/components/LazyVideo.jsx`
+- `client/src/components/LegalMarkdownProse.jsx`
+- `client/src/components/LivePreviewPanel.jsx`
+- `client/src/components/ModelSelectorCollapsible.jsx`
+- `client/src/components/NsfwOverrideModal.jsx`
+- `client/src/components/NudesPackModal.jsx`
+- `client/src/components/OptimizedGalleryImage.jsx`
+- `client/src/components/PurchaseSuccessModal.jsx`
+- `client/src/components/SEO.jsx`
+- `client/src/components/SeoRobotsMeta.jsx`
+- `client/src/components/SplashScreen.jsx`
+- `client/src/components/SupportChatButton.jsx`
+- `client/src/components/TelegramAuthGate.jsx`
+- `client/src/components/TelegramSafeArea.jsx`
+- `client/src/components/TutorialButton.jsx`
+- `client/src/components/TutorialInfoLink.jsx`
+- `client/src/components/admin/BreakpointSwitcher.jsx`
+- `client/src/components/admin/DragOverlay.jsx`
+- `client/src/components/admin/SpatialFields.jsx`
+- `client/src/components/admin/StyleOverrideFields.jsx`
+- `client/src/components/affiliateLander/AffiliateLanderCanvas.jsx`
+- `client/src/components/flows/ExecutionPanel.jsx`
+- `client/src/components/flows/FlowEdge.jsx`
+- `client/src/components/flows/FlowLibrary.jsx`
+- `client/src/components/flows/NodePalette.jsx`
+- `client/src/components/flows/nodes/AudioInputNode.jsx`
+- `client/src/components/flows/nodes/BaseNode.jsx`
+- `client/src/components/flows/nodes/CreatorStudioNode.jsx`
+- `client/src/components/flows/nodes/EnhancePromptNode.jsx`
+- `client/src/components/flows/nodes/FaceSwapNode.jsx`
+- `client/src/components/flows/nodes/GroupNode.jsx`
+- `client/src/components/flows/nodes/ImageInputNode.jsx`
+- `client/src/components/flows/nodes/MCXNode.jsx`
+- `client/src/components/flows/nodes/ModelSelectorNode.jsx`
+- `client/src/components/flows/nodes/NSFWGenNode.jsx`
+- `client/src/components/flows/nodes/NSFWMotionNode.jsx`
+- `client/src/components/flows/nodes/NSFWVideoExtendNode.jsx`
+- `client/src/components/flows/nodes/NSFWVideoNode.jsx`
+- `client/src/components/flows/nodes/NanaBananaNode.jsx`
+- `client/src/components/flows/nodes/OutputViewerNode.jsx`
+- `client/src/components/flows/nodes/SeedreamNode.jsx`
+- `client/src/components/flows/nodes/SfxGenNode.jsx`
+- `client/src/components/flows/nodes/SynthIDNode.jsx`
+- `client/src/components/flows/nodes/TalkingHeadNode.jsx`
+- `client/src/components/flows/nodes/TextInputNode.jsx`
+- `client/src/components/flows/nodes/UpscalerNode.jsx`
+- `client/src/components/flows/nodes/VideoMotionNode.jsx`
+- `client/src/components/flows/nodes/VideoPromptNode.jsx`
+- `client/src/components/flows/nodes/VoiceGenNode.jsx`
+- `client/src/components/generateAIModelFormCopy.js`
+- `client/src/components/landerNew/LanderNewPublicApp.jsx`
+- `client/src/components/landerNew/LanderNewRenderer.jsx`
+- `client/src/components/nsfw/SextingScriptsTab.jsx`
+- `client/src/components/skeletons/Skeleton.jsx`
+- `client/src/components/ui/badge.jsx`
+- `client/src/components/ui/input.jsx`
+- `client/src/components/ui/scroll-area.jsx`

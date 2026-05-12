@@ -6,6 +6,7 @@ import path from 'path';
 import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import apiRoutes from './routes/api.routes.js';
+import apiV1PublicRoutes from './routes/api-v1.public.routes.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { cleanupStuckGenerations } from './controllers/generation.controller.js';
 import nsfwController from './controllers/nsfw.controller.js';
@@ -292,13 +293,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Global rate limiting (catch-all protection)
-// Skip rate limiting for admin routes (already protected by auth + admin role check)
+// Global rate limiting (catch-all protection) — applies to canonical /api and mirrored /api/v1
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/admin')) return next();
   if (req.path.startsWith('/runpod/callback')) return next();
   if (req.path.startsWith('/runninghub/callback')) return next();
   if (req.path.startsWith('/heygen/webhook')) return next();
+  if (req.path.startsWith('/v1/health')) return next();
+  if (req.path.startsWith('/v1/openapi.yaml')) return next();
+  return apiLimiter(req, res, next);
+});
+app.use('/api/v1', (req, res, next) => {
+  if (req.path.startsWith('/admin')) return next();
+  if (req.path.startsWith('/health')) return next();
+  if (req.path.startsWith('/openapi.yaml')) return next();
   return apiLimiter(req, res, next);
 });
 
@@ -306,6 +314,7 @@ app.use('/api', (req, res, next) => {
 // - blocks child sexual content globally
 // - blocks explicit NSFW sex scenes on ModelClone-X (mild adult nudity allowed)
 app.use('/api', generationSafetyMiddleware);
+app.use('/api/v1', generationSafetyMiddleware);
 
 // Admin impersonation login - sets auth cookies from a token in the URL
 app.get('/admin-login', async (req, res) => {
@@ -351,6 +360,17 @@ app.get('/admin-login', async (req, res) => {
     res.status(401).send('Invalid or expired token');
   }
 });
+
+// Public-facing v1: contract + canonical /me … then FULL mirror of main /api REST (excluding Flow Studio).
+app.use('/api/v1', apiV1PublicRoutes);
+app.use('/api/v1/viral-reels', viralReelsRoutes);
+app.use('/api/v1/video-repurpose', videoRepurposeRoutes);
+app.use('/api/v1/img2img', img2imgRoutes);
+app.use('/api/v1/gptx', gptxRoutes);
+// Flow Studio deliberately not mounted — use /api/flows/*
+app.use('/api/v1/support', supportRoutes);
+app.use('/api/v1/auth', telegramAuthRoutes);
+app.use('/api/v1', apiRoutes);
 
 // Routes: mount specific /api/* path prefixes BEFORE the catch-all /api router
 // so /api/viral-reels/:id/stream and /api/viral-reels/media are reachable

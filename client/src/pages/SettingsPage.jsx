@@ -11,7 +11,7 @@ import { hasPremiumAccess } from '../utils/premiumAccess';
 import { resolveLocale } from '../components/generateAIModelFormCopy';
 import { SETTINGS_PAGE_COPY, formatSettingsCopy } from '../data/settingsPageCopy';
 import { copyTextToClipboard, selectElementContents } from '../utils/clipboard.js';
-import { hasBusinessApiAccess } from '../utils/apiAccess.js';
+import { hasSelfServeApiAccess } from '../utils/apiAccess.js';
 
 const TELEGRAM_ENROLL_URL = 'https://t.me/selenabythesea';
 
@@ -70,7 +70,7 @@ export default function SettingsPage() {
   const [showApiEnrollModal, setShowApiEnrollModal] = useState(false);
   const newUserApiKeyTextareaRef = useRef(null);
 
-  const apiAccess = hasBusinessApiAccess(user);
+  const apiAccess = hasSelfServeApiAccess(user);
 
   const loadMyApiKeys = useCallback(async () => {
     if (!user?.id) return;

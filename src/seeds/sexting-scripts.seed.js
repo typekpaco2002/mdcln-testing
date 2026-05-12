@@ -15,7 +15,7 @@
  */
 
 import prisma from "../lib/prisma.js";
-import { TIER_PRICING } from "../controllers/sexting-scripts.controller.js";
+import { TIER_PRICING } from "../lib/sexting-script-pricing.js";
 
 /* ─────────────────────────────────────────────────────────────────────── */
 /*  Built-ins                                                               */

@@ -1,0 +1,478 @@
+openapi: 3.0.3
+info:
+  title: ModelClone Public API
+  version: "1"
+  description: |
+    **Base path:** the app REST surface is duplicated under `/api/v1` with the same relative
+    paths as `/api`, same accounts, credits, and generations. **Not mirrored:** Flow Studio
+    (`/api/flows/*` only). Webhooks keep canonical `/api/...` callback URLs.
+
+    This file documents a **minimal integration slice** (health, keys, models,
+    history). **`docs/generated/API_GENERATION_CATALOG.md`** lists generation routes;
+    **`docs/API_GENERATION_UX_PARITY.md`** maps ModelClone-X / enhance toggles. Every
+    semantic change → **`docs/API_CHANGELOG.md`**.
+
+    Authenticate with an API key (`X-Api-Key`) or `Authorization: Bearer mcl_<secret>` (JWT
+    session cookies also work from the browser).
+
+    `/api/v1` uses the same global throttle and AI safety middleware as `/api`.
+
+    **`/generations`:** responses may include `provider*` fields today; treat them as
+    implementation details that could be tightened in a minor release.
+
+servers:
+  - url: "{baseUrl}/api/v1"
+    variables:
+      baseUrl:
+        default: https://modelclone.app
+        description: API origin (no trailing slash)
+
+tags:
+  - name: Meta
+    description: Contract and health
+  - name: Account
+    description: Profile and quotas
+  - name: Keys
+    description: Self-service API keys (Starter+ subscription; same session or Bearer key)
+  - name: Assets
+    description: Models and generation history
+
+paths:
+  /health:
+    get:
+      tags: [Meta]
+      summary: Health and API metadata
+      operationId: v1_health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V1Health"
+  /openapi.yaml:
+    get:
+      tags: [Meta]
+      summary: Raw OpenAPI 3 YAML for this version
+      operationId: v1_openapi_spec
+      responses:
+        "200":
+          description: YAML document
+          content:
+            text/yaml:
+              schema:
+                type: string
+        "503":
+          description: Spec file not deployed (set `PUBLIC_OPENAPI_PATH` or ship `docs/openapi/v1.openapi.yaml`)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope503"
+  /me:
+    get:
+      tags: [Account]
+      summary: Authenticated integration profile
+      operationId: v1_me
+      security:
+        - ApiKeyHeader: []
+        - BearerApiKey: []
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/V1MeResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /models:
+    get:
+      tags: [Assets]
+      summary: List saved models for the authenticated user
+      operationId: v1_models
+      security:
+        - ApiKeyHeader: []
+        - BearerApiKey: []
+      responses:
+        "200":
+          description: Model list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /generations:
+    get:
+      tags: [Assets]
+      summary: Paginated generation history
+      operationId: v1_generations
+      security:
+        - ApiKeyHeader: []
+        - BearerApiKey: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter by logical type (`image`, `video`, `modelclone-x`, concrete type string, …)
+        - name: modelId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+          description: Single status or comma-separated list
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: includeTotal
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+            default: "true"
+      responses:
+        "200":
+          description: History page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /user/api-keys:
+    get:
+      tags: [Keys]
+      summary: List your API keys (metadata only; full secret when stored for re-display)
+      operationId: v1_list_api_keys
+      security:
+        - ApiKeyHeader: []
+        - BearerApiKey: []
+      responses:
+        "200":
+          description: Key list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Keys]
+      summary: Create API key (plaintext returned once)
+      operationId: v1_create_api_key
+      security:
+        - ApiKeyHeader: []
+        - BearerApiKey: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                corsOrigins:
+                  oneOf:
+                    - type: string
+                    - type: array
+                      items:
+                        type: string
+      responses:
+        "200":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  key:
+                    type: string
+                  apiKey:
+                    type: object
+                    additionalProperties: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Subscription tier not eligible (use web Settings for details)
+  /user/api-keys/{keyId}:
+    delete:
+      tags: [Keys]
+      summary: Revoke an API key
+      operationId: v1_revoke_api_key
+      security:
+        - ApiKeyHeader: []
+        - BearerApiKey: []
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /user/api-keys/{keyId}/regenerate:
+    post:
+      tags: [Keys]
+      summary: Revoke key and issue a replacement (new plaintext once)
+      operationId: v1_regenerate_api_key
+      security:
+        - ApiKeyHeader: []
+        - BearerApiKey: []
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: New key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  key:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Subscription no longer eligible for self-serve keys
+
+components:
+  securitySchemes:
+    ApiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+    BearerApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: mcl_<secret>
+      description: Raw secret after `Bearer ` (same value as header key)
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope401"
+
+  schemas:
+    V1Health:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        apiVersion:
+          type: integer
+          example: 1
+        service:
+          type: string
+          example: modelclone-public-api
+        documentationYaml:
+          type: string
+          format: uri
+        note:
+          type: string
+      required: [ok, apiVersion]
+
+    ErrorEnvelope503:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        code:
+          type: string
+          example: openapi_unavailable
+        message:
+          type: string
+      required: [success]
+
+    ErrorEnvelope401:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        code:
+          type: string
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          nullable: true
+        role:
+          type: string
+        credits:
+          type: number
+        subscriptionCredits:
+          type: number
+        purchasedCredits:
+          type: number
+        totalCredits:
+          type: number
+        subscriptionTier:
+          type: string
+          nullable: true
+        subscriptionStatus:
+          type: string
+          nullable: true
+        isVerified:
+          type: boolean
+        onboardingCompleted:
+          type: boolean
+        premiumFeaturesUnlocked:
+          type: boolean
+        proAccess:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: true
+
+    V1MeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        apiVersion:
+          type: integer
+        data:
+          type: object
+          properties:
+            user:
+              $ref: "#/components/schemas/UserPublic"
+            authVia:
+              type: string
+              enum: [api_key, session]
+          required: [user, authVia]
+      required: [success, apiVersion, data]
+
+    SavedModelPublic:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ModelsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/SavedModelPublic"
+        count:
+          type: integer
+        limit:
+          type: integer
+        canCreateMore:
+          type: boolean
+      required: [success]
+
+    GenerationSummary:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        modelId:
+          type: string
+          nullable: true
+        type:
+          type: string
+        status:
+          type: string
+        outputUrl:
+          type: string
+          nullable: true
+        prompt:
+          type: string
+          nullable: true
+        provider:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    GenerationsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        generations:
+          type: array
+          items:
+            $ref: "#/components/schemas/GenerationSummary"
+        pagination:
+          type: object
+          properties:
+            total:
+              type: integer
+              nullable: true
+            limit:
+              type: integer
+            offset:
+              type: integer
+        retention:
+          type: object
+          additionalProperties: true
+      required: [success]
