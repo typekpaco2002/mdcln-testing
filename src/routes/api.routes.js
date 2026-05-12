@@ -1,4 +1,7 @@
 import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import prisma from "../lib/prisma.js";
 import { isAllowedPublicAssetHost } from "../utils/publicAssetHost.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
@@ -361,6 +364,17 @@ function getGenerationIdempotencyEntry(key) {
   return entry;
 }
 
+const __dirnameRoutes = path.dirname(fileURLToPath(import.meta.url));
+
+function resolveClientOpenApiYamlPath() {
+  if (process.env.PUBLIC_CLIENT_OPENAPI_PATH?.trim()) {
+    return path.resolve(process.env.PUBLIC_CLIENT_OPENAPI_PATH.trim());
+  }
+  return path.resolve(
+    path.join(__dirnameRoutes, "../../docs/openapi/client-api.openapi.yaml"),
+  );
+}
+
 router.get("/brand", async (_req, res) => {
   try {
     const branding = await getAppBranding();
@@ -379,6 +393,25 @@ router.get("/tutorials/catalog", async (_req, res) => {
     console.error("Tutorial catalog endpoint error:", error);
     res.status(500).json({ success: false, message: "Failed to fetch tutorial catalog" });
   }
+});
+
+// Full SPA + integration OpenAPI — import URL for GitBook and partners
+router.get("/docs/client-api.openapi.yaml", (_req, res) => {
+  const openApiPath = resolveClientOpenApiYamlPath();
+  fs.readFile(openApiPath, "utf8", (err, contents) => {
+    if (err) {
+      console.error("[api] Client OpenAPI missing:", openApiPath, err.code);
+      return res.status(503).json({
+        success: false,
+        code: "openapi_unavailable",
+        message:
+          "Full client OpenAPI is not deployed. Ship docs/openapi/client-api.openapi.yaml or set PUBLIC_CLIENT_OPENAPI_PATH.",
+      });
+    }
+    res.type("text/yaml; charset=utf-8");
+    res.set("Cache-Control", "public, max-age=900");
+    res.send(contents);
+  });
 });
 
 // KIE webhook callback is mounted in server.js BEFORE body parsing so it receives raw body

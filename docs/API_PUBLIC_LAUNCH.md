@@ -9,11 +9,12 @@ _ModelClone ships an HTTP API keyed for integrations (`ApiKey`, prefix `mcl_`) a
 | HTTP routes | **Facade:** `GET /health`, `GET /openapi.yaml`, `GET /me` (`src/routes/api-v1.public.routes.js`). **Full parity:** the same **`express.Router`** as `/api/*` is also mounted at **`/api/v1`** (same DB, credits, middleware). **`/api/v1/img2img`**, **`gptx`**, **`viral-reels`**, **`video-repurpose`**, **`support`**, Telegram auth mount under **`/api/v1/...`** like production `/api`. **Excluded:** **`/api/flows/*`** (Flow Studio — not mirrored). |
 | Keys for users | **Settings → API** creates keys (`Starter`+ subscription, `trialing` counts): `POST/GET /api/user/api-keys`, etc. Same routes under **`/api/v1/user/api-keys`** with `Bearer mcl_*`. Shared rule: **`shared/apiKeyEligibility.js`**. |
 | OpenAPI (partner slice — expand continuously) | **`docs/openapi/v1.openapi.yaml`** → **`GET /api/v1/openapi.yaml`** |
+| OpenAPI (SPA + integrations — exhaustive literal scan, GitBook-ready) | **`docs/openapi/client-api.openapi.yaml`** → **`GET /api/docs/client-api.openapi.yaml`** (also **`/api/v1/docs/…`** via mirror). **`npm run openapi:client`**. Optional **`PUBLIC_CLIENT_OPENAPI_PATH`**. |
 | Canonical narrative | **`docs/API_REFERENCE.md`**, **`docs/API_GENERATION_UX_PARITY.md`**, changelog **`docs/API_CHANGELOG.md`** |
 
-Production must ship **`docs/openapi/v1.openapi.yaml`** or set **`PUBLIC_OPENAPI_PATH`** — otherwise **`GET /api/v1/openapi.yaml`** returns **503** (`openapi_unavailable`).
+Production must ship **`docs/openapi/v1.openapi.yaml`** or set **`PUBLIC_OPENAPI_PATH`** — otherwise **`GET /api/v1/openapi.yaml`** returns **503** (`openapi_unavailable`). Ship **`docs/openapi/client-api.openapi.yaml`** (generate with **`npm run openapi:client`**) so **`GET /api/docs/client-api.openapi.yaml`** works, or override with **`PUBLIC_CLIENT_OPENAPI_PATH`**.
 
-Global **`/api` AND `/api/v1`** rate limiting skips public contract endpoints (`**/v1/health`**, **`**/v1/openapi.yaml`** on the `/api/v1` mount; legacy skips on `/api` for nested paths if used). **`generationSafetyMiddleware`** runs on **`/api` and `/api/v1`**.
+Global **`/api` AND `/api/v1`** rate limiting skips public contract endpoints (`**/v1/health`**, **`**/v1/openapi.yaml`**, **`/docs/client-api.openapi.yaml`** (and mirrored **`/api/v1/docs/...`**) where applicable; nested paths under `/api` if used). **`generationSafetyMiddleware`** runs on **`/api` and `/api/v1`**.
 
 ## Artifacts we will maintain
 

@@ -8,12 +8,20 @@ _ModelClone integrations use **`/api/v1`** with **`X-Api-Key`** or **`Authorizat
 2. **`docs/API_CHANGELOG.md`** — **required** whenever integration routes or semantics change (**`npm run verify:api-changelog`**).
 3. **`docs/generated/API_GENERATION_CATALOG.md`** — auto route table (**`npm run docs:registry`**).
 4. **`docs/API_GENERATION_UX_PARITY.md`** — ModelClone-X / enhance ↔ JSON bodies.
-5. **`docs/openapi/v1.openapi.yaml`** — YAML served at **`GET /api/v1/openapi.yaml`**.
+5. **`docs/openapi/v1.openapi.yaml`** — YAML served at **`GET /api/v1/openapi.yaml`** (partner-facing slice).
 
 ## Blocking checks
 
+Full SPA + integration surface (literal route scan):
+
+- **Spec file:** **`docs/openapi/client-api.openapi.yaml`**
+- **Regenerate:** `npm run openapi:client`
+- **Live URL:** **`https://modelclone.app/api/docs/client-api.openapi.yaml`** (production; rate-limit skipped for GitBook / imports)
+- **Override path:** **`PUBLIC_CLIENT_OPENAPI_PATH`** (absolute YAML on hosts that do not bundle `docs/openapi/`)
+
 ```bash
 npm run docs:registry
+npm run openapi:client
 npm run verify:api-changelog
 ```
 
@@ -24,6 +32,7 @@ Set **`SKIP_API_CHANGELOG_VERIFY=1`** to bypass the changelog diff check locally
 | Variable | Role |
 |----------|------|
 | `PUBLIC_OPENAPI_PATH` | Optional absolute YAML when `docs/openapi/` isn’t bundled |
+| `PUBLIC_CLIENT_OPENAPI_PATH` | Optional absolute path for **`client-api.openapi.yaml`** (SPA + integrations catalog) |
 | `GENERATION_RATE_LIMIT_MAX` | Per-user generation bursts/min (**Upstash**/Redis when configured) |
 | `GENERATION_MAX_IN_FLIGHT_PER_USER` | Max concurrent non-terminal **`Generation`** rows (**`0`** = off) |
 | `API_RATE_LIMIT_MAX`, `API_RATE_LIMIT_WINDOW_MS` | Global `/api` + `/api/v1` IP throttle |

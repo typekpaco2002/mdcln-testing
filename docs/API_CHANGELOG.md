@@ -10,6 +10,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Bump **Unrelease
 
 ### Added
 
+- **Full client-facing OpenAPI 3**: **`docs/openapi/client-api.openapi.yaml`** (regenerate **`npm run openapi:client`**), served at **`GET https://modelclone.app/api/docs/client-api.openapi.yaml`** (mirror: **`GET /api/v1/docs/client-api.openapi.yaml`**). **`PUBLIC_CLIENT_OPENAPI_PATH`** overrides the file location on disk.
 - **`docs/API_REFERENCE.md`** index and **`docs/API_GENERATION_UX_PARITY.md`** for ModelClone-X / enhance parity.
 - **Auto catalog** **`docs/generated/API_GENERATION_CATALOG.md`** (`npm run docs:registry`).
 - **`generationConcurrencyMiddleware`**: caps non-terminal **`Generation`** rows per user (**`GENERATION_MAX_IN_FLIGHT_PER_USER`**, default `12`; set **`0`** to disable).

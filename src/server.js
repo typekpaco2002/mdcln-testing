@@ -301,12 +301,14 @@ app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/heygen/webhook')) return next();
   if (req.path.startsWith('/v1/health')) return next();
   if (req.path.startsWith('/v1/openapi.yaml')) return next();
+  if (req.path.startsWith('/docs/client-api.openapi.yaml')) return next();
   return apiLimiter(req, res, next);
 });
 app.use('/api/v1', (req, res, next) => {
   if (req.path.startsWith('/admin')) return next();
   if (req.path.startsWith('/health')) return next();
   if (req.path.startsWith('/openapi.yaml')) return next();
+  if (req.path.startsWith('/docs/client-api.openapi.yaml')) return next();
   return apiLimiter(req, res, next);
 });
 

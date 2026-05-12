@@ -303,6 +303,15 @@ function main() {
     console.warn("[docs:registry] API generation catalog failed:", e?.message || e);
   }
 
+  try {
+    execFileSync(process.execPath, [path.join(__dirname, "generate-client-openapi.mjs")], {
+      stdio: "inherit",
+      cwd: ROOT,
+    });
+  } catch (e) {
+    console.warn("[docs:registry] Client OpenAPI generation failed:", e?.message || e);
+  }
+
   console.log(
     `Wrote docs under ${rel(OUT_DIR)}/ (incl. CLIENT_COMPONENTS.md, SCRIPTS.md)`
   );
