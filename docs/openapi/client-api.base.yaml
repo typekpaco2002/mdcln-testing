@@ -22,6 +22,8 @@ info:
     ### Outbound callbacks to integrators (**webhooks you receive**)
     Modelclone **does not** currently POST asynchronous completion events to arbitrary customer URLs — poll **`GET /api/v1/generations/{id}`** (or equivalents) until status settles.
 
+    (**Not the same:** *client → Modelclone* **`POST`** bodies such as **`type: blob.upload-completed`** or other JSON you send **to our** **`/api/...`** routes are ordinary request payloads from your app — **not** outbound vendor webhooks *to your servers*.)
+
     Dedicated **staging/base URLs are issued manually** — contact integrations support if your contract requires non-production environments.
 
     ### Authentication
