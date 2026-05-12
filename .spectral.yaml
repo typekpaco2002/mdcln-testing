@@ -1,0 +1,19 @@
+extends:
+  - spectral:oas
+
+rules:
+  operation-tag-defined: error
+  oas3-unused-component: warn
+  operation-description: error
+  operation-operationId: error
+  operation-operationId-unique: error
+  no-$ref-siblings: error
+
+  operation-must-have-summary:
+    description: Every operation requires a non-empty summary for integrator docs.
+    message: "operation {{path}} is missing `summary`."
+    severity: error
+    given: "$.paths[*][get,post,put,patch,delete,options,head,trace]"
+    then:
+      field: summary
+      function: truthy

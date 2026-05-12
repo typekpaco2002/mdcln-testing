@@ -5,6 +5,10 @@ openapi: 3.0.3
 info:
   title: ModelClone Client & integration API
   version: "1.1.0"
+  contact:
+    name: ModelClone API — integrations & partners
+    email: integrations@modelclone.app
+    url: https://modelclone.app/support
   license:
     name: Proprietary
     url: https://modelclone.app/terms
@@ -12,9 +16,13 @@ info:
     Production-oriented catalog of HTTP routes used by **`https://modelclone.app`** (web app),
     integrations, and self-serve **`mcl_`** API keys.
 
-    ### Base URLs
-    - **Primary:** `https://modelclone.app/api/...`
-    - **Stable mirror:** `https://modelclone.app/api/v1/...` (same handlers; **Flows Studio stays** ` /api/flows/... ` only.)
+    ### Canonical surface
+    - **Integrators:** Prefer **`https://modelclone.app/api/v1/...`**. SPA mirror **`/api/...`** repeats the same handlers for migration and browser traffic; duplicates appear in this spec **`deprecated`** when a **`/api/v1/...`** twin exists (**Flows Studio** remains **` /api/flows/...`** only — not mirrored under **`/api/v1/flows`**).
+
+    ### Outbound callbacks to integrators (**webhooks you receive**)
+    Modelclone **does not** currently POST asynchronous completion events to arbitrary customer URLs — poll **`GET /api/v1/generations/{id}`** (or equivalents) until status settles.
+
+    Dedicated **staging/base URLs are issued manually** — contact integrations support if your contract requires non-production environments.
 
     ### Authentication
     **Browser:** session cookie from `POST /api/auth/login` (or signup + verify). **`credentials: include`** on fetches.
@@ -37,7 +45,11 @@ info:
     - **Upscaler** `POST /api/upscale` — **`application/json`** `{ "inputImageUrl": "..." }` **or** multipart field **`image`** (≤ 20 MB JPEG/PNG/WebP).
     - **Voice clone** `POST /api/models/{modelId}/voice/clone` and **`.../voices/clone`** — multipart field **`audio`** (`.mp3` / `audio/mpeg`; server limit applies).
 
-    ### Operational error codes (`code` field)
+    ### Webhooks provider callbacks
+    **Inbound** Stripe / crypto **`/api/stripe/webhook`**, KIE **`/api/kie/callback`**, PIAPI **`/api/piapi/callback`**, etc. verify signatures with provider secrets — **omitted from** this SPA/integrator catalog (infra-only).
+
+    **`blob.upload-completed`** is carried on **`POST /api/upload/blob`** (JSON body documented there).
+
     | Code | When | Fix |
     |------|------|-----|
     | **`NO_FILE`** | Multipart guard, empty file part | Retry with **`file`** / **`audio`** / **`image`** populated. |
@@ -54,7 +66,11 @@ info:
 
     Many downstream AI failures are normalized via **`src/lib/userError.js`**: **`message`** + **`solution`** (no raw provider dumps).
 
-    ### Limits & outages
+    ### Idempotency & rate-limit headers (target)
+    Paid write paths SHOULD accept **`Idempotency-Key`** (reuse on safe retries — adoption is incremental).
+
+    **`429`** responses SHOULD echo **`Retry-After`**, **`X-RateLimit-Limit`**, **`X-RateLimit-Remaining`**, **`X-RateLimit-Reset`** when present (see **`RateLimited429`** schema).
+
     - **413** multipart: Multer **`LIMIT_FILE_SIZE`** returns explicit **`FILE_TOO_LARGE`**, **`maxUploadBytes`**.
     - **429:** Global IP **`/api`** limiter (`rateLimiter`). Generation burst limits when Redis configured.
     - **409:** Storage mode conflicts (e.g. presign disabled when Blob-only).
@@ -71,12 +87,16 @@ info:
   termsOfService: https://modelclone.app/terms
 
 externalDocs:
-  description: UX ↔ JSON parity (generations / MCX) — see repo `docs/API_GENERATION_UX_PARITY.md`
-  url: https://modelclone.app
+  description: Repo reference **`docs/API_REFERENCE.md`** · generation JSON **`docs/API_GENERATION_UX_PARITY.md`**
+  url: https://github.com/typekpaco2002/mdlcln/tree/main/docs
 
 servers:
   - url: https://modelclone.app
-    description: Production
+    description: Production — integrations typically use **`mcl_`** keys scoped to billing on this hostname.
+security:
+  - SessionCookieAuth: []
+  - ApiKeyAuth: []
+  - BearerAuth: []
 
 tags:
   - name: API
@@ -116,10 +136,77 @@ components:
         JWT session cookie from login/signup (**HttpOnly**, browser). SPA must send **`credentials: 'include'`**.
 
   schemas:
-    AnyJsonPayload:
+    Paginated:
+      type: object
+      required:
+        - data
+        - hasMore
+      properties:
+        data:
+          type: array
+          items: {}
+          description: Items for the active page or window.
+        nextCursor:
+          type: string
+          nullable: true
+          description: Opaque cursor token for the following page.
+        hasMore:
+          type: boolean
+
+    HealthProbeBody:
+      type: object
+      description: Returned by **`GET /health`** probe.
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+
+    GenerationRecord:
       type: object
       additionalProperties: true
-      description: Arbitrary JSON (route-specific contract).
+      description: >
+        Persisted Generation row (`id`, `type`, `status`, `outputUrl`, credit counters) —
+        polymorphic per `type`.
+    SavedModelSummary:
+      type: object
+      additionalProperties: true
+      description: >
+        User SavedModel row / list item — onboarding photos, statuses, persona fields.
+    UserAccount:
+      type: object
+      additionalProperties: true
+      description: >
+        Authenticated User projections from `/auth/profile` and related routes.
+    VoiceCloneJob:
+      type: object
+      additionalProperties: true
+      description: >
+        ElevenLabs / voice-studio artifacts (`voiceId`, preview URLs, etc.).
+    FlowDocument:
+      type: object
+      additionalProperties: true
+      description: >
+        Flows Studio graph JSON + metadata (see `/api/flows` family; not mirrored under `/api/v1/flows`).
+    FlowRunStatus:
+      type: object
+      additionalProperties: true
+      description: >
+        Flows run SSE + polling payloads (`GET /api/flows/runs/{runId}` and related paths).
+    SubscriptionState:
+      type: object
+      additionalProperties: true
+      description: >
+        Stripe subscription summaries returned from billing/status routes.
+    ApiIntegrationKeyStub:
+      type: object
+      additionalProperties: true
+      description: >
+        Self-serve API key metadata (`mcl_` keys — tier, label, revocation flag).
 
     SuccessFlag:
       type: object
@@ -344,17 +431,21 @@ components:
           format: uri
           description: Preferred — image already uploaded to Blob/CDN reachable by backend.
 
-    HealthQueueExample:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        queue:
-          type: object
-
   responses:
+    HealthOk200:
+      description: Liveness probe succeeded (`status` = **`ok`**).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HealthProbeBody"
+
+    NotFound404:
+      description: Requested identifier does not exist or is forbidden to reveal.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PlainErrorBody"
+
     SuccessOk:
       description: Ok — inspect route-specific **`application/json`** body.
       content:
@@ -418,7 +509,25 @@ components:
             $ref: "#/components/schemas/PlainErrorBody"
 
     RateLimited429:
-      description: IP / burst / concurrency limit (**`GENERATION_QUEUE_FULL`** on generation queue middleware).
+      description: >
+        IP / burst / concurrency limit (**`GENERATION_QUEUE_FULL`** on generation queues). Clients SHOULD read rate headers when present — header names are conventional, not yet guaranteed on every edge.
+      headers:
+        Retry-After:
+          description: Seconds until the client may retry (HTTP-date also allowed by RFC 7231).
+          schema:
+            type: string
+        X-RateLimit-Limit:
+          description: Sliding window quota.
+          schema:
+            type: string
+        X-RateLimit-Remaining:
+          description: Credits remaining inside the active window.
+          schema:
+            type: string
+        X-RateLimit-Reset:
+          description: POSIX epoch seconds when the window resets.
+          schema:
+            type: string
       content:
         application/json:
           schema:
