@@ -1,4 +1,9 @@
 import prisma from "../lib/prisma.js";
+import {
+  resolveRunpodPollCanonicalStatus,
+  isRunpodPollCompleted,
+  isRunpodPollFailedOrCancelled,
+} from "../lib/runpod-job-status.js";
 import { isR2Configured } from "../utils/r2.js";
 import { uploadBufferToBlobOrR2 } from "../utils/kieUpload.js";
 import { getUserFriendlyGenerationError } from "../utils/generationErrorMessages.js";
@@ -1304,20 +1309,24 @@ class GenerationPollerService {
         const rp = gen.type === "upscale"
           ? await pollUpscalerJob(runpodJobId)
           : await pollModelCloneXJob(runpodJobId);
-        const status = String(rp?.status || "").toLowerCase();
+        const output = rp?.output !== undefined && rp.output !== null ? rp.output : rp;
+        const canon = resolveRunpodPollCanonicalStatus(rp, () => {
+          if (gen.type === "upscale") return !!extractUpscalerImage(rp);
+          return extractModelCloneXImages(output).length > 0;
+        });
 
-        if (["failed", "error", "timed_out", "timed-out", "cancelled", "canceled"].includes(status)) {
+        if (isRunpodPollFailedOrCancelled(canon)) {
           const msg =
             rp?.error ||
             rp?.output?.error ||
             (typeof rp?.output === "string" ? rp.output : null) ||
-            `RunPod ${status}`;
+            `RunPod ${canon}`;
           await this.markFailed(gen.id, msg, { refund: gen.status === "processing" });
           stats.failedMarked += 1;
           continue;
         }
 
-        if (status !== "completed") {
+        if (!isRunpodPollCompleted(canon)) {
           stats.stillRunning += 1;
           continue;
         }
@@ -1327,7 +1336,7 @@ class GenerationPollerService {
           const one = extractUpscalerImage(rp);
           imagePayloads = one ? [one] : [];
         } else {
-          const imgs = extractModelCloneXImages(rp);
+          const imgs = extractModelCloneXImages(output);
           imagePayloads = Array.isArray(imgs) ? imgs.filter(Boolean) : [];
         }
 

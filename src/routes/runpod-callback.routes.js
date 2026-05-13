@@ -7,6 +7,7 @@
  */
 import express from "express";
 import prisma from "../lib/prisma.js";
+import { normalizeRunpodJobStatus } from "../lib/runpod-job-status.js";
 import { refundGeneration } from "../services/credit.service.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
 import { extractUpscalerImage } from "../services/upscaler.service.js";
@@ -190,18 +191,6 @@ function extractRunpodErrorMessage(rawOut, body) {
   if (typeof rawOut?.error === "string" && rawOut.error.trim()) return rawOut.error.trim();
   if (typeof rawOut?.message === "string" && rawOut.message.trim()) return rawOut.message.trim();
   return "RunPod job failed";
-}
-
-/** Map alternate RunPod / worker labels so completed jobs are not `skipped` as unknown status. */
-function normalizeRunpodJobStatus(st) {
-  const s = String(st || "").toUpperCase().trim();
-  if (["SUCCESS", "SUCCEEDED", "DONE", "COMPLETE", "FINISHED", "OK", "COMPLETED_OK"].includes(s)) {
-    return "COMPLETED";
-  }
-  if (["ERROR", "ERRORED", "FAILURE"].includes(s)) {
-    return "FAILED";
-  }
-  return s;
 }
 
 async function handleRunpodCallback(req, res) {

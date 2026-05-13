@@ -77,6 +77,7 @@ import { waveSpeedConstraints } from "../config/providerMediaConstraints.js";
 import { getUserFriendlyGenerationError } from "../utils/generationErrorMessages.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
 import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
+import { attemptRecoverRunpodImageGeneration } from "../lib/runpod-image-generation-recovery.js";
 import { getGenerationPricing } from "../services/generation-pricing.service.js";
 import {
   checkNsfwMotionStatus,
@@ -1314,6 +1315,18 @@ export async function getGenerationById(req, res) {
 
     let resolvedGeneration = generation;
 
+    if (
+      ["modelclone-x", "soulx", "nsfw", "upscale"].includes(resolvedGeneration.type) &&
+      resolvedGeneration.status === "processing"
+    ) {
+      try {
+        const healed = await attemptRecoverRunpodImageGeneration(resolvedGeneration, selectGenById, userId);
+        if (healed) resolvedGeneration = healed;
+      } catch (e) {
+        console.warn(`[getGenerationById] RunPod image recovery: ${e?.message || e}`);
+      }
+    }
+
     // Missed webhooks: motion jobs may stay "processing" — poll RunningHub when the user fetches this row.
     if (
       isNsfwMotionConfigured() &&
@@ -1402,6 +1415,15 @@ export async function getGenerations(req, res) {
     const MAX_LIMIT = 200;
     const safeLimit = Math.min(parseInt(limit) || 50, MAX_LIMIT);
     const safeOffset = Math.max(0, parseInt(offset) || 0);
+
+    if (type === "modelclone-x" || type === "soulx") {
+      try {
+        const { runRunpodWatchdog } = await import("../services/generation-poller.service.js");
+        await runRunpodWatchdog({ limit: 80 });
+      } catch (e) {
+        console.warn("[getGenerations] RunPod watchdog hook failed:", e?.message || e);
+      }
+    }
 
     const where = { userId };
     if (type) {

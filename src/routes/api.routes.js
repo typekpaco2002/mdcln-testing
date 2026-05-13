@@ -3,6 +3,11 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import prisma from "../lib/prisma.js";
+import {
+  resolveRunpodPollCanonicalStatus,
+  isRunpodPollCompleted,
+  isRunpodPollFailedOrCancelled,
+} from "../lib/runpod-job-status.js";
 import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
 import { isAllowedPublicAssetHost } from "../utils/publicAssetHost.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
@@ -4254,10 +4259,11 @@ router.get("/modelclone-x/status/:generationId", authMiddleware, async (req, res
     if (runpodJobId) {
       try {
         const rp = await pollModelCloneXJob(runpodJobId);
-        const rpStatus = String(rp?.status || rp?.state || "").toUpperCase();
+        const output = rp?.output !== undefined && rp.output !== null ? rp.output : rp;
+        const canon = resolveRunpodPollCanonicalStatus(rp, () => extractModelCloneXImages(output).length > 0);
 
-        if (rpStatus === "COMPLETED" || rpStatus === "SUCCESS") {
-          const images = extractModelCloneXImages(rp?.output ?? rp);
+        if (isRunpodPollCompleted(canon)) {
+          const images = extractModelCloneXImages(output);
           if (images.length > 0) {
             const { uploadBufferToBlobOrR2 } = await import("../utils/kieUpload.js");
             const { isVercelBlobConfigured } = await import("../utils/kieUpload.js");
@@ -4288,7 +4294,7 @@ router.get("/modelclone-x/status/:generationId", authMiddleware, async (req, res
             const imageUrls = parseModelCloneXOutputUrls(outputUrl);
             return res.json({ success: true, status: "completed", imageUrl: imageUrls[0] || null, imageUrls });
           }
-        } else if (rpStatus === "FAILED" || rpStatus === "CANCELLED") {
+        } else if (isRunpodPollFailedOrCancelled(canon)) {
           const errMsg = rp?.output?.error || rp?.error || "Generation failed on RunPod";
           await prisma.generation.update({
             where: { id: generationId },
