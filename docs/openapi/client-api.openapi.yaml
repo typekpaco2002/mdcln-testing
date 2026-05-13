@@ -18,10 +18,16 @@ info:
     ### Canonical surface
     - **Integrators:** Prefer **`https://modelclone.app/api/v1/...`**. SPA mirror **`/api/...`** repeats the same handlers for migration and browser traffic; duplicates appear in this spec **`deprecated`** when a **`/api/v1/...`** twin exists (**Flows Studio** remains **` /api/flows/...`** only — not mirrored under **`/api/v1/flows`**).
 
-    ### Outbound callbacks to integrators (**webhooks you receive**)
-    Modelclone **does not** currently POST asynchronous completion events to arbitrary customer URLs — poll **`GET /api/v1/generations/{id}`** (or equivalents) until status settles.
+    ### Outbound completion callbacks (**integrator-hosted URLs**)
+    On supported generation **`POST`** bodies you may include **`integrationCallbackUrl`** (aliases: **`webhookUrl`**, **`integratorWebhookUrl`**, **`integratorCallbackUrl`**).
 
-    (**Not the same:** *client → Modelclone* **`POST`** bodies such as **`type: blob.upload-completed`** or other JSON you send **to our** **`/api/...`** routes are ordinary request payloads from your app — **not** outbound vendor webhooks *to your servers*.)
+    When the corresponding **`Generation`** row reaches **`completed`** or **`failed`**, Modelclone issues **one HTTPS `POST`** to that URL with a JSON envelope ( **`event`**, **`generationId`**, **`status`**, **`outputUrl`**, etc.). Optionally set **`integratorWebhookSecret`** (aliases **`callbackSecret`**, **`webhookSecret`**) — we send **`X-Modelclone-Signature: sha256=<hex>`** (`HMAC-SHA256` of the raw JSON body).
+
+    **`callbackUrl`** is **not** read for this feature (it is reserved for upstream provider payloads such as **`callBackUrl`** on Creator Studio — Veo callbacks).
+
+    If your endpoint fails or times out we **do not automatically retry**; always **`GET`** **`/api/v1/generations/{id}`** as a fallback.
+
+    (**Not the same:** *client → Modelclone* **`POST`** bodies such as **`type: blob.upload-completed`** or other JSON you send **to our** **`/api/...`** routes are ordinary request payloads from your app — **not** this completion delivery.)
 
     Dedicated **staging/base URLs are issued manually** — contact integrations support if your contract requires non-production environments.
 
@@ -85,7 +91,7 @@ info:
     Path inventory is merged by **`npm run openapi:client`** (**`x-openapi-client-generated-at`** ISO timestamp on each run).
   x-doc-class: production
   termsOfService: https://modelclone.app/terms
-  x-openapi-client-generated-at: 2026-05-12T13:38:26.610Z
+  x-openapi-client-generated-at: 2026-05-12T15:09:44.154Z
 externalDocs:
   description: Repo reference **`docs/API_REFERENCE.md`** · generation JSON **`docs/API_GENERATION_UX_PARITY.md`**
   url: https://github.com/typekpaco2002/mdlcln/tree/main/docs
@@ -1166,7 +1172,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1288**) or add **docs/openapi/overrides/POST__admin__credits__add.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1289**) or add **docs/openapi/overrides/POST__admin__credits__add.md**.
         content:
           application/json:
             schema:
@@ -2245,7 +2251,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1307**) or add **docs/openapi/overrides/POST__admin__nsfw__recover-failed-runpod.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1308**) or add **docs/openapi/overrides/POST__admin__nsfw__recover-failed-runpod.md**.
         content:
           application/json:
             schema:
@@ -2690,7 +2696,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1301**) or add **docs/openapi/overrides/POST__admin__recover-payment.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1302**) or add **docs/openapi/overrides/POST__admin__recover-payment.md**.
         content:
           application/json:
             schema:
@@ -2738,7 +2744,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1285**) or add **docs/openapi/overrides/POST__admin__referrals__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1286**) or add **docs/openapi/overrides/POST__admin__referrals__reconcile.md**.
         content:
           application/json:
             schema:
@@ -3196,7 +3202,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1282**) or add **docs/openapi/overrides/POST__admin__subscriptions__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1283**) or add **docs/openapi/overrides/POST__admin__subscriptions__reconcile.md**.
         content:
           application/json:
             schema:
@@ -3244,7 +3250,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1283**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__audit.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1284**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__audit.md**.
         content:
           application/json:
             schema:
@@ -3292,7 +3298,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1284**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1285**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__reconcile.md**.
         content:
           application/json:
             schema:
@@ -3937,7 +3943,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1277**) or add **docs/openapi/overrides/POST__admin__users__id__api-keys.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1278**) or add **docs/openapi/overrides/POST__admin__users__id__api-keys.md**.
         content:
           application/json:
             schema:
@@ -4075,7 +4081,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1280**) or add **docs/openapi/overrides/POST__admin__users__id__purchases__purchaseId__refund.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1281**) or add **docs/openapi/overrides/POST__admin__users__id__purchases__purchaseId__refund.md**.
         content:
           application/json:
             schema:
@@ -4131,7 +4137,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1281**) or add **docs/openapi/overrides/POST__admin__users__id__stripe-sync.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1282**) or add **docs/openapi/overrides/POST__admin__users__id__stripe-sync.md**.
         content:
           application/json:
             schema:
@@ -4442,7 +4448,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1294**) or add **docs/openapi/overrides/POST__admin__users__settings.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1295**) or add **docs/openapi/overrides/POST__admin__users__settings.md**.
         content:
           application/json:
             schema:
@@ -4515,7 +4521,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1287**) or add **docs/openapi/overrides/POST__admin__voice-hosting__run.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1288**) or add **docs/openapi/overrides/POST__admin__voice-hosting__run.md**.
         content:
           application/json:
             schema:
@@ -6197,7 +6203,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1216**) or add **docs/openapi/overrides/POST__course__complete-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1217**) or add **docs/openapi/overrides/POST__course__complete-video.md**.
         content:
           application/json:
             schema:
@@ -7273,7 +7279,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1538**) or add **docs/openapi/overrides/POST__generate__advanced.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1539**) or add **docs/openapi/overrides/POST__generate__advanced.md**.
         content:
           application/json:
             schema:
@@ -7325,7 +7331,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1866**) or add **docs/openapi/overrides/POST__generate__analyze-looks.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1870**) or add **docs/openapi/overrides/POST__generate__analyze-looks.md**.
         content:
           application/json:
             schema:
@@ -7373,7 +7379,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1383**) or add **docs/openapi/overrides/POST__generate__complete-recreation.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1384**) or add **docs/openapi/overrides/POST__generate__complete-recreation.md**.
         content:
           application/json:
             schema:
@@ -7421,7 +7427,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1438**) or add **docs/openapi/overrides/POST__generate__complete-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1439**) or add **docs/openapi/overrides/POST__generate__complete-video.md**.
         content:
           application/json:
             schema:
@@ -7866,7 +7872,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1347**) or add **docs/openapi/overrides/POST__generate__describe-target.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1348**) or add **docs/openapi/overrides/POST__generate__describe-target.md**.
         content:
           application/json:
             schema:
@@ -7914,7 +7920,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **2077**) or add **docs/openapi/overrides/POST__generate__enhance-prompt.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **2081**) or add **docs/openapi/overrides/POST__generate__enhance-prompt.md**.
         content:
           application/json:
             schema:
@@ -7962,7 +7968,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1404**) or add **docs/openapi/overrides/POST__generate__extract-frames.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1405**) or add **docs/openapi/overrides/POST__generate__extract-frames.md**.
         content:
           application/json:
             schema:
@@ -8010,7 +8016,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1497**) or add **docs/openapi/overrides/POST__generate__face-swap.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1498**) or add **docs/openapi/overrides/POST__generate__face-swap.md**.
         content:
           application/json:
             schema:
@@ -8058,7 +8064,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1506**) or add **docs/openapi/overrides/POST__generate__face-swap-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1507**) or add **docs/openapi/overrides/POST__generate__face-swap-video.md**.
         content:
           application/json:
             schema:
@@ -8108,7 +8114,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1524**) or add **docs/openapi/overrides/POST__generate__image-faceswap.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1525**) or add **docs/openapi/overrides/POST__generate__image-faceswap.md**.
         content:
           application/json:
             schema:
@@ -8156,7 +8162,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1333**) or add **docs/openapi/overrides/POST__generate__image-identity.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1334**) or add **docs/openapi/overrides/POST__generate__image-identity.md**.
         content:
           application/json:
             schema:
@@ -8204,7 +8210,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1421**) or add **docs/openapi/overrides/POST__generate__prepare-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1422**) or add **docs/openapi/overrides/POST__generate__prepare-video.md**.
         content:
           application/json:
             schema:
@@ -8354,7 +8360,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1456**) or add **docs/openapi/overrides/POST__generate__video-directly.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1457**) or add **docs/openapi/overrides/POST__generate__video-directly.md**.
         content:
           application/json:
             schema:
@@ -8404,7 +8410,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1364**) or add **docs/openapi/overrides/POST__generate__video-motion.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1365**) or add **docs/openapi/overrides/POST__generate__video-motion.md**.
         content:
           application/json:
             schema:
@@ -8454,7 +8460,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1475**) or add **docs/openapi/overrides/POST__generate__video-prompt.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1476**) or add **docs/openapi/overrides/POST__generate__video-prompt.md**.
         content:
           application/json:
             schema:
@@ -8934,7 +8940,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **211**) or add **docs/openapi/overrides/POST__img2img__describe.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **212**) or add **docs/openapi/overrides/POST__img2img__describe.md**.
         content:
           application/json:
             schema:
@@ -9020,7 +9026,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **340**) or add **docs/openapi/overrides/POST__img2img__generate.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **344**) or add **docs/openapi/overrides/POST__img2img__generate.md**.
         content:
           application/json:
             schema:
@@ -9072,7 +9078,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **568**) or add **docs/openapi/overrides/POST__img2img__recover-runpod.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **575**) or add **docs/openapi/overrides/POST__img2img__recover-runpod.md**.
         content:
           application/json:
             schema:
@@ -9219,7 +9225,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4653**) or add **docs/openapi/overrides/POST__modelclone-x__character__assign-images.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4666**) or add **docs/openapi/overrides/POST__modelclone-x__character__assign-images.md**.
         content:
           application/json:
             schema:
@@ -9313,7 +9319,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4802**) or add **docs/openapi/overrides/POST__modelclone-x__character__train.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4815**) or add **docs/openapi/overrides/POST__modelclone-x__character__train.md**.
         content:
           application/json:
             schema:
@@ -9525,7 +9531,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3939**) or add **docs/openapi/overrides/POST__modelclone-x__generate.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3949**) or add **docs/openapi/overrides/POST__modelclone-x__generate.md**.
         content:
           application/json:
             schema:
@@ -9573,7 +9579,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3824**) or add **docs/openapi/overrides/POST__modelclone-x__prompt-from-image.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3834**) or add **docs/openapi/overrides/POST__modelclone-x__prompt-from-image.md**.
         content:
           application/json:
             schema:
@@ -12637,7 +12643,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1208**) or add **docs/openapi/overrides/POST__onboarding__complete.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1209**) or add **docs/openapi/overrides/POST__onboarding__complete.md**.
         content:
           application/json:
             schema:
@@ -12683,7 +12689,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1211**) or add **docs/openapi/overrides/POST__onboarding__lock-offer.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1212**) or add **docs/openapi/overrides/POST__onboarding__lock-offer.md**.
         content:
           application/json:
             schema:
@@ -16133,7 +16139,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1288**) or add **docs/openapi/overrides/POST__admin__credits__add.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1289**) or add **docs/openapi/overrides/POST__admin__credits__add.md**.
         content:
           application/json:
             schema:
@@ -17188,7 +17194,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1307**) or add **docs/openapi/overrides/POST__admin__nsfw__recover-failed-runpod.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1308**) or add **docs/openapi/overrides/POST__admin__nsfw__recover-failed-runpod.md**.
         content:
           application/json:
             schema:
@@ -17624,7 +17630,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1301**) or add **docs/openapi/overrides/POST__admin__recover-payment.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1302**) or add **docs/openapi/overrides/POST__admin__recover-payment.md**.
         content:
           application/json:
             schema:
@@ -17671,7 +17677,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1285**) or add **docs/openapi/overrides/POST__admin__referrals__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1286**) or add **docs/openapi/overrides/POST__admin__referrals__reconcile.md**.
         content:
           application/json:
             schema:
@@ -18119,7 +18125,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1282**) or add **docs/openapi/overrides/POST__admin__subscriptions__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1283**) or add **docs/openapi/overrides/POST__admin__subscriptions__reconcile.md**.
         content:
           application/json:
             schema:
@@ -18166,7 +18172,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1283**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__audit.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1284**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__audit.md**.
         content:
           application/json:
             schema:
@@ -18213,7 +18219,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1284**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1285**) or add **docs/openapi/overrides/POST__admin__subscriptions__refills__reconcile.md**.
         content:
           application/json:
             schema:
@@ -18842,7 +18848,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1277**) or add **docs/openapi/overrides/POST__admin__users__id__api-keys.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1278**) or add **docs/openapi/overrides/POST__admin__users__id__api-keys.md**.
         content:
           application/json:
             schema:
@@ -18977,7 +18983,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1280**) or add **docs/openapi/overrides/POST__admin__users__id__purchases__purchaseId__refund.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1281**) or add **docs/openapi/overrides/POST__admin__users__id__purchases__purchaseId__refund.md**.
         content:
           application/json:
             schema:
@@ -19032,7 +19038,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1281**) or add **docs/openapi/overrides/POST__admin__users__id__stripe-sync.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1282**) or add **docs/openapi/overrides/POST__admin__users__id__stripe-sync.md**.
         content:
           application/json:
             schema:
@@ -19337,7 +19343,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1294**) or add **docs/openapi/overrides/POST__admin__users__settings.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1295**) or add **docs/openapi/overrides/POST__admin__users__settings.md**.
         content:
           application/json:
             schema:
@@ -19408,7 +19414,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1287**) or add **docs/openapi/overrides/POST__admin__voice-hosting__run.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1288**) or add **docs/openapi/overrides/POST__admin__voice-hosting__run.md**.
         content:
           application/json:
             schema:
@@ -20955,7 +20961,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1216**) or add **docs/openapi/overrides/POST__course__complete-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1217**) or add **docs/openapi/overrides/POST__course__complete-video.md**.
         content:
           application/json:
             schema:
@@ -21535,7 +21541,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1538**) or add **docs/openapi/overrides/POST__generate__advanced.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1539**) or add **docs/openapi/overrides/POST__generate__advanced.md**.
         content:
           application/json:
             schema:
@@ -21583,7 +21589,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1866**) or add **docs/openapi/overrides/POST__generate__analyze-looks.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1870**) or add **docs/openapi/overrides/POST__generate__analyze-looks.md**.
         content:
           application/json:
             schema:
@@ -21627,7 +21633,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1383**) or add **docs/openapi/overrides/POST__generate__complete-recreation.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1384**) or add **docs/openapi/overrides/POST__generate__complete-recreation.md**.
         content:
           application/json:
             schema:
@@ -21671,7 +21677,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1438**) or add **docs/openapi/overrides/POST__generate__complete-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1439**) or add **docs/openapi/overrides/POST__generate__complete-video.md**.
         content:
           application/json:
             schema:
@@ -22076,7 +22082,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1347**) or add **docs/openapi/overrides/POST__generate__describe-target.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1348**) or add **docs/openapi/overrides/POST__generate__describe-target.md**.
         content:
           application/json:
             schema:
@@ -22120,7 +22126,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **2077**) or add **docs/openapi/overrides/POST__generate__enhance-prompt.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **2081**) or add **docs/openapi/overrides/POST__generate__enhance-prompt.md**.
         content:
           application/json:
             schema:
@@ -22164,7 +22170,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1404**) or add **docs/openapi/overrides/POST__generate__extract-frames.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1405**) or add **docs/openapi/overrides/POST__generate__extract-frames.md**.
         content:
           application/json:
             schema:
@@ -22208,7 +22214,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1497**) or add **docs/openapi/overrides/POST__generate__face-swap.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1498**) or add **docs/openapi/overrides/POST__generate__face-swap.md**.
         content:
           application/json:
             schema:
@@ -22252,7 +22258,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1506**) or add **docs/openapi/overrides/POST__generate__face-swap-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1507**) or add **docs/openapi/overrides/POST__generate__face-swap-video.md**.
         content:
           application/json:
             schema:
@@ -22298,7 +22304,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1524**) or add **docs/openapi/overrides/POST__generate__image-faceswap.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1525**) or add **docs/openapi/overrides/POST__generate__image-faceswap.md**.
         content:
           application/json:
             schema:
@@ -22342,7 +22348,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1333**) or add **docs/openapi/overrides/POST__generate__image-identity.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1334**) or add **docs/openapi/overrides/POST__generate__image-identity.md**.
         content:
           application/json:
             schema:
@@ -22386,7 +22392,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1421**) or add **docs/openapi/overrides/POST__generate__prepare-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1422**) or add **docs/openapi/overrides/POST__generate__prepare-video.md**.
         content:
           application/json:
             schema:
@@ -22524,7 +22530,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1456**) or add **docs/openapi/overrides/POST__generate__video-directly.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1457**) or add **docs/openapi/overrides/POST__generate__video-directly.md**.
         content:
           application/json:
             schema:
@@ -22570,7 +22576,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1364**) or add **docs/openapi/overrides/POST__generate__video-motion.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1365**) or add **docs/openapi/overrides/POST__generate__video-motion.md**.
         content:
           application/json:
             schema:
@@ -22616,7 +22622,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1475**) or add **docs/openapi/overrides/POST__generate__video-prompt.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1476**) or add **docs/openapi/overrides/POST__generate__video-prompt.md**.
         content:
           application/json:
             schema:
@@ -23048,7 +23054,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **211**) or add **docs/openapi/overrides/POST__img2img__describe.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **212**) or add **docs/openapi/overrides/POST__img2img__describe.md**.
         content:
           application/json:
             schema:
@@ -23126,7 +23132,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **340**) or add **docs/openapi/overrides/POST__img2img__generate.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **344**) or add **docs/openapi/overrides/POST__img2img__generate.md**.
         content:
           application/json:
             schema:
@@ -23174,7 +23180,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **568**) or add **docs/openapi/overrides/POST__img2img__recover-runpod.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/img2img.routes.js** (~line **575**) or add **docs/openapi/overrides/POST__img2img__recover-runpod.md**.
         content:
           application/json:
             schema:
@@ -23330,7 +23336,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4653**) or add **docs/openapi/overrides/POST__modelclone-x__character__assign-images.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4666**) or add **docs/openapi/overrides/POST__modelclone-x__character__assign-images.md**.
         content:
           application/json:
             schema:
@@ -23416,7 +23422,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4802**) or add **docs/openapi/overrides/POST__modelclone-x__character__train.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **4815**) or add **docs/openapi/overrides/POST__modelclone-x__character__train.md**.
         content:
           application/json:
             schema:
@@ -23604,7 +23610,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3939**) or add **docs/openapi/overrides/POST__modelclone-x__generate.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3949**) or add **docs/openapi/overrides/POST__modelclone-x__generate.md**.
         content:
           application/json:
             schema:
@@ -23648,7 +23654,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3824**) or add **docs/openapi/overrides/POST__modelclone-x__prompt-from-image.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **3834**) or add **docs/openapi/overrides/POST__modelclone-x__prompt-from-image.md**.
         content:
           application/json:
             schema:
@@ -26458,7 +26464,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1208**) or add **docs/openapi/overrides/POST__onboarding__complete.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1209**) or add **docs/openapi/overrides/POST__onboarding__complete.md**.
         content:
           application/json:
             schema:
@@ -26500,7 +26506,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1211**) or add **docs/openapi/overrides/POST__onboarding__lock-offer.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/api.routes.js** (~line **1212**) or add **docs/openapi/overrides/POST__onboarding__lock-offer.md**.
         content:
           application/json:
             schema:

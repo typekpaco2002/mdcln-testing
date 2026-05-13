@@ -8,19 +8,26 @@ const TERMINAL = new Set([
   "deleted",
 ]);
 
+/**
+ * Rows staged but not yet executing upstream work (e.g. nudes-pack Grok prompts before RunPod).
+ * Counting them toward the cap blocked legitimate multi-row packs (~26 poses) behind default 12.
+ */
+const STAGING_ONLY = new Set(["queued"]);
+
 function parseMaxInFlight() {
   const raw = process.env.GENERATION_MAX_IN_FLIGHT_PER_USER;
   if (raw === "0" || raw === "") return Infinity;
-  const n = parseInt(raw || "12", 10);
-  if (!Number.isFinite(n) || n < 1) return 12;
+  const n = parseInt(raw || "48", 10);
+  if (!Number.isFinite(n) || n < 1) return 48;
   return Math.min(n, 200);
 }
 
 const MAX = parseMaxInFlight();
 
 /**
- * After auth. Blocks new heavy jobs while the account already has MAX non-terminal Generation rows.
- * Best-effort (Prisma COUNT); separates later dedicated API infra from web traffic.
+ * After auth. Blocks new heavy jobs while the account already has MAX rows that are actively
+ * or imminently consuming pipeline capacity (`processing`, `pending`, etc.).
+ * Does **not** count `queued` staging rows (batch packs / scripts fan-out).
  */
 export async function generationConcurrencyMiddleware(req, res, next) {
   try {
@@ -29,10 +36,11 @@ export async function generationConcurrencyMiddleware(req, res, next) {
     const userId = req.user?.userId;
     if (!userId) return next();
 
+    const excluded = [...TERMINAL, ...STAGING_ONLY];
     const active = await prisma.generation.count({
       where: {
         userId,
-        status: { notIn: Array.from(TERMINAL) },
+        status: { notIn: excluded },
       },
     });
 

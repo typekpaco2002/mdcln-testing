@@ -13,6 +13,7 @@
 
 import express from "express";
 import prisma from "../lib/prisma.js";
+import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
 import { authMiddleware } from "../middleware/auth.middleware.js";
 import { generationLimiter } from "../middleware/rateLimiter.js";
 import { generationConcurrencyMiddleware } from "../middleware/generation-concurrency.middleware.js";
@@ -58,7 +59,17 @@ const jobs = new Map();
 // - a status request fails transiently
 const IMG2IMG_SWEEP_INTERVAL = 10_000;
 let _img2imgSweepRunning = false;
+
+/** Sweeper touches Postgres; skip in local dev (no/misconfigured `DATABASE_URL`) to avoid log spam. */
+function img2imgSweeperDbEnabled() {
+  if (process.env.NODE_ENV === "development") return false;
+  const u = (process.env.DATABASE_URL || "").trim();
+  if (!u.startsWith("postgresql://") && !u.startsWith("postgres://")) return false;
+  return true;
+}
+
 setInterval(async () => {
+  if (!img2imgSweeperDbEnabled()) return;
   if (_img2imgSweepRunning) return;
   _img2imgSweepRunning = true;
   try {
@@ -229,14 +240,17 @@ router.post("/describe", LARGE_JSON, authMiddleware, generationConcurrencyMiddle
   let gen = null;
   try {
     gen = await prisma.generation.create({
-      data: {
-        userId,
-        type: "img2img-describe",
-        status: "processing",
-        prompt: triggerWord,
-        inputImageUrl: JSON.stringify({ triggerWord, lookDescription }),
-        creditsCost: DESCRIBE_CREDIT_COST,
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          type: "img2img-describe",
+          status: "processing",
+          prompt: triggerWord,
+          inputImageUrl: JSON.stringify({ triggerWord, lookDescription }),
+          creditsCost: DESCRIBE_CREDIT_COST,
+        },
+        req.body,
+      ),
     });
 
     const caption = await extractPromptFromImage(inputImageUrl || null, inputImageBase64 || null);
@@ -382,25 +396,28 @@ router.post("/generate", LARGE_JSON, authMiddleware, generationConcurrencyMiddle
   let generation;
   try {
     generation = await prisma.generation.create({
-      data: {
-        userId,
-        modelId: modelId || undefined,
-        type: "nsfw",
-        prompt: (prebuiltPrompt || "").trim() || "img2img (pending)",
-        outputUrl: null,
-        inputImageUrl: JSON.stringify({
-          mode: "img2img",
-          sourceImage: effectiveInputUrl,
-          loraUrl,
-          triggerWord,
-          loraStrength: Number(loraStrength),
-          denoise: Number(denoise),
-          seed: seed != null ? Number(seed) : null,
-        }),
-        creditsCost: IMG2IMG_CREDIT_COST,
-        status: "processing",
-        isNsfw: true,
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          modelId: modelId || undefined,
+          type: "nsfw",
+          prompt: (prebuiltPrompt || "").trim() || "img2img (pending)",
+          outputUrl: null,
+          inputImageUrl: JSON.stringify({
+            mode: "img2img",
+            sourceImage: effectiveInputUrl,
+            loraUrl,
+            triggerWord,
+            loraStrength: Number(loraStrength),
+            denoise: Number(denoise),
+            seed: seed != null ? Number(seed) : null,
+          }),
+          creditsCost: IMG2IMG_CREDIT_COST,
+          status: "processing",
+          isNsfw: true,
+        },
+        req.body,
+      ),
     });
   } catch (dbErr) {
     console.error("Failed to create img2img generation record:", dbErr.message);
@@ -564,21 +581,24 @@ router.post("/recover-runpod", authMiddleware, async (req, res) => {
 
   try {
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        modelId: modelId || undefined,
-        type: "nsfw",
-        prompt: (prompt || "Recovered img2img").trim(),
-        outputUrl: null,
-        inputImageUrl: JSON.stringify({
-          mode: "img2img",
-          runpodJobId,
-          recovered: true,
-        }),
-        creditsCost: 0,
-        status: "processing",
-        isNsfw: true,
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          modelId: modelId || undefined,
+          type: "nsfw",
+          prompt: (prompt || "Recovered img2img").trim(),
+          outputUrl: null,
+          inputImageUrl: JSON.stringify({
+            mode: "img2img",
+            runpodJobId,
+            recovered: true,
+          }),
+          creditsCost: 0,
+          status: "processing",
+          isNsfw: true,
+        },
+        req.body,
+      ),
     });
 
     jobs.set(generation.id, { status: "processing", userId, createdAt: Date.now(), generationId: generation.id, runpodJobId });

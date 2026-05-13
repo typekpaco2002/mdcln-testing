@@ -20,6 +20,7 @@
  */
 
 import prisma from "../lib/prisma.js";
+import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
 import { seedBuiltInSextingScripts } from "../seeds/sexting-scripts.seed.js";
 import { TIER_PRICING } from "../lib/sexting-script-pricing.js";
 import {
@@ -571,7 +572,8 @@ export async function runSextingScript(req, res) {
       });
 
       const generation = await prisma.generation.create({
-        data: {
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
           userId,
           modelId: model.id,
           type: "nsfw",
@@ -587,6 +589,8 @@ export async function runSextingScript(req, res) {
             picIndex: i,
           },
         },
+        req.body,
+        ),
       });
       generationIds.push(generation.id);
 

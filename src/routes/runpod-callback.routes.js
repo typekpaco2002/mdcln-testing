@@ -14,6 +14,7 @@ import { extractModelCloneXImages } from "../services/modelcloneX.service.js";
 import { parseRunpodHandlerOutput } from "../services/img2img.service.js";
 import { extractNsfwMotionVideo, materializeNsfwMotionOutputFromRunpodResponse } from "../services/nsfw-motion.service.js";
 import { uploadBufferToBlobOrR2 } from "../utils/kieUpload.js";
+import { scheduleIntegratorGenerationWebhook } from "../lib/integrator-generation-webhook.js";
 
 const router = express.Router();
 const SECRET = process.env.RUNPOD_WEBHOOK_SECRET?.trim();
@@ -352,6 +353,7 @@ async function handleRunpodCallback(req, res) {
           where: { id: motionGen.id, status: { in: ["queued", "processing", "pending"] } },
           data: { status: "failed", errorMessage: getErrorMessageForDb(String(msg)), completedAt: new Date() },
         });
+        scheduleIntegratorGenerationWebhook(motionGen.id);
         console.log(`[RunPod webhook] motion-video job ${motionGen.id} failed: ${msg}`);
         return res.status(200).json({ ok: true, type: motionGen.type, failed: true });
       }
@@ -374,6 +376,7 @@ async function handleRunpodCallback(req, res) {
             where: { id: motionGen.id, status: { in: ["queued", "processing", "pending"] } },
             data: { status: "failed", errorMessage: getErrorMessageForDb(msg), completedAt: new Date() },
           });
+          scheduleIntegratorGenerationWebhook(motionGen.id);
           return res.status(200).json({ ok: true, type: motionGen.type, failed: true, reason: "no_video" });
         }
 
@@ -413,6 +416,7 @@ async function handleRunpodCallback(req, res) {
           where: { id: imageGen.id, status: { in: ["queued", "processing", "pending"] } },
           data: { status: "failed", errorMessage: getErrorMessageForDb(String(msg)), completedAt: new Date() },
         });
+        scheduleIntegratorGenerationWebhook(imageGen.id);
         console.log(`[RunPod webhook] ${imageGen.type} job ${imageGen.id} failed: ${msg}`);
         return res.status(200).json({ ok: true, type: imageGen.type, failed: true });
       }
@@ -437,6 +441,7 @@ async function handleRunpodCallback(req, res) {
             where: { id: imageGen.id, status: { in: ["queued", "processing", "pending"] } },
             data: { status: "failed", errorMessage: msg, completedAt: new Date() },
           });
+          scheduleIntegratorGenerationWebhook(imageGen.id);
           return res.status(200).json({ ok: true, type: imageGen.type, failed: true, reason: "no_image" });
         }
 

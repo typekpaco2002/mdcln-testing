@@ -24,6 +24,7 @@ import {
 } from "../controllers/nsfw.controller.js";
 import { enqueueCleanupOldGenerations } from "../controllers/generation.controller.js";
 import { refundCredits } from "../services/credit.service.js";
+import { scheduleIntegratorGenerationWebhook } from "../lib/integrator-generation-webhook.js";
 
 const router = express.Router();
 
@@ -372,6 +373,7 @@ router.post(
 
         if (updated.count > 0) {
           console.log(`✅ [fal/faceswap webhook] generation ${gen.id.slice(0, 8)} completed (${finalUrls.length} imgs)`);
+          scheduleIntegratorGenerationWebhook(gen.id);
           if (gen.userId && gen.modelId) {
             enqueueCleanupOldGenerations(gen.userId, gen.modelId);
           }

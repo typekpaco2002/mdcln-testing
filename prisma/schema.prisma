@@ -210,6 +210,11 @@ model Generation {
   isTrial         Boolean     @default(false)
   isNsfw          Boolean     @default(false)
   pipelinePayload Json? // when set, callback finds by imageTaskId and continues pipeline (e.g. image -> video)
+  /// Integrator async completion URL (HTTPS). Body keys: integrationCallbackUrl, webhookUrl, integratorWebhookUrl, integratorCallbackUrl (never `callbackUrl` — reserved for provider payloads).
+  integratorWebhookUrl         String?
+  /// Optional HMAC secret; if set, we send header X-Modelclone-Signature: sha256=<hex> on delivery.
+  integratorWebhookSecret      String?
+  integratorWebhookDeliveredAt DateTime?
   originalGeneration Generation? @relation("GenerationExtensionChain", fields: [originalGenerationId], references: [id], onDelete: SetNull)
   extensions      Generation[] @relation("GenerationExtensionChain")
   model           SavedModel? @relation(fields: [modelId], references: [id])

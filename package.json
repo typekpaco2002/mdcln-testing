@@ -30,6 +30,7 @@
     "figma:export:html:auth": "node scripts/export-figma-html.mjs --include-auth --storage-state scripts/figma-auth-state.json",
     "openapi:generate": "node scripts/generate-openapi.mjs",
     "openapi:client": "node scripts/generate-client-openapi.mjs",
+    "openapi:lint": "npx --yes @stoplight/spectral-cli@6.15.0 lint docs/openapi/client-api.openapi.yaml",
     "docs:api-full-integrator": "node scripts/build-api-full-integrator-doc.mjs",
     "openapi:routes": "node scripts/openapi-extract-routes.mjs",
     "docs:registry": "node scripts/generate-registry.mjs",

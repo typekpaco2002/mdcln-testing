@@ -5,10 +5,11 @@ _ModelClone integrations use **`/api/v1`** with **`X-Api-Key`** or **`Authorizat
 ## Read order
 
 1. **`docs/API_PUBLIC_LAUNCH.md`** — mounts, prod OpenAPI wiring.
-2. **`docs/API_CHANGELOG.md`** — **required** whenever integration routes or semantics change (**`npm run verify:api-changelog`**).
-3. **`docs/generated/API_GENERATION_CATALOG.md`** — auto route table (**`npm run docs:registry`**).
-4. **`docs/API_GENERATION_UX_PARITY.md`** — ModelClone-X / enhance ↔ JSON bodies.
-5. **`docs/openapi/v1.openapi.yaml`** — YAML served at **`GET /api/v1/openapi.yaml`** (partner-facing slice).
+2. **`docs/API_INTEGRATORS_REFERENCE.md`** — uploads, webhook deliveries, canonical route map pointers.
+3. **`docs/API_CHANGELOG.md`** — **required** whenever integration routes or semantics change (**`npm run verify:api-changelog`**).
+4. **`docs/generated/API_GENERATION_CATALOG.md`** — auto route table (**`npm run docs:registry`**).
+5. **`docs/API_GENERATION_UX_PARITY.md`** — ModelClone-X / enhance ↔ JSON bodies.
+6. **`docs/openapi/v1.openapi.yaml`** — YAML served at **`GET /api/v1/openapi.yaml`** (partner-facing slice).
 
 ## Blocking checks
 
@@ -34,7 +35,7 @@ Set **`SKIP_API_CHANGELOG_VERIFY=1`** to bypass the changelog diff check locally
 | `PUBLIC_OPENAPI_PATH` | Optional absolute YAML when `docs/openapi/` isn’t bundled |
 | `PUBLIC_CLIENT_OPENAPI_PATH` | Optional absolute path for **`client-api.openapi.yaml`** (SPA + integrations catalog) |
 | `GENERATION_RATE_LIMIT_MAX` | Per-user generation bursts/min (**Upstash**/Redis when configured) |
-| `GENERATION_MAX_IN_FLIGHT_PER_USER` | Max concurrent non-terminal **`Generation`** rows (**`0`** = off) |
+| `GENERATION_MAX_IN_FLIGHT_PER_USER` | Max concurrent **`processing` / `pending`** / … **`Generation`** rows per user (**`queued`** staging excluded). Default **`48`**; **`0`** = off |
 | `API_RATE_LIMIT_MAX`, `API_RATE_LIMIT_WINDOW_MS` | Global `/api` + `/api/v1` IP throttle |
 
 Redis / Upstash (see **`src/middleware/rateLimiter.js`**) aligns limits across instances (e.g. Vercel).

@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
 import { 
   checkAndExpireCredits, 
   getTotalCredits, 
@@ -62,17 +63,20 @@ export async function validateAndReserveCredits(userId, creditsNeeded) {
  */
 export async function createGenerationRecord(data) {
   return await prisma.generation.create({
-    data: {
-      userId: data.userId,
-      modelId: data.modelId || null,
-      type: data.type,
-      prompt: data.prompt,
-      inputImageUrl: data.inputImageUrl,
-      inputVideoUrl: data.inputVideoUrl || null,
-      status: 'processing',
-      creditsCost: data.creditsCost,
-      replicateModel: data.replicateModel
-    }
+    data: mergeIntegratorWebhookIntoPrismaData(
+      {
+        userId: data.userId,
+        modelId: data.modelId || null,
+        type: data.type,
+        prompt: data.prompt,
+        inputImageUrl: data.inputImageUrl,
+        inputVideoUrl: data.inputVideoUrl || null,
+        status: "processing",
+        creditsCost: data.creditsCost,
+        replicateModel: data.replicateModel,
+      },
+      data.integratorWebhookBody,
+    ),
   });
 }
 

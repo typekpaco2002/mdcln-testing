@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import prisma from "../lib/prisma.js";
+import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
 import { isAllowedPublicAssetHost } from "../utils/publicAssetHost.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
 import { enforceGeneratedContentDeletionBlock } from "../utils/generated-content-deletion-guard.js";
@@ -1657,15 +1658,18 @@ router.post(
 
       const replicateModelLabel = engine === "seedream" ? "kie-seedream-5-lite" : "kie-nano-banana-pro";
       const generation = await prisma.generation.create({
-        data: {
-          userId,
-          modelId,
-          type: "advanced-image",
-          status: "processing",
-          prompt: prompt.trim(),
-          creditsCost: creditsNeeded,
-          replicateModel: replicateModelLabel,
-        },
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
+            userId,
+            modelId,
+            type: "advanced-image",
+            status: "processing",
+            prompt: prompt.trim(),
+            creditsCost: creditsNeeded,
+            replicateModel: replicateModelLabel,
+          },
+          req.body,
+        ),
       });
       generationCreated = true;
 
@@ -3088,14 +3092,17 @@ router.post(
 
       // Create generation record (keep blob URL when present so we can clean it up later)
       const gen = await prisma.generation.create({
-        data: {
-          userId,
-          type: "upscale",
-          prompt: "",
-          creditsCost: upscalerCost,
-          status: "processing",
-          inputImageUrl: JSON.stringify({ submitting: true, blobUrl: inputImageUrl || null }),
-        },
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
+            userId,
+            type: "upscale",
+            prompt: "",
+            creditsCost: upscalerCost,
+            status: "processing",
+            inputImageUrl: JSON.stringify({ submitting: true, blobUrl: inputImageUrl || null }),
+          },
+          req.body,
+        ),
       });
       generationId = gen.id;
 
@@ -3286,14 +3293,17 @@ router.post(
       }
 
       const gen = await prisma.generation.create({
-        data: {
-          userId,
-          type: "synthid-remove",
-          prompt: "",
-          creditsCost: cost,
-          status: "processing",
-          inputImageUrl: JSON.stringify({ blobUrl: inputImageUrl || null }),
-        },
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
+            userId,
+            type: "synthid-remove",
+            prompt: "",
+            creditsCost: cost,
+            status: "processing",
+            inputImageUrl: JSON.stringify({ blobUrl: inputImageUrl || null }),
+          },
+          req.body,
+        ),
       });
       generationId = gen.id;
 
@@ -4094,15 +4104,18 @@ router.post("/modelclone-x/generate", authMiddleware, generationConcurrencyMiddl
     let gen;
     try {
       gen = await prisma.generation.create({
-        data: {
-          userId,
-          modelId: modelId || null,
-          type: "modelclone-x",
-          prompt: inputPrompt,
-          status: "processing",
-          creditsCost: thisCost,
-          replicateModel: "comfyui-modelclone-x",
-        },
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
+            userId,
+            modelId: modelId || null,
+            type: "modelclone-x",
+            prompt: inputPrompt,
+            status: "processing",
+            creditsCost: thisCost,
+            replicateModel: "comfyui-modelclone-x",
+          },
+          req.body,
+        ),
       });
 
       const modelcloneXWebhookUrl = resolveRunpodWebhookUrl({

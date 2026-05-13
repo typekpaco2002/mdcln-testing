@@ -19,10 +19,16 @@ info:
     ### Canonical surface
     - **Integrators:** Prefer **`https://modelclone.app/api/v1/...`**. SPA mirror **`/api/...`** repeats the same handlers for migration and browser traffic; duplicates appear in this spec **`deprecated`** when a **`/api/v1/...`** twin exists (**Flows Studio** remains **` /api/flows/...`** only — not mirrored under **`/api/v1/flows`**).
 
-    ### Outbound callbacks to integrators (**webhooks you receive**)
-    Modelclone **does not** currently POST asynchronous completion events to arbitrary customer URLs — poll **`GET /api/v1/generations/{id}`** (or equivalents) until status settles.
+    ### Outbound completion callbacks (**integrator-hosted URLs**)
+    On supported generation **`POST`** bodies you may include **`integrationCallbackUrl`** (aliases: **`webhookUrl`**, **`integratorWebhookUrl`**, **`integratorCallbackUrl`**).
 
-    (**Not the same:** *client → Modelclone* **`POST`** bodies such as **`type: blob.upload-completed`** or other JSON you send **to our** **`/api/...`** routes are ordinary request payloads from your app — **not** outbound vendor webhooks *to your servers*.)
+    When the corresponding **`Generation`** row reaches **`completed`** or **`failed`**, Modelclone issues **one HTTPS `POST`** to that URL with a JSON envelope ( **`event`**, **`generationId`**, **`status`**, **`outputUrl`**, etc.). Optionally set **`integratorWebhookSecret`** (aliases **`callbackSecret`**, **`webhookSecret`**) — we send **`X-Modelclone-Signature: sha256=<hex>`** (`HMAC-SHA256` of the raw JSON body).
+
+    **`callbackUrl`** is **not** read for this feature (it is reserved for upstream provider payloads such as **`callBackUrl`** on Creator Studio — Veo callbacks).
+
+    If your endpoint fails or times out we **do not automatically retry**; always **`GET`** **`/api/v1/generations/{id}`** as a fallback.
+
+    (**Not the same:** *client → Modelclone* **`POST`** bodies such as **`type: blob.upload-completed`** or other JSON you send **to our** **`/api/...`** routes are ordinary request payloads from your app — **not** this completion delivery.)
 
     Dedicated **staging/base URLs are issued manually** — contact integrations support if your contract requires non-production environments.
 

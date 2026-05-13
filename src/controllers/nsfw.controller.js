@@ -14,6 +14,7 @@
  */
 
 import prisma from "../lib/prisma.js";
+import { mergeIntegratorWebhookIntoPrismaData, scheduleIntegratorGenerationWebhook } from "../lib/integrator-generation-webhook.js";
 import {
   buildStructuredPromptInput,
   NSFW_ZIT_INPUT_BRIEF,
@@ -2961,16 +2962,19 @@ export async function generateNsfwImage(req, res) {
       creditsAssigned += thisCost;
 
       const generation = await prisma.generation.create({
-        data: {
-          userId,
-          modelId,
-          type: "nsfw",
-          prompt: prompt.trim(),
-          status: "processing",
-          creditsCost: thisCost,
-          replicateModel: "comfyui-nsfw",
-          isNsfw: true,
-        },
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
+            userId,
+            modelId,
+            type: "nsfw",
+            prompt: prompt.trim(),
+            status: "processing",
+            creditsCost: thisCost,
+            replicateModel: "comfyui-nsfw",
+            isNsfw: true,
+          },
+          req.body,
+        ),
       });
       generationIds.push(generation.id);
       if (i === 0) firstGeneration = generation;
@@ -3257,16 +3261,19 @@ export async function generateNudesPack(req, res) {
     const rowsWithGen = [];
     for (const row of packRows) {
       const generation = await prisma.generation.create({
-        data: {
-          userId,
-          modelId,
-          type: "nsfw",
-          prompt: `[nudes-pack-queued] ${row.pose.id}`,
-          status: "queued",
-          creditsCost: row.thisCreditCost,
-          replicateModel: "comfyui-nsfw",
-          isNsfw: true,
-        },
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
+            userId,
+            modelId,
+            type: "nsfw",
+            prompt: `[nudes-pack-queued] ${row.pose.id}`,
+            status: "queued",
+            creditsCost: row.thisCreditCost,
+            replicateModel: "comfyui-nsfw",
+            isNsfw: true,
+          },
+          req.body,
+        ),
       });
       generationIds.push(generation.id);
       rowsWithGen.push({ ...row, generationId: generation.id });
@@ -3565,6 +3572,8 @@ export async function finalizeNsfwRunpodGeneration(generationId, requestId, runp
   if (updated.count === 0) {
     return { ok: true, skipped: true, reason: "race_lost" };
   }
+
+  scheduleIntegratorGenerationWebhook(generationId);
 
   if (failedNeedsRecovery && gen.creditsCost > 0 && gen.userId) {
     try {
@@ -4994,15 +5003,18 @@ export async function generateAdvancedNsfw(req, res) {
     creditsDeducted = creditCost;
 
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        modelId,
-        type: "nsfw",
-        status: "processing",
-        creditsCost: creditCost,
-        prompt: prompt.trim(),
-        isNsfw: true,
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          modelId,
+          type: "nsfw",
+          status: "processing",
+          creditsCost: creditCost,
+          prompt: prompt.trim(),
+          isNsfw: true,
+        },
+        req.body,
+      ),
     });
     generationId = generation.id;
 
@@ -5288,21 +5300,24 @@ export async function generateNsfwVideoFromImage(req, res) {
     const videoPrompt = `${basePrompt}. Natural pose energy, subtle weight shift, dynamic feel.`;
 
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        modelId,
-        type: "nsfw-video",
-        prompt: videoPrompt,
-        status: "processing",
-        creditsCost: creditsNeeded,
-        replicateModel: null,
-        isNsfw: true,
-        inputImageUrl: JSON.stringify({
-          sourceImage: imageUrl,
-          duration: videoDuration,
-          sourceType: isGallerySourceImage ? "gallery" : "upload",
-        }),
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          modelId,
+          type: "nsfw-video",
+          prompt: videoPrompt,
+          status: "processing",
+          creditsCost: creditsNeeded,
+          replicateModel: null,
+          isNsfw: true,
+          inputImageUrl: JSON.stringify({
+            sourceImage: imageUrl,
+            duration: videoDuration,
+            sourceType: isGallerySourceImage ? "gallery" : "upload",
+          }),
+        },
+        req.body,
+      ),
     });
     generationId = generation.id;
 
@@ -5420,22 +5435,25 @@ export async function extendNsfwVideo(req, res) {
     const videoPrompt = `${baseExtendPrompt}. Natural pose energy, subtle weight shift, dynamic feel.`;
 
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        modelId: sourceGen.modelId,
-        type: "nsfw-video-extend",
-        prompt: videoPrompt,
-        status: "processing",
-        creditsCost: creditsNeeded,
-        replicateModel: null,
-        isNsfw: true,
-        inputImageUrl: JSON.stringify({
-          sourceVideoUrl: videoUrl,
-          sourceGenerationId: sourceGenId,
-          extendDuration: extendDuration,
-          seed: sourceSeed,
-        }),
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          modelId: sourceGen.modelId,
+          type: "nsfw-video-extend",
+          prompt: videoPrompt,
+          status: "processing",
+          creditsCost: creditsNeeded,
+          replicateModel: null,
+          isNsfw: true,
+          inputImageUrl: JSON.stringify({
+            sourceVideoUrl: videoUrl,
+            sourceGenerationId: sourceGenId,
+            extendDuration: extendDuration,
+            seed: sourceSeed,
+          }),
+        },
+        req.body,
+      ),
     });
     generationId = generation.id;
 
@@ -5604,24 +5622,27 @@ export async function generateNsfwMotionVideo(req, res) {
         : "natural cinematic motion, subtle weight shift, soft skin lighting, smooth and continuous animation, photorealistic";
 
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        modelId,
-        type: "nsfw-video-motion",
-        prompt: finalPrompt,
-        status: "processing",
-        creditsCost: creditsNeeded,
-        replicateModel: null,
-        isNsfw: true,
-        inputImageUrl: JSON.stringify({
-          referenceImageUrl: imageUrl,
-          duration: dur,
-          skipSeconds: skip,
-          sourceType: isGallerySourceImage ? "gallery" : "upload",
-          ...(Number.isFinite(Number(seed)) ? { seed: Math.trunc(Number(seed)) } : {}),
-        }),
-        inputVideoUrl: videoUrl,
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          modelId,
+          type: "nsfw-video-motion",
+          prompt: finalPrompt,
+          status: "processing",
+          creditsCost: creditsNeeded,
+          replicateModel: null,
+          isNsfw: true,
+          inputImageUrl: JSON.stringify({
+            referenceImageUrl: imageUrl,
+            duration: dur,
+            skipSeconds: skip,
+            sourceType: isGallerySourceImage ? "gallery" : "upload",
+            ...(Number.isFinite(Number(seed)) ? { seed: Math.trunc(Number(seed)) } : {}),
+          }),
+          inputVideoUrl: videoUrl,
+        },
+        req.body,
+      ),
     });
     generationId = generation.id;
 

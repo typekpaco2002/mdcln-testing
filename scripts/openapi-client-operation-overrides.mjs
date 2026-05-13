@@ -85,26 +85,6 @@ export const CLIENT_OPENAPI_OPERATION_OVERRIDES = {
                 { $ref: "#/components/schemas/BlobUploadCompletedRequest" },
               ],
             },
-            examples: {
-              handleUploadToken: {
-                summary: "First leg — server authorizes client-side Blob upload",
-                description: "Exact shape is owned by `@vercel/blob` / `handleUpload`.",
-                value: {
-                  pathname: "user-uploads/example.jpg",
-                  clientPayload: {},
-                },
-              },
-              uploadCompleted: {
-                summary: "Second leg — `blob.upload-completed`",
-                value: {
-                  type: "blob.upload-completed",
-                  blob: {
-                    url: "https://….public.blob.vercel-storage.com/…",
-                    pathname: "user-uploads/….jpg",
-                  },
-                },
-              },
-            },
           },
         },
       },
@@ -125,6 +105,7 @@ export const CLIENT_OPENAPI_OPERATION_OVERRIDES = {
   },
   "/api/upload/presign": {
     post: {
+      deprecated: true,
       summary: "R2 presigned PUT URL (legacy; disabled in Blob-only mode)",
       description:
         "**`409`** when **`isBlobOnlyStorageMode()`** — use **`POST /api/upload/blob`** instead.\n\n" +
@@ -240,7 +221,7 @@ export const CLIENT_OPENAPI_OPERATION_OVERRIDES = {
           "application/json": {
             schema: { $ref: "#/components/schemas/UpscaleRequestJson" },
             example: {
-              inputImageUrl: "https://….public.blob.vercel-storage.com/photo.jpg",
+              inputImageUrl: "https://example.public.blob.vercel-storage.com/photo.jpg",
             },
           },
           "multipart/form-data": {

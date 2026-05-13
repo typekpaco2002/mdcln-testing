@@ -76,6 +76,7 @@ import {
 import { waveSpeedConstraints } from "../config/providerMediaConstraints.js";
 import { getUserFriendlyGenerationError } from "../utils/generationErrorMessages.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
+import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
 import { getGenerationPricing } from "../services/generation-pricing.service.js";
 import {
   checkNsfwMotionStatus,
@@ -397,7 +398,8 @@ export async function generateImageWithIdentity(req, res) {
     for (let i = 0; i < imageQuantity; i++) {
       const tempId = tempGenerationIds?.[i] || null;
       const gen = await prisma.generation.create({
-        data: {
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
           userId,
           modelId,
           type: "image-identity",
@@ -412,6 +414,8 @@ export async function generateImageWithIdentity(req, res) {
           creditsCost: 10,
           replicateModel: "wavespeed-seedream-v4.5-edit",
         },
+        req.body,
+        ),
       });
       generationRecords.push({ gen, tempId, index: i + 1 });
     }
@@ -830,7 +834,8 @@ export async function generateVideoWithMotion(req, res) {
     console.log(`💳 Deducted ${creditsNeeded} credits upfront (motion ${tierLog})`);
 
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         modelId: modelId || null,
         type: "video",
@@ -846,6 +851,8 @@ export async function generateVideoWithMotion(req, res) {
         }),
         duration: videoDuration,
       },
+      req.body,
+      ),
     });
     generationId = generation.id; // Track for emergency refund
 
@@ -1043,7 +1050,8 @@ export async function generateCompleteRecreation(req, res) {
 
     // Create image generation record
     const imageGen = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         modelId: modelId,
         type: "image-identity",
@@ -1053,6 +1061,8 @@ export async function generateCompleteRecreation(req, res) {
         creditsCost: imageCredits,
         replicateModel: "wavespeed-seedream-v4.5-edit",
       },
+      req.body,
+      ),
     });
     imageGenId = imageGen.id;
 
@@ -1077,7 +1087,8 @@ export async function generateCompleteRecreation(req, res) {
       wanResolution: wanResolutionNormalized,
     };
     const videoGen = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         modelId: modelId,
         type: "video",
@@ -1092,6 +1103,8 @@ export async function generateCompleteRecreation(req, res) {
         }),
         pipelinePayload,
       },
+      req.body,
+      ),
     });
     videoGenId = videoGen.id;
 
@@ -1876,7 +1889,8 @@ export async function prepareVideoGeneration(req, res) {
     const variationRecords = [];
     for (const variation of variations) {
       const gen = await prisma.generation.create({
-        data: {
+        data: mergeIntegratorWebhookIntoPrismaData(
+          {
           userId,
           modelId: modelId,
           type: "image",
@@ -1888,6 +1902,8 @@ export async function prepareVideoGeneration(req, res) {
           replicateModel: "wavespeed-seedream-v4.5-edit",
           completedAt: new Date(),
         },
+        req.body,
+        ),
       });
       generationIds.push(gen.id);
 
@@ -2032,7 +2048,8 @@ export async function completeVideoGeneration(req, res) {
     }
 
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         modelId: modelId || null,
         type: "video",
@@ -2047,6 +2064,8 @@ export async function completeVideoGeneration(req, res) {
           wanResolution: wanResolutionNormalized,
         }),
       },
+      req.body,
+      ),
     });
     generationId = generation.id;
 
@@ -2363,7 +2382,8 @@ export async function generateVideoDirectly(req, res) {
     console.log(`💰 Credits: ${creditsNeeded}`);
 
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         modelId: null,
         type: "video",
@@ -2379,6 +2399,8 @@ export async function generateVideoDirectly(req, res) {
         }),
         duration: videoDuration,
       },
+      req.body,
+      ),
     });
     generationId = generation.id;
 
@@ -2609,7 +2631,8 @@ export async function generateFaceSwap(req, res) {
 
     // Create generation record
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         modelId: modelId, // Associate with model for filtering
         type: "face-swap",
@@ -2624,6 +2647,8 @@ export async function generateFaceSwap(req, res) {
         replicateModel: "wavespeed-video-face-swap",
         duration: videoDuration,
       },
+      req.body,
+      ),
     });
     generationId = generation.id; // Track for emergency refund
 
@@ -3109,7 +3134,8 @@ export async function generatePromptBasedImage(req, res) {
     console.log(`🧷 Identity refs routed: ${identityImages.length} (${useSeedream ? "Seedream 4.5 expects 3" : "Nano Banana expects 2"})`);
 
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         modelId: modelId,
         type: "prompt-image",
@@ -3119,6 +3145,8 @@ export async function generatePromptBasedImage(req, res) {
         creditsCost: creditsNeeded,
         replicateModel: aiModel,
       },
+      req.body,
+      ),
     });
     generationId = generation.id; // Track for emergency refund
 
@@ -3337,7 +3365,8 @@ export async function generateVideoFromPrompt(req, res) {
 
     // Create generation record
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         type: "prompt-video",
         prompt,
@@ -3346,6 +3375,8 @@ export async function generateVideoFromPrompt(req, res) {
         creditsCost: creditsNeeded,
         duration: duration,
       },
+      req.body,
+      ),
     });
     generationId = generation.id; // Track for emergency refund
 
@@ -3588,7 +3619,8 @@ export async function faceSwapImage(req, res) {
 
     // v48 FIX: Create generation with processing status first
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         type: "face-swap-image",
         prompt: "Face swap",
@@ -3600,6 +3632,8 @@ export async function faceSwapImage(req, res) {
           sourceImageUrl,
         }),
       },
+      req.body,
+      ),
     });
     generationId = generation.id; // Track for emergency refund
 
@@ -3756,7 +3790,8 @@ export async function generateTalkingHeadVideo(req, res) {
     console.log("✅ Credits deducted:", creditsNeeded);
 
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         type: "talking-head",
         prompt: text.substring(0, 255),
@@ -3765,6 +3800,8 @@ export async function generateTalkingHeadVideo(req, res) {
         creditsCost: creditsNeeded,
         inputImageUrl: JSON.stringify({ imageUrl, voiceId }),
       },
+      req.body,
+      ),
     });
     generationId = generation.id; // Track for emergency refund
 
@@ -4631,46 +4668,49 @@ export async function generateCreatorStudio(req, res) {
     creditsDeducted = creditsNeeded;
 
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        type: "creator-studio",
-        prompt: prompt.trim(),
-        inputImageUrl: normalizedInputImage || refs[0] || null,
-        status: "processing",
-        creditsCost: creditsNeeded,
-        provider: modelName.startsWith("seedream") ? "wavespeed" : "kie",
-        providerFamily: "creator-studio",
-        providerMode: modelName,
-        providerType: "image",
-        providerModel: modelName,
-        replicateModel: modelName.startsWith("seedream") ? `wavespeed-${modelName}` : `kie-${modelName}`,
-        pipelinePayload: JSON.stringify({
-          aspectRatio: resolvedAspectRatio,
-          resolution,
-          generationModel: modelName,
-          refCount: refs.length,
-          inputImageUrl: normalizedInputImage || null,
-          maskUrl: normalizedMaskUrl || null,
-          numImages: effectiveNumImages,
-          renderingSpeed: String(renderingSpeed || "BALANCED").toUpperCase(),
-          ideogramStyle: String(ideogramStyle || "AUTO").toUpperCase(),
-          ideogramImageSize: String(ideogramImageSize || "square_hd"),
-          ideogramStrength: Number(ideogramStrength || 0.8),
-          ideogramExpandPrompt: ideogramExpandPrompt !== false,
-          outputFormat: String(outputFormat || "jpeg"),
-          promptUpsampling: !!promptUpsampling,
-          enableTranslation: enableTranslation !== false,
-          uploadCn: uploadCn === true,
-          watermark: String(watermark || "").trim(),
-          safetyTolerance: Number(safetyTolerance ?? 2),
-          enableSequential: enableSequential === true,
-          nsfwChecker: nsfwChecker === true,
-          thinkingMode: thinkingMode === true,
-          colorPalette: Array.isArray(colorPalette) ? colorPalette.slice(0, 16) : [],
-          bboxList: Array.isArray(bboxList) ? bboxList.slice(0, 24) : [],
-          seedreamSize: String(seedreamSize || ""),
-        }),
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          type: "creator-studio",
+          prompt: prompt.trim(),
+          inputImageUrl: normalizedInputImage || refs[0] || null,
+          status: "processing",
+          creditsCost: creditsNeeded,
+          provider: modelName.startsWith("seedream") ? "wavespeed" : "kie",
+          providerFamily: "creator-studio",
+          providerMode: modelName,
+          providerType: "image",
+          providerModel: modelName,
+          replicateModel: modelName.startsWith("seedream") ? `wavespeed-${modelName}` : `kie-${modelName}`,
+          pipelinePayload: JSON.stringify({
+            aspectRatio: resolvedAspectRatio,
+            resolution,
+            generationModel: modelName,
+            refCount: refs.length,
+            inputImageUrl: normalizedInputImage || null,
+            maskUrl: normalizedMaskUrl || null,
+            numImages: effectiveNumImages,
+            renderingSpeed: String(renderingSpeed || "BALANCED").toUpperCase(),
+            ideogramStyle: String(ideogramStyle || "AUTO").toUpperCase(),
+            ideogramImageSize: String(ideogramImageSize || "square_hd"),
+            ideogramStrength: Number(ideogramStrength || 0.8),
+            ideogramExpandPrompt: ideogramExpandPrompt !== false,
+            outputFormat: String(outputFormat || "jpeg"),
+            promptUpsampling: !!promptUpsampling,
+            enableTranslation: enableTranslation !== false,
+            uploadCn: uploadCn === true,
+            watermark: String(watermark || "").trim(),
+            safetyTolerance: Number(safetyTolerance ?? 2),
+            enableSequential: enableSequential === true,
+            nsfwChecker: nsfwChecker === true,
+            thinkingMode: thinkingMode === true,
+            colorPalette: Array.isArray(colorPalette) ? colorPalette.slice(0, 16) : [],
+            bboxList: Array.isArray(bboxList) ? bboxList.slice(0, 24) : [],
+            seedreamSize: String(seedreamSize || ""),
+          }),
+        },
+        req.body,
+      ),
     });
     generationId = generation.id;
 
@@ -5607,63 +5647,66 @@ export async function generateCreatorStudioVideo(req, res) {
     const generationProviderModel = `${generationProvider}-${lowerFamily}-${normalizedMode}`;
 
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        type: "creator-studio-video",
-        prompt: String(prompt || "").trim(),
-        duration: Number(normalizedDurationSeconds) || null,
-        inputImageUrl: normalizedImageUrl || normalizedReferenceImageUrl || null,
-        inputVideoUrl: normalizedInputVideoUrl || null,
-        status: "processing",
-        creditsCost: creditsNeeded,
-        provider: generationProvider,
-        providerFamily: lowerFamily,
-        providerMode: normalizedMode,
-        providerType: normalizedMode,
-        providerModel: generationProviderModel,
-        parentTaskId: originalTaskId,
-        originalGenerationId: originalGenerationId || null,
-        replicateModel: generationProviderModel,
-        extendEligible: (lowerFamily === "veo31" && normalizedMode !== "extend")
-          || (lowerFamily === "seedance2" && ["t2v", "i2v"].includes(normalizedMode)),
-        providerRequest: {
-          family: lowerFamily,
-          mode: normalizedMode,
-          imageUrl: normalizedImageUrl,
-          referenceImageUrl: normalizedReferenceImageUrl,
-          endFrameUrl: normalizedEndFrameUrl,
-          thirdImageUrl: normalizedThirdImageUrl,
-          inputVideoUrl: normalizedInputVideoUrl,
-          durationSeconds: normalizedDurationSeconds,
-          nFrames,
-          size,
-          soraQuality,
-          soraResolution,
-          soraSize,
-          removeWatermark,
-          speed,
-          soundEnabled,
-          soundPrompt,
-          kling30Quality,
-          kling30MultiShot,
-          kling30Shots: Array.isArray(kling30Shots) ? kling30Shots.slice(0, 5) : [],
-          klingElements,
-          aspectRatio,
-          seedanceTaskType,
-          seedanceResolution,
-          seedanceGenerateAudio,
-          seedanceReturnLastFrame,
-          seedanceReferenceAudioUrls,
-          seedanceRealPersonMode,
-          seedanceConversionSlots,
-          wanResolution: normalizedWanResolution,
-          audioSetting: String(audioSetting || "auto"),
-          originalTaskId,
-          veoSeeds,
-          veoEnableTranslation,
-          veoWatermark,
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          type: "creator-studio-video",
+          prompt: String(prompt || "").trim(),
+          duration: Number(normalizedDurationSeconds) || null,
+          inputImageUrl: normalizedImageUrl || normalizedReferenceImageUrl || null,
+          inputVideoUrl: normalizedInputVideoUrl || null,
+          status: "processing",
+          creditsCost: creditsNeeded,
+          provider: generationProvider,
+          providerFamily: lowerFamily,
+          providerMode: normalizedMode,
+          providerType: normalizedMode,
+          providerModel: generationProviderModel,
+          parentTaskId: originalTaskId,
+          originalGenerationId: originalGenerationId || null,
+          replicateModel: generationProviderModel,
+          extendEligible: (lowerFamily === "veo31" && normalizedMode !== "extend")
+            || (lowerFamily === "seedance2" && ["t2v", "i2v"].includes(normalizedMode)),
+          providerRequest: {
+            family: lowerFamily,
+            mode: normalizedMode,
+            imageUrl: normalizedImageUrl,
+            referenceImageUrl: normalizedReferenceImageUrl,
+            endFrameUrl: normalizedEndFrameUrl,
+            thirdImageUrl: normalizedThirdImageUrl,
+            inputVideoUrl: normalizedInputVideoUrl,
+            durationSeconds: normalizedDurationSeconds,
+            nFrames,
+            size,
+            soraQuality,
+            soraResolution,
+            soraSize,
+            removeWatermark,
+            speed,
+            soundEnabled,
+            soundPrompt,
+            kling30Quality,
+            kling30MultiShot,
+            kling30Shots: Array.isArray(kling30Shots) ? kling30Shots.slice(0, 5) : [],
+            klingElements,
+            aspectRatio,
+            seedanceTaskType,
+            seedanceResolution,
+            seedanceGenerateAudio,
+            seedanceReturnLastFrame,
+            seedanceReferenceAudioUrls,
+            seedanceRealPersonMode,
+            seedanceConversionSlots,
+            wanResolution: normalizedWanResolution,
+            audioSetting: String(audioSetting || "auto"),
+            originalTaskId,
+            veoSeeds,
+            veoEnableTranslation,
+            veoWatermark,
+          },
         },
-      },
+        req.body,
+      ),
     });
     generationId = generation.id;
 
@@ -5921,22 +5964,25 @@ export async function uploadCreatorStudioMask(req, res) {
     const url = await uploadBufferToBlobOrR2(buffer, "kie-relay", "png", "image/png");
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await prisma.generation.create({
-      data: {
-        userId,
-        type: "creator-studio-mask",
-        prompt: "creator-studio-mask",
-        status: "completed",
-        creditsCost: 0,
-        provider: "internal",
-        providerFamily: "creator-studio",
-        providerMode: "mask",
-        providerType: "mask-upload",
-        outputUrl: url,
-        completedAt: new Date(),
-        providerResponse: {
-          expiresAt: expiresAt.toISOString(),
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          type: "creator-studio-mask",
+          prompt: "creator-studio-mask",
+          status: "completed",
+          creditsCost: 0,
+          provider: "internal",
+          providerFamily: "creator-studio",
+          providerMode: "mask",
+          providerType: "mask-upload",
+          outputUrl: url,
+          completedAt: new Date(),
+          providerResponse: {
+            expiresAt: expiresAt.toISOString(),
+          },
         },
-      },
+        req.body,
+      ),
     });
     return res.json({
       success: true,
@@ -6092,19 +6138,22 @@ export async function createCreatorStudioAsset(req, res) {
     await deductCredits(userId, creditsNeeded);
 
     const generation = await prisma.generation.create({
-      data: {
-        userId,
-        type: "creator-studio-asset",
-        prompt: assetName || `Seedance ${assetType.toLowerCase()} asset`,
-        status: "processing",
-        creditsCost: creditsNeeded,
-        provider: "kie",
-        providerFamily: "seedance-assets",
-        providerMode: assetType.toLowerCase(),
-        providerType: "create",
-        providerModel: "kie-volcanic-asset",
-        inputImageUrl: sourceUrl,
-      },
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
+          userId,
+          type: "creator-studio-asset",
+          prompt: assetName || `Seedance ${assetType.toLowerCase()} asset`,
+          status: "processing",
+          creditsCost: creditsNeeded,
+          provider: "kie",
+          providerFamily: "seedance-assets",
+          providerMode: assetType.toLowerCase(),
+          providerType: "create",
+          providerModel: "kie-volcanic-asset",
+          inputImageUrl: sourceUrl,
+        },
+        req.body,
+      ),
     });
     generationId = generation.id;
 

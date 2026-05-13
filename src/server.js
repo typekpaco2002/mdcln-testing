@@ -13,6 +13,7 @@ import nsfwController from './controllers/nsfw.controller.js';
 const { recoverStuckNsfwGenerations, recoverStaleLoraTrainings } = nsfwController;
 import generationPoller from './services/generation-poller.service.js';
 import prisma from './lib/prisma.js';
+import { assertIntegratorWebhookBody } from './lib/integrator-generation-webhook.js';
 import { refundCredits } from './services/credit.service.js';
 import { telemetryMiddleware } from './middleware/telemetry.middleware.js';
 import { generationSafetyMiddleware } from './middleware/generation-safety.middleware.js';
@@ -274,6 +275,27 @@ const BODY_LIMIT = process.env.BODY_LIMIT || "128mb";
 app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 
+/** Reject malformed integrator callback URLs before generation handlers run */
+app.use((req, res, next) => {
+  if (!["POST", "PUT", "PATCH"].includes(req.method)) return next();
+  const pathOnly = String(req.originalUrl || req.path || "").split("?")[0];
+  if (
+    !/^\/api(?:\/v1)?\/(?:generate|nsfw|img2img|modelclone-x|gptx|sexting-scripts|onboarding)\//.test(pathOnly)
+  ) {
+    return next();
+  }
+  try {
+    assertIntegratorWebhookBody(req.body);
+  } catch (e) {
+    return res.status(Number(e.statusCode) || 400).json({
+      success: false,
+      error: e.message,
+      message: e.message,
+    });
+  }
+  next();
+});
+
 // Cookie parser for HTTP-only auth cookies
 app.use(cookieParser());
 
@@ -512,6 +534,14 @@ app.use((err, req, res, next) => {
       success: false,
       message: 'File too big. Please upload a smaller file.',
       code: 'FILE_TOO_BIG',
+    });
+  }
+  const clientStatus = Number(err?.statusCode);
+  if (clientStatus >= 400 && clientStatus < 500) {
+    return res.status(clientStatus).json({
+      success: false,
+      message: err?.message || "Bad request",
+      error: err?.message || "Bad request",
     });
   }
   console.error('Server error:', err);

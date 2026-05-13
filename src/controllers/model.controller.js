@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { mergeIntegratorWebhookIntoPrismaData } from "../lib/integrator-generation-webhook.js";
 import { toUserError, isTransientAiUpstreamError } from "../lib/userError.js";
 import {
   generateAIModelPhotos,
@@ -1319,7 +1320,8 @@ export async function generateTrialReference(req, res) {
       || "Onboarding trial reference";
 
     const generation = await prisma.generation.create({
-      data: {
+      data: mergeIntegratorWebhookIntoPrismaData(
+        {
         userId,
         type: ONBOARDING_TRIAL_REFERENCE_TYPE,
         prompt: promptSummary,
@@ -1328,6 +1330,8 @@ export async function generateTrialReference(req, res) {
         isTrial: true,
         resolution: "2K",
       },
+      req.body,
+      ),
     });
 
     const generationResult = await generateReferenceImage(
