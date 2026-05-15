@@ -1,0 +1,30 @@
+---
+description: Repo registry — check before pushing, deploying, or linking any repository URL
+alwaysApply: true
+---
+
+# Repository Registry
+
+**Check `WORKERS.md` for the full registry before pushing to or linking any repo.**
+
+## Application repos
+
+| Environment | Repo | Git remote |
+|-------------|------|------------|
+| Production | `typekpaco2002/mdlcln` (note: `mdlcln`, not `mdcln`) | `typekpaco` |
+| Testing / staging | `mconqeuroror/mdcln-testing` | `mtesting` |
+
+## Worker repos
+
+| Worker | Repo | Local path |
+|--------|------|-----------|
+| RunPod NSFW image worker | `mconqeuroror/mdclnworker` | *(deploy from repo)* |
+| RunPod motion worker (MotionX / NSFW motion) | `mconqeuroror/motion` | `runpod-mdcln-motion/` |
+| Hetzner FFmpeg worker | **no git repo** | `ffmpeg-worker-deploy/` |
+
+## Rules
+
+- Never push worker source code that lives in its own repo as if it belongs to the main app repo, and vice versa.
+- `ffmpeg-worker-deploy/` is the **only** worker bundle kept in this monorepo; it has no upstream git repo — deploy it as a zip to Hetzner/EasyPanel.
+- To update the motion worker local mirror: `git -C runpod-mdcln-motion pull` (upstream is `mconqeuroror/motion`).
+- When adding a new worker, update **`WORKERS.md`** before opening a PR.

@@ -1,0 +1,40 @@
+---
+description: Scope guard — declare planned file edits up front, never silently expand scope
+alwaysApply: true
+---
+
+# Scope Guard
+
+## Before editing anything
+
+1. State the **task in one sentence** as you understand it.
+2. List **the exact files you plan to modify** as a bullet list.
+3. If a file is not on that list, **do not edit it** without asking the user first.
+
+## Hard stops — confirm with user before touching
+
+- `src/routes/stripe.webhook.js` · `src/routes/stripe.routes.js` · `src/routes/crypto.webhook.js` · `src/routes/nowpayments.routes.js`
+- `src/services/credit.service.js` · `src/services/stripe-credit-reconcile.service.js`
+- `src/services/referral.service.js` · `src/services/voice-monthly-billing.service.js`
+- `prisma/schema.prisma` (any field rename / drop / migration)
+- `src/middleware/auth.middleware.js` · `src/middleware/admin.middleware.js`
+- `.env.example` (only add documented vars; never delete)
+- Anything in `runpod-mdcln-motion/` (synced from `mconqeuroror/motion` — see `WORKERS.md`)
+
+## Allowed scope creep
+
+You **may** edit without asking:
+- Generated files: `docs/generated/**`, `docs/openapi/client-api.openapi.yaml`
+- Docs the rule system tells you to update (`docs/API_CHANGELOG.md`, `WORKERS.md` when adding workers)
+- Lint/format-only fixes in files you're already editing
+
+## Bad patterns
+
+- "I noticed X is also broken, fixing it too" → **stop, mention it, ask.**
+- Refactoring an unrelated function "while I'm here" → **don't.**
+- Deleting commented-out code in files you didn't need to open → **don't.**
+- Renaming a variable across the codebase when the task was a bug fix → **don't.**
+
+## When the user pushes back
+
+If the user says "you changed X but I didn't ask for that" — revert that change immediately and only then explain why you thought it helped.

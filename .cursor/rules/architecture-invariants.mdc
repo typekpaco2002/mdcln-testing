@@ -1,0 +1,53 @@
+---
+description: Architecture invariants — established patterns; do not invent new ones
+alwaysApply: true
+---
+
+# Architecture Invariants
+
+When in doubt, **read an existing similar file** before inventing a new pattern. Conventions:
+
+## Backend (Express + Prisma)
+
+- **Route mount**: every route file is registered in `src/server.js`. New routes go through there, not via auto-discovery.
+- **Auth**: routes use `authMiddleware` from `src/middleware/auth.middleware.js`. Admin routes also use `adminMiddleware`. Don't invent role checks.
+- **Public API v1**: integrator-facing routes live under `src/routes/api-v1.public.routes.js` + `src/controllers/public-api-v1.controller.js`. Mirror legacy `/api` routes when adding new ones (the registry generator marks legacy as deprecated automatically).
+- **Credits**: every credit add/deduct goes through `src/services/credit.service.js`. Never write to credit fields directly.
+- **Generations**: submit via the relevant provider service (`kie`, `wavespeed`, `runninghub`, `fal`, `runpod` `modelcloneX`); poll/finish via `generation-poller.service.js`.
+
+## Provider callbacks
+
+Each provider has a dedicated callback route — do not consolidate them:
+
+- KIE → `src/routes/kie-callback.routes.js` (HMAC via `WEBHOOK_HMAC_KEY`)
+- WaveSpeed → `src/routes/wavespeed-callback.routes.js`
+- RunningHub → `src/routes/runninghub-callback.routes.js` (no signature; polled fallback)
+- RunPod → `src/routes/runpod-callback.routes.js` (?secret= via `RUNPOD_WEBHOOK_SECRET`)
+- HeyGen / FAL / PiAPI → their own `*-callback.routes.js`
+
+Public callback base resolves from `CALLBACK_BASE_URL` (fallbacks: `FRONTEND_URL`, `CLIENT_URL`, `VITE_API_URL` origin).
+
+## Storage
+
+- Primary: Cloudflare R2 (`R2_*` env vars) via existing helpers.
+- KIE relay: Vercel Blob (`BLOB_READ_WRITE_TOKEN`) — KIE cannot fetch some R2 URLs.
+- `FORCE_BLOB_ONLY_STORAGE` flips mirror paths to Blob.
+- Never call `fetch` directly on storage providers; use the existing `r2`/`blob` utilities.
+
+## Stripe (dual-account)
+
+Legacy account = grandfathered subs only. New US LLC account = all new business. Always resolve clients via the dual-account factory; never instantiate `new Stripe(...)` inline.
+
+## FFmpeg
+
+App never shells out locally if `FFMPEG_WORKER_URL` is set — calls go through `src/services/ffmpeg-worker-client.js`. Local `FFMPEG_PATH` is a fallback only.
+
+## Frontend (React + Vite)
+
+- Pages: `client/src/pages/**`. Components: `client/src/components/**`. Hooks: `client/src/hooks/**`. Store: `client/src/store/**`.
+- API calls go through `client/src/services/api.js` — don't call `fetch` from components.
+- Flow nodes: `client/src/components/flows/nodes/**` registered via `src/services/flow-node-registry.js`.
+
+## When introducing a new pattern
+
+If you can't find the existing pattern in 30 seconds of search, **ask the user** rather than inventing one.

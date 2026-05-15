@@ -1,0 +1,37 @@
+---
+description: Removed/dead workers and features — never recreate, restore, or reference these
+alwaysApply: true
+---
+
+# Dead Code Registry
+
+The following code paths were **deliberately removed**. Do not recreate them, restore them from git, or add references to them in new code or docs — even if you find lingering mentions in old commits, env files, or legacy scripts.
+
+## Removed workers
+
+| Path | Reason removed | What to use instead |
+|------|----------------|---------------------|
+| `docker/n8n-ffmpeg/` | n8n+FFmpeg workflow never used in production | Hetzner FFmpeg worker (`ffmpeg-worker-deploy/`) |
+| `deploy/easypanel-reel-worker/` | Replaced by Apify scraper | `src/services/viral-reels.service.js` (Apify) |
+| `ffmpeg-worker/` (standalone) | Superseded by `ffmpeg-worker-deploy/` | `ffmpeg-worker-deploy/` only |
+| `runpod-mdcln/` (local copy) | Lives in its own repo | Deploy from `mconqeuroror/mdclnworker` |
+
+## Removed env vars
+
+These appear in legacy comments — **do not reintroduce** as live config:
+
+- `REEL_SCRAPER_WORKER_URL`, `REEL_SCRAPER_WORKER_SECRET`, `REEL_SCRAPER_PYTHON`, `REEL_SCRAPER_ROOT`
+- `REEL_SCRAPER_SCROLL_*`, `REEL_SCRAPER_PROXY*`, `REEL_SCRAPER_DISABLE_PROXY`
+- `INSTAGRAM_X_IG_APP_ID`, `INSTAGRAM_USER_AGENT`, `INSTAGRAM_SHORTCODE_DOC_ID`, `INSTAGRAM_SESSIONID`
+- `RUNPOD_MOTION_ENDPOINT_ID` (Motion X moved to RunningHub)
+- `N8N_REPURPOSE_WEBHOOK_URL`, `N8N_CALLBACK_SECRET` (n8n unused)
+
+## Removed docs
+
+- `docs/N8N_REPURPOSER_WORKFLOW.md`
+- `docs/n8n-repurpose-test-payload.json`
+
+## If you need to bring something back
+
+1. Ask the user explicitly. Do not assume the deletion was a mistake.
+2. If approved, update `WORKERS.md` and remove the entry here.

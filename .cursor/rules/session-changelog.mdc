@@ -1,0 +1,59 @@
+---
+description: Session changelog \u2014 every Cursor session writes a short summary file under docs/sessions/
+alwaysApply: true
+---
+
+# Session Changelog
+
+At the **end of every session that produced any code change** (file edits, deletions, creations, commits, pushes, merges, deploys), the agent writes a single Markdown file at:
+
+```
+docs/sessions/YYYY-MM-DD-<kebab-slug>.md
+```
+
+`<kebab-slug>` is 3-6 words describing the session's main goal (`workers-cleanup-and-merge`, `figma-export-tooling`, `stripe-webhook-fix`).
+
+## Required sections
+
+```markdown
+# <Session title>
+
+**Date:** YYYY-MM-DD
+**Branch(es):** main, sync/...
+**Outcome:** done | partial | blocked
+**Pushed to:** none | typekpaco | mtesting | both | <other>
+
+## User request
+One paragraph summarizing what the user actually asked for (not what we ended up doing).
+
+## What changed
+- `path/to/file` \u2014 created | modified | deleted | renamed \u2014 one-line reason
+- (group related files)
+
+## Decisions made
+- Why X over Y (especially conflict resolutions, architecture picks, scope cuts)
+
+## Commits
+- `<short-sha>` <commit subject>
+
+## Open follow-ups
+- [ ] thing the user said "later"
+- [ ] thing we noticed but didn't fix
+- [ ] anything that needs human action before next session
+
+## Notes for the next agent
+Any context that won't be obvious from `git log` alone (env vars to set, services to restart, manual steps the user did, etc.).
+```
+
+## Rules
+
+- **One file per session, not per task.** A session = the contiguous chat that ends here.
+- **Write it as the last action.** Don't write it mid-session.
+- **Don't duplicate `git log`.** The "What changed" section should explain *why*, not list every modified line.
+- **Truthful.** If something was attempted and abandoned, say so under "Decisions made".
+- **Skip if the session was purely Q&A** with no file edits.
+- **Append, never rewrite.** If a session resumes the next day, create a new file dated for the resume; cross-reference the previous one.
+
+## Reading past sessions
+
+Future agents should skim `docs/sessions/` (newest first) before starting non-trivial work, to inherit context about recent decisions and open follow-ups.

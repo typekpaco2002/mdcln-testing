@@ -1,0 +1,47 @@
+---
+description: Env var registry — never invent new env vars; check .env.example first
+alwaysApply: false
+globs:
+  - src/**/*.js
+  - client/src/**/*.{js,jsx,ts,tsx}
+  - .env.example
+  - scripts/**/*.{js,mjs}
+---
+
+# Env Var Discipline
+
+## Before reading or referencing any `process.env.X`
+
+1. Search `.env.example` for `X`. If it isn't there → **do not invent it.**
+2. If a new env var is genuinely needed:
+   - Add it to `.env.example` with a one-line comment explaining its purpose, default, and which file consumes it.
+   - Use the existing section headers (Core / Stripe / R2 / etc.).
+   - Mark optional vars commented-out with `#`.
+
+## Naming conventions
+
+- Server vars: `SCREAMING_SNAKE_CASE` — `STRIPE_NEW_SECRET_KEY`, `RUNPOD_ENDPOINT_ID`.
+- Client/Vite vars: prefix with `VITE_` — `VITE_STRIPE_NEW_PUBLIC_KEY`. Without the prefix the client cannot read them.
+- Per-provider grouping: `<PROVIDER>_*` (e.g. `KIE_*`, `WAVESPEED_*`, `RUNNINGHUB_*`, `RUNPOD_*`, `FAL_*`, `R2_*`, `STRIPE_*`).
+- Per-worker overrides: `<PROVIDER>_<WORKER>_*` (e.g. `RUNPOD_NSFW_ENDPOINT_ID`).
+
+## Forbidden — do not introduce these
+
+See `.cursor/rules/dead-code-registry.mdc` for the full removed list. Highlights:
+
+- `REEL_SCRAPER_*` (Apify replaced the worker)
+- `INSTAGRAM_*` cookies/IDs
+- `RUNPOD_MOTION_ENDPOINT_ID` (Motion X uses RunningHub)
+- `N8N_*` (n8n workflow unused)
+
+## Sensitive vars (server-only — never expose to client)
+
+`*_SECRET_KEY`, `*_API_KEY`, `*_WEBHOOK_SECRET`, `JWT_SECRET`, `DATABASE_URL`, `R2_SECRET_ACCESS_KEY`, `BLOB_READ_WRITE_TOKEN`, `TELEGRAM_BOT_TOKEN`. **Never read these from `import.meta.env`** or any `VITE_*` path.
+
+## Optional providers — guard before use
+
+Code that depends on optional vars (`REDIS_URL`, `BLOB_READ_WRITE_TOKEN`, `VERCEL_API_TOKEN`, `RESEND_API_KEY`, etc.) must check presence and degrade gracefully — do not throw at module load.
+
+## Production hard requirements
+
+The server refuses to start in production without: `DATABASE_URL`, `JWT_SECRET` (≥32 chars). Stripe/payments vars are required unless `REQUIRE_PAYMENT_SECRETS=false`.
