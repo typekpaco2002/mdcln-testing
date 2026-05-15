@@ -1,10 +1,10 @@
 # Generated: Client components (all matching files)
 
-**Generated at:** 2026-05-15T18:58:59.563Z
+**Generated at:** 2026-05-15T22:05:18.523Z
 
 Extensions: `.jsx, .tsx, .js, .ts, .css, .scss` — under `client/src/components/` only.
 
-**Count:** 76
+**Count:** 77
 
 - `client/src/components/AddCreditsAdminModal.jsx`
 - `client/src/components/AddCreditsModal.jsx`
@@ -80,5 +80,6 @@ Extensions: `.jsx, .tsx, .js, .ts, .css, .scss` — under `client/src/components
 - `client/src/components/nsfw/SextingScriptsTab.jsx`
 - `client/src/components/skeletons/Skeleton.jsx`
 - `client/src/components/ui/badge.jsx`
+- `client/src/components/ui/glass.jsx`
 - `client/src/components/ui/input.jsx`
 - `client/src/components/ui/scroll-area.jsx`

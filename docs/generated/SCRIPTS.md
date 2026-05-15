@@ -1,10 +1,10 @@
 # Generated: Repository scripts
 
-**Generated at:** 2026-05-15T18:58:59.563Z
+**Generated at:** 2026-05-15T22:05:18.523Z
 
 Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — under `scripts/` only.
 
-**Count:** 85
+**Count:** 93
 
 - `scripts/add-credits-manual.js`
 - `scripts/audit-stripe-subscriptions.mjs`
@@ -14,6 +14,7 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/build-designer-landers-md.mjs`
 - `scripts/build-repurpose-device-catalog.mjs`
 - `scripts/capture-figma-auth-state.mjs`
+- `scripts/check-aurora-deployed.mjs`
 - `scripts/check-db.mjs`
 - `scripts/check-models.mjs`
 - `scripts/civitai-mirror.py`
@@ -21,6 +22,8 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/create-email-unsubscribe.mjs`
 - `scripts/ensure-ffmpeg.js`
 - `scripts/export-figma-html.mjs`
+- `scripts/figma-captures-result.json`
+- `scripts/figma-captures.json`
 - `scripts/figma-export-fixtures/README.md`
 - `scripts/figma-export-fixtures/_default.json`
 - `scripts/figma-export-fixtures/_index.js`
@@ -44,6 +47,7 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/figma-export-fixtures/stripe-empty.json`
 - `scripts/figma-export-fixtures/voices.json`
 - `scripts/figma-export-routes.json`
+- `scripts/find-paler.mjs`
 - `scripts/fix-max-account.js`
 - `scripts/fix-telegram-emoji-placeholders.mjs`
 - `scripts/fix-user.js`
@@ -57,6 +61,8 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/generate-registry.mjs`
 - `scripts/import-user.mjs`
 - `scripts/insert_gallery_prod.js`
+- `scripts/inspect-aurora.mjs`
+- `scripts/inspect-glow.mjs`
 - `scripts/kie-task-status.mjs`
 - `scripts/migrate-credits-expiration.js`
 - `scripts/migrate-external-photos-to-r2.js`
@@ -66,6 +72,7 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/openapi-client-operation-overrides.mjs`
 - `scripts/playwright-creator-studio-smoke.mjs`
 - `scripts/playwright-kie-docs.mjs`
+- `scripts/push-to-figma.mjs`
 - `scripts/reconcile-subs-from-vercel-extract.mjs`
 - `scripts/recover-crypto-payment.mjs`
 - `scripts/recover-referral-commissions.js`
@@ -75,6 +82,7 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/runpod-volume-head.py`
 - `scripts/runpod-volume-listdir.py`
 - `scripts/runpod-volume-ls.py`
+- `scripts/sample-pixels.mjs`
 - `scripts/set-telegram-webhook.mjs`
 - `scripts/smoke-img2img-grok-describe.mjs`
 - `scripts/smoke-kie-create-tasks.mjs`

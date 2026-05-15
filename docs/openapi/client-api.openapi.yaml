@@ -91,7 +91,7 @@ info:
     Path inventory is merged by **`npm run openapi:client`** (**`x-openapi-client-generated-at`** ISO timestamp on each run).
   x-doc-class: production
   termsOfService: https://modelclone.app/terms
-  x-openapi-client-generated-at: 2026-05-15T18:59:00.011Z
+  x-openapi-client-generated-at: 2026-05-15T22:05:19.891Z
 externalDocs:
   description: Repo reference **`docs/API_REFERENCE.md`** · generation JSON **`docs/API_GENERATION_UX_PARITY.md`**
   url: https://github.com/typekpaco2002/mdlcln/tree/main/docs
