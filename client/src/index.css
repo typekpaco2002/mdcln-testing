@@ -3632,21 +3632,39 @@ a.bg-white:hover {
  * translucent glass remain. Targets DARK MODE for now (light mode follows).
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Body backdrop — pure greyscale fog, no colour blobs */
+/* Body backdrop — bold silver luminance so glass blur actually has
+ * something to refract. Reference: chrome blobs behind frosted glass.
+ * Each blob is large + reasonably bright so the underlying card blur
+ * picks up real luminance variation across its width. */
 :is(html[data-theme="dark"], html.dark) body::before {
   background:
-    radial-gradient(circle 700px at 18% 12%, rgba(255, 255, 255, 0.05) 0%, transparent 60%),
-    radial-gradient(circle 600px at 82% 18%, rgba(255, 255, 255, 0.03) 0%, transparent 60%),
-    radial-gradient(circle 800px at 50% 90%, rgba(255, 255, 255, 0.02) 0%, transparent 60%) !important;
-  animation: mc-aurora-drift 36s ease-in-out infinite alternate !important;
+    radial-gradient(circle 900px at 15% 8%,  rgba(255, 255, 255, 0.18) 0%, transparent 55%),
+    radial-gradient(circle 800px at 88% 18%, rgba(255, 255, 255, 0.13) 0%, transparent 55%),
+    radial-gradient(circle 700px at 8% 65%,  rgba(255, 255, 255, 0.10) 0%, transparent 55%),
+    radial-gradient(circle 1000px at 60% 95%, rgba(255, 255, 255, 0.11) 0%, transparent 60%),
+    radial-gradient(circle 650px at 95% 75%, rgba(255, 255, 255, 0.08) 0%, transparent 55%) !important;
+  animation: mc-aurora-drift 40s ease-in-out infinite alternate !important;
 }
 
-/* Dark-mode token override — neutral glow, neutral accent */
+/* Dark-mode token override — make every "surface" token TRANSLUCENT so the
+ * silver luminance behind body::before bleeds through frosted glass.
+ * Cards in JSX that read `var(--bg-elevated)` immediately become real
+ * glass without any JSX edits. */
 :is(html[data-theme="dark"], html.dark) {
   --accent:           #f5f5f7 !important;
   --accent-hover:     #ffffff !important;
   --accent-soft:      rgba(255, 255, 255, 0.08) !important;
   --ring:             rgba(255, 255, 255, 0.40) !important;
+
+  /* Translucent surface tokens (the heart of the liquid-glass look) */
+  --bg-surface:        rgba(22, 22, 28, 0.55) !important;
+  --bg-surface-hover:  rgba(28, 28, 36, 0.62) !important;
+  --bg-elevated:       rgba(26, 26, 32, 0.42) !important;
+  --bg-content:        rgba(15, 15, 18, 0.55) !important;
+  --sidebar-bg:        rgba(15, 15, 18, 0.55) !important;
+  --mc-glass-fill:     rgba(255, 255, 255, 0.04) !important;
+  --mc-glass-border:   rgba(255, 255, 255, 0.12) !important;
+  --mc-glass-inset:    rgba(255, 255, 255, 0.10) !important;
 
   --glow-violet:        255, 255, 255 !important;
   --glow-violet-soft:   255, 255, 255 !important;
@@ -3907,4 +3925,113 @@ a.bg-white:hover {
 }
 .drop-shadow-\[0_0_8px_rgba\(252\,211\,77\,0\.4\)\] {
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.40)) !important;
+}
+
+/* ── REAL LIQUID GLASS — Apple-style surfaces with refracted rim ──────────
+ * Any element that paints a surface token via inline style now gets a
+ * proper backdrop blur + specular top-edge highlight + depth shadow, so
+ * the silver luminance behind body::before refracts visibly through it. */
+:is(html[data-theme="dark"], html.dark) [style*="--bg-elevated"],
+:is(html[data-theme="dark"], html.dark) [style*="bg-elevated"],
+:is(html[data-theme="dark"], html.dark) [style*="var(--bg-elevated)"],
+:is(html[data-theme="dark"], html.dark) [style*="var(--bg-surface)"],
+:is(html[data-theme="dark"], html.dark) [style*="var(--bg-content)"],
+:is(html[data-theme="dark"], html.dark) [style*="var(--mc-glass-fill)"],
+:is(html[data-theme="dark"], html.dark) [style*="var(--bg-surface-hover)"] {
+  backdrop-filter: blur(40px) saturate(170%) contrast(108%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(170%) contrast(108%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.20),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.04),
+    inset -1px 0 0 0 rgba(0, 0, 0, 0.10),
+    0 1px 2px 0 rgba(0, 0, 0, 0.20),
+    0 12px 32px -8px rgba(0, 0, 0, 0.55),
+    0 24px 60px -16px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Hover lift — small rise + shadow deepens (real macOS glass behaviour) */
+:is(html[data-theme="dark"], html.dark) button[style*="--bg-elevated"]:hover,
+:is(html[data-theme="dark"], html.dark) button[style*="var(--bg-elevated)"]:hover,
+:is(html[data-theme="dark"], html.dark) a[style*="var(--bg-elevated)"]:hover {
+  background-color: rgba(36, 36, 44, 0.55) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.20),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.20),
+    0 2px 4px 0 rgba(0, 0, 0, 0.30),
+    0 18px 48px -10px rgba(0, 0, 0, 0.65),
+    0 32px 80px -20px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Sidebar — the long vertical glass rail. Make it true frosted glass and
+ * add a subtle vertical specular gradient (top brighter, bottom dim). */
+:is(html[data-theme="dark"], html.dark) aside.fixed.left-0 {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.00) 35%, rgba(0,0,0,0.10) 100%),
+    rgba(15, 15, 18, 0.45) !important;
+  backdrop-filter: blur(48px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(180%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    inset -1px 0 0 0 rgba(255, 255, 255, 0.04),
+    8px 0 32px -8px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Top sticky bar / header */
+:is(html[data-theme="dark"], html.dark) header,
+:is(html[data-theme="dark"], html.dark) [class*="sticky"][class*="top-0"] {
+  background: rgba(15, 15, 18, 0.55) !important;
+  backdrop-filter: blur(40px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(170%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Inputs — frosted glass with refracted edge */
+:is(html[data-theme="dark"], html.dark) input:not([type="checkbox"]):not([type="radio"]),
+:is(html[data-theme="dark"], html.dark) textarea,
+:is(html[data-theme="dark"], html.dark) select {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Pill / badge — small chip glass treatment */
+:is(html[data-theme="dark"], html.dark) [class*="rounded-full"][class*="px-"][class*="py-"] {
+  backdrop-filter: blur(18px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+}
+
+/* Modal / drawer backdrop — black tint with strong blur (real dimming) */
+:is(html[data-theme="dark"], html.dark) [class*="fixed"][class*="inset-0"][class*="bg-black"] {
+  backdrop-filter: blur(20px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) !important;
+}
+
+/* Make sure cards used inside Dashboard wrap their corner radial-gradient
+ * decorations in a top-edge specular highlight (a 1px linear gradient that
+ * mimics light hitting the rim). Apply via pseudo to JSX-class cards. */
+:is(html[data-theme="dark"], html.dark) [class*="rounded-xl"][class*="backdrop-blur"]::after,
+:is(html[data-theme="dark"], html.dark) [class*="rounded-2xl"][class*="backdrop-blur"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.00) 35%,
+    rgba(255, 255, 255, 0.00) 65%,
+    rgba(0, 0, 0, 0.06) 100%
+  );
+  mix-blend-mode: overlay;
+  z-index: 0;
+}
+:is(html[data-theme="dark"], html.dark) [class*="rounded-xl"][class*="backdrop-blur"] > *,
+:is(html[data-theme="dark"], html.dark) [class*="rounded-2xl"][class*="backdrop-blur"] > * {
+  position: relative;
+  z-index: 1;
 }
