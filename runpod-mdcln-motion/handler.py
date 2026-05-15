@@ -42,6 +42,24 @@ DEFAULT_OUTPUT_NODE = "226"
 DEFAULT_TIMEOUT_SECS = 1800
 # Max in-memory download per URL (signed blob URLs; large 4K motion refs need headroom)
 MAX_DOWNLOAD_BYTES = 450 * 1024 * 1024
+# Node 296 (easy boolean "TORCH COMPILE") gates TorchCompileModelWanVideoV2 (321). Inductor
+# compile fails on many serverless GPUs (empty exception + huge CUDA dump). Always off here;
+# callers cannot override via prompt JSON.
+_MOTION_TORCH_COMPILE_NODE = "296"
+
+
+def _sanitize_motion_workflow(workflow: dict) -> None:
+    """Force torch.compile path off before Comfy queue (in-place)."""
+    node = workflow.get(_MOTION_TORCH_COMPILE_NODE)
+    if not isinstance(node, dict):
+        return
+    inputs = node.setdefault("inputs", {})
+    prev = inputs.get("value")
+    inputs["value"] = False
+    if prev is not False and prev is not None:
+        print(
+            f"[motion] forced node {_MOTION_TORCH_COMPILE_NODE} (TORCH COMPILE) to false (was {prev!r})"
+        )
 
 
 def _is_blocked_url(url: str) -> bool:
@@ -445,6 +463,8 @@ def handler(event):
 
     output_node_id = str(inp.get("output_node_id", DEFAULT_OUTPUT_NODE))
     timeout_secs = int(inp.get("timeout", DEFAULT_TIMEOUT_SECS))
+
+    _sanitize_motion_workflow(workflow)
 
     # ── Validate node types ────────────────────────────────────────────────────
     valid, validation_error = validate_workflow_nodes(workflow)

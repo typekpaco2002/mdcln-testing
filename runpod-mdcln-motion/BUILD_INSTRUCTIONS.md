@@ -133,37 +133,46 @@ Response on success:
 
 1. **`RuntimeError: The NVIDIA driver on your system is too old`**
    (from `torch._C._cuda_init` / `comfy.model_management`) — the *host* GPU
-   driver is older than the CUDA user-mode build bundled with the PyTorch in
-   the image. The Dockerfile uses `runpod/pytorch:0.7.0-cu1241-torch260-ubuntu2204`
-   (PyTorch 2.6 + CUDA 12.4.1) for the widest RunPod serverless compatibility.
-   If you changed the base to a `cu128` / `cu129` / `cu130` tag and see this
-   again, either revert to `cu1241` or run on a template / GPU with a newer
-   NVIDIA driver. Updating PyTorch *inside* the image without changing the
-   NVIDIA driver on the host does not fix a driver/CUDA capability mismatch.
-2. **`Unknown node types: WanAnimateToVideo`** — your image is built on the
+   driver is older than the CUDA user-mode build bundled with PyTorch in the
+   image. The Dockerfile uses `runpod/pytorch:1.0.3-cu1290-torch271-ubuntu2204`
+   (PyTorch 2.7.1 + CUDA 12.9) so Comfy/Wan and KJ torch patches match current
+   stacks. If this error appears on a pod with an older driver, switch the base
+   in `Dockerfile` to `runpod/pytorch:1.0.3-cu1281-torch271-ubuntu2204` (same
+   torch, slightly older CUDA userland) or move the endpoint to GPUs with a
+   newer NVIDIA driver. Updating PyTorch in isolation does not fix a true
+   host driver mismatch.
+2. **`Failed to set fp16 accumulation, this requires pytorch 2.7.1 or higher`**
+   — the base image must stay on **torch 2.7.1+** (the `cu1290`/`cu1281`
+   `torch271` tags). Do not downgrade the RunPod base to `torch260`.
+3. **`CUDA error: no kernel image is available for execution on the device`**
+   on Wan/CLIP — usually PyTorch was built without support for that GPU
+   architecture. The `1.0.3-cu1290-torch271` line targets newer data-center /
+   consumer stacks; if it persists, confirm the pod GPU and open an issue with
+   `nvidia-smi` + `python3 -c "import torch; print(torch.__version__, torch.cuda.get_device_name(0))"`.
+4. **`Unknown node types: WanAnimateToVideo`** — your image is built on the
    wrong ComfyUI tag. The Dockerfile pins `v0.19.3`; do not downgrade.
-3. **`OnnxDetectionModelLoader` errors / can't find vitpose** — make sure
+5. **`OnnxDetectionModelLoader` errors / can't find vitpose** — make sure
    `models/detection/vitpose-l-wholebody.onnx` and `models/detection/yolov10m.onnx`
    both exist and are >10KB. The self-heal block in `start.sh` will redownload
    on next boot if a previous attempt left a 0-byte file.
-4. **Black / static output** — known SageAttention + torch-compile interaction
+6. **Black / static output** — known SageAttention + torch-compile interaction
    on RTX 30xx. Set the `296` (`TORCH COMPILE`) node to `false` in the request
    payload to disable torch.compile.
-5. **`ModuleNotFoundError: No module named 'sageattention'`** — the graph
+7. **`ModuleNotFoundError: No module named 'sageattention'`** — the graph
    `PathchSageAttentionKJ` (node `322`) must not use `sage_attention: "auto"` on
    workers without the optional `sageattention` wheel. The API and shipped
    `workflow_api.json` set `sage_attention` to `disabled` (normal PyTorch
    attention). If you send a raw Comfy `prompt` with `auto`, add the package
    to the image or change the node to `disabled`.
-6. **`ImportError: numpy._core.multiarray`** — a custom node bumped numpy to
+8. **`ImportError: numpy._core.multiarray`** — a custom node bumped numpy to
    2.x. The Dockerfile re-pins `numpy<2` after node install, but a stale image
    may still have it. Rebuild from scratch.
-7. **OOM during VAE decode** — bump `BLOCK SWAP` (node `276`) from 0 up to
+9. **OOM during VAE decode** — bump `BLOCK SWAP` (node `276`) from 0 up to
    20–30 to offload more transformer blocks to CPU. Trades speed for VRAM.
-8. **Debug missing nodes** — call the handler with
+10. **Debug missing nodes** — call the handler with
    `{"input": {"debug_nodes": true}}` and compare the returned list to the
    workflow `class_type` values.
-9. **Workers show “unhealthy” right after deploy** — `pip install runpod` with
+11. **Workers show “unhealthy” right after deploy** — `pip install runpod` with
    no version pulled **runpod 1.9+**, which runs startup **fitness checks** (GPU
    memory test, min free disk % on `/`, RAM) *before* the worker heartbeats.
    Full model mirrors or busy GPUs often fail those checks and the process

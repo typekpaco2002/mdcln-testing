@@ -7,13 +7,21 @@
 #   - Different model set (~46GB total)
 #   - Different custom node packs (WanAnimatePreprocess, KJNodes, VHS, easy-use, essentials, pysssss)
 #
-# Base image: PyTorch 2.6.0 on CUDA 12.4.1 / Ubuntu 22.04
-# Use cu124* (not cu1281): PyTorch+CUDA 12.8.x requires a very new *host* driver.
-# On RunPod serverless, older GPU stacks often fail at Comfy start with:
-#   RuntimeError: The NVIDIA driver on your system is too old
-# The image worker (runpod-mdcln) can keep cu1281 if that fleet is on newer drivers.
+# Base image: PyTorch 2.7.1 on CUDA 12.9 / Ubuntu 22.04 (runpod/pytorch 1.0.3 line)
+#
+# Why not 0.7.0-cu1241-torch260:
+# - Comfy/KJNodes ModelPatchTorchSettings needs torch.set_float32_matmul_precision etc.:
+#     "Failed to set fp16 accumulation, this requires pytorch 2.7.1 or higher"
+# - Wan T5 / CLIP on newer GPUs can hit:
+#     CUDA error: no kernel image is available for execution on the device
+#   when the wheel was built for older SMs only. PyTorch 2.7 + CUDA 12.8+ builds
+#   include broader arch coverage.
+#
+# Trade-off: the *host* NVIDIA driver must be new enough for CUDA 12.9 userland
+# (see BUILD_INSTRUCTIONS.md). If you see "driver too old", try instead:
+#   runpod/pytorch:1.0.3-cu1281-torch271-ubuntu2204
 # ============================================
-FROM runpod/pytorch:0.7.0-cu1241-torch260-ubuntu2204
+FROM runpod/pytorch:1.0.3-cu1290-torch271-ubuntu2204
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -54,11 +62,13 @@ RUN git clone --depth 1 --branch v0.19.3 https://github.com/comfyanonymous/Comfy
 # -----------------------------------------------
 RUN python3 -m pip install --no-cache-dir -r /workspace/ComfyUI/requirements.txt
 
+# onnxruntime-gpu[cuda,cudnn]: pulls nvidia-cuda-* / cudnn wheels so ORT can
+# register CUDAExecutionProvider (avoids CPU-only pose pipeline on some hosts).
 RUN python3 -m pip install --no-cache-dir \
     "huggingface-hub>=0.25.0" \
     hf_transfer \
     sqlalchemy aiosqlite \
-    onnxruntime-gpu \
+    "onnxruntime-gpu[cuda,cudnn]>=1.20.0" \
     "numpy<2"
 
 # -----------------------------------------------

@@ -21,7 +21,7 @@ python3 -m pip install --no-cache-dir \
     "huggingface-hub>=0.25.0" hf_transfer \
     sqlalchemy aiosqlite \
     "runpod==1.8.2" requests \
-    onnxruntime-gpu \
+    "onnxruntime-gpu[cuda,cudnn]>=1.20.0" \
     opencv-python-headless \
     "numpy<2" \
     || echo "  [WARN] pip install failed — handler or custom nodes may not load"
