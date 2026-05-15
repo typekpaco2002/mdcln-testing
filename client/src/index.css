@@ -3195,3 +3195,268 @@ aside.fixed.left-0 button:hover {
   aside.fixed.left-0 { transition: none !important; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * AURORA · LIQUID GLASS — Apple Vision Pro / macOS Sequoia level.
+ *
+ * The previous Aurora pass was too subtle to see in headless browsers OR in
+ * real ones, because the body bg was a flat near-black and Apple-style glass
+ * needs CONTENT BEHIND IT to refract. This section:
+ *   1. Paints a bold animated colour mesh on body::before so glass surfaces
+ *      have something to absorb / blur.
+ *   2. Forces a true liquid-glass look on every common surface pattern.
+ *   3. Adds the signature Apple top-rim specular highlight + bottom shadow.
+ *   4. Cranks blur radius (24-40px), saturation (180%), and contrast (110%).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Bold animated colour mesh — overrides the earlier subtle ::before.
+ * Five blobs (violet, indigo, magenta, cyan, deep-violet) each ~50vw wide,
+ * positioned to never quite overlap, slowly drifting. Strong enough that
+ * glass surfaces actually pick up colour, gentle enough to never compete
+ * with content. */
+:is(html[data-theme="dark"], html.dark) body::before {
+  background:
+    radial-gradient(circle 600px at 18% 12%, rgba(139, 92, 246, 0.32) 0%, transparent 60%),
+    radial-gradient(circle 520px at 82% 18%, rgba(99, 102, 241, 0.22) 0%, transparent 60%),
+    radial-gradient(circle 700px at 50% 92%, rgba(168, 85, 247, 0.20) 0%, transparent 60%),
+    radial-gradient(circle 480px at 8% 78%, rgba(34, 211, 238, 0.10) 0%, transparent 60%),
+    radial-gradient(circle 560px at 92% 60%, rgba(236, 72, 153, 0.10) 0%, transparent 60%) !important;
+  animation: mc-aurora-drift 28s ease-in-out infinite alternate;
+}
+:is(html[data-theme="light"], html.light) body::before {
+  background:
+    radial-gradient(circle 600px at 18% 12%, rgba(139, 92, 246, 0.20) 0%, transparent 60%),
+    radial-gradient(circle 520px at 82% 18%, rgba(99, 102, 241, 0.16) 0%, transparent 60%),
+    radial-gradient(circle 700px at 50% 92%, rgba(168, 85, 247, 0.14) 0%, transparent 60%),
+    radial-gradient(circle 480px at 8% 78%, rgba(34, 211, 238, 0.10) 0%, transparent 60%),
+    radial-gradient(circle 560px at 92% 60%, rgba(236, 72, 153, 0.08) 0%, transparent 60%) !important;
+  animation: mc-aurora-drift 28s ease-in-out infinite alternate;
+}
+
+@keyframes mc-aurora-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(-2%, 1%, 0) scale(1.05); }
+  100% { transform: translate3d(2%, -1%, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none !important; }
+}
+
+/* Body itself stays dark/light, but slightly softer so the mesh reads.
+ * Page wrappers that use bg-page directly get translucency too so the mesh
+ * shows through them. */
+:is(html[data-theme="dark"], html.dark) {
+  --bg-page: #07070b;
+}
+
+/* ── LIQUID GLASS SURFACES ─────────────────────────────────────────────────
+ * Apple's recipe for premium glass:
+ *   bg     : 8-18% white in dark, 50-65% white in light
+ *   blur   : 28-40px (the "haze" amount)
+ *   sat    : 180% (boosts colour absorption)
+ *   border : 1px hairline, slightly brighter than fill
+ *   rim    : 1px inset top-edge bright (specular)
+ *   shadow : soft outer + sharper inner-bottom for depth
+ * ─────────────────────────────────────────────────────────────────────── */
+
+/* Override the previously-defined glass tokens with bolder values. */
+:is(html[data-theme="dark"], html.dark) {
+  --glass-fill:           rgba(255, 255, 255, 0.06);
+  --glass-fill-strong:    rgba(255, 255, 255, 0.10);
+  --glass-fill-elevated:  rgba(28, 28, 38, 0.45);
+  --glass-border:         rgba(255, 255, 255, 0.12);
+  --glass-border-strong:  rgba(255, 255, 255, 0.20);
+  --glass-highlight:      rgba(255, 255, 255, 0.18);
+  --glass-rim-top:        rgba(255, 255, 255, 0.40);
+  --glass-rim-bottom:     rgba(0, 0, 0, 0.18);
+}
+:is(html[data-theme="light"], html.light) {
+  --glass-fill:           rgba(255, 255, 255, 0.55);
+  --glass-fill-strong:    rgba(255, 255, 255, 0.72);
+  --glass-fill-elevated:  rgba(255, 255, 255, 0.85);
+  --glass-border:         rgba(15, 23, 42, 0.08);
+  --glass-border-strong:  rgba(15, 23, 42, 0.14);
+  --glass-highlight:      rgba(255, 255, 255, 0.95);
+  --glass-rim-top:        rgba(255, 255, 255, 0.95);
+  --glass-rim-bottom:     rgba(15, 23, 42, 0.06);
+}
+
+/* The MASTER liquid-glass mixin applied to every common surface pattern.
+ * Uses a single multi-stop background-image so the rim highlight is part of
+ * the surface itself (no pseudo needed). */
+.glass,
+.glass-strong,
+.glass-elevated,
+.mc-glass,
+.mc-glass-strong,
+.mc-glass-card,
+.mc-glass-nav,
+.mc-glass-toast,
+aside.fixed.left-0 {
+  background:
+    linear-gradient(180deg,
+      var(--glass-rim-top) 0%,
+      transparent 1px,
+      transparent calc(100% - 1px),
+      var(--glass-rim-bottom) 100%
+    ),
+    var(--glass-fill-strong) !important;
+  backdrop-filter: blur(32px) saturate(180%) contrast(108%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) contrast(108%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-rim-top),
+    inset 0 -1px 0 0 var(--glass-rim-bottom),
+    0 1px 3px 0 rgba(0, 0, 0, 0.20),
+    0 12px 32px -8px rgba(0, 0, 0, 0.35) !important;
+}
+
+.glass-elevated,
+.mc-glass-strong,
+.mc-glass-toast {
+  background:
+    linear-gradient(180deg,
+      var(--glass-rim-top) 0%,
+      transparent 1px,
+      transparent calc(100% - 1px),
+      var(--glass-rim-bottom) 100%
+    ),
+    var(--glass-fill-elevated) !important;
+  backdrop-filter: blur(40px) saturate(190%) contrast(110%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(190%) contrast(110%) !important;
+  border: 1px solid var(--glass-border-strong) !important;
+}
+
+/* Aggressive blanket — make every Tailwind opacity surface pattern actually
+ * blur. These selectors hit the patterns used all over LandingPage, Dashboard,
+ * Pro layout, modals, and the auth pages. */
+[class*="bg-slate-900"],
+[class*="bg-zinc-900"],
+[class*="bg-neutral-900"],
+[class*="bg-gray-900"],
+.bg-white\/5, .bg-white\/10, .bg-white\/\[0\.02\], .bg-white\/\[0\.03\],
+.bg-white\/\[0\.04\], .bg-white\/\[0\.05\], .bg-white\/\[0\.06\], .bg-white\/\[0\.07\],
+.bg-white\/\[0\.08\], .bg-white\/\[0\.10\], .bg-black\/30, .bg-black\/40,
+.bg-black\/50, .bg-black\/60 {
+  backdrop-filter: blur(24px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(170%) !important;
+}
+:is(html[data-theme="dark"], html.dark) .bg-slate-900,
+:is(html[data-theme="dark"], html.dark) .bg-zinc-900,
+:is(html[data-theme="dark"], html.dark) .bg-neutral-900,
+:is(html[data-theme="dark"], html.dark) .bg-gray-900 {
+  background-color: rgba(15, 15, 22, 0.55) !important;
+}
+
+/* Sticky headers + nav rails — the most visible chrome. */
+header[class*="sticky"],
+nav[class*="sticky"],
+[class*="sticky top-0"],
+.mc-glass-nav {
+  background:
+    linear-gradient(180deg,
+      var(--glass-rim-top) 0%,
+      transparent 1px,
+      transparent calc(100% - 1px),
+      var(--glass-rim-bottom) 100%
+    ),
+    var(--glass-fill-elevated) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+}
+
+/* ── LIQUID-GLASS BUTTONS ─────────────────────────────────────────────────
+ * Apple's pill buttons: translucent fill, top-edge specular, bottom shadow,
+ * scale-on-press, hover brightens the rim. */
+.btn-primary,
+.btn-accent,
+.btn-outline,
+.btn-ghost {
+  position: relative;
+  border-radius: 999px !important;
+  background-image:
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.10) 100%
+    ) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.12),
+    0 1px 2px 0 rgba(0, 0, 0, 0.20),
+    0 8px 24px -10px rgba(0, 0, 0, 0.45) !important;
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 160ms ease !important;
+}
+.btn-outline,
+.btn-ghost {
+  background-color: var(--glass-fill-strong) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid var(--glass-border-strong) !important;
+}
+.btn-primary:hover,
+.btn-accent:hover,
+.btn-outline:hover,
+.btn-ghost:hover {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.12),
+    0 2px 4px 0 rgba(0, 0, 0, 0.25),
+    0 16px 40px -10px rgba(139, 92, 246, 0.40) !important;
+}
+.btn-primary:active,
+.btn-accent:active,
+.btn-outline:active,
+.btn-ghost:active {
+  transform: translateY(0) scale(0.985);
+}
+
+/* The signature Apple "moving specular highlight" — a faint diagonal sheen
+ * that drifts across primary CTAs on hover. Pure CSS, GPU-cheap. */
+.btn-primary::before,
+.btn-accent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  opacity: 0;
+  transition: opacity 240ms ease, background-position 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-primary:hover::before,
+.btn-accent:hover::before {
+  opacity: 1;
+  background-position: 0 0;
+}
+
+/* Stacking — body is opaque base, ::before mesh paints on top of it,
+ * everything in #root sits on top of the mesh. */
+body { background-color: var(--bg-page); }
+body::before { z-index: 0 !important; }
+body > * { position: relative; z-index: 1; }
+
+/* Page wrappers that set their own opaque bg-page hide the mesh. Make all
+ * top-level page containers transparent so the colour mesh shows through.
+ * Content INSIDE these wrappers can still have its own opaque/glass bg. */
+#root { background: transparent !important; }
+[data-design-system="true"] { background: transparent !important; }
+/* LandingPage, Dashboard, every page that uses min-h-screen as its outer
+ * shell — strip the solid bg so the aurora bleeds. */
+.min-h-screen,
+[class*="min-h-screen"] {
+  background-color: transparent !important;
+}
+/* But body / html themselves keep their solid bg so the mesh has a base. */
+html, body { background-color: var(--bg-page) !important; }
