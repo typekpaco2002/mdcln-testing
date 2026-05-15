@@ -3105,3 +3105,93 @@ button, a, input, textarea, select,
   transition-timing-function: var(--ease-spring);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * AURORA · CHROME UPGRADES — turns existing layout chrome into real glass
+ * surfaces without touching any component JSX. Targets stable structural
+ * patterns (sidebar aside, sticky headers) + the existing .mc-glass-* classes.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* AppSidebar — aside.fixed.left-0 is unique enough to target safely.
+ * Make it translucent with backdrop blur so page content washes through. */
+:is(html[data-theme="dark"], html.dark) {
+  --sidebar-bg: rgba(10, 10, 14, 0.72);
+}
+:is(html[data-theme="light"], html.light) {
+  --sidebar-bg: rgba(255, 255, 255, 0.78);
+}
+aside.fixed.left-0 {
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border-right: 1px solid var(--glass-border-strong) !important;
+  box-shadow: 1px 0 24px -8px rgba(0, 0, 0, 0.32);
+}
+
+/* Sticky page headers + the LandingPage nav — give them all a true glass feel.
+ * The existing .mc-glass / .mc-glass-strong / .mc-glass-nav classes were just
+ * solid surfaces with marginal blur — replace with proper translucency. */
+.mc-glass {
+  background: var(--glass-fill-strong) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid var(--glass-border) !important;
+}
+.mc-glass-strong {
+  background: var(--glass-fill-elevated) !important;
+  backdrop-filter: blur(28px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%) !important;
+  border: 1px solid var(--glass-border-strong) !important;
+}
+.mc-glass-nav {
+  background: var(--glass-fill-elevated) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  border-bottom: 1px solid var(--glass-border-strong) !important;
+  box-shadow: 0 1px 0 0 var(--glass-border) !important;
+}
+.mc-glass-card {
+  background: var(--glass-fill-strong) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  border: 1px solid var(--glass-border) !important;
+}
+.mc-glass-toast {
+  background: var(--glass-fill-elevated) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  border: 1px solid var(--glass-border-strong) !important;
+  box-shadow: var(--shadow-glass-md) !important;
+}
+
+/* Make the brand violet glow visible on hovered sidebar items + active nav */
+aside.fixed.left-0 a:hover,
+aside.fixed.left-0 button:hover {
+  background: var(--glass-fill-strong);
+  border-color: var(--glass-border-strong);
+}
+
+/* Apple-Vision-Pro-ish soft inner highlight on glass surfaces */
+.mc-glass::before,
+.mc-glass-strong::before,
+.mc-glass-card::before,
+.mc-glass-nav::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    var(--glass-highlight) 0%,
+    transparent 24%,
+    transparent 76%,
+    rgba(0, 0, 0, 0.04) 100%
+  );
+  mix-blend-mode: overlay;
+}
+.mc-glass, .mc-glass-strong, .mc-glass-card { position: relative; }
+
+/* Honour reduced-motion users — no animated glow/blur transitions */
+@media (prefers-reduced-motion: reduce) {
+  aside.fixed.left-0 { transition: none !important; }
+}
+
