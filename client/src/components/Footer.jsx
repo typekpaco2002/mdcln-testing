@@ -7,13 +7,30 @@ export default function Footer() {
 
   return (
     <footer
-      className="mt-20"
+      className="mt-20 relative overflow-hidden"
       style={{
-        background: 'var(--bg-page)',
-        borderTop: '1px solid var(--border-subtle)',
+        background: 'var(--glass-fill-strong)',
+        backdropFilter: 'blur(24px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(140%)',
+        borderTop: '1px solid var(--glass-border-strong)',
       }}
     >
-      <div className="max-w-7xl mx-auto px-6 py-14">
+      {/* Soft violet wash at the top edge — same Aurora vocabulary as the hero */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{
+          top: '-30%',
+          left: '50%',
+          width: 'min(900px, 80vw)',
+          height: '320px',
+          transform: 'translateX(-50%)',
+          background: 'radial-gradient(ellipse at center, rgba(167, 139, 250, 0.06) 0%, transparent 70%)',
+          filter: 'blur(80px)',
+          mixBlendMode: 'screen',
+        }}
+      />
+      <div className="max-w-7xl mx-auto px-6 py-14 relative">
         <div className="grid md:grid-cols-4 gap-10 mb-10">
           {/* Brand */}
           <div>

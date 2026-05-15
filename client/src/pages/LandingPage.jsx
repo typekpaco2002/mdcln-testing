@@ -936,9 +936,33 @@ export default function LandingPage() {
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-20">
-        {/* ambient glow — single restrained purple */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[420px] rounded-full bg-purple-600/[0.07] blur-[140px]" />
+        {/* Aurora ambient glow — two soft violet halos with screen blend */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+          <div
+            className="absolute"
+            style={{
+              top: "12%",
+              left: "50%",
+              width: "min(900px, 80vw)",
+              height: "480px",
+              transform: "translateX(-50%)",
+              background: "radial-gradient(ellipse at center, rgba(167, 139, 250, 0.10) 0%, transparent 65%)",
+              filter: "blur(80px)",
+              mixBlendMode: "screen",
+            }}
+          />
+          <div
+            className="absolute"
+            style={{
+              top: "-10%",
+              right: "-10%",
+              width: "min(520px, 50vw)",
+              height: "520px",
+              background: "radial-gradient(circle at center, rgba(124, 58, 237, 0.06) 0%, transparent 70%)",
+              filter: "blur(70px)",
+              mixBlendMode: "screen",
+            }}
+          />
         </div>
 
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative max-w-5xl mx-auto text-center z-10">
