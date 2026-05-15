@@ -150,18 +150,30 @@ export const GlassButton = forwardRef(function GlassButton(
 // ──────────────────────────────────────────────────────────────────────────────
 
 const POSITIONS = {
-  "top-left":     { top: "-20%", left: "-20%", width: "70%", height: "70%" },
-  "top-right":    { top: "-20%", right: "-20%", width: "70%", height: "70%" },
-  "bottom-left":  { bottom: "-20%", left: "-20%", width: "70%", height: "70%" },
-  "bottom-right": { bottom: "-20%", right: "-20%", width: "70%", height: "70%" },
-  center:         { top: "50%", left: "50%", width: "80%", height: "80%", transform: "translate(-50%, -50%)" },
-  "top-center":   { top: "-30%", left: "50%", width: "100%", height: "60%", transform: "translateX(-50%)" },
+  "top-left":     { top: "-25%", left: "-15%", width: "60%", height: "60%" },
+  "top-right":    { top: "-25%", right: "-15%", width: "60%", height: "60%" },
+  "bottom-left":  { bottom: "-25%", left: "-15%", width: "60%", height: "60%" },
+  "bottom-right": { bottom: "-25%", right: "-15%", width: "60%", height: "60%" },
+  center:         { top: "50%", left: "50%", width: "70%", height: "70%", transform: "translate(-50%, -50%)" },
+  "top-center":   { top: "-30%", left: "50%", width: "90%", height: "55%", transform: "translateX(-50%)" },
 };
 
 const INTENSITY_VAR = {
   faint:  "var(--glow-faint)",
   medium: "var(--glow-medium)",
   strong: "var(--glow-strong)",
+};
+
+const HUE_INTENSITY = {
+  lavender: { faint: 0.04, medium: 0.07, strong: 0.12 },
+  deep:     { faint: 0.03, medium: 0.06, strong: 0.10 },
+  indigo:   { faint: 0.03, medium: 0.06, strong: 0.10 },
+};
+
+const HUE_RGB = {
+  lavender: "167, 139, 250",
+  deep:     "124, 58, 237",
+  indigo:   "99, 102, 241",
 };
 
 export function RadialGlow({
@@ -172,11 +184,9 @@ export function RadialGlow({
   style,
 }) {
   const pos = POSITIONS[position] || POSITIONS["top-left"];
-  const baseColor =
-    hue === "lavender" ? "rgba(167, 139, 250, 0.20)" :
-    hue === "deep"     ? "rgba(124, 58, 237, 0.18)" :
-    hue === "indigo"   ? "rgba(99, 102, 241, 0.18)" :
-    INTENSITY_VAR[intensity] || INTENSITY_VAR.medium;
+  const baseColor = hue
+    ? `rgba(${HUE_RGB[hue]}, ${(HUE_INTENSITY[hue] || HUE_INTENSITY.lavender)[intensity] ?? 0.07})`
+    : INTENSITY_VAR[intensity] || INTENSITY_VAR.medium;
 
   return (
     <div
@@ -186,8 +196,9 @@ export function RadialGlow({
         position: "absolute",
         pointerEvents: "none",
         zIndex: 0,
-        background: `radial-gradient(circle, ${baseColor} 0%, transparent 70%)`,
-        filter: "blur(40px)",
+        background: `radial-gradient(circle at center, ${baseColor} 0%, transparent 65%)`,
+        filter: "blur(60px)",
+        mixBlendMode: "screen",
         ...pos,
         ...style,
       }}

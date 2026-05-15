@@ -424,7 +424,7 @@ export default function DesignSystemPage() {
       data-design-system="true"
       data-theme-active={theme}
     >
-      <AuroraBackdrop variant="default" />
+      {/* body::before already paints the ambient aurora; no extra backdrop here */}
 
       {/* Header — glass with violet edge glow */}
       <div

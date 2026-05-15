@@ -2584,11 +2584,14 @@ html.dark {
   --glass-border-strong:  rgba(255, 255, 255, 0.14);
   --glass-highlight:      rgba(255, 255, 255, 0.04);
 
-  /* Glow color (the ambient violet that bleeds through everything) */
+  /* Glow color (the ambient violet that bleeds through everything).
+   * IMPORTANT: keep these LOW — these get layered with AuroraBackdrop blobs
+   * AND with shadows on focused elements. 22% lavender at the body level
+   * compounds with 20% blobs and washes out the entire dark canvas. */
   --glow-rgb:           var(--glow-violet-soft);
-  --glow-faint:         rgba(var(--glow-violet-soft), 0.05);
-  --glow-medium:        rgba(var(--glow-violet-soft), 0.12);
-  --glow-strong:        rgba(var(--glow-violet-soft), 0.22);
+  --glow-faint:         rgba(var(--glow-violet-soft), 0.018);
+  --glow-medium:        rgba(var(--glow-violet-soft), 0.04);
+  --glow-strong:        rgba(var(--glow-violet-soft), 0.085);
 
   /* Refined text + borders inherit existing */
   --text-primary:     #fafafa;
@@ -2639,9 +2642,8 @@ html.light {
 }
 
 /* ── Body backdrop — ambient violet aurora (theme-aware) ─────────────────
- * Two stacked radial gradients positioned at corners create a soft glow
- * that bleeds through the whole UI. Painted as a fixed background layer
- * via a body::before pseudo-element so it doesn't scroll with content.
+ * Two soft radial gradients painted as a fixed pseudo-layer behind the
+ * whole UI. Intentionally subtle: ambient feel only, no canvas wash.
  * ─────────────────────────────────────────────────────────────────────── */
 body::before {
   content: "";
@@ -2650,9 +2652,8 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 15% 0%,  var(--glow-medium) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 85% 100%, var(--glow-faint) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 30% at 50% 50%, var(--glow-faint) 0%, transparent 70%);
+    radial-gradient(ellipse 70% 55% at 12% -8%,  var(--glow-medium) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 88% 110%, var(--glow-faint) 0%, transparent 55%);
   transition: background var(--motion-slow) var(--ease-smooth);
 }
 
