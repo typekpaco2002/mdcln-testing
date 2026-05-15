@@ -2,7 +2,7 @@
 
 **Schema:** `prisma/schema.prisma`
 
-**Generated at:** 2026-05-12T11:23:48.049Z
+**Generated at:** 2026-05-15T18:58:59.563Z
 
 ## Models (53)
 
@@ -100,7 +100,7 @@
 
 ### `Generation`
 
-- **Fields (36):** `id`, `userId`, `modelId`, `type`, `prompt`, `duration`, `resolution`, `provider`, `providerTaskId`, `providerModel`, `providerFamily`, `providerMode`, `providerType`, `parentTaskId`, `extendEligible`, `originalGenerationId`, `providerRequest`, `providerResponse`, `creditsCost`, `actualCostUSD`, `inputImageUrl`, `inputVideoUrl`, `outputUrl`, `replicateModel`, `status`, `errorMessage`, `createdAt`, `completedAt`, `creditsRefunded`, `isTrial`, `isNsfw`, `pipelinePayload`, `originalGeneration`, `extensions`, `model`, `user`
+- **Fields (39):** `id`, `userId`, `modelId`, `type`, `prompt`, `duration`, `resolution`, `provider`, `providerTaskId`, `providerModel`, `providerFamily`, `providerMode`, `providerType`, `parentTaskId`, `extendEligible`, `originalGenerationId`, `providerRequest`, `providerResponse`, `creditsCost`, `actualCostUSD`, `inputImageUrl`, `inputVideoUrl`, `outputUrl`, `replicateModel`, `status`, `errorMessage`, `createdAt`, `completedAt`, `creditsRefunded`, `isTrial`, `isNsfw`, `pipelinePayload`, `integratorWebhookUrl`, `integratorWebhookSecret`, `integratorWebhookDeliveredAt`, `originalGeneration`, `extensions`, `model`, `user`
 
 ### `GenerationPricingConfig`
 

@@ -1,10 +1,10 @@
 # Generated: Repository scripts
 
-**Generated at:** 2026-05-12T11:23:48.049Z
+**Generated at:** 2026-05-15T18:58:59.563Z
 
 Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — under `scripts/` only.
 
-**Count:** 61
+**Count:** 85
 
 - `scripts/add-credits-manual.js`
 - `scripts/audit-stripe-subscriptions.mjs`
@@ -12,7 +12,6 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/backfill-billing-cycles.js`
 - `scripts/backfill-stripe-account.js`
 - `scripts/build-designer-landers-md.mjs`
-- `scripts/build-iceland-report.mjs`
 - `scripts/build-repurpose-device-catalog.mjs`
 - `scripts/capture-figma-auth-state.mjs`
 - `scripts/check-db.mjs`
@@ -22,6 +21,28 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/create-email-unsubscribe.mjs`
 - `scripts/ensure-ffmpeg.js`
 - `scripts/export-figma-html.mjs`
+- `scripts/figma-export-fixtures/README.md`
+- `scripts/figma-export-fixtures/_default.json`
+- `scripts/figma-export-fixtures/_index.js`
+- `scripts/figma-export-fixtures/admin-empty.json`
+- `scripts/figma-export-fixtures/auth-refresh.json`
+- `scripts/figma-export-fixtures/avatars.json`
+- `scripts/figma-export-fixtures/billing.json`
+- `scripts/figma-export-fixtures/branding.json`
+- `scripts/figma-export-fixtures/config.json`
+- `scripts/figma-export-fixtures/credits.json`
+- `scripts/figma-export-fixtures/flows-node-types.json`
+- `scripts/figma-export-fixtures/flows-runs.json`
+- `scripts/figma-export-fixtures/flows.json`
+- `scripts/figma-export-fixtures/generation-single.json`
+- `scripts/figma-export-fixtures/generations.json`
+- `scripts/figma-export-fixtures/me.json`
+- `scripts/figma-export-fixtures/models.json`
+- `scripts/figma-export-fixtures/pricing.json`
+- `scripts/figma-export-fixtures/reels.json`
+- `scripts/figma-export-fixtures/smoke-test-discovery.mjs`
+- `scripts/figma-export-fixtures/stripe-empty.json`
+- `scripts/figma-export-fixtures/voices.json`
 - `scripts/figma-export-routes.json`
 - `scripts/fix-max-account.js`
 - `scripts/fix-telegram-emoji-placeholders.mjs`
@@ -29,6 +50,7 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/gallery-urls.js`
 - `scripts/generate-account-previews.js`
 - `scripts/generate-api-generation-catalog.mjs`
+- `scripts/generate-client-openapi.mjs`
 - `scripts/generate-docs-pdf.mjs`
 - `scripts/generate-fix-session-summary-pdf.mjs`
 - `scripts/generate-previews.js`
@@ -41,6 +63,7 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/migrate-gallery-to-r2.js`
 - `scripts/migrate-model-photos-to-r2.js`
 - `scripts/migrate-voice-previews-to-r2.js`
+- `scripts/openapi-client-operation-overrides.mjs`
 - `scripts/playwright-creator-studio-smoke.mjs`
 - `scripts/playwright-kie-docs.mjs`
 - `scripts/reconcile-subs-from-vercel-extract.mjs`
@@ -67,3 +90,4 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/vercel-logs-deep-dive.mjs`
 - `scripts/vercel-logs-extract-billing.mjs`
 - `scripts/vercel-logs-inventory.mjs`
+- `scripts/verify-api-changelog.mjs`

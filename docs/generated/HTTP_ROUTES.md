@@ -3,7 +3,7 @@
 > Auto-built by **`npm run docs:registry`**. Matches **literal** path strings only (e.g. `router.get('/path')`).
 > Dynamic paths, template literals, or multi-line route definitions may be missing — add manual rows in `docs/COVERAGE_INDEX.md`.
 
-**Generated at:** 2026-05-12T11:23:48.049Z
+**Generated at:** 2026-05-15T18:58:59.563Z
 
 | Verb | Path | Source file |
 |------|------|-------------|
@@ -143,6 +143,7 @@
 | USE | `/crypto` | `src/routes/api.routes.js` |
 | GET | `/debug/email-config` | `src/routes/api.routes.js` |
 | USE | `/designer-studio` | `src/routes/api.routes.js` |
+| GET | `/docs/client-api.openapi.yaml` | `src/routes/api.routes.js` |
 | GET | `/download` | `src/routes/api.routes.js` |
 | USE | `/drafts` | `src/routes/api.routes.js` |
 | POST | `/errors/report` | `src/routes/api.routes.js` |
@@ -444,4 +445,4 @@
 
 ## Count
 
-- **Entries:** 434
+- **Entries:** 435

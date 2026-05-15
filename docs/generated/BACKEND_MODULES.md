@@ -1,6 +1,6 @@
 # Generated: Backend module lists
 
-**Generated at:** 2026-05-12T11:23:48.049Z
+**Generated at:** 2026-05-15T18:58:59.563Z
 
 ## Controllers
 
@@ -59,7 +59,6 @@
 - `src/services/signup-winback-email.service.js`
 - `src/services/stripe-credit-reconcile.service.js`
 - `src/services/telegramBot.js`
-- `src/services/telemetry-retention.service.js`
 - `src/services/telemetry.service.js`
 - `src/services/tutorial-videos.service.js`
 - `src/services/upscaler.service.js`
@@ -94,10 +93,13 @@
 - `src/lib/ffmpeg-worker-env.js`
 - `src/lib/firebase-admin.js`
 - `src/lib/generationUploadGuards.js`
+- `src/lib/integrator-generation-webhook.js`
 - `src/lib/mirrorRedisCache.js`
 - `src/lib/nsfwZit62PromptBuilder.js`
 - `src/lib/prisma.js`
 - `src/lib/reelscraper-runner.js`
+- `src/lib/runpod-image-generation-recovery.js`
+- `src/lib/runpod-job-status.js`
 - `src/lib/runpodWebhookUrl.js`
 - `src/lib/sexting-script-pricing.js`
 - `src/lib/stripeClients.js`

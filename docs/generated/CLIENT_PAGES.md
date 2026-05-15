@@ -1,8 +1,8 @@
 # Generated: React pages (filenames)
 
-**Generated at:** 2026-05-12T11:23:48.049Z
+**Generated at:** 2026-05-15T18:58:59.563Z
 
-53 files:
+54 files:
 
 - `client/src/pages/AdminAffiliateLanderEditorPage.jsx`
 - `client/src/pages/AdminAffiliateLanderPreviewFrame.jsx`
@@ -18,6 +18,7 @@
 - `client/src/pages/CreateAIModelLandingPageSk.jsx`
 - `client/src/pages/CreatorStudioPage.jsx`
 - `client/src/pages/DashboardPage.jsx`
+- `client/src/pages/DesignSystemPage.jsx`
 - `client/src/pages/DesignerStudioPage.jsx`
 - `client/src/pages/FaceRefTestPage.jsx`
 - `client/src/pages/FirstFrameExtractorPage.jsx`
@@ -97,6 +98,7 @@
 - **`models`** — (see JSX)
 - **`nsfw`** — (see JSX)
 - **`generation`** — (see JSX)
+- **`/__design__`** — (see JSX)
 - **`*`** — (see JSX)
 - **`(redirect)→/login`** — Navigate
 - **`(redirect)→/login`** — Navigate
