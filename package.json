@@ -30,6 +30,7 @@
     "figma:export:full": "node scripts/export-figma-html.mjs --include-auth --themes light,dark",
     "figma:export:html": "node scripts/export-figma-html.mjs",
     "figma:export:html:auth": "node scripts/export-figma-html.mjs --include-auth --skip-mocks --storage-state scripts/figma-auth-state.json",
+    "figma:push": "node scripts/push-to-figma.mjs",
     "openapi:generate": "node scripts/generate-openapi.mjs",
     "openapi:client": "node scripts/generate-client-openapi.mjs",
     "openapi:lint": "npx --yes @stoplight/spectral-cli@6.15.0 lint docs/openapi/client-api.openapi.yaml",
