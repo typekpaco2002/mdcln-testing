@@ -1,0 +1,6 @@
+{
+  "voices": [
+    { "id": "voice_001", "name": "Aria", "language": "en", "gender": "female", "previewUrl": null },
+    { "id": "voice_002", "name": "Marcus", "language": "en", "gender": "male", "previewUrl": null }
+  ]
+}

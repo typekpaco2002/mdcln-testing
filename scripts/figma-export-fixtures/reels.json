@@ -1,0 +1,31 @@
+{
+  "reels": [
+    {
+      "id": "reel_demo_001",
+      "username": "instagram",
+      "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4",
+      "thumbnailUrl": "https://picsum.photos/seed/r1/720/1280",
+      "caption": "Behind the scenes of today's shoot",
+      "viewCount": 1250000,
+      "likeCount": 84200,
+      "commentCount": 1340,
+      "postedAt": "2026-05-12T16:30:00.000Z",
+      "scrapedAt": "2026-05-15T08:00:00.000Z",
+      "viralScore": 92.4
+    },
+    {
+      "id": "reel_demo_002",
+      "username": "instagram",
+      "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4",
+      "thumbnailUrl": "https://picsum.photos/seed/r2/720/1280",
+      "caption": "Quick tutorial — 30 seconds",
+      "viewCount": 480000,
+      "likeCount": 31200,
+      "commentCount": 612,
+      "postedAt": "2026-05-13T09:15:00.000Z",
+      "scrapedAt": "2026-05-15T08:00:00.000Z",
+      "viralScore": 78.1
+    }
+  ],
+  "total": 2
+}

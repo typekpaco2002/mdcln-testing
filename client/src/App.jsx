@@ -63,8 +63,14 @@ import ProDashboardPage from './pages/Pro/ProDashboardPage';
 import ProModelsPage from './pages/Pro/ProModelsPage';
 import ProNSFWPage from './pages/Pro/ProNSFWPage';
 import ProGenerationPage from './pages/Pro/ProGenerationPage';
+import DesignSystemPage from './pages/DesignSystemPage';
 import toast from 'react-hot-toast';
 import SeoRobotsMeta from './components/SeoRobotsMeta';
+
+// Hide the /__design__ route on production hostnames; available everywhere else (localhost, *.vercel.app preview, testing host).
+const isProductionHost =
+  typeof window !== "undefined" &&
+  /(^|\.)modelclone\.app$/i.test(window.location.hostname);
 
 const LOCALE_STORAGE_KEY = "app_locale";
 const APP_COPY = {
@@ -794,6 +800,9 @@ function App() {
             <Route path="nsfw" element={<ProNSFWPage />} />
             <Route path="generation" element={<ProGenerationPage />} />
           </Route>
+          {!isProductionHost && (
+            <Route path="/__design__" element={<DesignSystemPage />} />
+          )}
           <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             {!isTelegram() && <SupportChatButton />}

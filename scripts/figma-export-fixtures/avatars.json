@@ -1,0 +1,10 @@
+{
+  "avatars": [
+    {
+      "id": "avatar_001",
+      "name": "Studio Aurora",
+      "thumbnailUrl": "https://picsum.photos/seed/avatar1/400/400",
+      "status": "ready"
+    }
+  ]
+}

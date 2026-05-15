@@ -1,0 +1,46 @@
+{
+  "packages": [
+    {
+      "id": "pkg_starter",
+      "name": "Starter",
+      "credits": 1000,
+      "priceCents": 990,
+      "currency": "USD",
+      "popular": false
+    },
+    {
+      "id": "pkg_creator",
+      "name": "Creator",
+      "credits": 5000,
+      "priceCents": 3990,
+      "currency": "USD",
+      "popular": true
+    },
+    {
+      "id": "pkg_pro",
+      "name": "Pro Pack",
+      "credits": 15000,
+      "priceCents": 9990,
+      "currency": "USD",
+      "popular": false
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "sub_pro_monthly",
+      "name": "Pro Monthly",
+      "monthlyCredits": 5000,
+      "priceCents": 2990,
+      "currency": "USD",
+      "interval": "month"
+    },
+    {
+      "id": "sub_pro_yearly",
+      "name": "Pro Yearly",
+      "monthlyCredits": 5000,
+      "priceCents": 29900,
+      "currency": "USD",
+      "interval": "year"
+    }
+  ]
+}

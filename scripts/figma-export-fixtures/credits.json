@@ -1,0 +1,17 @@
+{
+  "credits": 12500,
+  "freeCredits": 0,
+  "purchasedCredits": 12500,
+  "subscription": {
+    "id": "sub_demo_001",
+    "status": "active",
+    "plan": "Pro Monthly",
+    "renewsAt": "2026-06-15T00:00:00.000Z",
+    "monthlyCredits": 5000
+  },
+  "history": [
+    { "id": "tx_001", "amount": 5000, "reason": "Subscription renewal", "createdAt": "2026-05-15T10:00:00.000Z" },
+    { "id": "tx_002", "amount": -50, "reason": "Image generation", "createdAt": "2026-05-15T09:30:00.000Z" },
+    { "id": "tx_003", "amount": 2500, "reason": "Credit pack purchase", "createdAt": "2026-05-10T14:22:00.000Z" }
+  ]
+}

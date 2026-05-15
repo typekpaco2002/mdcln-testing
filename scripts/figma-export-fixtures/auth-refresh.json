@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "token": "demo.jwt.token",
+  "user": {
+    "id": "user_demo_001",
+    "email": "demo@modelclone.app",
+    "credits": 12500,
+    "role": "admin",
+    "proAccess": true
+  }
+}

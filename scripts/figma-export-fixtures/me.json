@@ -1,0 +1,26 @@
+{
+  "user": {
+    "id": "user_demo_001",
+    "email": "demo@modelclone.app",
+    "username": "demo",
+    "displayName": "Demo User",
+    "role": "admin",
+    "credits": 12500,
+    "totalSpentCents": 9900,
+    "spent": 9900,
+    "totalSpent": 9900,
+    "proAccess": true,
+    "subscription": {
+      "id": "sub_demo_001",
+      "status": "active",
+      "plan": "Pro Monthly",
+      "renewsAt": "2026-06-15T00:00:00.000Z"
+    },
+    "specialOfferEligible": false,
+    "specialOfferLockedAt": null,
+    "onboardingCompleted": true,
+    "createdAt": "2025-12-01T12:00:00.000Z",
+    "avatarUrl": null
+  },
+  "isAuthenticated": true
+}

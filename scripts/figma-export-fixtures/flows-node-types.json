@@ -1,0 +1,42 @@
+{
+  "nodeTypes": [
+    {
+      "type": "imageInput",
+      "label": "Image Input",
+      "category": "input",
+      "inputs": [],
+      "outputs": [{ "id": "image", "type": "image", "label": "Image" }]
+    },
+    {
+      "type": "textInput",
+      "label": "Text Input",
+      "category": "input",
+      "inputs": [],
+      "outputs": [{ "id": "text", "type": "text", "label": "Text" }]
+    },
+    {
+      "type": "modelSelector",
+      "label": "Model Selector",
+      "category": "model",
+      "inputs": [],
+      "outputs": [{ "id": "model", "type": "model", "label": "Model" }]
+    },
+    {
+      "type": "mcxNode",
+      "label": "ModelClone-X",
+      "category": "generation",
+      "inputs": [
+        { "id": "prompt", "type": "text", "label": "Prompt" },
+        { "id": "model", "type": "model", "label": "Model" }
+      ],
+      "outputs": [{ "id": "image", "type": "image", "label": "Image" }]
+    },
+    {
+      "type": "outputViewer",
+      "label": "Output",
+      "category": "output",
+      "inputs": [{ "id": "any", "type": "any", "label": "Any" }],
+      "outputs": []
+    }
+  ]
+}

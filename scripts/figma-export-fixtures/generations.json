@@ -1,0 +1,64 @@
+{
+  "generations": [
+    {
+      "id": "gen_demo_001",
+      "type": "image",
+      "status": "completed",
+      "modelId": "model_demo_001",
+      "prompt": "elegant portrait, soft window light, film grain",
+      "outputUrls": ["https://picsum.photos/seed/g1/720/1280"],
+      "thumbnailUrl": "https://picsum.photos/seed/g1/360/640",
+      "creditsCost": 50,
+      "createdAt": "2026-05-15T11:42:00.000Z",
+      "completedAt": "2026-05-15T11:42:18.000Z"
+    },
+    {
+      "id": "gen_demo_002",
+      "type": "image",
+      "status": "completed",
+      "modelId": "model_demo_002",
+      "prompt": "studio shot, cinematic lighting, high detail",
+      "outputUrls": ["https://picsum.photos/seed/g2/720/1280"],
+      "thumbnailUrl": "https://picsum.photos/seed/g2/360/640",
+      "creditsCost": 50,
+      "createdAt": "2026-05-15T11:30:00.000Z",
+      "completedAt": "2026-05-15T11:30:24.000Z"
+    },
+    {
+      "id": "gen_demo_003",
+      "type": "video",
+      "status": "completed",
+      "modelId": "model_demo_001",
+      "prompt": "subject turns to camera, smooth motion",
+      "outputUrls": ["https://www.w3schools.com/html/mov_bbb.mp4"],
+      "thumbnailUrl": "https://picsum.photos/seed/g3/720/1280",
+      "creditsCost": 195,
+      "duration": 6.5,
+      "createdAt": "2026-05-15T10:18:00.000Z",
+      "completedAt": "2026-05-15T10:19:48.000Z"
+    },
+    {
+      "id": "gen_demo_004",
+      "type": "nsfw",
+      "status": "processing",
+      "modelId": "model_demo_001",
+      "prompt": "(redacted)",
+      "creditsCost": 80,
+      "createdAt": "2026-05-15T11:50:00.000Z",
+      "queuePosition": 2
+    },
+    {
+      "id": "gen_demo_005",
+      "type": "creator-studio",
+      "status": "completed",
+      "prompt": "tech product hero shot, gradient background",
+      "outputUrls": ["https://picsum.photos/seed/g5/1280/720"],
+      "thumbnailUrl": "https://picsum.photos/seed/g5/640/360",
+      "creditsCost": 30,
+      "createdAt": "2026-05-15T09:11:00.000Z",
+      "completedAt": "2026-05-15T09:11:14.000Z"
+    }
+  ],
+  "total": 5,
+  "hasMore": false
+}

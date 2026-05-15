@@ -1,0 +1,23 @@
+{
+  "features": {
+    "nsfw": true,
+    "motionX": true,
+    "flows": true,
+    "creatorStudio": true,
+    "voiceStudio": true,
+    "loraTraining": true,
+    "synthIdRemover": true,
+    "viralReels": true
+  },
+  "limits": {
+    "maxImagesPerGeneration": 4,
+    "maxVideoSeconds": 30
+  },
+  "providers": {
+    "kie": true,
+    "wavespeed": true,
+    "runninghub": true,
+    "runpod": true,
+    "fal": true
+  }
+}

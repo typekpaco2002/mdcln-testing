@@ -1,0 +1,14 @@
+{
+  "generation": {
+    "id": "gen_demo_001",
+    "type": "image",
+    "status": "completed",
+    "modelId": "model_demo_001",
+    "prompt": "elegant portrait, soft window light, film grain",
+    "outputUrls": ["https://picsum.photos/seed/g1/720/1280"],
+    "thumbnailUrl": "https://picsum.photos/seed/g1/360/640",
+    "creditsCost": 50,
+    "createdAt": "2026-05-15T11:42:00.000Z",
+    "completedAt": "2026-05-15T11:42:18.000Z"
+  }
+}

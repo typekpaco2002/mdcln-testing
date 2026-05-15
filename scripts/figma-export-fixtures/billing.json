@@ -1,0 +1,20 @@
+{
+  "subscription": {
+    "id": "sub_demo_001",
+    "status": "active",
+    "plan": "Pro Monthly",
+    "renewsAt": "2026-06-15T00:00:00.000Z",
+    "monthlyCredits": 5000,
+    "currentPeriodEnd": "2026-06-15T00:00:00.000Z"
+  },
+  "paymentMethod": {
+    "brand": "visa",
+    "last4": "4242",
+    "expMonth": 12,
+    "expYear": 2028
+  },
+  "invoices": [
+    { "id": "in_001", "amountCents": 2990, "status": "paid", "date": "2026-05-15T00:00:00.000Z" },
+    { "id": "in_002", "amountCents": 2990, "status": "paid", "date": "2026-04-15T00:00:00.000Z" }
+  ]
+}
