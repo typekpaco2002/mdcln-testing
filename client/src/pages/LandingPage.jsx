@@ -936,7 +936,7 @@ export default function LandingPage() {
 
       {/* ── HERO ─────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 pt-20">
-        {/* Aurora ambient glow — two soft violet halos with screen blend */}
+        {/* Ambient glow — neutral white fog with screen blend */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
           <div
             className="absolute"
@@ -946,7 +946,7 @@ export default function LandingPage() {
               width: "min(900px, 80vw)",
               height: "480px",
               transform: "translateX(-50%)",
-              background: "radial-gradient(ellipse at center, rgba(167, 139, 250, 0.10) 0%, transparent 65%)",
+              background: "radial-gradient(ellipse at center, rgba(255, 255, 255, 0.05) 0%, transparent 65%)",
               filter: "blur(80px)",
               mixBlendMode: "screen",
             }}
@@ -958,7 +958,7 @@ export default function LandingPage() {
               right: "-10%",
               width: "min(520px, 50vw)",
               height: "520px",
-              background: "radial-gradient(circle at center, rgba(124, 58, 237, 0.06) 0%, transparent 70%)",
+              background: "radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 70%)",
               filter: "blur(70px)",
               mixBlendMode: "screen",
             }}

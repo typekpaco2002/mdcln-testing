@@ -1402,10 +1402,12 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
     }
   };
 
-  const gradientPurple = 'linear-gradient(135deg, #8B5CF6, #3B82F6)';
-  const gradientCyan = 'linear-gradient(135deg, #22D3EE, #14B8A6)';
-  const gradientPink = 'linear-gradient(135deg, #EC4899, #8B5CF6)';
-  const gradientGreen = 'linear-gradient(135deg, #10B981, #22D3EE)';
+  // Aurora monochrome — every "gradient" is now a neutral white-on-translucent
+  // glass surface. Each name is kept stable so call-sites don't need updating.
+  const gradientPurple = 'linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04))';
+  const gradientCyan   = 'linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04))';
+  const gradientPink   = 'linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04))';
+  const gradientGreen  = 'linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04))';
 
   const animatedCredits = useCountUp(user?.credits || 0, 1200);
   const animatedImages = useCountUp(monthlyStats.images, 900);
@@ -1425,7 +1427,13 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
               {currentStreak >= 2 && (
                 <div
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
-                  style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.3)', color: '#fb923c' }}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid rgba(255,255,255,0.16)',
+                    color: 'rgba(255,255,255,0.95)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}
                 >
                   <Flame className="w-3.5 h-3.5" />
                   {currentStreak}-day streak

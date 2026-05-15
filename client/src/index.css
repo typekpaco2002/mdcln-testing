@@ -3619,9 +3619,292 @@ a.bg-white:hover {
   background-clip: padding-box;
   transition: background 200ms ease;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(167, 139, 250, 0.40); background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.30); background-clip: padding-box; }
 
-/* TEXT SELECTION — violet to match the brand */
-::selection { background: rgba(167, 139, 250, 0.35); color: #fff; }
-:is(html[data-theme="light"], html.light) ::selection { background: rgba(124, 58, 237, 0.20); color: #0a0a14; }
+/* TEXT SELECTION — neutral white */
+::selection { background: rgba(255, 255, 255, 0.20); color: #fff; }
+:is(html[data-theme="light"], html.light) ::selection { background: rgba(15, 23, 42, 0.18); color: #0a0a14; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * AURORA · MONOCHROME OVERRIDE (final cascade — supersedes everything above)
+ *
+ * Strip every colour, tint, and gradient. Only white / gray / black plus
+ * translucent glass remain. Targets DARK MODE for now (light mode follows).
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Body backdrop — pure greyscale fog, no colour blobs */
+:is(html[data-theme="dark"], html.dark) body::before {
+  background:
+    radial-gradient(circle 700px at 18% 12%, rgba(255, 255, 255, 0.05) 0%, transparent 60%),
+    radial-gradient(circle 600px at 82% 18%, rgba(255, 255, 255, 0.03) 0%, transparent 60%),
+    radial-gradient(circle 800px at 50% 90%, rgba(255, 255, 255, 0.02) 0%, transparent 60%) !important;
+  animation: mc-aurora-drift 36s ease-in-out infinite alternate !important;
+}
+
+/* Dark-mode token override — neutral glow, neutral accent */
+:is(html[data-theme="dark"], html.dark) {
+  --accent:           #f5f5f7 !important;
+  --accent-hover:     #ffffff !important;
+  --accent-soft:      rgba(255, 255, 255, 0.08) !important;
+  --ring:             rgba(255, 255, 255, 0.40) !important;
+
+  --glow-violet:        255, 255, 255 !important;
+  --glow-violet-soft:   255, 255, 255 !important;
+  --glow-violet-deep:   255, 255, 255 !important;
+
+  --glow-rgb:           255, 255, 255 !important;
+  --glow-faint:         rgba(255, 255, 255, 0.02) !important;
+  --glow-medium:        rgba(255, 255, 255, 0.04) !important;
+  --glow-strong:        rgba(255, 255, 255, 0.08) !important;
+
+  --shadow-glass-sm:  0 1px 2px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.18) !important;
+  --shadow-glass-md:  0 2px 4px rgba(0,0,0,0.25), 0 12px 32px rgba(0,0,0,0.30) !important;
+  --shadow-glass-lg:  0 4px 8px rgba(0,0,0,0.30), 0 24px 60px rgba(0,0,0,0.40) !important;
+  --shadow-glass-xl:  0 8px 16px rgba(0,0,0,0.35), 0 40px 100px rgba(0,0,0,0.50) !important;
+}
+
+/* Strip violet from gradient-text — pure white→silver→white */
+.gradient-text,
+.gradient-text-animated {
+  background: linear-gradient(135deg, #ffffff 0%, #d4d4d8 50%, #ffffff 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Neutralize every Tailwind colour utility used as background tints, rings,
+ * text colour, or border accent. Replace with white-on-translucent. */
+:is(html[data-theme="dark"], html.dark) [class*="bg-purple-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-violet-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-indigo-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-blue-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-pink-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-fuchsia-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-cyan-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-emerald-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-green-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-amber-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-orange-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-yellow-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-red-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-rose-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-teal-"],
+:is(html[data-theme="dark"], html.dark) [class*="bg-sky-"] {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  background-image: none !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+}
+
+/* Coloured TEXT → neutral grayscale tones (status text becomes legible
+ * via opacity steps, not hue) */
+:is(html[data-theme="dark"], html.dark) [class*="text-purple-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-violet-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-indigo-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-blue-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-pink-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-fuchsia-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-cyan-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-sky-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-amber-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-orange-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-yellow-"] {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+/* Status text — keep success/error semantically distinct via brightness only */
+:is(html[data-theme="dark"], html.dark) [class*="text-emerald-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-green-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-teal-"] {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+:is(html[data-theme="dark"], html.dark) [class*="text-red-"],
+:is(html[data-theme="dark"], html.dark) [class*="text-rose-"] {
+  color: rgba(255, 255, 255, 0.70) !important;
+}
+
+/* Coloured BORDERS → neutral white at low opacity */
+:is(html[data-theme="dark"], html.dark) [class*="border-purple-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-violet-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-indigo-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-blue-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-pink-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-cyan-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-emerald-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-amber-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-red-"],
+:is(html[data-theme="dark"], html.dark) [class*="border-rose-"] {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Strip violet from focused inputs / rings */
+:is(html[data-theme="dark"], html.dark) input:focus,
+:is(html[data-theme="dark"], html.dark) textarea:focus,
+:is(html[data-theme="dark"], html.dark) select:focus,
+:is(html[data-theme="dark"], html.dark) .input-premium:focus {
+  border-color: rgba(255, 255, 255, 0.40) !important;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.10),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Strip violet from CTA hover glow */
+:is(html[data-theme="dark"], html.dark) button.bg-white:hover,
+:is(html[data-theme="dark"], html.dark) a.bg-white:hover {
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 0 rgba(15, 23, 42, 0.10),
+    0 2px 4px 0 rgba(0, 0, 0, 0.25),
+    0 16px 40px -10px rgba(0, 0, 0, 0.55) !important;
+}
+:is(html[data-theme="dark"], html.dark) .btn-primary:hover,
+:is(html[data-theme="dark"], html.dark) .btn-accent:hover,
+:is(html[data-theme="dark"], html.dark) .btn-outline:hover,
+:is(html[data-theme="dark"], html.dark) .btn-ghost:hover {
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.12),
+    0 2px 4px 0 rgba(0, 0, 0, 0.25),
+    0 16px 40px -10px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Strip violet from accent button background — keep glass-pill styling */
+:is(html[data-theme="dark"], html.dark) .btn-accent {
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+}
+:is(html[data-theme="dark"], html.dark) .btn-accent:hover {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Strip the unified generate-button violet override — make it monochrome */
+:is(html[data-theme="dark"], html.dark) button[data-testid^="button-generate"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-image: none !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Strip rainbow-border + any other accent borders */
+:is(html[data-theme="dark"], html.dark) .rainbow-border {
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+}
+
+/* AuroraBackdrop / RadialGlow blob colours → silently neutralized
+ * (these components paint absolute divs with inline rgba — match all
+ * radial-gradient backgrounds containing the violet RGBs) */
+:is(html[data-theme="dark"], html.dark) [aria-hidden="true"][style*="167, 139, 250"],
+:is(html[data-theme="dark"], html.dark) [aria-hidden="true"][style*="124, 58, 237"],
+:is(html[data-theme="dark"], html.dark) [aria-hidden="true"][style*="139, 92, 246"],
+:is(html[data-theme="dark"], html.dark) [aria-hidden="true"][style*="purple-600"],
+:is(html[data-theme="dark"], html.dark) [aria-hidden][style*="167, 139, 250"],
+:is(html[data-theme="dark"], html.dark) [aria-hidden][style*="124, 58, 237"],
+:is(html[data-theme="dark"], html.dark) [aria-hidden][style*="139, 92, 246"] {
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.05) 0%, transparent 65%) !important;
+  filter: blur(60px) !important;
+  mix-blend-mode: screen !important;
+}
+
+/* Make sure the LandingPage hero ambient glow uses neutral fog */
+:is(html[data-theme="dark"], html.dark) section.relative.min-h-screen [aria-hidden] [style*="rgba(167"],
+:is(html[data-theme="dark"], html.dark) section.relative.min-h-screen [aria-hidden] [style*="rgba(124"] {
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.04) 0%, transparent 70%) !important;
+}
+
+/* Footer top-edge wash → neutral */
+:is(html[data-theme="dark"], html.dark) footer [aria-hidden][style*="rgba(167"] {
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.04) 0%, transparent 70%) !important;
+}
+
+/* Disable .glow-pulse violet pulse — monochrome breathe */
+:is(html[data-theme="dark"], html.dark) .glow-pulse::after {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── INLINE-STYLE COLOR KILLER ──────────────────────────────────────────────
+ * The Dashboard, NSFW Studio, Pro layout, and many other pages set RGB
+ * colors directly via style={{ background: 'rgba(X,Y,Z,A)' }}. These
+ * attribute selectors catch every common brand/accent/status RGB the app
+ * uses and replace the gradient/colour with neutral white-on-translucent.
+ * Listed both with-space and no-space comma variants. */
+:is(html[data-theme="dark"], html.dark) [style*="rgba(139, 92, 246"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(139,92,246"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(124, 58, 237"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(124,58,237"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(167, 139, 250"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(167,139,250"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(208, 171, 247"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(208,171,247"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(99, 102, 241"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(99,102,241"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(168, 85, 247"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(168,85,247"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(34, 211, 238"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(34,211,238"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(20, 184, 166"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(20,184,166"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(236, 72, 153"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(236,72,153"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(249, 115, 22"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(249,115,22"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(239, 68, 68"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(239,68,68"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(234, 179, 8"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(234,179,8"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(245, 158, 11"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(245,158,11"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(251, 146, 60"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(251,146,60"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(16, 185, 129"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(16,185,129"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(0, 182, 122"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(0,182,122"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(252, 211, 77"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(252,211,77"] {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 1px 3px 0 rgba(0,0,0,0.20) !important;
+}
+
+/* Hex colour killers (case-insensitive lookup not possible in CSS, so list
+ * common upper/lower case variants of the brand violets/purples/cyans/etc) */
+:is(html[data-theme="dark"], html.dark) [style*="#8B5CF6"],
+:is(html[data-theme="dark"], html.dark) [style*="#8b5cf6"],
+:is(html[data-theme="dark"], html.dark) [style*="#A78BFA"],
+:is(html[data-theme="dark"], html.dark) [style*="#a78bfa"],
+:is(html[data-theme="dark"], html.dark) [style*="#7C3AED"],
+:is(html[data-theme="dark"], html.dark) [style*="#7c3aed"],
+:is(html[data-theme="dark"], html.dark) [style*="#3B82F6"],
+:is(html[data-theme="dark"], html.dark) [style*="#3b82f6"],
+:is(html[data-theme="dark"], html.dark) [style*="#22D3EE"],
+:is(html[data-theme="dark"], html.dark) [style*="#22d3ee"],
+:is(html[data-theme="dark"], html.dark) [style*="#14B8A6"],
+:is(html[data-theme="dark"], html.dark) [style*="#14b8a6"],
+:is(html[data-theme="dark"], html.dark) [style*="#10B981"],
+:is(html[data-theme="dark"], html.dark) [style*="#10b981"],
+:is(html[data-theme="dark"], html.dark) [style*="#EC4899"],
+:is(html[data-theme="dark"], html.dark) [style*="#ec4899"],
+:is(html[data-theme="dark"], html.dark) [style*="#fb923c"],
+:is(html[data-theme="dark"], html.dark) [style*="#FB923C"] {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* Decorative radial-gradient corner glows on dashboard cards — replace
+ * coloured washes with a neutral white absorption that reads as glass. */
+:is(html[data-theme="dark"], html.dark) [style*="radial-gradient"][style*="0%, transparent"]:is([style*="rgba(139"], [style*="rgba(124"], [style*="rgba(167"], [style*="rgba(208"], [style*="rgba(34"], [style*="rgba(20"], [style*="rgba(236"], [style*="rgba(249"], [style*="rgba(239"], [style*="rgba(234"], [style*="rgba(245"], [style*="rgba(251"], [style*="rgba(16"], [style*="rgba(0, 182"], [style*="rgba(252"]) {
+  background: radial-gradient(ellipse at top left, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 45%, transparent 70%) !important;
+}
+
+/* Drop-shadows on sidebar icons / buttons that used coloured glows */
+:is(html[data-theme="dark"], html.dark) [class*="drop-shadow"][class*="rgba(252"],
+:is(html[data-theme="dark"], html.dark) [class*="drop-shadow"][class*="rgba(139"] {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.30)) !important;
+}
+.drop-shadow-\[0_0_8px_rgba\(252\,211\,77\,0\.4\)\] {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.40)) !important;
+}

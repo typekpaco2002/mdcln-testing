@@ -15,7 +15,7 @@ export default function Footer() {
         borderTop: '1px solid var(--glass-border-strong)',
       }}
     >
-      {/* Soft violet wash at the top edge — same Aurora vocabulary as the hero */}
+      {/* Soft neutral wash at the top edge */}
       <div
         aria-hidden
         className="pointer-events-none absolute"
@@ -25,7 +25,7 @@ export default function Footer() {
           width: 'min(900px, 80vw)',
           height: '320px',
           transform: 'translateX(-50%)',
-          background: 'radial-gradient(ellipse at center, rgba(167, 139, 250, 0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at center, rgba(255, 255, 255, 0.04) 0%, transparent 70%)',
           filter: 'blur(80px)',
           mixBlendMode: 'screen',
         }}

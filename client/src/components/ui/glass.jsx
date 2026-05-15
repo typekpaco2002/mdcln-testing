@@ -164,16 +164,18 @@ const INTENSITY_VAR = {
   strong: "var(--glow-strong)",
 };
 
+/* Aurora is monochrome now — every "hue" maps to neutral white at varying
+ * intensity. Keeps the public API stable so callers don't need updating. */
 const HUE_INTENSITY = {
-  lavender: { faint: 0.04, medium: 0.07, strong: 0.12 },
-  deep:     { faint: 0.03, medium: 0.06, strong: 0.10 },
-  indigo:   { faint: 0.03, medium: 0.06, strong: 0.10 },
+  lavender: { faint: 0.03, medium: 0.05, strong: 0.08 },
+  deep:     { faint: 0.02, medium: 0.04, strong: 0.07 },
+  indigo:   { faint: 0.02, medium: 0.04, strong: 0.07 },
 };
 
 const HUE_RGB = {
-  lavender: "167, 139, 250",
-  deep:     "124, 58, 237",
-  indigo:   "99, 102, 241",
+  lavender: "255, 255, 255",
+  deep:     "255, 255, 255",
+  indigo:   "255, 255, 255",
 };
 
 export function RadialGlow({
