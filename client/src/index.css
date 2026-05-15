@@ -2522,3 +2522,488 @@ body.mc-private-mode .no-private-blur video {
 body.mc-private-mode [data-private="true"] {
   position: relative;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * AURORA — premium glass + violet glow + fluid motion (added 2026-05-15).
+ *
+ * This section establishes a refined aesthetic on top of the existing token
+ * system: translucent glass surfaces, ambient violet radial glows, spring
+ * easing, and a polished light mode. Existing pages cascade into the new look
+ * via tokens — most pages need zero markup changes. Use the .glass / .glass-*
+ * / .glow-* / .motion-* utility classes for new components.
+ *
+ * Design DNA: Arc browser × Apple Vision Pro × Linear × Anthropic console.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Core glow palette (lavender → royal violet → indigo) ─────────────── */
+  --glow-violet:        139, 92, 246;       /* mid violet */
+  --glow-violet-soft:   167, 139, 250;      /* lavender */
+  --glow-violet-deep:   124, 58, 237;       /* royal */
+  --glow-indigo:        99, 102, 241;       /* indigo accent */
+
+  /* ── Glass system — themed surfaces ───────────────────────────────────── */
+  --glass-blur-sm:  10px;
+  --glass-blur-md:  18px;
+  --glass-blur-lg:  28px;
+  --glass-blur-xl:  44px;
+  --glass-saturate: 140%;
+
+  /* ── Motion tokens — spring physics expressed as cubic-bezier ─────────── */
+  --ease-spring:    cubic-bezier(0.16, 1, 0.3, 1);   /* "expo out", feels springy */
+  --ease-smooth:    cubic-bezier(0.32, 0.72, 0, 1);  /* Apple's marquee */
+  --ease-soft:      cubic-bezier(0.4, 0, 0.2, 1);    /* Material standard */
+  --motion-fast:    140ms;
+  --motion-medium:  240ms;
+  --motion-slow:    420ms;
+  --motion-stately: 720ms;
+
+  /* ── Soft, theme-aware shadows with subtle violet bleed ──────────────── */
+  --shadow-glass-sm:  0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(var(--glow-violet), 0.05);
+  --shadow-glass-md:  0 2px 4px rgba(0,0,0,0.05), 0 12px 32px rgba(var(--glow-violet), 0.08);
+  --shadow-glass-lg:  0 4px 8px rgba(0,0,0,0.06), 0 24px 60px rgba(var(--glow-violet), 0.12);
+  --shadow-glass-xl:  0 8px 16px rgba(0,0,0,0.08), 0 40px 100px rgba(var(--glow-violet), 0.18);
+}
+
+/* ── DARK mode aurora tokens ─────────────────────────────────────────────── */
+:root,
+html[data-theme="dark"],
+html.dark {
+  /* Base canvas — deeper, with subtle violet wash */
+  --bg-page:          #050507;
+  --bg-content:       #0a0a0e;
+  --bg-surface:       #0f0f14;
+  --bg-surface-hover: #14141a;
+  --bg-elevated:      #16161d;
+
+  /* Glass surfaces — translucent with backdrop blur */
+  --glass-fill:           rgba(255, 255, 255, 0.025);
+  --glass-fill-strong:    rgba(255, 255, 255, 0.05);
+  --glass-fill-elevated:  rgba(20, 20, 28, 0.55);
+  --glass-border:         rgba(255, 255, 255, 0.08);
+  --glass-border-strong:  rgba(255, 255, 255, 0.14);
+  --glass-highlight:      rgba(255, 255, 255, 0.04);
+
+  /* Glow color (the ambient violet that bleeds through everything) */
+  --glow-rgb:           var(--glow-violet-soft);
+  --glow-faint:         rgba(var(--glow-violet-soft), 0.05);
+  --glow-medium:        rgba(var(--glow-violet-soft), 0.12);
+  --glow-strong:        rgba(var(--glow-violet-soft), 0.22);
+
+  /* Refined text + borders inherit existing */
+  --text-primary:     #fafafa;
+  --text-on-glass:    #f4f4f5;
+}
+
+/* ── LIGHT mode aurora tokens ─────────────────────────────────────────────
+ * Fixes the bright-mode visibility issue: warmer off-white base, deeper text
+ * contrasts, glass surfaces use high opacity + subtle dark border so they
+ * remain visible against the page. Violet glow is much more restrained.
+ * ─────────────────────────────────────────────────────────────────────── */
+html[data-theme="light"],
+html.light {
+  /* Base canvas — warm off-white, not pure #fff */
+  --bg-page:          #f5f6f9;
+  --bg-content:       #ffffff;
+  --bg-surface:       #f9fafb;
+  --bg-surface-hover: #f1f3f7;
+  --bg-elevated:      #ffffff;
+
+  /* Glass surfaces — high-opacity white with subtle dark border for contrast */
+  --glass-fill:           rgba(255, 255, 255, 0.65);
+  --glass-fill-strong:    rgba(255, 255, 255, 0.85);
+  --glass-fill-elevated:  rgba(255, 255, 255, 0.95);
+  --glass-border:         rgba(15, 23, 42, 0.06);
+  --glass-border-strong:  rgba(15, 23, 42, 0.10);
+  --glass-highlight:      rgba(255, 255, 255, 0.7);
+
+  /* Glow — much more restrained on light backgrounds */
+  --glow-rgb:           var(--glow-violet-deep);
+  --glow-faint:         rgba(var(--glow-violet-deep), 0.025);
+  --glow-medium:        rgba(var(--glow-violet-deep), 0.05);
+  --glow-strong:        rgba(var(--glow-violet-deep), 0.10);
+
+  /* Deeper text contrasts — fixes legibility issues */
+  --text-primary:     #0a0a14;
+  --text-secondary:   #334155;
+  --text-muted:       #64748b;
+  --text-on-glass:    #0f172a;
+
+  /* Tighter borders for light mode */
+  --border-subtle:    rgba(15, 23, 42, 0.07);
+  --border-medium:    rgba(15, 23, 42, 0.12);
+  --border-strong:    rgba(15, 23, 42, 0.18);
+
+  /* Refined ambient shadows on light surfaces */
+  --shadow-ambient:   rgba(15, 23, 42, 0.05);
+}
+
+/* ── Body backdrop — ambient violet aurora (theme-aware) ─────────────────
+ * Two stacked radial gradients positioned at corners create a soft glow
+ * that bleeds through the whole UI. Painted as a fixed background layer
+ * via a body::before pseudo-element so it doesn't scroll with content.
+ * ─────────────────────────────────────────────────────────────────────── */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 0%,  var(--glow-medium) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 100%, var(--glow-faint) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, var(--glow-faint) 0%, transparent 70%);
+  transition: background var(--motion-slow) var(--ease-smooth);
+}
+
+/* Make sure app content stacks above the aurora layer */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * GLASS UTILITY CLASSES
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+.glass {
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur-md)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-glass-sm);
+}
+
+.glass-strong {
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 16px;
+  box-shadow: var(--shadow-glass-md);
+}
+
+.glass-elevated {
+  background: var(--glass-fill-elevated);
+  backdrop-filter: blur(var(--glass-blur-xl)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-xl)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-glass-lg);
+}
+
+.glass-rim {
+  position: relative;
+}
+.glass-rim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    var(--glass-highlight) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(0, 0, 0, 0.04) 100%
+  );
+  mix-blend-mode: overlay;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * GLOW UTILITY CLASSES — ambient or focused violet light
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+.glow-violet,
+.glow-violet-faint {
+  position: relative;
+}
+.glow-violet::before,
+.glow-violet-faint::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle at 50% 50%, var(--glow-medium) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+  filter: blur(20px);
+}
+.glow-violet-faint::before {
+  background: radial-gradient(circle at 50% 50%, var(--glow-faint) 0%, transparent 70%);
+}
+.glow-violet-strong::before {
+  background: radial-gradient(circle at 50% 50%, var(--glow-strong) 0%, transparent 70%);
+}
+
+/* Pulsing accent glow (used on CTA buttons, important pills) */
+@keyframes mc-glow-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.08); }
+}
+.glow-pulse {
+  position: relative;
+}
+.glow-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+  background: radial-gradient(circle, var(--glow-strong) 0%, transparent 70%);
+  z-index: -1;
+  animation: mc-glow-pulse 3.6s var(--ease-smooth) infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MOTION UTILITIES — spring entrance + interactive feedback
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+.motion-spring {
+  transition:
+    transform var(--motion-medium) var(--ease-spring),
+    opacity   var(--motion-medium) var(--ease-spring),
+    background var(--motion-medium) var(--ease-spring),
+    border-color var(--motion-medium) var(--ease-spring),
+    box-shadow var(--motion-medium) var(--ease-spring);
+}
+.motion-fast {
+  transition:
+    transform var(--motion-fast) var(--ease-spring),
+    opacity   var(--motion-fast) var(--ease-spring),
+    background var(--motion-fast) var(--ease-spring),
+    border-color var(--motion-fast) var(--ease-spring);
+}
+
+.motion-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-glass-md);
+}
+.motion-lift-strong:hover {
+  transform: translateY(-2px) scale(1.005);
+  box-shadow: var(--shadow-glass-lg);
+}
+
+/* Press feedback */
+.motion-press:active { transform: translateY(0) scale(0.98); transition: transform 60ms; }
+
+/* Entrance — fade + slide from below (used on page load) */
+@keyframes mc-fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.motion-enter {
+  animation: mc-fade-up var(--motion-slow) var(--ease-spring) both;
+}
+.motion-enter-delayed {
+  animation: mc-fade-up var(--motion-slow) var(--ease-spring) both;
+  animation-delay: 120ms;
+}
+
+/* Stagger children (use on a parent) */
+.motion-stagger > * {
+  animation: mc-fade-up var(--motion-slow) var(--ease-spring) both;
+}
+.motion-stagger > *:nth-child(1) { animation-delay:  60ms; }
+.motion-stagger > *:nth-child(2) { animation-delay: 120ms; }
+.motion-stagger > *:nth-child(3) { animation-delay: 180ms; }
+.motion-stagger > *:nth-child(4) { animation-delay: 240ms; }
+.motion-stagger > *:nth-child(5) { animation-delay: 300ms; }
+.motion-stagger > *:nth-child(6) { animation-delay: 360ms; }
+.motion-stagger > *:nth-child(7) { animation-delay: 420ms; }
+.motion-stagger > *:nth-child(8) { animation-delay: 480ms; }
+
+/* Floating idle (subtle bob for cards in hero sections) */
+@keyframes mc-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+.motion-float {
+  animation: mc-float 6s var(--ease-smooth) infinite;
+}
+
+/* Shimmering loading background (used on skeletons) */
+@keyframes mc-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.motion-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0%,
+    rgba(255,255,255,0.10) 50%,
+    rgba(255,255,255,0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: mc-shimmer 1.6s ease-in-out infinite;
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  body::before { background-attachment: scroll; }
+  .motion-spring, .motion-fast, .motion-enter, .motion-enter-delayed,
+  .motion-stagger > *, .motion-float, .glow-pulse::after, .motion-shimmer {
+    animation: none !important;
+    transition: none !important;
+  }
+  .motion-lift:hover, .motion-lift-strong:hover { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * PRIMITIVE UPGRADES — make existing .panel and .btn-* feel premium
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+.panel {
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(var(--glass-blur-md)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-md)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-glass-sm);
+  transition: border-color var(--motion-medium) var(--ease-spring),
+              box-shadow var(--motion-medium) var(--ease-spring);
+}
+.panel:hover {
+  border-color: var(--glass-border-strong);
+}
+
+.panel-strong {
+  background: var(--glass-fill-elevated);
+  backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-strong);
+  border-radius: 16px;
+  box-shadow: var(--shadow-glass-md);
+}
+
+/* Button upgrades — keep names so existing usages cascade */
+.btn-accent {
+  background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
+  border: 1px solid rgba(var(--glow-violet-soft), 0.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.15),
+    0 4px 12px rgba(var(--glow-violet-deep), 0.30),
+    0 0 0 1px rgba(var(--glow-violet-soft), 0.15);
+  transition:
+    background var(--motion-fast) var(--ease-spring),
+    box-shadow var(--motion-fast) var(--ease-spring),
+    transform var(--motion-fast) var(--ease-spring);
+}
+.btn-accent:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.20),
+    0 6px 18px rgba(var(--glow-violet-deep), 0.40),
+    0 0 0 1px rgba(var(--glow-violet-soft), 0.25);
+}
+.btn-accent:active { transform: translateY(0) scale(0.98); }
+
+.btn-primary {
+  background: var(--text-primary);
+  color: var(--bg-page);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-glass-sm);
+  transition:
+    transform var(--motion-fast) var(--ease-spring),
+    box-shadow var(--motion-fast) var(--ease-spring),
+    opacity var(--motion-fast);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-glass-md); opacity: 0.95; }
+.btn-primary:active { transform: translateY(0) scale(0.98); }
+
+.btn-outline {
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur-sm));
+  -webkit-backdrop-filter: blur(var(--glass-blur-sm));
+  border: 1px solid var(--glass-border-strong);
+  transition:
+    background var(--motion-fast) var(--ease-spring),
+    border-color var(--motion-fast) var(--ease-spring),
+    transform var(--motion-fast) var(--ease-spring);
+}
+.btn-outline:hover {
+  background: var(--glass-fill-strong);
+  border-color: rgba(var(--glow-violet-soft), 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-ghost {
+  transition:
+    background var(--motion-fast) var(--ease-spring),
+    color var(--motion-fast) var(--ease-spring);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * INTERACTIVE STATES — focus rings, scrollbars, selections
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+*:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--bg-page),
+    0 0 0 4px rgba(var(--glow-violet-soft), 0.6);
+  transition: box-shadow var(--motion-fast) var(--ease-spring);
+}
+
+::selection {
+  background: rgba(var(--glow-violet-soft), 0.35);
+  color: var(--text-primary);
+}
+
+/* Smooth scrollbars (themed) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background var(--motion-fast);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; border: 2px solid transparent; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * INPUT POLISH — refined glass treatment for form fields
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+input, textarea, select {
+  transition:
+    border-color var(--motion-fast) var(--ease-spring),
+    box-shadow var(--motion-fast) var(--ease-spring),
+    background var(--motion-fast) var(--ease-spring);
+}
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: rgba(var(--glow-violet-soft), 0.55) !important;
+  box-shadow: 0 0 0 3px rgba(var(--glow-violet-soft), 0.18) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * LIGHT-MODE POLISH OVERRIDES — fixes lingering visibility issues from old
+ * !important rules. These tone down the harsh white/gray patches and let the
+ * glass aesthetic come through.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+html[data-theme="light"],
+html.light {
+  background-color: var(--bg-page) !important;
+}
+
+/* Body in light mode keeps the violet aurora but at much lower opacity */
+html[data-theme="light"] body::before,
+html.light body::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 0%,  var(--glow-faint) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 100%, var(--glow-faint) 0%, transparent 60%);
+}
+
+/* Body fonts get a touch more refined feature settings */
+body {
+  font-feature-settings: "cv11", "ss01", "ss03", "calt";
+  letter-spacing: -0.005em;
+}
+

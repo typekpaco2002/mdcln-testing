@@ -14,6 +14,14 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import BrandMark from "../components/BrandMark";
 import {
+  GlassPanel,
+  GlassCard,
+  GlassButton,
+  RadialGlow,
+  FluidMotion,
+  AuroraBackdrop,
+} from "../components/ui/glass";
+import {
   AlertCircle,
   AlertTriangle,
   ArrowRight,
@@ -136,22 +144,16 @@ function Demo({ label, children, w = "auto" }) {
   );
 }
 
-function Surface({ children, padding = 16, w = "auto", h, style }) {
+function Surface({ children, padding = 16, w = "auto", h, style, glow }) {
   return (
-    <div
-      style={{
-        padding,
-        width: w,
-        minHeight: h,
-        borderRadius: 12,
-        background: "var(--bg-elevated)",
-        border: "1px solid var(--border-medium)",
-        boxShadow: "0 8px 24px var(--shadow-ambient)",
-        ...style,
-      }}
+    <GlassPanel
+      strength="strong"
+      rim
+      glow={glow}
+      style={{ padding, width: w, minHeight: h, ...style }}
     >
       {children}
-    </div>
+    </GlassPanel>
   );
 }
 
@@ -416,16 +418,23 @@ export default function DesignSystemPage() {
         color: "var(--text-primary)",
         fontFamily: "var(--font-sans)",
         paddingBottom: 80,
+        position: "relative",
+        overflow: "hidden",
       }}
       data-design-system="true"
       data-theme-active={theme}
     >
-      {/* Header */}
+      <AuroraBackdrop variant="default" />
+
+      {/* Header — glass with violet edge glow */}
       <div
+        className="motion-spring"
         style={{
-          padding: "28px 24px",
-          borderBottom: "1px solid var(--border-subtle)",
-          background: "var(--bg-elevated)",
+          padding: "20px 24px",
+          background: "var(--glass-fill-elevated)",
+          backdropFilter: "blur(24px) saturate(140%)",
+          WebkitBackdropFilter: "blur(24px) saturate(140%)",
+          borderBottom: "1px solid var(--glass-border-strong)",
           position: "sticky",
           top: 0,
           zIndex: 5,
@@ -435,11 +444,11 @@ export default function DesignSystemPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <BrandMark />
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>
-                ModelClone Design System
+              <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: "-0.015em" }}>
+                Aurora · ModelClone Design System
               </div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                Theme: <strong style={{ color: "var(--text-primary)" }}>{theme}</strong> · captured into Figma via the design pipeline
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+                Theme: <strong style={{ color: "var(--text-primary)" }}>{theme}</strong> · glass + violet glow + fluid motion
               </div>
             </div>
           </div>
@@ -449,6 +458,51 @@ export default function DesignSystemPage() {
           </Row>
         </div>
       </div>
+
+      {/* 00 · AURORA — the new aesthetic */}
+      <Section title="00 · Aurora — the new design language" subtitle="Glass surfaces · ambient violet glow · spring-easing motion">
+        <FluidMotion>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            <GlassCard glow="medium">
+              <div style={{ fontSize: 12, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, marginBottom: 8 }}>
+                Glass surface · medium glow
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 6 }}>
+                Translucent depth
+              </div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                Surfaces use backdrop-blur for depth without weight. Borders are hairline-thin.
+              </div>
+            </GlassCard>
+
+            <GlassCard glow="strong">
+              <div style={{ fontSize: 12, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, marginBottom: 8 }}>
+                Strong glow · accent
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 6, color: "var(--accent)" }}>
+                Ambient violet
+              </div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55 }}>
+                Radial glows wash through the UI — no big colored blocks, just subtle light.
+              </div>
+            </GlassCard>
+
+            <GlassCard interactive>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, marginBottom: 8 }}>
+                Spring motion
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 10 }}>
+                Hover this card →
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <GlassButton size="sm" variant="accent" glow>Primary</GlassButton>
+                <GlassButton size="sm" variant="outline">Outline</GlassButton>
+                <GlassButton size="sm" variant="ghost">Ghost</GlassButton>
+              </div>
+            </GlassCard>
+          </div>
+        </FluidMotion>
+      </Section>
 
       {/* TYPOGRAPHY */}
       <Section title="01 · Typography" subtitle="Display, headings, body, code">
