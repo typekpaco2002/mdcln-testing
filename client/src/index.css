@@ -3655,7 +3655,7 @@ a.bg-white:hover {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle 900px at -10% -10%, rgba(88, 28, 135, 0.55) 0%, rgba(76, 20, 120, 0.18) 45%, transparent 70%),
+    radial-gradient(circle 900px at -10% -10%, rgba(55, 14, 90, 0.38) 0%, rgba(45, 10, 75, 0.10) 45%, transparent 70%),
     radial-gradient(circle 900px at 110% 110%, rgba(67, 20, 110, 0.42) 0%, rgba(60, 15, 100, 0.12) 45%, transparent 70%),
     #060608 !important;
   animation: mc-glass-drift 50s ease-in-out infinite alternate !important;
