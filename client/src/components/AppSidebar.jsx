@@ -574,10 +574,19 @@ export default function AppSidebar({
                             transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
                           />
                         )}
-                        <Flame
-                          className="w-[18px] h-[18px] flex-shrink-0"
-                          style={{ color: "#ef4444", filter: "drop-shadow(0 0 5px rgba(239,68,68,0.55))" }}
-                        />
+                        <span
+                          className="flex-shrink-0 flex items-center justify-center"
+                          style={{
+                            width: 18, height: 18,
+                            borderRadius: "50%",
+                            boxShadow: "0 0 8px 2px rgba(239,68,68,0.35)",
+                          }}
+                        >
+                          <Flame
+                            className="w-[18px] h-[18px]"
+                            style={{ color: "#ef4444" }}
+                          />
+                        </span>
                         <AnimatePresence>
                           {!visuallyCollapsed && (
                             <motion.span
