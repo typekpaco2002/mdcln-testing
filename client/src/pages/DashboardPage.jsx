@@ -1419,11 +1419,11 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
       <div className="mb-4">
         <div className="flex items-center gap-3 mb-2">
           <div>
-            <h1 className={`text-[40px] font-bold ${isLightTheme ? "text-slate-900" : "text-white"}`}>
+            <h1 className={`text-[40px] font-bold tracking-tight ${isLightTheme ? "text-slate-900" : "text-white"}`}>
               {copy.homeWelcomeBack} <span className={isLightTheme ? "text-slate-900" : "text-white"}>{user?.name || copy.homeFallbackCreator}</span>
             </h1>
             <div className="flex items-center gap-3 mt-2">
-              <p className={`text-xl ${isLightTheme ? "text-slate-700" : "text-slate-400"}`}>{copy.homeSubtitle}</p>
+              <p className={`text-xl ${isLightTheme ? "text-slate-700" : "text-white/50"}`}>{copy.homeSubtitle}</p>
               {currentStreak >= 2 && (
                 <div
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
@@ -1473,19 +1473,12 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
             : (isLightTheme ? 'bg-amber-500/30 border border-amber-600/60 text-amber-900 hover:bg-amber-500/40' : 'bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 hover:bg-yellow-500/30');
           return (
             <div
-              className={`rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:z-10 relative backdrop-blur-xl overflow-hidden${(isCritical || isLow) ? ' credits-pulse-border' : ''}`}
-              style={{
-                background: 'var(--bg-elevated)',
-                border: `1px solid rgba(${accentRgb},${isCritical ? 0.55 : isLow ? 0.4 : 0.15})`,
-                boxShadow: (isCritical || isLow)
-                  ? `inset 0 1px 0 var(--mc-glass-inset), 0 0 18px rgba(${accentRgb},0.18)`
-                  : 'inset 0 1px 0 var(--mc-glass-inset)',
-              }}
+              className={`glass-card p-4 text-center transition-all hover:scale-[1.02] hover:z-10 relative overflow-hidden${(isCritical || isLow) ? ' credits-pulse-border' : ''}`}
             >
               <div
                 className="absolute top-0 left-0 w-28 h-28 pointer-events-none"
                 style={{
-                  background: `radial-gradient(ellipse 100% 100% at 0% 0%, rgba(${accentRgb},0.28) 0%, rgba(${accentRgb},0.08) 45%, transparent 70%)`,
+                  background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(255,255,255,0.10) 0%, transparent 65%)',
                 }}
               />
               <div className="relative">
@@ -1513,52 +1506,34 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
         })()}
 
         {/* Images card */}
-        <div
-          className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:z-10 relative backdrop-blur-xl overflow-hidden"
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--mc-glass-border)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
-        >
+        <div className="glass-card p-4 text-center transition-all hover:scale-[1.02] hover:z-10 relative overflow-hidden">
           <div
             className="absolute top-0 left-0 w-28 h-28 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(139,92,246,0.22) 0%, rgba(139,92,246,0.06) 45%, transparent 70%)',
-            }}
+            style={{ background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(255,255,255,0.08) 0%, transparent 65%)' }}
           />
           <div className="relative">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <ImageIcon className={`w-4 h-4 ${isLightTheme ? "text-violet-700" : "text-purple-400"}`} />
-              <span className={`text-[10px] uppercase tracking-wider font-medium ${isLightTheme ? "text-violet-700" : "text-purple-300"}`}>{copy.statsImages}</span>
+              <ImageIcon className="w-4 h-4 text-white/70" />
+              <span className="text-[10px] uppercase tracking-wider font-medium text-white/60">{copy.statsImages}</span>
             </div>
-            <p className={`text-2xl sm:text-3xl font-bold tabular-nums ${isLightTheme ? "text-violet-800" : "text-purple-200"}`}>{animatedImages.toLocaleString()}</p>
-            <p className={`text-[9px] mt-0.5 uppercase tracking-wide ${isLightTheme ? "text-slate-700" : "text-slate-500"}`}>{copy.statsThisMonth}</p>
+            <p className="text-2xl sm:text-3xl font-bold tabular-nums text-white">{animatedImages.toLocaleString()}</p>
+            <p className="text-[9px] mt-0.5 uppercase tracking-wide text-white/40">{copy.statsThisMonth}</p>
           </div>
         </div>
 
         {/* Videos card */}
-        <div
-          className="rounded-xl p-4 text-center transition-all hover:scale-[1.02] hover:z-10 relative backdrop-blur-xl overflow-hidden"
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--mc-glass-border)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
-        >
+        <div className="glass-card p-4 text-center transition-all hover:scale-[1.02] hover:z-10 relative overflow-hidden">
           <div
             className="absolute top-0 left-0 w-28 h-28 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(34,211,238,0.22) 0%, rgba(34,211,238,0.06) 45%, transparent 70%)',
-            }}
+            style={{ background: 'radial-gradient(ellipse 100% 100% at 0% 0%, rgba(255,255,255,0.08) 0%, transparent 65%)' }}
           />
           <div className="relative">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <Video className={`w-4 h-4 ${isLightTheme ? "text-cyan-700" : "text-cyan-400"}`} />
-              <span className={`text-[10px] uppercase tracking-wider font-medium ${isLightTheme ? "text-cyan-700" : "text-cyan-300"}`}>{copy.statsVideos}</span>
+              <Video className="w-4 h-4 text-white/70" />
+              <span className="text-[10px] uppercase tracking-wider font-medium text-white/60">{copy.statsVideos}</span>
             </div>
-            <p className={`text-2xl sm:text-3xl font-bold tabular-nums ${isLightTheme ? "text-cyan-800" : "text-cyan-200"}`}>{animatedVideos.toLocaleString()}</p>
-            <p className={`text-[9px] mt-0.5 uppercase tracking-wide ${isLightTheme ? "text-slate-700" : "text-slate-500"}`}>{copy.statsThisMonth}</p>
+            <p className="text-2xl sm:text-3xl font-bold tabular-nums text-white">{animatedVideos.toLocaleString()}</p>
+            <p className="text-[9px] mt-0.5 uppercase tracking-wide text-white/40">{copy.statsThisMonth}</p>
           </div>
         </div>
       </div>
@@ -1567,20 +1542,15 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <button
           onClick={() => { setActiveTab("creator-studio"); }}
-          className="group relative rounded-xl p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--mc-glass-border)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
+          className="glass-card group relative p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
+          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-[18px]" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
               <h3 className="text-lg font-bold text-white mb-1">Create Content</h3>
-              <p className="text-slate-400 text-sm">Use our creator studio to create cinema grade content.</p>
+              <p className="text-white/50 text-sm">Use our creator studio to create cinema grade content.</p>
             </div>
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/15 bg-white/5">
               <Wand2 className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -1588,20 +1558,15 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
 
         <button
           onClick={() => { setActiveTab("generate"); }}
-          className="group relative rounded-xl p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
-          style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--mc-glass-border)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
+          className="glass-card group relative p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
+          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-[18px]" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
               <h3 className="text-lg font-bold text-white mb-1">{copy.heroCreateAvatarTitle}</h3>
-              <p className="text-slate-400 text-sm">{copy.heroCreateAvatarBody}</p>
+              <p className="text-white/50 text-sm">{copy.heroCreateAvatarBody}</p>
             </div>
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/20">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/15 bg-white/5">
               <User className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -1613,36 +1578,17 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
         {/* Create AI Model - Primary CTA */}
         <button
           onClick={() => { setActiveTab("models"); }}
-          className="group relative rounded-xl p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
-          style={{ 
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--mc-glass-border)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
+          className="glass-card group relative p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
           data-testid="button-create-ai-model"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
+          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-[18px]" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
               <h3 className="text-lg font-bold text-white mb-1">{copy.mainCreateModelTitle}</h3>
-              <p className="text-slate-400 text-sm">{copy.mainCreateModelBody}</p>
+              <p className="text-white/50 text-sm">{copy.mainCreateModelBody}</p>
             </div>
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
-              style={{ 
-                background: 'var(--bg-elevated)',
-                boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-              }}
-              data-icon-box
-            >
-              <div 
-                className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
-                style={{ 
-                  background: 'rgba(208, 171, 247, 0.12)',
-                  boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-                }}
-              />
-              <Plus className="w-6 h-6 text-white relative z-[1]" />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/15 bg-white/5 transition-all duration-200 group-hover:bg-white/10">
+              <Plus className="w-6 h-6 text-white" />
             </div>
           </div>
         </button>
@@ -1650,35 +1596,17 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
         {/* Upload Real Model */}
         <button
           onClick={() => { setActiveTab("models"); }}
-          className="group relative rounded-xl p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
-          style={{ 
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--mc-glass-border)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
+          className="glass-card group relative p-5 text-left transition-all hover:scale-[1.02] overflow-hidden"
           data-testid="button-upload-real-model"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
+          <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none rounded-[18px]" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
           <div className="relative flex items-center gap-4">
             <div className="flex-1">
               <h3 className="text-lg font-bold text-white mb-1">{copy.mainUploadRealTitle}</h3>
-              <p className="text-slate-400 text-sm">{copy.mainUploadRealBody}</p>
+              <p className="text-white/50 text-sm">{copy.mainUploadRealBody}</p>
             </div>
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 backdrop-blur-xl border border-white/20 group-hover:border-transparent relative"
-              style={{ 
-                background: 'var(--bg-elevated)',
-                boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-              }}
-            >
-              <div 
-                className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
-                style={{ 
-                  background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.12), rgba(20, 184, 166, 0.12))',
-                  boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-                }}
-              />
-              <Upload className="w-6 h-6 text-white relative z-[1]" />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/15 bg-white/5 transition-all duration-200 group-hover:bg-white/10">
+              <Upload className="w-6 h-6 text-white" />
             </div>
           </div>
         </button>
@@ -1686,14 +1614,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
 
       {/* Getting Started Video - Dismissable */}
       {showTutorial && (
-        <div 
-          className="rounded-xl p-4 mb-6 backdrop-blur-xl"
-          style={{ 
-            background: 'rgba(139,92,246,0.04)',
-            border: '1px solid rgba(139,92,246,0.08)',
-            boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-          }}
-        >
+        <div className="glass-card p-4 mb-6">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-white" />
@@ -1732,7 +1653,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
             <label className="block text-[11px] uppercase tracking-[0.15em] text-slate-400 font-medium">{copy.recentCreations}</label>
             <button
               onClick={() => { setActiveTab("history"); }}
-              className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              className="flex items-center gap-1 text-xs text-white/50 hover:text-white/80 transition-colors"
               data-testid="button-view-all-history"
             >
               <span>{copy.viewAll}</span>
@@ -1750,7 +1671,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
                 <button
                   key={gen.id}
                   onClick={() => { setActiveTab("history"); }}
-                  className="group relative aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-purple-500/30 transition-all"
+                  className="group relative aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-white/25 transition-all"
                   data-testid={`recent-gen-${gen.id}`}
                 >
                   {isVideo ? (
@@ -1808,33 +1729,19 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           {/* Go to Models */}
           <button
             onClick={() => { setActiveTab("models"); }}
-            className="group relative rounded-xl p-4 text-left transition-all hover:scale-[1.02] overflow-hidden backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
-            style={{ 
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--mc-glass-border)'
-            }}
+            className="glass-card group relative p-4 text-left transition-all hover:scale-[1.02] overflow-hidden"
             data-testid="button-quick-models"
           >
-            <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
+            <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none rounded-[18px]" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
             <div className="relative">
               <div className="flex items-center gap-3 mb-2">
-                <div 
-                  className="w-9 h-9 rounded-lg flex items-center justify-center border border-purple-300 relative"
-                  style={{ background: 'transparent' }}
-                >
-                  <div 
-                    className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
-                    style={{ 
-                      background: 'rgba(196, 181, 253, 0.12)',
-                      boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-                    }}
-                  />
-                  <User className="w-4 h-4 text-purple-300 relative z-[1]" />
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center border border-white/20 bg-white/5 transition-all duration-200 group-hover:bg-white/10">
+                  <User className="w-4 h-4 text-white/80" />
                 </div>
-                <span className="text-sm font-semibold text-purple-300">{copy.quickCreateModelTitle}</span>
+                <span className="text-sm font-semibold text-white/90">{copy.quickCreateModelTitle}</span>
               </div>
-              <p className="text-xs text-slate-400 mb-3">{copy.quickCreateModelBody}</p>
-              <div className="flex items-center gap-1 text-purple-400 text-xs font-medium group-hover:gap-2 transition-all">
+              <p className="text-xs text-white/45 mb-3">{copy.quickCreateModelBody}</p>
+              <div className="flex items-center gap-1 text-white/60 text-xs font-medium group-hover:gap-2 transition-all">
                 <span>{copy.quickGetStarted}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
@@ -1844,33 +1751,19 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           {/* Earn with AI */}
           <button
             onClick={() => { setShowEarnModal(true); }}
-            className="group relative rounded-xl p-4 text-left transition-all hover:scale-[1.02] overflow-hidden backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
-            style={{ 
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--mc-glass-border)'
-            }}
+            className="glass-card group relative p-4 text-left transition-all hover:scale-[1.02] overflow-hidden"
             data-testid="button-quick-earn"
           >
-            <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
+            <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none rounded-[18px]" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
             <div className="relative">
               <div className="flex items-center gap-3 mb-2">
-                <div 
-                  className="w-9 h-9 rounded-lg flex items-center justify-center border border-emerald-300 relative"
-                  style={{ background: 'transparent' }}
-                >
-                  <div 
-                    className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
-                    style={{ 
-                      background: 'rgba(110, 231, 183, 0.12)',
-                      boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-                    }}
-                  />
-                  <DollarSign className="w-4 h-4 text-emerald-300 relative z-[1]" />
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center border border-white/20 bg-white/5 transition-all duration-200 group-hover:bg-white/10">
+                  <DollarSign className="w-4 h-4 text-white/80" />
                 </div>
-                <span className="text-sm font-semibold text-emerald-300">{copy.quickStartEarningTitle}</span>
+                <span className="text-sm font-semibold text-white/90">{copy.quickStartEarningTitle}</span>
               </div>
-              <p className="text-xs text-slate-400 mb-3">{copy.quickStartEarningBody}</p>
-              <div className="flex items-center gap-1 text-emerald-400 text-xs font-medium group-hover:gap-2 transition-all">
+              <p className="text-xs text-white/45 mb-3">{copy.quickStartEarningBody}</p>
+              <div className="flex items-center gap-1 text-white/60 text-xs font-medium group-hover:gap-2 transition-all">
                 <span>{copy.quickLearnMore}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
@@ -1880,33 +1773,19 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
           {/* Share & Earn */}
           <button
             onClick={() => { setShowReferralModal(true); }}
-            className="group relative rounded-xl p-4 text-left transition-all hover:scale-[1.02] overflow-hidden backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
-            style={{ 
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--mc-glass-border)'
-            }}
+            className="glass-card group relative p-4 text-left transition-all hover:scale-[1.02] overflow-hidden"
             data-testid="button-quick-share"
           >
-            <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none rounded-xl" style={{ background: 'radial-gradient(circle at 100% 0%, var(--mc-glass-fill) 0%, transparent 70%)' }} />
+            <div className="absolute top-0 right-0 w-20 h-20 pointer-events-none rounded-[18px]" style={{ background: 'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
             <div className="relative">
               <div className="flex items-center gap-3 mb-2">
-                <div 
-                  className="w-9 h-9 rounded-lg flex items-center justify-center border border-pink-300 relative"
-                  style={{ background: 'transparent' }}
-                >
-                  <div 
-                    className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-200 border border-white/10"
-                    style={{ 
-                      background: 'rgba(249, 168, 212, 0.12)',
-                      boxShadow: 'inset 0 1px 0 var(--mc-glass-inset)',
-                    }}
-                  />
-                  <Share2 className="w-4 h-4 text-pink-300 relative z-[1]" />
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center border border-white/20 bg-white/5 transition-all duration-200 group-hover:bg-white/10">
+                  <Share2 className="w-4 h-4 text-white/80" />
                 </div>
-                <span className="text-sm font-semibold text-pink-300">{copy.quickAffiliateTitle}</span>
+                <span className="text-sm font-semibold text-white/90">{copy.quickAffiliateTitle}</span>
               </div>
-              <p className="text-xs text-slate-400 mb-3">{copy.quickAffiliateBody}</p>
-              <div className="flex items-center gap-1 text-pink-400 text-xs font-medium group-hover:gap-2 transition-all">
+              <p className="text-xs text-white/45 mb-3">{copy.quickAffiliateBody}</p>
+              <div className="flex items-center gap-1 text-white/60 text-xs font-medium group-hover:gap-2 transition-all">
                 <span>{copy.quickStartEarningTitle}</span>
                 <ArrowRight className="w-3 h-3" />
               </div>
@@ -1916,13 +1795,7 @@ function HomePage({ copy, setActiveTab, setShowEarnModal, setShowReferralModal, 
       </div>
 
       {/* Start Creating CTA */}
-      <div 
-        className="rounded-2xl p-5 backdrop-blur-2xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]"
-        style={{ 
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--mc-glass-border)',
-        }}
-      >
+      <div className="glass-card p-5">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-center sm:text-left">
             <div 

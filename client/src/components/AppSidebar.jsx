@@ -325,11 +325,7 @@ export default function AppSidebar({
       initial={false}
       animate={{ width: visuallyCollapsed ? 72 : 244 }}
       transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
-      className="fixed left-0 top-0 h-screen z-50 flex flex-col max-md:pointer-events-auto md:overflow-visible"
-      style={{
-        background: "var(--sidebar-bg)",
-        borderRight: "1px solid var(--border-subtle)",
-      }}
+      className="glass-sidebar fixed left-0 top-0 h-screen z-50 flex flex-col max-md:pointer-events-auto md:overflow-visible"
       onPointerEnter={handleAsidePointerEnter}
       onPointerLeave={handleAsidePointerLeave}
     >
