@@ -4000,8 +4000,8 @@ body > * { position: relative; z-index: 1; }
 :is(html[data-theme="dark"], html.dark) [style*="rgba(236,72,153"],
 :is(html[data-theme="dark"], html.dark) [style*="rgba(249, 115, 22"],
 :is(html[data-theme="dark"], html.dark) [style*="rgba(249,115,22"],
-:is(html[data-theme="dark"], html.dark) [style*="rgba(239, 68, 68"],
-:is(html[data-theme="dark"], html.dark) [style*="rgba(239,68,68"],
+/* rgba(239, 68, 68 = --danger / #ef4444 — preserved as the canonical danger token
+   (NSFW Flame glow, danger CTAs, admin destructive surfaces). Do not add to killer. */
 :is(html[data-theme="dark"], html.dark) [style*="rgba(234, 179, 8"],
 :is(html[data-theme="dark"], html.dark) [style*="rgba(234,179,8"],
 :is(html[data-theme="dark"], html.dark) [style*="rgba(245, 158, 11"],
