@@ -558,12 +558,7 @@ export default function AppSidebar({
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors duration-150 ${collapsedRow}`}
-                        style={{
-                          color: "#f87171",
-                          background: isActive ? "rgba(239,68,68,0.10)" : "transparent",
-                        }}
-                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(239,68,68,0.07)"; }}
-                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                        style={{ color: "#f87171", background: "transparent" }}
                         data-testid="sidebar-nsfw"
                       >
                         {isActive && (
