@@ -27,7 +27,6 @@ import {
   X,
   Menu,
   Upload,
-  FileType2,
   User,
   ChevronDown,
   CreditCard,
@@ -46,8 +45,10 @@ import {
   EyeOff,
   ZoomIn,
   ShieldOff,
+  Clapperboard,
+  Bot,
 } from "@/components/icons";
-import { SiTelegram, SiDiscord } from "@/components/icons";
+import { SiTelegram, SiDiscord, SiInstagram } from "@/components/icons";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store";
 import { useTheme } from "../hooks/useTheme.jsx";
@@ -120,6 +121,11 @@ const COPY = {
     mobileNavNsfw: "NSFW",
     mobileNavPhotoVideoRepurposer: "Photo/Video Repurposer",
     mobileNavReelFinder: "Reel Finder",
+    mobileNavGptx: "GPT-X Studio",
+    mobileNavGroupAvatars: "Avatars",
+    mobileNavGroupCreate: "Create",
+    mobileNavGroupTools: "Tools",
+    mobileNavGroupPremium: "Premium",
     badgeSoon: "Soon",
     mobileEarnWithAi: "Earn With AI",
     mobileReferAndEarn: "Refer And Earn",
@@ -221,6 +227,11 @@ const COPY = {
     mobileNavNsfw: "NSFW",
     mobileNavPhotoVideoRepurposer: "Переработка фото/видео",
     mobileNavReelFinder: "Поиск рилс",
+    mobileNavGptx: "GPT-X Studio",
+    mobileNavGroupAvatars: "Аватары",
+    mobileNavGroupCreate: "Создание",
+    mobileNavGroupTools: "Инструменты",
+    mobileNavGroupPremium: "Премиум",
     badgeSoon: "Скоро",
     mobileEarnWithAi: "Заработок с ИИ",
     mobileReferAndEarn: "Приглашай и зарабатывай",
@@ -589,23 +600,57 @@ export default function DashboardPage() {
     setActiveTab("voice-studio");
   };
 
-  const mobileMenuItems = [
-    { id: 'home', label: copy.mobileNavDashboard, icon: Home },
-    { id: 'models', label: copy.mobileNavModels, icon: Users },
-    { id: 'generate', label: copy.mobileNavGenerate, icon: Zap },
-    { id: 'creator-studio', label: copy.mobileNavCreatorStudio, icon: Wand2 },
-    { id: 'voice-studio', label: copy.mobileNavVoiceStudio, icon: Mic, premium: true },
-    { id: 'reformatter', label: copy.mobileNavReformatter, icon: FileType2 },
-    { id: 'frame-extractor', label: copy.mobileNavFirstFrame, icon: ImageIcon },
-    { id: 'upscaler', label: copy.mobileNavUpscaler, icon: ZoomIn },
-    { id: 'synthid-remove', label: copy.mobileNavSynthIdRemover, icon: ShieldOff },
-    { id: 'modelclone-x', label: copy.mobileNavModelCloneX, icon: Wand2 },
-    { id: 'history', label: copy.mobileNavHistory, icon: Clock },
-    { id: 'settings', label: copy.mobileNavSettings, icon: SettingsIcon },
-    ...(hideRestrictedTabs ? [] : [{ id: 'course', label: copy.mobileNavCourses, icon: BookOpen, premium: true }]),
-    ...(hideRestrictedTabs ? [] : [{ id: 'nsfw', label: copy.mobileNavNsfw, icon: Flame }]),
-    { id: 'repurposer', label: copy.mobileNavPhotoVideoRepurposer, icon: Shuffle, premium: true },
-    { id: 'reelfinder', label: copy.mobileNavReelFinder, icon: TrendingUp, premium: true },
+  // Mirrors the desktop sidebar `navGroups` structure 1:1 so the mobile drawer
+  // is the same nav surface, just laid out vertically. AI Flows is intentionally
+  // omitted on mobile/tablet — Flows is a desktop-only workflow (the FlowsPage
+  // itself shows a <768px alertdialog redirecting back to the dashboard).
+  const showNsfwOnMobile = !hideRestrictedTabs;
+  const mobileNavGroups = [
+    {
+      id: 'main',
+      label: null,
+      items: [
+        { id: 'home', label: copy.mobileNavDashboard, icon: Home },
+      ],
+    },
+    {
+      id: 'avatars',
+      label: copy.mobileNavGroupAvatars,
+      items: [
+        { id: 'models', label: copy.mobileNavModels, icon: Users },
+        ...(showNsfwOnMobile ? [{ id: 'nsfw', label: copy.mobileNavNsfw, icon: Flame, isNsfw: true }] : []),
+        { id: 'generate', label: copy.mobileNavGenerate, icon: Zap },
+      ],
+    },
+    {
+      id: 'create',
+      label: copy.mobileNavGroupCreate,
+      items: [
+        { id: 'creator-studio', label: copy.mobileNavCreatorStudio, icon: Clapperboard },
+        { id: 'voice-studio', label: copy.mobileNavVoiceStudio, icon: Mic, premium: true },
+        { id: 'modelclone-x', label: copy.mobileNavModelCloneX, icon: Wand2 },
+        // AI Flows intentionally hidden on mobile/tablet (desktop-only).
+        ...(isTestingOnlyHost ? [{ id: 'gptx', label: copy.mobileNavGptx, icon: Bot }] : []),
+      ],
+    },
+    {
+      id: 'tools',
+      label: copy.mobileNavGroupTools,
+      items: [
+        { id: 'upscaler', label: copy.mobileNavUpscaler, icon: ZoomIn },
+        { id: 'frame-extractor', label: copy.mobileNavFirstFrame, icon: ImageIcon },
+        { id: 'synthid-remove', label: copy.mobileNavSynthIdRemover, icon: ShieldOff },
+        { id: 'repurposer', label: copy.mobileNavPhotoVideoRepurposer, icon: Shuffle, premium: true },
+      ],
+    },
+    {
+      id: 'premium',
+      label: copy.mobileNavGroupPremium,
+      items: [
+        { id: 'course', label: copy.mobileNavCourses, icon: BookOpen, premium: true },
+        { id: 'reelfinder', label: copy.mobileNavReelFinder, icon: SiInstagram, premium: true },
+      ],
+    },
   ];
 
   return (
@@ -707,53 +752,113 @@ export default function DashboardPage() {
             </div>
 
             <nav className="space-y-1 relative max-h-[calc(100vh-96px)] overflow-y-auto pr-1">
-              {mobileMenuItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={async () => {
-                    if (item.premium && !canAccessPremiumTabs) {
-                      setShowMobileMenu(false);
-                      // On mobile, user state can be stale (persisted). Refetch profile and re-check before showing gate.
-                      const freshUser = await loadUserProfile();
-                      const hasAccess = hasPremiumAccess(freshUser);
-                      if (hasAccess) {
-                        setActiveTab(item.id);
-                      } else {
-                        setShowPremiumGate(true);
-                      }
-                      return;
-                    }
-                    setActiveTab(item.id);
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full relative overflow-hidden flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ${
-                    activeTab === item.id
-                        ? "text-white bg-white/[0.08]"
-                        : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
-                  }`}
-                  data-testid={`mobile-nav-${item.id}`}
-                >
-                  {activeTab === item.id && (
-                    <>
-                      <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
-                      <div
-                        className="absolute top-0 left-0 w-20 h-20 pointer-events-none"
-                        style={{ background: "radial-gradient(circle at top left, var(--mc-glass-inset) 0%, transparent 70%)" }}
-                      />
-                    </>
-                  )}
-                  <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${activeTab === item.id ? "text-white" : ""}`} />
-                  <span className="font-medium">{item.label}</span>
-                  {item.premium && !canAccessPremiumTabs && (
-                    <Lock className="ml-auto w-3.5 h-3.5 text-slate-500" />
-                  )}
-                  {item.comingSoon && (
-                    <span className="ml-auto px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-gradient-to-r from-rose-500/20 to-orange-500/20 text-rose-300 border border-rose-500/30">
-                      {copy.badgeSoon}
-                    </span>
-                  )}
-                </button>
-              ))}
+              {mobileNavGroups.map((group, groupIdx) => {
+                const isFirstGroup = groupIdx === 0;
+                const isLastGroup = groupIdx === mobileNavGroups.length - 1;
+                return (
+                  <div key={group.id}>
+                    {group.label && (
+                      <p
+                        className="px-3 mt-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {group.label}
+                      </p>
+                    )}
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const isActive = activeTab === item.id;
+
+                        // NSFW chip — red flame styled the same way as the desktop sidebar.
+                        if (item.isNsfw) {
+                          return (
+                            <button
+                              key={item.id}
+                              onClick={() => {
+                                setActiveTab(item.id);
+                                setShowMobileMenu(false);
+                              }}
+                              className={`w-full relative overflow-hidden flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 backdrop-blur-xl ${
+                                isActive ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
+                              }`}
+                              style={{ color: "#f87171" }}
+                              data-testid={`mobile-nav-${item.id}`}
+                            >
+                              {isActive && (
+                                <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full" style={{ background: "#ef4444" }} />
+                              )}
+                              <Flame
+                                className="w-5 h-5 flex-shrink-0"
+                                style={{
+                                  color: "#ef4444",
+                                  filter: "drop-shadow(0 0 0.5px rgba(239,68,68,0.95)) drop-shadow(0 0 1.5px rgba(239,68,68,0.6)) drop-shadow(0 0 3px rgba(239,68,68,0.35))",
+                                }}
+                              />
+                              <span className="font-semibold tracking-wide">{item.label}</span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={async () => {
+                              if (item.premium && !canAccessPremiumTabs) {
+                                setShowMobileMenu(false);
+                                // On mobile, user state can be stale (persisted). Refetch profile and re-check before showing gate.
+                                const freshUser = await loadUserProfile();
+                                const hasAccess = hasPremiumAccess(freshUser);
+                                if (hasAccess) {
+                                  setActiveTab(item.id);
+                                } else {
+                                  setShowPremiumGate(true);
+                                }
+                                return;
+                              }
+                              setActiveTab(item.id);
+                              setShowMobileMenu(false);
+                            }}
+                            className={`w-full relative overflow-hidden flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] ${
+                              isActive
+                                ? "text-white bg-white/[0.08]"
+                                : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
+                            }`}
+                            data-testid={`mobile-nav-${item.id}`}
+                          >
+                            {isActive && (
+                              <>
+                                <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full bg-gradient-to-b from-white/90 to-white/45" />
+                                <div
+                                  className="absolute top-0 left-0 w-20 h-20 pointer-events-none"
+                                  style={{ background: "radial-gradient(circle at top left, var(--mc-glass-inset) 0%, transparent 70%)" }}
+                                />
+                              </>
+                            )}
+                            <item.icon className={`w-5 h-5 flex-shrink-0 transition-colors duration-200 ${isActive ? "text-white" : ""}`} />
+                            <span className="font-medium">{item.label}</span>
+                            {item.premium && !canAccessPremiumTabs && (
+                              <Lock className="ml-auto w-3.5 h-3.5 text-slate-500" />
+                            )}
+                            {item.comingSoon && (
+                              <span className="ml-auto px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider rounded-full bg-white/[0.08] text-white/70 border border-white/15">
+                                {copy.badgeSoon}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Dashed separator after Dashboard, solid between remaining groups. */}
+                    {isFirstGroup && (
+                      <div className="mx-1 mt-3 mb-1" style={{ borderTop: "1px dashed rgba(255,255,255,0.12)" }} />
+                    )}
+                    {!isFirstGroup && !isLastGroup && (
+                      <div className="mx-1 mt-3 mb-1" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+                    )}
+                  </div>
+                );
+              })}
 
               <div className="my-4 h-px bg-white/10" />
 
