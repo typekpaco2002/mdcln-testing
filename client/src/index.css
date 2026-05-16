@@ -3645,9 +3645,9 @@ a.bg-white:hover {
 }
 
 /* ── CORNER GLOWS BACKDROP ────────────────────────────────────────────────
- * Two subtle white radial glows anchored at top-left and bottom-right.
- * Opacity is kept low so the base stays near-black; just enough luminance
- * variation for .glass-card's backdrop-filter to produce visible frosting. */
+ * Two white radial glows at top-left and bottom-right corners.
+ * Strong enough for .glass-card backdrop-filter to pick up visible frosting,
+ * gentle enough to keep the rest of the page near-black. */
 :is(html[data-theme="dark"], html.dark) body::before {
   content: "";
   position: fixed;
@@ -3655,16 +3655,16 @@ a.bg-white:hover {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle 700px at -5% -5%,  rgba(255, 255, 255, 0.13) 0%, transparent 65%),
-    radial-gradient(circle 700px at 105% 105%, rgba(255, 255, 255, 0.10) 0%, transparent 65%),
+    radial-gradient(circle 900px at -10% -10%, rgba(255, 255, 255, 0.32) 0%, rgba(255,255,255,0.08) 45%, transparent 70%),
+    radial-gradient(circle 900px at 110% 110%, rgba(255, 255, 255, 0.24) 0%, rgba(255,255,255,0.06) 45%, transparent 70%),
     #060608 !important;
   animation: mc-glass-drift 50s ease-in-out infinite alternate !important;
 }
 
 @keyframes mc-glass-drift {
-  0%   { transform: scale(1)    translate(0px,   0px); }
-  50%  { transform: scale(1.02) translate(6px,   4px); }
-  100% { transform: scale(1.01) translate(-4px,  8px); }
+  0%   { transform: scale(1)    translate(0px,  0px); }
+  50%  { transform: scale(1.02) translate(8px,  5px); }
+  100% { transform: scale(1.01) translate(-5px, 10px); }
 }
 
 /* Grain overlay — tactile film texture so glass doesn't read as plastic */
@@ -3691,22 +3691,22 @@ body > * { position: relative; z-index: 1; }
 /* Cards, panels, action buttons */
 .glass-card {
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.02) 100%),
-    rgba(18, 18, 22, 0.38);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+    linear-gradient(160deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%),
+    rgba(14, 14, 18, 0.52);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 18px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 20px 50px -12px rgba(0, 0, 0, 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 20px 50px -12px rgba(0, 0, 0, 0.60);
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.22);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 28px 60px -12px rgba(0, 0, 0, 0.70);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 28px 60px -12px rgba(0, 0, 0, 0.75);
 }
 
 /* Sidebar vertical rail */
