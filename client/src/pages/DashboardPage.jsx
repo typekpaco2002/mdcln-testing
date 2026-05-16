@@ -119,6 +119,7 @@ const COPY = {
     mobileNavSettings: "Settings",
     mobileNavCourses: "Courses",
     mobileNavNsfw: "NSFW",
+    mobileNavHistory: "History",
     mobileNavPhotoVideoRepurposer: "Photo/Video Repurposer",
     mobileNavReelFinder: "Reel Finder",
     mobileNavGptx: "GPT-X Studio",
@@ -225,6 +226,7 @@ const COPY = {
     mobileNavSettings: "Настройки",
     mobileNavCourses: "Курсы",
     mobileNavNsfw: "NSFW",
+    mobileNavHistory: "История",
     mobileNavPhotoVideoRepurposer: "Переработка фото/видео",
     mobileNavReelFinder: "Поиск рилс",
     mobileNavGptx: "GPT-X Studio",
@@ -620,6 +622,7 @@ export default function DashboardPage() {
         { id: 'models', label: copy.mobileNavModels, icon: Users },
         ...(showNsfwOnMobile ? [{ id: 'nsfw', label: copy.mobileNavNsfw, icon: Flame, isNsfw: true }] : []),
         { id: 'generate', label: copy.mobileNavGenerate, icon: Zap },
+        { id: 'history', label: copy.mobileNavHistory, icon: Clock },
       ],
     },
     {

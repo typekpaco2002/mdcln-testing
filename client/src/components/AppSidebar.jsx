@@ -313,6 +313,7 @@ export default function AppSidebar({
         { id: "models", label: copy.myModels, icon: Users },
         ...(showNsfw ? [{ id: "nsfw", label: "NSFW", icon: Flame, isNsfw: true }] : []),
         { id: "generate", label: copy.generate, icon: Zap },
+        { id: "history", label: copy.history, icon: Clock },
       ],
     },
     {
