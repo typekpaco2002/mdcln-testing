@@ -402,10 +402,10 @@ export default function AppSidebar({
             style={{
               color: "var(--text-primary)",
               background: "transparent",
-              border: "1px solid transparent",
+              border: "1px dashed var(--border-medium)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.borderColor = "var(--border-subtle)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.borderColor = "var(--border-strong, rgba(255,255,255,0.30))"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "var(--border-medium)"; }}
             data-testid="button-profile-menu"
           >
             <div
@@ -474,9 +474,11 @@ export default function AppSidebar({
                   transition={{ duration: reduceMotion ? 0 : 0.14 }}
                   className="absolute left-0 right-0 top-full mt-1 w-full min-w-[208px] rounded-lg overflow-hidden z-50"
                   style={{
-                    background: "var(--bg-elevated)",
+                    background: "rgba(14, 14, 18, 0.92)",
                     border: "1px solid var(--border-medium)",
-                    boxShadow: "0 10px 32px var(--shadow-ambient)",
+                    boxShadow: "0 10px 32px var(--shadow-ambient), 0 4px 12px rgba(0, 0, 0, 0.4)",
+                    backdropFilter: "blur(24px) saturate(180%)",
+                    WebkitBackdropFilter: "blur(24px) saturate(180%)",
                   }}
                 >
                   <div className="px-3 py-3" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
