@@ -14,6 +14,7 @@ import { extractUpscalerImage } from "../services/upscaler.service.js";
 import { extractModelCloneXImages } from "../services/modelcloneX.service.js";
 import { parseRunpodHandlerOutput } from "../services/img2img.service.js";
 import { extractNsfwMotionVideo, materializeNsfwMotionOutputFromRunpodResponse } from "../services/nsfw-motion.service.js";
+import { materializeNsfwMotionRunpodVideoOutput } from "../services/nsfw-motion-runpod.service.js";
 import { uploadBufferToBlobOrR2 } from "../utils/kieUpload.js";
 import { scheduleIntegratorGenerationWebhook } from "../lib/integrator-generation-webhook.js";
 
@@ -348,14 +349,22 @@ async function handleRunpodCallback(req, res) {
       }
 
       if (st === "COMPLETED") {
-        let outputUrl = await materializeNsfwMotionOutputFromRunpodResponse(rawOut);
+        // Dispatch by row provider: the RunPod worker returns base64 mp4
+        // (handler.py `videos[].base64`), RH returns COS URLs. Legacy rows
+        // without a `provider` value default to RH (pre-provider-field).
+        const isRunpodMotion = String(motionGen.provider || "").toLowerCase() === "runpod-motion";
+        const materializer = isRunpodMotion
+          ? materializeNsfwMotionRunpodVideoOutput
+          : materializeNsfwMotionOutputFromRunpodResponse;
+        let outputUrl = await materializer(rawOut);
         if (!outputUrl) {
-          outputUrl = await materializeNsfwMotionOutputFromRunpodResponse(body);
+          outputUrl = await materializer(body);
         }
         if (!outputUrl) {
           const msg = "RunPod motion job completed but returned no video (or upload failed)";
           console.warn(
             `[RunPod webhook] motion-video COMPLETED but no materialized URL for ${jobId} ` +
+            `provider=${motionGen.provider || "(legacy)"} ` +
             `outType=${rawOut == null ? "null" : typeof rawOut} bodyKeys=${
               body && typeof body === "object" ? Object.keys(body).slice(0, 14).join(",") : ""
             }`,

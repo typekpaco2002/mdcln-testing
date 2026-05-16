@@ -12,7 +12,11 @@ import { enqueueCleanupOldGenerations } from "../controllers/generation.controll
 import { refundGeneration } from "../services/credit.service.js";
 import { pollUpscalerJob, extractUpscalerImage } from "./upscaler.service.js";
 import { pollModelCloneXJob, extractModelCloneXImages } from "./modelcloneX.service.js";
-import { checkNsfwMotionStatus, materializeNsfwMotionOutputFromRunpodResponse } from "./nsfw-motion.service.js";
+import { materializeNsfwMotionOutputFromRunpodResponse } from "./nsfw-motion.service.js";
+import {
+  checkNsfwMotionStatusRunpod,
+  materializeNsfwMotionRunpodVideoOutput,
+} from "./nsfw-motion-runpod.service.js";
 import http from "http";
 const WAVESPEED_API_KEY = process.env.WAVESPEED_API_KEY;
 const WAVESPEED_API_URL = "https://api.wavespeed.ai/api/v3";
@@ -895,11 +899,14 @@ class GenerationPollerService {
             AND: [
               { type: "nsfw-video-motion" },
               { providerTaskId: { not: null } },
+              // Skip rows submitted to the RunPod worker — the RunPod watchdog
+              // owns them. `null`/legacy rows default to RH (pre-provider field).
+              { OR: [{ provider: null }, { provider: "runninghub-motion" }] },
             ],
           },
         ],
       },
-      select: { id: true, replicateModel: true, providerTaskId: true, createdAt: true, type: true },
+      select: { id: true, replicateModel: true, providerTaskId: true, createdAt: true, type: true, provider: true },
       take: 50,
       orderBy: { createdAt: "asc" },
     });
@@ -1151,6 +1158,10 @@ class GenerationPollerService {
           { type: "nsfw-video-motion" },
           { status: "processing" },
           { createdAt: { lt: new Date(now - MOTION_GRACE_MS) } },
+          // Only reconcile RunPod-submitted motion rows here. RH motion is
+          // owned by reconcileStaleRunningHubGenerations (avoids two
+          // watchdogs racing each other for the same row).
+          { provider: "runpod-motion" },
         ],
       },
     ];
@@ -1170,6 +1181,7 @@ class GenerationPollerService {
           { status: "failed" },
           { outputUrl: null },
           { completedAt: { gt: new Date(now - FAILED_LOOKBACK_MS) } },
+          { provider: "runpod-motion" },
         ],
       });
     }
@@ -1259,7 +1271,9 @@ class GenerationPollerService {
 
       try {
         if (gen.type === "nsfw-video-motion") {
-          const rp = await checkNsfwMotionStatus(runpodJobId);
+          // Provider-scoped at the query level above (provider:"runpod-motion"),
+          // so this branch is RunPod-only — talk to the RunPod worker, not RH.
+          const rp = await checkNsfwMotionStatusRunpod(runpodJobId);
           const status = String(rp?.status || "").toLowerCase();
           if (["failed", "error", "timed_out", "timed-out", "cancelled", "canceled"].includes(status)) {
             const msg =
@@ -1269,7 +1283,7 @@ class GenerationPollerService {
               (typeof rp?.errorMessage === "string" ? rp.errorMessage : null) ||
               `Motion ${status}`;
               console.warn(
-              `[Motion-X watchdog] motion ${gen.id.slice(0, 8)} task=${runpodJobId} status=${status} → marking failed: ${String(msg).slice(0, 160)}`,
+              `[Motion-X RP watchdog] motion ${gen.id.slice(0, 8)} job=${runpodJobId} status=${status} → marking failed: ${String(msg).slice(0, 160)}`,
             );
             await this.markFailed(gen.id, msg, { refund: gen.status === "processing" });
             stats.failedMarked += 1;
@@ -1279,10 +1293,10 @@ class GenerationPollerService {
             stats.stillRunning += 1;
             continue;
           }
-          const outputUrl = await materializeNsfwMotionOutputFromRunpodResponse(rp);
+          const outputUrl = await materializeNsfwMotionRunpodVideoOutput(rp);
           if (!outputUrl) {
             console.warn(
-              `[Motion-X watchdog] ${gen.id.slice(0, 8)} task=${runpodJobId} completed on RH but no video URL — refunding`,
+              `[Motion-X RP watchdog] ${gen.id.slice(0, 8)} job=${runpodJobId} completed but no video — refunding`,
             );
             await this.markFailed(
               gen.id,
@@ -1301,7 +1315,7 @@ class GenerationPollerService {
           stats.completedRecovered += 1;
           if (gen.status === "failed") stats.completedRecoveredFromFailed += 1;
           console.log(
-            `[RunPod Watchdog] ✅ motion ${gen.id.slice(0, 8)} task=${runpodJobId} recovered → ${String(outputUrl).slice(0, 80)}`,
+            `[RunPod Watchdog] ✅ motion ${gen.id.slice(0, 8)} job=${runpodJobId} recovered → ${String(outputUrl).slice(0, 80)}`,
           );
           continue;
         }

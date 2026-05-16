@@ -63,10 +63,14 @@ setup_models() {
              "${target_dir}/detection"
 
     echo ""
-    echo "--- [1/7] Wan 2.2 Animate 14B (bf16, ~34GB) ---"
+    echo "--- [1/7] Wan 2.2 Animate 14B (fp8_scaled, KJ v2, ~16GB) ---"
+    # Used by the IG+MOTION+CONTROL workflow the backend posts. Half the disk + faster
+    # inference vs the legacy bf16 build, and lives in models/diffusion_models/Wan22Animate/
+    # (the workflow's UNETLoader expects that exact subdirectory path).
+    # Source: Kijai/WanVideo_comfy_fp8_scaled (the base WanVideo_comfy repo 404s for this file).
     download_if_missing \
-        "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_animate_14B_bf16.safetensors" \
-        "${target_dir}/diffusion_models/wan2.2_animate_14B_bf16.safetensors"
+        "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors" \
+        "${target_dir}/diffusion_models/Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors"
 
     echo ""
     echo "--- [2/7] Wan 2.1 VAE (~242MB) ---"
@@ -229,8 +233,9 @@ required = {
     "PoseAndFaceDetection", "DrawViTPose", "OnnxDetectionModelLoader",
     # VHS
     "VHS_LoadVideo", "VHS_VideoCombine", "VHS_VideoInfo",
-    # rgthree
-    "Seed (rgthree)", "Any Switch (rgthree)",
+    # rgthree (only Any Switch is wired in either workflow; rgthree's "Seed" / "Seed (rgthree)"
+    # were orphan/decorative in older graphs and the shipped workflow_api.json drops node 249).
+    "Any Switch (rgthree)",
     # easy-use
     "easy int", "easy float", "easy boolean", "easy ifElse", "easy compare",
     "easy positive", "easy promptReplace", "easy convertAnything",

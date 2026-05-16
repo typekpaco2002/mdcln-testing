@@ -71,6 +71,15 @@ RUN python3 -m pip install --no-cache-dir \
     "onnxruntime-gpu[cuda,cudnn]>=1.20.0" \
     "numpy<2"
 
+# Best-effort sageattention install. The IG+MOTION+CONTROL workflow ships
+# `sage_attention: "auto"` on PathchSageAttentionKJ (node 322); when this wheel
+# is present KJ enables Sage Attention (measurably faster on H100 / 4090),
+# otherwise it transparently falls back to default PyTorch attention. Many CUDA
+# builds fail to compile sageattention from source — never let it break the
+# image build. Pin `<3` to dodge the 3.x ABI breaks that don't have wheels yet.
+RUN python3 -m pip install --no-cache-dir "sageattention<3" \
+ || echo "[WARN] sageattention install failed — PathchSageAttentionKJ 'auto' will fall back to disabled at runtime, workflow still works"
+
 # -----------------------------------------------
 # 4. Pre-create model directories (models downloaded at runtime by start.sh)
 # -----------------------------------------------

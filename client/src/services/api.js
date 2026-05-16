@@ -481,7 +481,11 @@ export const generationAPI = {
     return response.data;
   },
 
-  /** Motion-recreate engine id — Create tab: Motion X; NSFW Studio: NSFW Motion Control. */
+  /**
+   * Motion-recreate engine id — Create tab: Motion X; NSFW Studio: NSFW Motion Control.
+   * Pass `data.provider:"runpod"` to route through the admin-only RunPod worker
+   * (backend enforces `req.user.role === "admin"`, normal users get 403).
+   */
   nsfwGenerateMotionVideo: async (data) => {
     const response = await api.post("/nsfw/generate-motion-video", data);
     return response.data;

@@ -43,6 +43,10 @@ import {
   submitNsfwMotionVideo,
   isNsfwMotionConfigured,
 } from "../services/nsfw-motion.service.js";
+import {
+  submitNsfwMotionRunpodJob,
+  isNsfwMotionRunpodConfigured,
+} from "../services/nsfw-motion-runpod.service.js";
 import { generateImageWithNanoBananaKie, generateImageWithSeedream5Lite } from "../services/kie.service.js";
 import requestQueue from "../services/queue.service.js";
 import {
@@ -5540,7 +5544,7 @@ export async function generateNsfwMotionVideo(req, res) {
   let generationId = null;
 
   try {
-    const { modelId, imageUrl, videoUrl, prompt, duration, skipSeconds, seed } = req.body || {};
+    const { modelId, imageUrl, videoUrl, prompt, duration, skipSeconds, seed, provider } = req.body || {};
     const userId = req.user.userId;
 
     if (!modelId || !imageUrl || !videoUrl) {
@@ -5550,7 +5554,27 @@ export async function generateNsfwMotionVideo(req, res) {
       });
     }
 
-    if (!isNsfwMotionConfigured()) {
+    // Default user flow runs on RunningHub. Admins can opt-in to the RunPod
+    // worker (mconqeuroror/motion) for testing via `provider:"runpod"`. No env
+    // gate — the role check is the only thing keeping this off the user path.
+    const requestedProvider = typeof provider === "string" ? provider.trim().toLowerCase() : "";
+    const useRunpodProvider = requestedProvider === "runpod" || requestedProvider === "runpod-motion";
+    if (useRunpodProvider) {
+      const adminRow = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (!adminRow || String(adminRow.role || "").toLowerCase() !== "admin") {
+        return res.status(403).json({
+          success: false,
+          message: "RunPod motion path is admin-only",
+        });
+      }
+      if (!isNsfwMotionRunpodConfigured()) {
+        return res.status(503).json({
+          success: false,
+          message:
+            "NSFW Motion-X RunPod worker is not configured (RUNPOD_MOTION_ENDPOINT_ID missing)",
+        });
+      }
+    } else if (!isNsfwMotionConfigured()) {
       return res.status(503).json({
         success: false,
         message:
@@ -5645,6 +5669,66 @@ export async function generateNsfwMotionVideo(req, res) {
       ),
     });
     generationId = generation.id;
+
+    if (useRunpodProvider) {
+      let runpodJobId;
+      try {
+        const webhookUrl = resolveRunpodWebhookUrl({ generationId: generation.id });
+        const submission = await submitNsfwMotionRunpodJob({
+          referenceImageUrl: imageUrl,
+          drivingVideoUrl: videoUrl,
+          prompt: finalPrompt,
+          seed: Number.isFinite(Number(seed)) ? Math.trunc(Number(seed)) : undefined,
+          webhookUrl,
+        });
+        runpodJobId = submission.runpodJobId;
+      } catch (err) {
+        await refundGeneration(generation.id);
+        await prisma.generation.update({
+          where: { id: generation.id },
+          data: {
+            status: "failed",
+            errorMessage: getErrorMessageForDb(err?.message || "Motion-X RunPod submission failed"),
+            completedAt: new Date(),
+          },
+        });
+        return res.status(500).json({
+          success: false,
+          message: err?.message || "Motion-X RunPod submission failed",
+        });
+      }
+
+      await prisma.generation.update({
+        where: { id: generation.id },
+        data: {
+          replicateModel: runpodJobId,
+          providerTaskId: runpodJobId,
+          provider: "runpod-motion",
+          inputImageUrl: JSON.stringify({
+            referenceImageUrl: imageUrl,
+            duration: dur,
+            skipSeconds: skip,
+            ...(Number.isFinite(Number(seed)) ? { seed: Math.trunc(Number(seed)) } : {}),
+            runpodJobId,
+            via: "admin-test",
+          }),
+        },
+      });
+
+      console.log(
+        `🎬 [Motion-X RP] submitted gen=${generation.id} runpodJob=${runpodJobId} dur=${dur}s (admin)`,
+      );
+
+      const updatedUser = await prisma.user.findUnique({ where: { id: userId } });
+      return res.json({
+        success: true,
+        generationId: generation.id,
+        creditsUsed: creditsNeeded,
+        creditsRemaining: getTotalCredits(updatedUser),
+        duration: dur,
+        provider: "runpod-motion",
+      });
+    }
 
     const submission = await submitNsfwMotionVideo(
       {

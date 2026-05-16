@@ -36,10 +36,21 @@ mkdir -p "${MODELS_DIR}/diffusion_models" \
 
 echo ">>> Downloading Wan 2.2 Animate motion-control models..."
 
-echo "  [1/7] Diffusion model: wan2.2_animate_14B_bf16.safetensors (~34GB) ..."
+# Diffusion model — fp8_scaled Kijai v2 build (used by the IG+MOTION+CONTROL workflow
+# the backend ships). ~16GB vs ~34GB for the older bf16 file, and runs significantly
+# faster on H100 / 4090 with weight_dtype=fp8_e4m3fn_fast.
+#
+# Lives in a Wan22Animate/ subdirectory inside diffusion_models/ because the workflow
+# references it as "Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors"
+# (UNETLoader resolves filenames relative to models/diffusion_models/).
+#
+# Source: Kijai/WanVideo_comfy_fp8_scaled  (NOT the base WanVideo_comfy repo — that 404s).
+# If you ever want the legacy bf16 file back (~34GB), grab it from
+# Comfy-Org/Wan_2.2_ComfyUI_Repackaged/split_files/diffusion_models/wan2.2_animate_14B_bf16.safetensors
+echo "  [1/7] Diffusion model: Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors (~16GB) ..."
 download_hf \
-    "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_animate_14B_bf16.safetensors" \
-    "${MODELS_DIR}/diffusion_models/wan2.2_animate_14B_bf16.safetensors"
+    "https://huggingface.co/Kijai/WanVideo_comfy_fp8_scaled/resolve/main/Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors" \
+    "${MODELS_DIR}/diffusion_models/Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors"
 
 echo "  [2/7] VAE: wan_2.1_vae.safetensors (~242MB) ..."
 download_hf \

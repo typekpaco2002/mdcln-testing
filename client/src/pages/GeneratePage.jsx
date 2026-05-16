@@ -2729,8 +2729,10 @@ function VideoGeneration() {
     }
   };
 
-  // Generate video using user-provided image + reference video
-  const handleGenerateVideo = async () => {
+  // Generate video using user-provided image + reference video.
+  // `opts.provider:"runpod"` routes Motion-X through the admin-only RunPod
+  // worker (backend re-enforces the admin role; normal users get 403).
+  const handleGenerateVideo = async (opts = {}) => {
     // Cooldown check (500ms)
     const now = Date.now();
     if (now - lastGenerateTime < 500) {
@@ -2807,6 +2809,7 @@ function VideoGeneration() {
           videoUrl: referenceVideo.url,
           duration: effectiveDur,
           skipSeconds: 0,
+          ...(opts?.provider === "runpod" ? { provider: "runpod" } : {}),
         });
         await refreshUserCredits();
         if (res?.success) {
@@ -3265,26 +3268,40 @@ function VideoGeneration() {
               {copy.getCredits} <span className="inline-flex items-center gap-0.5 text-red-500">({recreateTotalCredits} <Coins className="w-3.5 h-3.5" />)</span>
             </button>
           ) : (
-            <button
-              onClick={handleGenerateVideo}
-              disabled={recreateVideoGenerating || !selectedModel || !videoStartingImage?.url || !referenceVideo || referenceVideoDuration <= 0 || isCooldown}
-              className={`w-full py-3.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-100 disabled:cursor-not-allowed ${(recreateVideoGenerating || !selectedModel || !videoStartingImage?.url || !referenceVideo || referenceVideoDuration <= 0 || isCooldown) ? 'bg-white/10 text-white/40' : 'bg-white text-black hover:bg-white/90'}`}
-              data-testid="button-generate-video"
-            >
-              {recreateVideoGenerating ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  {copy.generating}
-                </>
-              ) : (
-                <>
-                  <Video className="w-5 h-5" />
-                  {copy.generateVideo} <span className="inline-flex items-center gap-0.5 text-yellow-400">{referenceVideoDuration > 0
-                    ? <>{recreateTotalCredits} <Coins className="w-3.5 h-3.5" /></>
-                    : <>~ <Coins className="w-3.5 h-3.5" /></>}</span>
-                </>
+            <>
+              <button
+                onClick={handleGenerateVideo}
+                disabled={recreateVideoGenerating || !selectedModel || !videoStartingImage?.url || !referenceVideo || referenceVideoDuration <= 0 || isCooldown}
+                className={`w-full py-3.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-100 disabled:cursor-not-allowed ${(recreateVideoGenerating || !selectedModel || !videoStartingImage?.url || !referenceVideo || referenceVideoDuration <= 0 || isCooldown) ? 'bg-white/10 text-white/40' : 'bg-white text-black hover:bg-white/90'}`}
+                data-testid="button-generate-video"
+              >
+                {recreateVideoGenerating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    {copy.generating}
+                  </>
+                ) : (
+                  <>
+                    <Video className="w-5 h-5" />
+                    {copy.generateVideo} <span className="inline-flex items-center gap-0.5 text-yellow-400">{referenceVideoDuration > 0
+                      ? <>{recreateTotalCredits} <Coins className="w-3.5 h-3.5" /></>
+                      : <>~ <Coins className="w-3.5 h-3.5" /></>}</span>
+                  </>
+                )}
+              </button>
+              {user?.role === "admin" && recreateEngine === NSFW_MOTION_RUNPOD_ENGINE && (
+                <button
+                  onClick={() => handleGenerateVideo({ provider: "runpod" })}
+                  disabled={recreateVideoGenerating || !selectedModel || !videoStartingImage?.url || !referenceVideo || referenceVideoDuration <= 0 || isCooldown}
+                  className={`mt-2 w-full py-2.5 rounded-xl text-xs font-medium tracking-wide transition-all flex items-center justify-center gap-2 border ${(recreateVideoGenerating || !selectedModel || !videoStartingImage?.url || !referenceVideo || referenceVideoDuration <= 0 || isCooldown) ? 'opacity-50 cursor-not-allowed border-white/10 text-white/40 bg-white/[0.03]' : 'border-amber-400/35 bg-amber-400/[0.08] text-amber-100 hover:bg-amber-400/[0.14] hover:border-amber-400/55'}`}
+                  data-testid="button-generate-video-runpod-admin"
+                  title="Admin-only: submit Motion-X to the RunPod worker (mconqeuroror/motion) for testing. Normal users keep running on RunningHub."
+                >
+                  <span className="px-1.5 py-0.5 rounded text-[9px] uppercase tracking-[0.18em] bg-amber-300/20 text-amber-200/90 border border-amber-400/30">Admin</span>
+                  Run via RunPod (test)
+                </button>
               )}
-            </button>
+            </>
           )}
         </div>
       )}

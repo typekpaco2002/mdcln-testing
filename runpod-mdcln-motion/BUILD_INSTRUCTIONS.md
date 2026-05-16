@@ -21,11 +21,11 @@ endpoints.
   `VHS_VideoCombine` node `226` (or whatever `output_node_id` you pass) and
   returns the resulting MP4 base64-encoded under `videos[]`.
 
-## Models (~46GB total)
+## Models (~28GB total)
 
 | File | Source | Size | Used by node |
 |------|--------|------|--------------|
-| `diffusion_models/wan2.2_animate_14B_bf16.safetensors` | `Comfy-Org/Wan_2.2_ComfyUI_Repackaged` | ~34GB | `UNETLoader` (356) |
+| `diffusion_models/Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors` | `Kijai/WanVideo_comfy_fp8_scaled` | ~16GB | `UNETLoader` (356) |
 | `vae/wan_2.1_vae.safetensors` | `Comfy-Org/Wan_2.1_ComfyUI_repackaged` | ~242MB | `VAELoader` (329) |
 | `text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors` | `Comfy-Org/Wan_2.1_ComfyUI_repackaged` | ~6.4GB | `CLIPLoader` (333) |
 | `clip_vision/clip_vision_h.safetensors` | `Comfy-Org/Wan_2.1_ComfyUI_repackaged` | ~1.2GB | `CLIPVisionLoader` (348) |
@@ -34,20 +34,34 @@ endpoints.
 | `detection/vitpose-l-wholebody.onnx` | `JunkyByte/easy_ViTPose/onnx/wholebody` | ~1.2GB | `OnnxDetectionModelLoader` (354) |
 | `detection/yolov10m.onnx` | `Kalray/yolov10` | ~62MB | `OnnxDetectionModelLoader` (354) |
 
-> ⚠ **Workflow filename patches** — three node filenames in the original
-> `fixdmotioncontrol (1).json` graph were swapped to match what's actually
-> downloaded:
+> ⚠ **Diffusion model swap (May 2026, RunningHub-parity migration)** — replaced the
+> bf16 build with Kijai's `fp8_scaled_e4m3fn_KJ_v2` variant to match the
+> `IG+MOTION+CONTROL` workflow the backend ships when migrating Motion X off RunningHub:
 >
-> - Node 327 lora: `t2v_lightx2v_high_noise_model.safetensors` →
->   `wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors`
-> - Node 355 lora: `lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors` →
->   `lightx2v_I2V_14B_480p_cfg_step_distill_rank256_bf16.safetensors`
-> - Node 354 vitpose: `vitpose_h_wholebody_model.onnx` →
->   `vitpose-l-wholebody.onnx`
+> | What | Before (legacy) | After (current) |
+> |------|-----------------|-----------------|
+> | UNet path | `diffusion_models/wan2.2_animate_14B_bf16.safetensors` | `diffusion_models/Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors` |
+> | UNet size | ~34 GB | ~16 GB |
+> | `UNETLoader.weight_dtype` | `default` | `fp8_e4m3fn_fast` |
+> | HF source | `Comfy-Org/Wan_2.2_ComfyUI_Repackaged/.../split_files/diffusion_models/` | `Kijai/WanVideo_comfy_fp8_scaled/Wan22Animate/` |
 >
-> The patched graph is shipped as `workflow_api.json`. The backend payload
-> builder must use the same filenames or change the model URLs in
-> `start.sh` to match.
+> If a caller still POSTs a graph that references the old bf16 filename, either
+> (a) restore the bf16 download by adding it back to `setup_models.sh` /
+> `start.sh`, or (b) rewrite the caller's `prompt` (UNETLoader node) to the new
+> path/dtype. The shipped `workflow_api.json` already uses the new path.
+>
+> Other workflow filename normalizations carried over from earlier patches:
+>
+> - Node 327 lora: `wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors`
+> - Node 355 lora: `lightx2v_I2V_14B_480p_cfg_step_distill_rank256_bf16.safetensors`
+> - Node 354 vitpose: `vitpose-l-wholebody.onnx`
+
+> ℹ️ **Optional: Sage Attention** — node `322` (`PathchSageAttentionKJ`) ships with
+> `sage_attention: "auto"`. The Dockerfile attempts a best-effort install of the
+> `sageattention` wheel; when present, KJNodes flips on Sage Attention for a
+> measurable speedup on H100 / 4090. If the wheel fails to build for your CUDA
+> userland (common with sage 3.x), the build still succeeds and the workflow
+> transparently falls back to default PyTorch attention.
 
 ## Custom nodes
 

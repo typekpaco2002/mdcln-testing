@@ -1,6 +1,6 @@
 # Generated: Backend module lists
 
-**Generated at:** 2026-05-16T19:45:53.023Z
+**Generated at:** 2026-05-16T20:33:31.444Z
 
 ## Controllers
 
@@ -47,6 +47,7 @@
 - `src/services/media-reformatter.service.js`
 - `src/services/modelcloneX.service.js`
 - `src/services/nanobanana-prompt.service.js`
+- `src/services/nsfw-motion-runpod.service.js`
 - `src/services/nsfw-motion.service.js`
 - `src/services/nudes-pack-config.service.js`
 - `src/services/piapi.service.js`

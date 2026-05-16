@@ -1,11 +1,12 @@
 {
   "52": {
     "inputs": {
-      "video": "0411.mp4",
+      "video": "drive.mp4",
       "force_rate": [
         "257",
         0
       ],
+      "force_size": "Disabled",
       "custom_width": [
         "264",
         0
@@ -27,7 +28,7 @@
     },
     "class_type": "VHS_LoadVideo",
     "_meta": {
-      "title": "Load Video (Upload) ðŸŽ¥ðŸ…¥ðŸ…—ðŸ…¢"
+      "title": "Load Video (Upload)"
     }
   },
   "97": {
@@ -80,7 +81,7 @@
   },
   "167": {
     "inputs": {
-      "image": "nsfw_b8c79c76.jpg"
+      "image": "ref.jpg"
     },
     "class_type": "LoadImage",
     "_meta": {
@@ -102,6 +103,7 @@
       "trim_to_audio": false,
       "pingpong": false,
       "save_output": true,
+      "no_preview": false,
       "images": [
         "359",
         3
@@ -113,7 +115,7 @@
     },
     "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "Video Combine ðŸŽ¥ðŸ…¥ðŸ…—ðŸ…¢"
+      "title": "Video Combine"
     }
   },
   "254": {
@@ -138,7 +140,7 @@
     "inputs": {
       "value": 30
     },
-    "class_type": "easy float",
+    "class_type": "easy int",
     "_meta": {
       "title": "FPS RATE"
     }
@@ -194,6 +196,7 @@
       "trim_to_audio": false,
       "pingpong": false,
       "save_output": true,
+      "no_preview": false,
       "images": [
         "316",
         1
@@ -201,7 +204,7 @@
     },
     "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "Video Combine ðŸŽ¥ðŸ…¥ðŸ…—ðŸ…¢"
+      "title": "Video Combine"
     }
   },
   "301": {
@@ -219,14 +222,19 @@
       "trim_to_audio": false,
       "pingpong": false,
       "save_output": true,
+      "no_preview": false,
       "images": [
         "352",
         0
+      ],
+      "audio": [
+        "52",
+        2
       ]
     },
     "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "Video Combine ðŸŽ¥ðŸ…¥ðŸ…—ðŸ…¢"
+      "title": "Video Combine"
     }
   },
   "303": {
@@ -244,6 +252,7 @@
       "trim_to_audio": false,
       "pingpong": false,
       "save_output": true,
+      "no_preview": false,
       "images": [
         "97",
         0
@@ -255,7 +264,7 @@
     },
     "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "Video Combine ðŸŽ¥ðŸ…¥ðŸ…—ðŸ…¢"
+      "title": "Video Combine"
     }
   },
   "316": {
@@ -268,7 +277,6 @@
         "351",
         2
       ],
-      "face_padding": 0,
       "model": [
         "354",
         0
@@ -289,7 +297,7 @@
     },
     "class_type": "easy int",
     "_meta": {
-      "title": "easy int"
+      "title": "Int"
     }
   },
   "318": {
@@ -302,7 +310,7 @@
     },
     "class_type": "SimpleMath+",
     "_meta": {
-      "title": "ðŸ”§ Simple Math"
+      "title": "Simple Math"
     }
   },
   "319": {
@@ -314,7 +322,7 @@
     },
     "class_type": "VHS_VideoInfo",
     "_meta": {
-      "title": "Video Info ðŸŽ¥ðŸ…¥ðŸ…—ðŸ…¢"
+      "title": "Video Info"
     }
   },
   "320": {
@@ -326,7 +334,7 @@
     },
     "class_type": "GetImageSize",
     "_meta": {
-      "title": "Get Image Size"
+      "title": "GetImageSize"
     }
   },
   "321": {
@@ -350,7 +358,7 @@
   },
   "322": {
     "inputs": {
-      "sage_attention": "disabled",
+      "sage_attention": "auto",
       "allow_compile": false,
       "model": [
         "330",
@@ -381,7 +389,7 @@
     },
     "class_type": "easy int",
     "_meta": {
-      "title": "easy int"
+      "title": "Int"
     }
   },
   "325": {
@@ -401,15 +409,11 @@
     },
     "class_type": "easy ifElse",
     "_meta": {
-      "title": "easy ifElse"
+      "title": "If else"
     }
   },
   "326": {
     "inputs": {
-      "blocks_to_swap": 20,
-      "offload_img_emb": false,
-      "offload_txt_emb": false,
-      "use_non_blocking": false,
       "model": [
         "331",
         0
@@ -417,7 +421,7 @@
     },
     "class_type": "wanBlockSwap",
     "_meta": {
-      "title": "WanVideoBlockSwap"
+      "title": "wanBlockSwap"
     }
   },
   "327": {
@@ -431,7 +435,7 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "LoraLoaderModelOnly"
+      "title": "Load LoRA"
     }
   },
   "329": {
@@ -473,7 +477,7 @@
     },
     "class_type": "easy ifElse",
     "_meta": {
-      "title": "easy ifElse"
+      "title": "If else"
     }
   },
   "332": {
@@ -490,7 +494,7 @@
     },
     "class_type": "easy compare",
     "_meta": {
-      "title": "easy compare"
+      "title": "Compare"
     }
   },
   "333": {
@@ -514,7 +518,7 @@
     },
     "class_type": "easy convertAnything",
     "_meta": {
-      "title": "easy convertAnything"
+      "title": "Convert Any"
     }
   },
   "335": {
@@ -549,7 +553,7 @@
     },
     "class_type": "easy positive",
     "_meta": {
-      "title": "easy positive"
+      "title": "Positive"
     }
   },
   "338": {
@@ -583,7 +587,7 @@
     },
     "class_type": "SimpleMath+",
     "_meta": {
-      "title": "ðŸ”§ Simple Math"
+      "title": "Simple Math"
     }
   },
   "340": {
@@ -600,7 +604,7 @@
     },
     "class_type": "easy compare",
     "_meta": {
-      "title": "easy compare"
+      "title": "Compare"
     }
   },
   "341": {
@@ -612,7 +616,7 @@
     },
     "class_type": "easy lengthAnything",
     "_meta": {
-      "title": "easy lengthAnything"
+      "title": "Length Any"
     }
   },
   "342": {
@@ -628,7 +632,7 @@
     },
     "class_type": "easy batchAnything",
     "_meta": {
-      "title": "easy batchAnything"
+      "title": "Batch Any"
     }
   },
   "343": {
@@ -641,7 +645,7 @@
     },
     "class_type": "SimpleMath+",
     "_meta": {
-      "title": "ðŸ”§ Simple Math"
+      "title": "Simple Math"
     }
   },
   "344": {
@@ -662,7 +666,7 @@
     },
     "class_type": "easy promptReplace",
     "_meta": {
-      "title": "easy promptReplace"
+      "title": "PromptReplace"
     }
   },
   "345": {
@@ -729,7 +733,7 @@
     },
     "class_type": "easy int",
     "_meta": {
-      "title": "easy int"
+      "title": "Int"
     }
   },
   "350": {
@@ -810,7 +814,7 @@
   },
   "353": {
     "inputs": {
-      "seed": 1071282982612790,
+      "seed": 740950608193913,
       "steps": 4,
       "cfg": 1,
       "sampler_name": "sa_solver",
@@ -860,13 +864,13 @@
     },
     "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "LoraLoaderModelOnly"
+      "title": "Load LoRA"
     }
   },
   "356": {
     "inputs": {
-      "unet_name": "wan2.2_animate_14B_bf16.safetensors",
-      "weight_dtype": "default"
+      "unet_name": "Wan22Animate/Wan2_2-Animate-14B_fp8_scaled_e4m3fn_KJ_v2.safetensors",
+      "weight_dtype": "fp8_e4m3fn_fast"
     },
     "class_type": "UNETLoader",
     "_meta": {
@@ -896,7 +900,7 @@
     },
     "class_type": "SimpleMathDual+",
     "_meta": {
-      "title": "ðŸ”§ Simple Math Dual"
+      "title": "Simple Math Dual"
     }
   },
   "358": {
@@ -966,7 +970,7 @@
     },
     "class_type": "easy int",
     "_meta": {
-      "title": "easy int"
+      "title": "Int"
     }
   },
   "361": {
@@ -1044,7 +1048,7 @@
     },
     "class_type": "SimpleMath+",
     "_meta": {
-      "title": "ðŸ”§ Simple Math"
+      "title": "Simple Math"
     }
   },
   "363": {
@@ -1073,7 +1077,7 @@
     },
     "class_type": "MathExpression|pysssss",
     "_meta": {
-      "title": "Math Expression ðŸ"
+      "title": "Math Expression"
     }
   },
   "365": {
@@ -1090,7 +1094,7 @@
     },
     "class_type": "MathExpression|pysssss",
     "_meta": {
-      "title": "Math Expression ðŸ"
+      "title": "Math Expression"
     }
   },
   "436": {
