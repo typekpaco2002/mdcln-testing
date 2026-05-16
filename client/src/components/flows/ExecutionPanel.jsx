@@ -1,9 +1,19 @@
 /**
  * ExecutionPanel — terminal-style live run monitor.
  * Sections: status bar, run/cancel button, node timeline, monospace log feed.
+ *
+ * Time saving touches:
+ *   - Per-node elapsed wall-time (tracked locally from SSE status transitions,
+ *     since the store doesn't carry startedAt/finishedAt fields).
+ *   - Total run elapsed timer ticks every second while running.
+ *   - Failed nodes are clickable and call `onFocusNode(nodeId)` so the canvas
+ *     pans/zooms onto the offender instead of forcing the user to hunt.
+ *   - Cycle hint: if the parent flags a cycle the Execute button is locked
+ *     with a clear "graph has a cycle" reason so the user doesn't waste a
+ *     click pinging a run that will fail.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Play,
   Square,
@@ -13,6 +23,8 @@ import {
   Circle,
   Coins,
   ChevronRight,
+  AlertTriangle,
+  Crosshair,
 } from "lucide-react";
 import { useFlowStore } from "../../store/flowStore";
 
@@ -40,33 +52,113 @@ function NodeStatusIcon({ status, size = 10 }) {
   return <Circle size={size} className="text-white/20" strokeWidth={1.8} />;
 }
 
-export function ExecutionPanel({ onRun, onCancel, creditEstimate }) {
+function formatElapsed(ms) {
+  if (!ms || ms < 0) return "—";
+  if (ms < 1000) return `${ms}ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(s < 10 ? 1 : 0)}s`;
+  const m = Math.floor(s / 60);
+  const rem = Math.floor(s % 60);
+  return `${m}m ${String(rem).padStart(2, "0")}s`;
+}
+
+export function ExecutionPanel({ onRun, onCancel, creditEstimate, hasCycle = false, onFocusNode }) {
   const runStatus = useFlowStore((s) => s.runStatus);
   const nodeStatuses = useFlowStore((s) => s.nodeStatuses);
   const runLogs = useFlowStore((s) => s.runLogs);
   const creditsUsed = useFlowStore((s) => s.creditsUsed);
   const runError = useFlowStore((s) => s.runError);
   const nodes = useFlowStore((s) => s.nodes);
+  const currentRunId = useFlowStore((s) => s.currentRunId);
 
   const logsRef = useRef(null);
   useEffect(() => {
     if (logsRef.current) logsRef.current.scrollTop = logsRef.current.scrollHeight;
   }, [runLogs]);
 
+  // ── Per-node timing ────────────────────────────────────────────────
+  // We watch nodeStatuses transitions and stamp startedAt / finishedAt
+  // locally. (The Zustand store doesn't carry timestamps — keeping this
+  // purely client-side avoids any backend coupling.)
+  const timingsRef = useRef(new Map()); // nodeId -> { startedAt, finishedAt }
+  const [, forceTick] = useState(0); // 1 Hz tick to refresh "running" elapsed
+  const [runStartedAt, setRunStartedAt] = useState(null);
+
+  // Reset timings on a new run.
+  useEffect(() => {
+    if (!currentRunId) {
+      timingsRef.current = new Map();
+      setRunStartedAt(null);
+      return;
+    }
+    timingsRef.current = new Map();
+    setRunStartedAt(Date.now());
+  }, [currentRunId]);
+
+  // Drive timing transitions off the nodeStatuses snapshot.
+  useEffect(() => {
+    const now = Date.now();
+    for (const [nodeId, st] of Object.entries(nodeStatuses)) {
+      const t = timingsRef.current.get(nodeId) || {};
+      if ((st.status === "running" || st.status === "pending") && !t.startedAt) {
+        t.startedAt = now;
+      }
+      if ((st.status === "completed" || st.status === "failed" || st.status === "skipped") && !t.finishedAt) {
+        if (!t.startedAt) t.startedAt = now;
+        t.finishedAt = now;
+      }
+      timingsRef.current.set(nodeId, t);
+    }
+  }, [nodeStatuses]);
+
+  // 1 Hz tick while a run is active so the "running" timers refresh.
+  useEffect(() => {
+    if (runStatus !== "running" && runStatus !== "pending") return;
+    const id = setInterval(() => forceTick((x) => x + 1), 1000);
+    return () => clearInterval(id);
+  }, [runStatus]);
+
   const cfg = STATUS_CONFIG[runStatus || "idle"] || STATUS_CONFIG.idle;
   const isRunning = runStatus === "running" || runStatus === "pending";
 
   const nodeStatusList = nodes
-    .filter((n) => n.type !== "merge-outputs")
-    .map((n) => ({
-      id: n.id,
-      label: n.data?.label || n.type,
-      type: n.type,
-      status: nodeStatuses[n.id]?.status || "idle",
-    }));
+    .filter((n) => n.type !== "merge-outputs" && n.type !== "group")
+    .map((n) => {
+      const t = timingsRef.current.get(n.id);
+      let elapsed = null;
+      if (t?.startedAt) {
+        elapsed = (t.finishedAt || Date.now()) - t.startedAt;
+      }
+      return {
+        id: n.id,
+        label: n.data?.label || n.type,
+        type: n.type,
+        status: nodeStatuses[n.id]?.status || "idle",
+        error: nodeStatuses[n.id]?.error,
+        elapsed,
+      };
+    });
 
   const completed = nodeStatusList.filter((n) => n.status === "completed").length;
+  const failed = nodeStatusList.filter((n) => n.status === "failed").length;
   const total = nodeStatusList.length;
+  const totalElapsed = runStartedAt
+    ? (runStatus === "completed" || runStatus === "failed" || runStatus === "cancelled"
+        // Once the run terminates, freeze the timer at the last finishedAt
+        // we saw so the user can see the final number (vs it ticking forever).
+        ? Math.max(
+            0,
+            Math.max(...Array.from(timingsRef.current.values()).map((t) => t.finishedAt || 0), 0) - runStartedAt
+          ) || (Date.now() - runStartedAt)
+        : Date.now() - runStartedAt)
+    : null;
+
+  // Decide whether Execute should be locked.
+  const disabledReason = hasCycle
+    ? "Graph has a cycle — break the loop first"
+    : nodes.length === 0
+    ? "Add at least one node first"
+    : null;
 
   return (
     <div className="flex flex-col h-full">
@@ -88,13 +180,24 @@ export function ExecutionPanel({ onRun, onCancel, creditEstimate }) {
             >
               {cfg.label}
             </span>
+            {totalElapsed != null && total > 0 && (
+              <span
+                className="text-[8.5px] text-white/35 tabular-nums"
+                style={{ fontFamily: "var(--font-mono)" }}
+                title="Total elapsed"
+              >
+                · {formatElapsed(totalElapsed)}
+              </span>
+            )}
           </div>
           {total > 0 && (
             <span
               className="text-[8.5px] text-white/35 tabular-nums"
               style={{ fontFamily: "var(--font-mono)" }}
+              title={`${completed} of ${total} completed${failed ? `, ${failed} failed` : ""}`}
             >
               {String(completed).padStart(2, "0")}/{String(total).padStart(2, "0")}
+              {failed > 0 && <span className="text-red-300/70"> ·{failed}</span>}
             </span>
           )}
         </div>
@@ -148,7 +251,8 @@ export function ExecutionPanel({ onRun, onCancel, creditEstimate }) {
         ) : (
           <button
             onClick={onRun}
-            disabled={nodes.length === 0}
+            disabled={!!disabledReason}
+            title={disabledReason || "Run flow (Ctrl/⌘+Enter)"}
             className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md text-[10px] font-bold tracking-[0.1em]
               transition-all disabled:cursor-not-allowed disabled:opacity-30"
             style={{
@@ -164,6 +268,15 @@ export function ExecutionPanel({ onRun, onCancel, creditEstimate }) {
             <Play size={10} fill="currentColor" strokeWidth={0} />
             EXECUTE
           </button>
+        )}
+
+        {disabledReason && !isRunning && (
+          <div className="mt-2 flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-amber-500/[0.06] border border-amber-400/20">
+            <AlertTriangle size={9} className="text-amber-300/85 flex-shrink-0" strokeWidth={2} />
+            <p className="text-[9px] text-amber-200/80 leading-snug" style={{ fontFamily: "var(--font-mono)" }}>
+              {disabledReason}
+            </p>
+          </div>
         )}
 
         {runError && (
@@ -183,15 +296,46 @@ export function ExecutionPanel({ onRun, onCancel, creditEstimate }) {
             >
               Pipeline
             </span>
+            {failed > 0 && (
+              <span
+                className="ml-auto text-[8px] text-red-300/70"
+                style={{ fontFamily: "var(--font-mono)" }}
+                title="Click a failed node below to focus it"
+              >
+                click ✗ to focus
+              </span>
+            )}
           </div>
           <div className="space-y-1">
             {nodeStatusList.map((n) => {
               const sc = STATUS_CONFIG[n.status] || STATUS_CONFIG.idle;
+              const clickable = !!onFocusNode && (n.status === "failed" || n.status === "running");
               return (
                 <div
                   key={n.id}
-                  className={`flex items-center gap-2 px-1.5 py-1 rounded transition-colors
-                    ${n.status === "running" ? "bg-blue-500/[0.05]" : ""}`}
+                  onClick={clickable ? () => onFocusNode(n.id) : undefined}
+                  onKeyDown={(e) => {
+                    if (!clickable) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onFocusNode(n.id);
+                    }
+                  }}
+                  role={clickable ? "button" : undefined}
+                  tabIndex={clickable ? 0 : undefined}
+                  aria-label={clickable ? `Focus ${n.label} on canvas` : undefined}
+                  className={`flex items-center gap-2 px-1.5 py-1 rounded transition-colors outline-none
+                    ${n.status === "running" ? "bg-blue-500/[0.05]" : ""}
+                    ${n.status === "failed" ? "bg-red-500/[0.05]" : ""}
+                    ${clickable ? "cursor-pointer hover:bg-white/[0.06] focus-visible:bg-white/[0.06] focus-visible:ring-1 focus-visible:ring-violet-400/45" : ""}
+                  `}
+                  title={
+                    n.status === "failed" && n.error
+                      ? `${n.error}\n(click to focus)`
+                      : clickable
+                      ? "Click to focus on canvas"
+                      : undefined
+                  }
                 >
                   <NodeStatusIcon status={n.status} size={9} />
                   <span
@@ -200,12 +344,24 @@ export function ExecutionPanel({ onRun, onCancel, creditEstimate }) {
                   >
                     {n.label}
                   </span>
+                  {n.elapsed != null && (
+                    <span
+                      className="text-[8px] text-white/30 tabular-nums flex-shrink-0"
+                      style={{ fontFamily: "var(--font-mono)" }}
+                      title="Elapsed for this node"
+                    >
+                      {formatElapsed(n.elapsed)}
+                    </span>
+                  )}
                   <span
                     className={`text-[7.5px] tracking-[0.1em] flex-shrink-0 ${sc.text}`}
                     style={{ fontFamily: "var(--font-mono)" }}
                   >
                     {sc.label}
                   </span>
+                  {clickable && (
+                    <Crosshair size={9} className="text-white/30 flex-shrink-0" strokeWidth={1.8} aria-hidden="true" />
+                  )}
                 </div>
               );
             })}

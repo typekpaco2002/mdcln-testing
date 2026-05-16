@@ -13,7 +13,7 @@
  * docs and is what makes connections reliably render as visible edges.
  */
 
-import { memo, useState, useCallback } from "react";
+import { memo, useState, useCallback, useEffect, useRef } from "react";
 import { Handle, Position } from "@xyflow/react";
 import {
   Copy,
@@ -23,6 +23,8 @@ import {
   AlertTriangle,
   Loader2,
   CheckCircle2,
+  Minimize2,
+  Maximize2,
 } from "lucide-react";
 import { useFlowStore } from "../../../store/flowStore";
 
@@ -91,6 +93,11 @@ export const BaseNode = memo(function BaseNode({
   creditCost = 0,
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [menu, setMenu] = useState(null); // { x, y } in viewport coords
+  const [menuFocusIdx, setMenuFocusIdx] = useState(0);
+  const menuRef = useRef(null);
+  const menuItemRefs = useRef([]);
+  const menuTriggerRef = useRef(null); // element to restore focus to on close
   const { nodeStatuses, deleteNode, duplicateNode } = useFlowStore();
   const status = nodeStatuses[id]?.status || "idle";
   const nodeOutput = nodeStatuses[id]?.output;
@@ -102,6 +109,48 @@ export const BaseNode = memo(function BaseNode({
 
   const handleDelete = useCallback(() => deleteNode(id), [id, deleteNode]);
   const handleDuplicate = useCallback(() => duplicateNode(id), [id, duplicateNode]);
+
+  // ── Right-click context menu ────────────────────────────────────────
+  // Mirrors the standard "right-click on node → quick actions" pattern
+  // from every node editor (Comfy, Blender, Figma). Saves a trip to the
+  // tiny hover toolbar in the header.
+  const openMenu = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Remember the element that opened the menu so we can restore focus
+    // on close (a11y).
+    menuTriggerRef.current = document.activeElement;
+    setMenuFocusIdx(0);
+    setMenu({ x: e.clientX, y: e.clientY });
+  }, []);
+  const closeMenu = useCallback(() => {
+    setMenu(null);
+    // Restore focus to the previously-focused element so keyboard users
+    // aren't dumped back to body after Esc / outside-click.
+    const prev = menuTriggerRef.current;
+    if (prev && typeof prev.focus === "function") {
+      try { prev.focus(); } catch { /* element unmounted */ }
+    }
+  }, []);
+  useEffect(() => {
+    if (!menu) return;
+    const off = (e) => {
+      if (menuRef.current?.contains(e.target)) return;
+      closeMenu();
+    };
+    const esc = (e) => { if (e.key === "Escape") closeMenu(); };
+    window.addEventListener("mousedown", off);
+    window.addEventListener("keydown", esc);
+    // Move focus into the menu so keyboard users can navigate. Defer one
+    // frame so the menu element has actually mounted and our refs are
+    // populated.
+    const raf = requestAnimationFrame(() => menuItemRefs.current[0]?.focus());
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("mousedown", off);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [menu, closeMenu]);
 
   // Max rows per column — used to align the port rail evenly.
   const maxRows = Math.max(inputs.length, outputs.length);
@@ -130,6 +179,7 @@ export const BaseNode = memo(function BaseNode({
       {/* The node card — frosted glass shell */}
       <div
         className="flow-node-card relative rounded-[14px] transition-shadow duration-300 w-full h-full flex flex-col"
+        onContextMenu={openMenu}
         style={{
           background: "var(--fp-node-bg)",
           backdropFilter: "blur(22px) saturate(170%)",
@@ -155,6 +205,10 @@ export const BaseNode = memo(function BaseNode({
         <div
           className="relative flex items-center justify-between px-3 py-2 cursor-pointer rounded-t-[14px]"
           onClick={() => setCollapsed((c) => !c)}
+          onContextMenu={openMenu}
+          role="button"
+          aria-expanded={!collapsed}
+          aria-label={`${label || type} — ${collapsed ? "expand" : "collapse"}; right-click for more`}
           style={{
             background: `linear-gradient(180deg, ${headerColor}3a 0%, ${headerColor}10 100%)`,
             borderBottom: "1px solid rgba(255,255,255,0.18)",
@@ -207,22 +261,27 @@ export const BaseNode = memo(function BaseNode({
 
             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-0.5">
               <button
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+                className="tap-target-min rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
                 onClick={(e) => { e.stopPropagation(); handleDuplicate(); }}
                 title="Duplicate (Ctrl+D)"
+                aria-label="Duplicate node"
               >
                 <Copy size={10} strokeWidth={1.8} />
               </button>
               <button
-                className="p-1 rounded hover:bg-red-500/20 text-white/40 hover:text-red-300 transition-colors"
+                className="tap-target-min rounded hover:bg-red-500/20 text-white/40 hover:text-red-300 transition-colors"
                 onClick={(e) => { e.stopPropagation(); handleDelete(); }}
                 title="Delete"
+                aria-label="Delete node"
               >
                 <Trash2 size={10} strokeWidth={1.8} />
               </button>
               <button
-                className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
+                className="tap-target-min rounded hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
                 onClick={(e) => { e.stopPropagation(); setCollapsed((c) => !c); }}
+                title={collapsed ? "Expand" : "Collapse"}
+                aria-label={collapsed ? "Expand node" : "Collapse node"}
+                aria-expanded={!collapsed}
               >
                 {collapsed ? <ChevronDown size={10} strokeWidth={1.8} /> : <ChevronUp size={10} strokeWidth={1.8} />}
               </button>
@@ -389,6 +448,111 @@ export const BaseNode = memo(function BaseNode({
           </div>
         )}
       </div>
+
+      {/* ── Right-click context menu ─────────────────────────────────── */}
+      {menu && (() => {
+        // Items array → render-loop. Indexing is needed for keyboard nav
+        // (ArrowUp / ArrowDown / Home / End cycle, Enter invokes). Divider
+        // rendered between groups via `divider` flag (non-focusable).
+        const items = [
+          {
+            key: "duplicate",
+            icon: <Copy size={11} strokeWidth={1.8} />,
+            label: "Duplicate",
+            shortcut: "⌘D",
+            onActivate: () => { handleDuplicate(); closeMenu(); },
+          },
+          {
+            key: "collapse",
+            icon: collapsed ? <Maximize2 size={11} strokeWidth={1.8} /> : <Minimize2 size={11} strokeWidth={1.8} />,
+            label: collapsed ? "Expand" : "Collapse",
+            onActivate: () => { setCollapsed((c) => !c); closeMenu(); },
+          },
+          { key: "divider-1", divider: true },
+          {
+            key: "delete",
+            icon: <Trash2 size={11} strokeWidth={1.8} />,
+            label: "Delete",
+            shortcut: "Del",
+            destructive: true,
+            onActivate: () => { handleDelete(); closeMenu(); },
+          },
+        ];
+        const focusableIndices = items.map((it, i) => (it.divider ? -1 : i)).filter((i) => i >= 0);
+        const moveFocus = (delta) => {
+          const pos = focusableIndices.indexOf(menuFocusIdx);
+          // If somehow not focusable, jump to first.
+          const fromPos = pos === -1 ? 0 : pos;
+          const nextPos = (fromPos + delta + focusableIndices.length) % focusableIndices.length;
+          const nextIdx = focusableIndices[nextPos];
+          setMenuFocusIdx(nextIdx);
+          menuItemRefs.current[nextIdx]?.focus();
+        };
+        const onMenuKey = (e) => {
+          if (e.key === "ArrowDown")    { e.preventDefault(); moveFocus(1); }
+          else if (e.key === "ArrowUp") { e.preventDefault(); moveFocus(-1); }
+          else if (e.key === "Home")    { e.preventDefault(); const i = focusableIndices[0]; setMenuFocusIdx(i); menuItemRefs.current[i]?.focus(); }
+          else if (e.key === "End")     { e.preventDefault(); const i = focusableIndices[focusableIndices.length - 1]; setMenuFocusIdx(i); menuItemRefs.current[i]?.focus(); }
+          else if (e.key === "Tab")     { e.preventDefault(); moveFocus(e.shiftKey ? -1 : 1); }
+          // Enter / Space invoke is delegated to the button's native click.
+        };
+        // Reset ref array each render so we don't keep stale handles.
+        menuItemRefs.current = [];
+        return (
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={`${label || type} actions`}
+            onKeyDown={onMenuKey}
+            style={{
+              position: "fixed",
+              top: menu.y,
+              left: menu.x,
+              zIndex: "var(--z-popover, 70)",
+              minWidth: 180,
+              background: "linear-gradient(180deg, rgba(28,28,40,0.97) 0%, rgba(14,14,20,0.97) 100%)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              borderRadius: 10,
+              padding: 4,
+              boxShadow: "0 18px 40px -12px rgba(0,0,0,0.7), inset 0 1px 0 0 rgba(255,255,255,0.05)",
+              fontFamily: "var(--font-sans)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            {items.map((it, i) => {
+              if (it.divider) {
+                return <div key={it.key} role="separator" style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "4px 6px" }} />;
+              }
+              const isFocused = menuFocusIdx === i;
+              return (
+                <button
+                  key={it.key}
+                  ref={(el) => { menuItemRefs.current[i] = el; }}
+                  type="button"
+                  role="menuitem"
+                  tabIndex={isFocused ? 0 : -1}
+                  onFocus={() => setMenuFocusIdx(i)}
+                  onMouseEnter={() => setMenuFocusIdx(i)}
+                  onClick={it.onActivate}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-[11px] font-medium transition-colors outline-none
+                    ${it.destructive
+                      ? "text-red-300 hover:bg-red-500/15 focus-visible:bg-red-500/15"
+                      : "text-white/85 hover:bg-white/[0.08] focus-visible:bg-white/[0.08]"}`}
+                >
+                  <span className="opacity-80">{it.icon}</span>
+                  <span className="flex-1 text-left">{it.label}</span>
+                  {it.shortcut && (
+                    <span className="text-[9px] text-white/30" style={{ fontFamily: "var(--font-mono)" }}>
+                      {it.shortcut}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
     </div>
   );
 });

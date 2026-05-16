@@ -6,7 +6,7 @@
  * a subtle aurora gradient mesh on the canvas background.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -35,6 +35,12 @@ import {
   Terminal,
   Group as GroupIcon,
   Ungroup,
+  Keyboard,
+  Sparkles,
+  Layers,
+  Smartphone,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -43,6 +49,57 @@ import { useAuthStore } from "../store";
 import { NodePalette } from "../components/flows/NodePalette";
 import { FlowLibrary } from "../components/flows/FlowLibrary";
 import { ExecutionPanel } from "../components/flows/ExecutionPanel";
+import { FLOW_TEMPLATES } from "../data/flow-templates";
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * DFS cycle detection across the directed graph of nodes/edges.
+ * Returns true if any back-edge is found. Used to guard the Run button
+ * (a cyclic graph would loop the executor) and to display a hint.
+ */
+function graphHasCycle(nodes, edges) {
+  if (!nodes?.length || !edges?.length) return false;
+  const adj = new Map();
+  nodes.forEach((n) => adj.set(n.id, []));
+  edges.forEach((e) => {
+    if (!adj.has(e.source)) adj.set(e.source, []);
+    adj.get(e.source).push(e.target);
+  });
+  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const color = new Map();
+  nodes.forEach((n) => color.set(n.id, WHITE));
+  const stack = [];
+  for (const start of nodes) {
+    if (color.get(start.id) !== WHITE) continue;
+    stack.push({ id: start.id, idx: 0 });
+    color.set(start.id, GRAY);
+    while (stack.length) {
+      const frame = stack[stack.length - 1];
+      const nbrs = adj.get(frame.id) || [];
+      if (frame.idx >= nbrs.length) {
+        color.set(frame.id, BLACK);
+        stack.pop();
+        continue;
+      }
+      const next = nbrs[frame.idx++];
+      const c = color.get(next);
+      if (c === GRAY) return true;
+      if (c === WHITE) {
+        color.set(next, GRAY);
+        stack.push({ id: next, idx: 0 });
+      }
+    }
+  }
+  return false;
+}
+
+function formatClockTime(ms) {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+}
+
+const DRAFT_KEY = "flows:draft:unsaved";
 
 // Node types
 import ImageInputNode from "../components/flows/nodes/ImageInputNode";
@@ -107,7 +164,7 @@ function authHeader() {
 // ─── Inner canvas (inside ReactFlowProvider) ───────────────────────────────
 
 function FlowCanvas({ flowId, embedded = false }) {
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, setCenter } = useReactFlow();
   const navigate = useNavigate();
   const store = useFlowStore();
   const {
@@ -122,6 +179,7 @@ function FlowCanvas({ flowId, embedded = false }) {
     setNodeTypeRegistry, nodeTypes,
     startRun, resetRun, handleSSEEvent,
     undo, redo, groupSelection, ungroupSelection,
+    duplicateNode,
     runStatus, currentRunId,
   } = store;
 
@@ -132,7 +190,44 @@ function FlowCanvas({ flowId, embedded = false }) {
   const [libLoading, setLibLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingName, setEditingName] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [connectionToast, setConnectionToast] = useState(null); // { message, id }
+  const [viewportTooSmall, setViewportTooSmall] = useState(false);
+  const [draftAvailable, setDraftAvailable] = useState(false);
   const sseRef = useRef(null);
+  const connectionToastTimer = useRef(null);
+  const autoSaveTimer = useRef(null);
+  // ── Stale-closure escape hatches ──────────────────────────────────────
+  // The keyboard handler effect attaches once and reads action functions /
+  // mutable component state via refs at INVOCATION time, so it never sees a
+  // stale snapshot of `runStatus`, `isDirty`, or `hasCycle`. This is what
+  // prevents `Cmd+Enter` from spawning a duplicate run while one is already
+  // in flight (the would-be double-billing bug).
+  const handleRunRef = useRef(null);
+  const handleSaveRef = useRef(null);
+  const showShortcutsRef = useRef(false);
+  const connectionToastRef = useRef(null);
+  const editingNameRef = useRef(false);
+  // Save-in-flight guard so spamming `Cmd+S` doesn't fan out into N parallel
+  // POSTs against the same flow. (See B1 review Minor #7.)
+  const isSavingRef = useRef(false);
+  // Run-in-flight guard — synchronously blocks a second `Cmd+Enter` from
+  // firing a second POST during the brief window between the first POST
+  // being awaited and the store transitioning to `runStatus === "pending"`.
+  // The `runStatus`-based guard alone isn't enough because the store
+  // doesn't update until `startRun(runId)` is called AFTER the fetch
+  // resolves. (See B1 review Blocker #1 — would-be double-bill.)
+  const isStartingRunRef = useRef(false);
+  // Focus-management refs for modal dialogs (cheatsheet + viewport guard).
+  // We record the element that opened the dialog so we can restore focus to
+  // it on close, and we expose refs to the first focusable element inside
+  // each dialog so we can move focus there on open.
+  const shortcutsTriggerRef = useRef(null);
+  const shortcutsCloseBtnRef = useRef(null);
+  const shortcutsDialogRef = useRef(null);
+  const viewportDialogRef = useRef(null);
+  const viewportCloseBtnRef = useRef(null);
   const creditEstimate = nodeTypes.reduce((sum, t) => {
     const matches = nodes.filter((n) => n.type === t.type).length;
     return sum + matches * (t.creditCost || 0);
@@ -242,21 +337,147 @@ function FlowCanvas({ flowId, embedded = false }) {
     markDirty();
   }, [screenToFlowPosition, addNode, markDirty]);
 
-  // Keyboard shortcuts
+  // ── Cycle detection (memoised; used by Run-disabled hint) ────────────
+  const hasCycle = useMemo(() => graphHasCycle(nodes, edges), [nodes, edges]);
+
+  // Keep stale-closure refs in sync with the latest render. This runs on
+  // EVERY render (no deps) so the keyboard handler (attached once) always
+  // calls the freshest `handleRun` / `handleSave` and reads the latest
+  // dialog/toast state at the moment the user presses a key.
+  // `handleRun` / `handleSave` are referenced lexically here even though
+  // they're declared later in the function body — that's safe because the
+  // effect callback only executes during commit, by which time the entire
+  // render body (and therefore both consts) has been initialised.
+  useEffect(() => {
+    /* eslint-disable no-use-before-define */
+    handleRunRef.current = handleRun;
+    handleSaveRef.current = handleSave;
+    /* eslint-enable no-use-before-define */
+    showShortcutsRef.current = showShortcuts;
+    connectionToastRef.current = connectionToast;
+    editingNameRef.current = editingName;
+  });
+
+  // Keyboard shortcuts — attached ONCE. The handler reads every dynamic
+  // value via `useFlowStore.getState()` or refs so it never closes over a
+  // stale snapshot. This is what prevents `Cmd+Enter` mid-run from firing
+  // a second `POST /api/flows/:id/run` (the would-be double-billing bug).
   useEffect(() => {
     const handler = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
-      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") { e.preventDefault(); handleSave(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "g" && !e.shiftKey) { e.preventDefault(); groupSelection(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "g" && e.shiftKey)  { e.preventDefault(); ungroupSelection(); }
+      const tag = e.target?.tagName;
+      const isEditable = tag === "INPUT" || tag === "TEXTAREA" || e.target?.isContentEditable;
+
+      // ESC closes popovers / cancels editing — always allowed (no preventDefault).
+      if (e.key === "Escape") {
+        if (showShortcutsRef.current) { setShowShortcuts(false); return; }
+        if (connectionToastRef.current) { setConnectionToast(null); return; }
+        if (editingNameRef.current) { setEditingName(false); return; }
+      }
+
+      // "?" opens shortcut overlay — only outside editable.
+      if (!isEditable && e.key === "?" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        // Remember the element that opened the dialog so we can restore
+        // focus on close (a11y).
+        shortcutsTriggerRef.current = document.activeElement;
+        setShowShortcuts((v) => !v);
+        return;
+      }
+
+      if (isEditable) return;
+
+      // Ctrl/Cmd + Enter → run (always reads the latest handleRun via ref so
+      // the mid-run guard inside handleRun can't be bypassed).
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleRunRef.current?.();
+        return;
+      }
+      // Ctrl/Cmd + S → save (latest handleSave via ref).
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSaveRef.current?.();
+        return;
+      }
+      // Ctrl/Cmd + Z → undo (no shift).
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        useFlowStore.getState().undo();
+        return;
+      }
+      // Ctrl/Cmd + Y or Shift+Ctrl/Cmd+Z → redo.
+      if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
+        e.preventDefault();
+        useFlowStore.getState().redo();
+        return;
+      }
+      // Ctrl/Cmd + G → group / Ctrl+Shift+G → ungroup.
+      if ((e.ctrlKey || e.metaKey) && e.key === "g" && !e.shiftKey) {
+        e.preventDefault();
+        useFlowStore.getState().groupSelection();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === "g" && e.shiftKey) {
+        e.preventDefault();
+        useFlowStore.getState().ungroupSelection();
+        return;
+      }
+      // Ctrl/Cmd + D → duplicate selected (skips groups to avoid recursive nests).
+      if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+        e.preventDefault();
+        const state = useFlowStore.getState();
+        const sel = state.nodes.filter((n) => n.selected && n.type !== "group");
+        if (sel.length > 0) {
+          // Stagger duplicate IDs across multiple selections so they don't collide.
+          sel.forEach((n, i) => setTimeout(() => state.duplicateNode(n.id), i * 4));
+          state.markDirty();
+        }
+        return;
+      }
+      // Ctrl/Cmd + A → select all nodes via React Flow's own change pipeline
+      // so undo/redo and dirty tracking stay coherent.
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        const state = useFlowStore.getState();
+        const changes = state.nodes
+          .filter((n) => !n.selected)
+          .map((n) => ({ id: n.id, type: "select", selected: true }));
+        if (changes.length > 0) state.onNodesChange(changes);
+        return;
+      }
+      // Arrow keys → nudge selection (8px, +shift = 32px). Routed through
+      // `onNodesChange` so React Flow's internal selection model + the
+      // store's history stack pick up the move.
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        const state = useFlowStore.getState();
+        const sel = state.nodes.filter((n) => n.selected);
+        if (sel.length === 0) return;
+        e.preventDefault();
+        const step = e.shiftKey ? 32 : 8;
+        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        const changes = sel.map((n) => ({
+          id: n.id,
+          type: "position",
+          position: { x: n.position.x + dx, y: n.position.y + dy },
+          // `dragging: false` tells React Flow this is a committed move (not
+          // a live drag) so it's a single undoable entry.
+          dragging: false,
+        }));
+        state.onNodesChange(changes);
+        state.markDirty();
+        return;
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [currentFlowId, currentFlowName, nodes, edges, groupSelection, ungroupSelection]);
+  }, []);
 
   const handleSave = useCallback(async () => {
+    if (nodes.length === 0) return;
+    // Drop any rapid duplicate Cmd+S spam while a save is already in flight.
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
     setSaving(true);
     try {
       const body = { name: currentFlowName, nodes, edges };
@@ -276,11 +497,20 @@ function FlowCanvas({ flowId, embedded = false }) {
         const data = await res.json();
         if (data.flow) setCurrentFlow(data.flow);
       }
-      markClean();
-      loadFlowList();
+      if (res?.ok) {
+        markClean();
+        setLastSavedAt(Date.now());
+        // Once the flow lives on the server we no longer need the local draft.
+        try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+        setDraftAvailable(false);
+        loadFlowList();
+      }
     } catch { /* ignore */ }
-    finally { setSaving(false); }
-  }, [currentFlowId, currentFlowName, nodes, edges]);
+    finally {
+      isSavingRef.current = false;
+      setSaving(false);
+    }
+  }, [currentFlowId, currentFlowName, nodes, edges, loadFlowList, markClean, setCurrentFlow]);
 
   const handleNew = useCallback(() => {
     setCurrentFlow({ id: null, name: "Untitled Flow", nodes: [], edges: [] });
@@ -304,29 +534,318 @@ function FlowCanvas({ flowId, embedded = false }) {
     loadFlowList();
   }, [currentFlowId]);
 
-  const handleLoadTemplate = useCallback((template) => {
+  const handleRun = useCallback(async () => {
+    // Synchronous lock — set BEFORE any await so a second `Cmd+Enter`
+    // that arrives during the fetch can't slip past. The runStatus check
+    // catches the post-run state; this catches the pre-run race window.
+    if (isStartingRunRef.current) return;
+    // Always read runStatus through the live store so the keyboard
+    // handler's ref-based call (or any other invoker) can't see a stale
+    // closure snapshot.
+    const liveStatus = useFlowStore.getState().runStatus;
+    if (liveStatus === "running" || liveStatus === "pending") return;
+    if (nodes.length === 0) return;
+    if (hasCycle) {
+      setConnectionToast({
+        message: "Graph has a cycle — break the loop before running.",
+        kind: "error",
+        id: Date.now(),
+      });
+      return;
+    }
+    isStartingRunRef.current = true;
+    let started = false;
+    try {
+      if (!currentFlowId) {
+        await handleSave();
+        await new Promise(r => setTimeout(r, 300));
+      }
+      const fid = useFlowStore.getState().currentFlowId;
+      if (!fid) return;
+      const res = await fetch(`/api/flows/${fid}/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeader() },
+      });
+      const data = await res.json();
+      if (data.runId) {
+        started = true;
+        startRun(data.runId);
+        setRightPanelTab("execution");
+      }
+    } finally {
+      // Release the lock on bail-out / failure. If a run actually started
+      // we keep the lock latched — the runStatus terminal-state effect
+      // below will release it once the run completes / fails / cancels.
+      if (!started) isStartingRunRef.current = false;
+    }
+  }, [currentFlowId, nodes, edges, hasCycle, handleSave, startRun, setRightPanelTab]);
+
+  // Release the in-flight run lock once the run reaches a terminal state
+  // (or the run id is cleared). Keeps `handleRun` ready for the next click.
+  useEffect(() => {
+    if (
+      runStatus === null ||
+      runStatus === "completed" ||
+      runStatus === "failed" ||
+      runStatus === "cancelled"
+    ) {
+      isStartingRunRef.current = false;
+    }
+  }, [runStatus]);
+
+  // Drop a node at the visible canvas center — used by NodePalette's
+  // "click to add" affordance when the user can't or doesn't want to drag.
+  const handleAddNodeAtCenter = useCallback((type) => {
+    const registry = useFlowStore.getState().nodeTypes;
+    const def = registry.find((t) => t.type === type);
+    if (!def) return;
+    // Use the centre of the viewport so the node lands somewhere visible
+    // (vs always at world-origin which can be off-screen after panning).
+    const center = screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    });
+    // Random jitter so repeated clicks stack diagonally instead of on top
+    // of each other.
+    const jitter = (useFlowStore.getState().nodes.filter((n) => n.type === type).length % 8) * 24;
+    const newNode = {
+      id: `${type}-${Date.now()}`,
+      type,
+      position: { x: center.x + jitter, y: center.y + jitter },
+      width: 260,
+      height: 180,
+      style: { width: 260, height: 180 },
+      data: { ...(def?.defaultData || {}), label: def?.label || type },
+    };
+    addNode(newNode);
+    markDirty();
+  }, [addNode, markDirty, screenToFlowPosition]);
+
+  // Drop a full template onto the canvas (used by the empty-state tiles).
+  const handleApplyTemplate = useCallback((template) => {
     setCurrentFlow({ id: null, name: template.name, nodes: template.nodes, edges: template.edges });
     resetRun();
     markDirty();
-  }, [setCurrentFlow, resetRun]);
+    // Templates re-use ids like "image-input-1". Re-stamp them so a user who
+    // pastes the same template twice doesn't get duplicate React Flow node
+    // ids (which silently break edge attachment).
+    setTimeout(() => {
+      const stamp = Date.now().toString(36);
+      const idMap = new Map();
+      const next = useFlowStore.getState().nodes.map((n) => {
+        const newId = `${n.id}-${stamp}`;
+        idMap.set(n.id, newId);
+        return { ...n, id: newId };
+      });
+      const nextEdges = useFlowStore.getState().edges.map((e) => ({
+        ...e,
+        id: `e-${idMap.get(e.source) || e.source}-${idMap.get(e.target) || e.target}-${stamp}`,
+        source: idMap.get(e.source) || e.source,
+        target: idMap.get(e.target) || e.target,
+      }));
+      useFlowStore.setState({ nodes: next, edges: nextEdges });
+    }, 16);
+  }, [setCurrentFlow, resetRun, markDirty]);
 
-  const handleRun = useCallback(async () => {
-    if (!currentFlowId) {
-      await handleSave();
-      await new Promise(r => setTimeout(r, 300));
+  // ── Connection feedback toast ────────────────────────────────────────
+  // React Flow fires `onConnectEnd` with `connectionState.isValid` when the
+  // user releases a wire. If the pointer is on an incompatible handle we
+  // surface a quick, dismissible toast so the user knows *why* nothing
+  // connected — instead of silently dropping the connection.
+  const handleConnectEnd = useCallback((_evt, connectionState) => {
+    if (!connectionState) return;
+    if (connectionState.isValid) return;
+    if (!connectionState.toNode || !connectionState.toHandle) return;
+    // Same direction (output→output or input→input) — React Flow rejects
+    // these silently. Surface a quiet, short toast so the user understands
+    // why the wire disappeared instead of blaming themselves.
+    const fromDir = connectionState.fromHandle?.type;
+    const toDir = connectionState.toHandle?.type;
+    if (fromDir && toDir && fromDir === toDir) {
+      setConnectionToast({
+        message: fromDir === "source"
+          ? "Outputs can only connect to inputs."
+          : "Inputs can only connect to outputs.",
+        kind: "warn",
+        id: Date.now(),
+        // Shorter dwell — this is a recoverable, low-stakes mistake.
+        dwellMs: 1500,
+      });
+      return;
     }
-    const fid = useFlowStore.getState().currentFlowId;
-    if (!fid) return;
-    const res = await fetch(`/api/flows/${fid}/run`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader() },
+    // Resolve the data types involved for a friendlier message on
+    // direction-correct-but-type-mismatched rejections.
+    const srcReg = nodeTypes.find((t) => t.type === connectionState.fromNode?.type);
+    const tgtReg = nodeTypes.find((t) => t.type === connectionState.toNode?.type);
+    const srcPort = srcReg?.outputs?.find((p) => p.id === connectionState.fromHandle?.id);
+    const tgtPort = tgtReg?.inputs?.find((p) => p.id === connectionState.toHandle?.id);
+    const srcType = srcPort?.type || "any";
+    const tgtType = tgtPort?.type || "any";
+    if (srcType === tgtType) return; // unknown failure mode — skip quietly
+    setConnectionToast({
+      message: `${tgtReg?.label || "Target"} expects ${tgtType}, got ${srcType}.`,
+      kind: "warn",
+      id: Date.now(),
     });
-    const data = await res.json();
-    if (data.runId) {
-      startRun(data.runId);
-      setRightPanelTab("execution");
-    }
-  }, [currentFlowId, nodes]);
+  }, [nodeTypes]);
+
+  // Auto-dismiss the connection toast. Per-toast `dwellMs` (set by
+  // `handleConnectEnd` for the quieter direction-mismatch variant) overrides
+  // the 3.5 s default.
+  useEffect(() => {
+    if (!connectionToast) return;
+    if (connectionToastTimer.current) clearTimeout(connectionToastTimer.current);
+    const dwell = connectionToast.dwellMs || 3500;
+    connectionToastTimer.current = setTimeout(() => setConnectionToast(null), dwell);
+    return () => { if (connectionToastTimer.current) clearTimeout(connectionToastTimer.current); };
+  }, [connectionToast]);
+
+  // ── Auto-save (every 30 s while dirty) ────────────────────────────────
+  // Saved flows hit the backend; unsaved (no id) snapshot to localStorage so
+  // a refresh / accidental close doesn't lose work. We never invent a
+  // backend route — this is a pure client-side safety net.
+  useEffect(() => {
+    if (!isDirty) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      if (currentFlowId) {
+        if (nodes.length > 0) handleSave();
+      } else if (nodes.length > 0) {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify({
+            name: currentFlowName,
+            nodes,
+            edges,
+            savedAt: Date.now(),
+          }));
+          setLastSavedAt(Date.now());
+          setDraftAvailable(true);
+          // The user's work is now durable locally — treat the canvas as
+          // clean so the dirty-dot clears and "Saved at HH:mm:ss" shows.
+          // If they edit again, `markDirty` from the edit re-flips it.
+          markClean();
+        } catch { /* quota — ignore */ }
+      }
+    }, 30_000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [isDirty, currentFlowId, currentFlowName, nodes, edges, handleSave, markClean]);
+
+  // Detect an existing draft on mount so we can surface a one-click restore.
+  useEffect(() => {
+    if (currentFlowId) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.nodes?.length) setDraftAvailable(true);
+      }
+    } catch { /* ignore */ }
+  }, [currentFlowId]);
+
+  const handleRestoreDraft = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.nodes?.length) return;
+      setCurrentFlow({
+        id: null,
+        name: parsed.name || "Restored draft",
+        nodes: parsed.nodes,
+        edges: parsed.edges || [],
+      });
+      resetRun();
+      markDirty();
+      setDraftAvailable(false);
+    } catch { /* ignore */ }
+  }, [setCurrentFlow, resetRun, markDirty]);
+
+  const handleDiscardDraft = useCallback(() => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    setDraftAvailable(false);
+  }, []);
+
+  // Warn before unload while there are unsaved changes.
+  useEffect(() => {
+    if (!isDirty) return;
+    const before = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+    window.addEventListener("beforeunload", before);
+    return () => window.removeEventListener("beforeunload", before);
+  }, [isDirty]);
+
+  // Small-viewport guard. Flows is a complex spatial UI; on phones we
+  // surface a clear "open on desktop" message rather than degrading.
+  useEffect(() => {
+    const check = () => setViewportTooSmall(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // ── Cheatsheet focus management ──────────────────────────────────────
+  // On open: focus the close button + remember the previously-focused
+  // element. On Tab/Shift+Tab: cycle within the dialog. On close: restore
+  // focus to whatever opened it (the `?` key or the toolbar button).
+  useEffect(() => {
+    if (!showShortcuts) return;
+    const previouslyFocused = shortcutsTriggerRef.current || document.activeElement;
+    const rafId = requestAnimationFrame(() => shortcutsCloseBtnRef.current?.focus());
+    const trap = (e) => {
+      if (e.key !== "Tab") return;
+      const root = shortcutsDialogRef.current;
+      if (!root) return;
+      const focusables = root.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !root.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !root.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", trap);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("keydown", trap);
+      try { previouslyFocused && typeof previouslyFocused.focus === "function" && previouslyFocused.focus(); }
+      catch { /* element may have unmounted */ }
+    };
+  }, [showShortcuts]);
+
+  // ── Viewport-guard focus management ──────────────────────────────────
+  // The mobile alertdialog has a single action (Back to dashboard); we
+  // focus it on open and Tab-trap on it so a screen reader / keyboard
+  // user can't blunder into the hidden canvas behind the overlay.
+  useEffect(() => {
+    if (!viewportTooSmall || embedded) return;
+    const previouslyFocused = document.activeElement;
+    const rafId = requestAnimationFrame(() => viewportCloseBtnRef.current?.focus());
+    const trap = (e) => {
+      if (e.key !== "Tab") return;
+      const root = viewportDialogRef.current;
+      if (!root) return;
+      // Single focusable target — just pin focus on it.
+      e.preventDefault();
+      viewportCloseBtnRef.current?.focus();
+    };
+    window.addEventListener("keydown", trap);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("keydown", trap);
+      try { previouslyFocused && typeof previouslyFocused.focus === "function" && previouslyFocused.focus(); }
+      catch { /* ignore */ }
+    };
+  }, [viewportTooSmall, embedded]);
 
   const handleCancel = useCallback(async () => {
     if (!currentRunId) return;
@@ -378,7 +897,7 @@ function FlowCanvas({ flowId, embedded = false }) {
             </span>
           </div>
         </div>
-        <NodePalette />
+        <NodePalette onClickAdd={handleAddNodeAtCenter} />
       </div>
 
       {/* ── Canvas area ── */}
@@ -443,23 +962,31 @@ function FlowCanvas({ flowId, embedded = false }) {
               style={{ fontFamily: "var(--font-sans)" }}
             />
           ) : (
-            <button
-              onClick={() => setEditingName(true)}
-              className="flex items-center gap-2 hover:bg-white/[0.03] rounded-md px-2 py-1.5 group max-w-xs"
-              title="Click to rename"
-            >
-              <span className="text-[12px] font-medium text-white/85 truncate">{currentFlowName}</span>
-              {isDirty && (
-                <span
-                  className="w-1 h-1 rounded-full flex-shrink-0"
-                  style={{ background: "#f59e0b", boxShadow: "0 0 4px rgba(245,158,11,0.6)" }}
-                  title="Unsaved changes"
-                />
-              )}
-            </button>
-          )}
+          <button
+            onClick={() => setEditingName(true)}
+            className="flex items-center gap-2 hover:bg-white/[0.03] rounded-md px-2 py-1.5 group max-w-xs"
+            title="Click to rename"
+          >
+            <span className="text-[12px] font-medium text-white/85 truncate">{currentFlowName}</span>
+            {isDirty ? (
+              <span
+                className="w-1 h-1 rounded-full flex-shrink-0"
+                style={{ background: "#f59e0b", boxShadow: "0 0 4px rgba(245,158,11,0.6)" }}
+                title="Unsaved changes"
+              />
+            ) : lastSavedAt ? (
+              <span
+                className="hidden lg:inline text-[9px] text-white/30 tabular-nums"
+                style={{ fontFamily: "var(--font-mono)" }}
+                title={`Last saved ${formatClockTime(lastSavedAt)}`}
+              >
+                ✓ {formatClockTime(lastSavedAt)}
+              </span>
+            ) : null}
+          </button>
+        )}
 
-          <div className="flex-1" />
+        <div className="flex-1" />
 
           {/* Tech metrics — glass chip */}
           <div
@@ -600,7 +1127,7 @@ function FlowCanvas({ flowId, embedded = false }) {
           {/* Run */}
           <button
             onClick={handleRun}
-            disabled={nodes.length === 0 || isRunning}
+            disabled={nodes.length === 0 || isRunning || hasCycle}
             className="relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-[10px] font-bold tracking-[0.08em]
               transition-all disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden"
             style={{
@@ -613,10 +1140,33 @@ function FlowCanvas({ flowId, embedded = false }) {
                 ? "0 0 18px rgba(96,165,250,0.45), inset 0 1px 0 0 rgba(255,255,255,0.15)"
                 : "0 4px 14px -4px rgba(124,58,237,0.55), inset 0 1px 0 0 rgba(255,255,255,0.15)",
             }}
+            title={
+              hasCycle
+                ? "Graph has a cycle — break the loop before running"
+                : nodes.length === 0
+                ? "Add at least one node first"
+                : "Run flow (Ctrl/⌘+Enter)"
+            }
           >
             {isRunning
               ? <><Loader2 size={11} className="animate-spin" strokeWidth={2.4} /> RUNNING</>
               : <><Play size={10} fill="currentColor" strokeWidth={0} /> EXECUTE</>}
+          </button>
+
+          {/* Shortcut hint — opens the cheatsheet overlay. `tap-target-min`
+              guarantees a 44×44 hit area per WCAG 2.5.5; visually the icon
+              stays small (flex-centered). */}
+          <button
+            onClick={(e) => {
+              // Remember the trigger so the dialog can restore focus on close.
+              shortcutsTriggerRef.current = e.currentTarget;
+              setShowShortcuts((v) => !v);
+            }}
+            className="tap-target-min rounded-md hover:bg-white/[0.05] text-white/35 hover:text-white/75 transition-colors flex-shrink-0"
+            title="Keyboard shortcuts (?)"
+            aria-label="Show keyboard shortcuts"
+          >
+            <Keyboard size={13} strokeWidth={1.8} />
           </button>
 
           <button
@@ -668,6 +1218,7 @@ function FlowCanvas({ flowId, embedded = false }) {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onConnectEnd={handleConnectEnd}
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={NODE_TYPE_MAP}
@@ -731,38 +1282,43 @@ function FlowCanvas({ flowId, embedded = false }) {
               }}
             />
 
-            {/* Live debug badge — shows how many edges are in state right
-                now. If you connect two nodes and this increments but no
-                wire appears, the bug is in the edge RENDERER. If it stays
-                at 0, the bug is in the CONNECT handler. Remove once fixed. */}
-            <Panel position="top-left" className="pointer-events-none">
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 10,
-                  padding: "5px 10px",
-                  borderRadius: 8,
-                  background: "rgba(20,20,30,0.55)",
-                  backdropFilter: "blur(14px) saturate(160%)",
-                  WebkitBackdropFilter: "blur(14px) saturate(160%)",
-                  color: "#c4b5fd",
-                  border: "1px solid rgba(167,139,250,0.4)",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  boxShadow:
-                    "inset 0 1px 0 0 rgba(255,255,255,0.08), 0 6px 18px -8px rgba(124,58,237,0.35)",
-                }}
-              >
-                edges: {edges.length} · nodes: {nodes.length}
-              </div>
-            </Panel>
+            {/* Cycle warning badge — only shown when a cycle exists, so the
+                user can see WHY the Run button is disabled without hunting
+                through tooltips. */}
+            {hasCycle && (
+              <Panel position="top-left">
+                <div
+                  className="flex items-center gap-2"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    background: "rgba(120,30,30,0.55)",
+                    backdropFilter: "blur(14px) saturate(160%)",
+                    WebkitBackdropFilter: "blur(14px) saturate(160%)",
+                    color: "#fecaca",
+                    border: "1px solid rgba(248,113,113,0.45)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    boxShadow:
+                      "inset 0 1px 0 0 rgba(255,255,255,0.06), 0 6px 18px -8px rgba(127,29,29,0.35)",
+                  }}
+                >
+                  <AlertTriangle size={10} strokeWidth={2.2} />
+                  cycle detected · run blocked
+                </div>
+              </Panel>
+            )}
 
-            {/* Empty state */}
+            {/* Empty state — interactive template gallery so a new user
+                doesn't stare at a blank canvas. Drag-from-palette is still
+                the primary mental model; templates are the shortcut. */}
             {nodes.length === 0 && (
-              <Panel position="top-center" className="pointer-events-none">
-                <div className="mt-32 flex flex-col items-center gap-4 text-center">
+              <Panel position="top-center" className="!pointer-events-auto">
+                <div className="mt-16 flex flex-col items-center gap-6 text-center max-w-[640px] px-4">
                   <div
-                    className="w-20 h-20 rounded-2xl flex items-center justify-center relative"
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center relative"
                     style={{
                       background:
                         "linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(124,58,237,0.06) 100%)",
@@ -773,7 +1329,7 @@ function FlowCanvas({ flowId, embedded = false }) {
                         "0 16px 40px -16px rgba(124,58,237,0.55), inset 0 1px 0 0 rgba(255,255,255,0.1)",
                     }}
                   >
-                    <GitBranch size={28} className="text-white/20" strokeWidth={1.4} />
+                    <GitBranch size={22} className="text-white/25" strokeWidth={1.4} />
                     <div
                       className="absolute -inset-2 rounded-3xl opacity-40 -z-10"
                       style={{ background: "radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%)" }}
@@ -781,7 +1337,7 @@ function FlowCanvas({ flowId, embedded = false }) {
                   </div>
                   <div className="space-y-1.5">
                     <h2
-                      className="text-[24px] font-bold tracking-[-0.02em]"
+                      className="text-[22px] font-bold tracking-[-0.02em]"
                       style={{
                         fontFamily: "var(--font-syne)",
                         background: "linear-gradient(135deg, #fff 0%, rgba(167,139,250,0.7) 100%)",
@@ -789,15 +1345,122 @@ function FlowCanvas({ flowId, embedded = false }) {
                         WebkitTextFillColor: "transparent",
                       }}
                     >
-                      Compose your pipeline
+                      Start in one click
                     </h2>
                     <p
-                      className="text-[11px] text-white/35 tracking-[0.05em]"
+                      className="text-[11px] text-white/40 tracking-[0.05em]"
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
-                      drag nodes from the palette · or pick a template ↗
+                      pick a starter · drag from the palette · or click a node to drop it
                     </p>
                   </div>
+
+                  {/* Template tiles */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
+                    {FLOW_TEMPLATES.slice(0, 4).map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => handleApplyTemplate(t)}
+                        className="group/tpl text-left rounded-xl p-3 transition-all duration-200
+                          hover:scale-[1.02] hover:border-violet-400/55 focus:outline-none focus:ring-2 focus:ring-violet-400/45"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(167,139,250,0.10) 0%, rgba(255,255,255,0.03) 100%)",
+                          border: "1px solid rgba(255,255,255,0.14)",
+                          backdropFilter: "blur(14px)",
+                          WebkitBackdropFilter: "blur(14px)",
+                          boxShadow: "inset 0 1px 0 0 rgba(255,255,255,0.06), 0 8px 22px -10px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-8 h-8 rounded-md bg-violet-500/10 border border-violet-400/20 flex items-center justify-center flex-shrink-0">
+                            <Layers size={13} className="text-violet-300/90" strokeWidth={1.8} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-[11px] font-semibold text-white/90 truncate">
+                                {t.name}
+                              </span>
+                              <span
+                                className="text-[8px] text-white/40 flex-shrink-0"
+                                style={{ fontFamily: "var(--font-mono)" }}
+                              >
+                                {t.nodes.length}n · {t.edges.length}e
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-white/45 leading-snug line-clamp-2 text-left">
+                              {t.description}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Restore-draft inline action */}
+                  {draftAvailable && (
+                    <div
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                      style={{
+                        background: "rgba(245,158,11,0.08)",
+                        border: "1px solid rgba(245,158,11,0.28)",
+                      }}
+                    >
+                      <Sparkles size={11} className="text-amber-300" strokeWidth={2} />
+                      <span className="text-[10px] text-amber-100/90" style={{ fontFamily: "var(--font-mono)" }}>
+                        unsaved draft available
+                      </span>
+                      <button
+                        onClick={handleRestoreDraft}
+                        className="ml-1 text-[10px] font-semibold text-amber-200 hover:text-white px-2 py-0.5 rounded
+                          border border-amber-400/35 hover:border-amber-300/55 bg-amber-500/10 hover:bg-amber-500/20"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        restore
+                      </button>
+                      <button
+                        onClick={handleDiscardDraft}
+                        className="text-[10px] text-amber-200/60 hover:text-amber-200 px-1.5 py-0.5"
+                        style={{ fontFamily: "var(--font-mono)" }}
+                        aria-label="Discard draft"
+                      >
+                        discard
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Panel>
+            )}
+
+            {/* Connection feedback toast (top-center) */}
+            {connectionToast && (
+              <Panel position="top-center" className="!pointer-events-auto mt-2">
+                <div
+                  role="status"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    background:
+                      connectionToast.kind === "error"
+                        ? "rgba(120,30,30,0.7)"
+                        : "rgba(120,80,30,0.7)",
+                    border: `1px solid ${connectionToast.kind === "error" ? "rgba(248,113,113,0.5)" : "rgba(251,191,36,0.5)"}`,
+                    color: connectionToast.kind === "error" ? "#fecaca" : "#fde68a",
+                    backdropFilter: "blur(14px) saturate(160%)",
+                    WebkitBackdropFilter: "blur(14px) saturate(160%)",
+                    boxShadow: "0 8px 24px -8px rgba(0,0,0,0.55)",
+                  }}
+                >
+                  <AlertTriangle size={10} strokeWidth={2.2} />
+                  <span>{connectionToast.message}</span>
+                  <button
+                    onClick={() => setConnectionToast(null)}
+                    className="tap-target-min ml-1 opacity-60 hover:opacity-100 transition-opacity rounded"
+                    aria-label="Dismiss connection toast"
+                  >
+                    <X size={9} strokeWidth={2.4} />
+                  </button>
                 </div>
               </Panel>
             )}
@@ -866,14 +1529,162 @@ function FlowCanvas({ flowId, embedded = false }) {
               onLoadFlow={handleLoadFlow}
               onNewFlow={handleNew}
               onDeleteFlow={handleDeleteFlow}
-              onLoadTemplate={handleLoadTemplate}
+              onLoadTemplate={handleApplyTemplate}
               loading={libLoading}
             />
           ) : (
-            <ExecutionPanel onRun={handleRun} onCancel={handleCancel} creditEstimate={creditEstimate} />
+            <ExecutionPanel
+              onRun={handleRun}
+              onCancel={handleCancel}
+              creditEstimate={creditEstimate}
+              hasCycle={hasCycle}
+              onFocusNode={(nodeId) => {
+                const node = useFlowStore.getState().nodes.find((n) => n.id === nodeId);
+                if (!node) return;
+                const w = node.width || node.style?.width || 240;
+                const h = node.height || node.style?.height || 160;
+                setCenter(node.position.x + w / 2, node.position.y + h / 2, { duration: 400, zoom: 1.1 });
+                // Mark only that node selected so the canvas highlights it
+                useFlowStore.setState({
+                  nodes: useFlowStore.getState().nodes.map((n) => ({ ...n, selected: n.id === nodeId })),
+                });
+              }}
+            />
           )}
         </div>
       </div>
+
+      {/* ── Shortcut cheatsheet overlay ─────────────────────────────── */}
+      {showShortcuts && (
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{
+            background: "rgba(0,0,0,0.55)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            zIndex: "var(--z-modal, 60)",
+          }}
+          onClick={() => setShowShortcuts(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Keyboard shortcuts"
+        >
+          <div
+            ref={shortcutsDialogRef}
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-md w-full rounded-2xl p-5"
+            style={{
+              background: "linear-gradient(180deg, rgba(28,28,40,0.96) 0%, rgba(14,14,20,0.96) 100%)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              boxShadow: "0 22px 60px -18px rgba(0,0,0,0.7), inset 0 1px 0 0 rgba(255,255,255,0.08)",
+            }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Keyboard size={14} className="text-violet-300" strokeWidth={1.8} />
+                <h3 className="text-[13px] font-semibold text-white/90" style={{ fontFamily: "var(--font-syne)" }}>
+                  Keyboard shortcuts
+                </h3>
+              </div>
+              <button
+                ref={shortcutsCloseBtnRef}
+                onClick={() => setShowShortcuts(false)}
+                className="p-1 rounded hover:bg-white/[0.06] text-white/40 hover:text-white/80 transition-colors tap-target-min"
+                aria-label="Close shortcuts"
+              >
+                <X size={14} strokeWidth={1.8} />
+              </button>
+            </div>
+
+            <div className="space-y-3" style={{ fontFamily: "var(--font-mono)" }}>
+              {[
+                ["Run flow",            ["Ctrl/⌘", "Enter"]],
+                ["Save",                ["Ctrl/⌘", "S"]],
+                ["Undo / Redo",         ["Ctrl/⌘", "Z / Shift+Z"]],
+                ["Duplicate selected",  ["Ctrl/⌘", "D"]],
+                ["Select all",          ["Ctrl/⌘", "A"]],
+                ["Group / Ungroup",     ["Ctrl/⌘", "G / Shift+G"]],
+                ["Delete selection",    ["Delete or Backspace"]],
+                ["Nudge selection 8px", ["Arrow keys"]],
+                ["Nudge selection 32px",["Shift + Arrow keys"]],
+                ["Close popovers",      ["Esc"]],
+                ["This panel",          ["?"]],
+              ].map(([label, keys]) => (
+                <div key={label} className="flex items-center justify-between gap-3">
+                  <span className="text-[10.5px] text-white/70" style={{ fontFamily: "var(--font-sans)" }}>
+                    {label}
+                  </span>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {keys.map((k) => (
+                      <kbd
+                        key={k}
+                        className="px-1.5 py-0.5 rounded text-[9px] text-white/70 border border-white/15 bg-white/[0.05]"
+                      >
+                        {k}
+                      </kbd>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-4 text-[9.5px] text-white/35 leading-snug" style={{ fontFamily: "var(--font-mono)" }}>
+              Tip: typing in an input or textarea suspends most shortcuts so you can type freely.<br />
+              Right-click any node for quick actions (Duplicate · Collapse · Delete).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile / small-viewport guard ───────────────────────────── */}
+      {viewportTooSmall && !embedded && (
+        <div
+          ref={viewportDialogRef}
+          className="fixed inset-0 flex items-center justify-center p-6"
+          style={{
+            background: "rgba(6,6,10,0.94)",
+            backdropFilter: "blur(10px)",
+            zIndex: "var(--z-popover, 70)",
+          }}
+          role="alertdialog"
+          aria-modal="true"
+          aria-label="Flows needs a larger screen"
+        >
+          <div
+            className="max-w-xs w-full rounded-2xl p-6 text-center"
+            style={{
+              background: "linear-gradient(180deg, rgba(28,28,40,0.96) 0%, rgba(14,14,20,0.96) 100%)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              boxShadow: "0 22px 60px -18px rgba(0,0,0,0.7)",
+            }}
+          >
+            <div
+              className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
+              style={{
+                background: "linear-gradient(135deg, rgba(167,139,250,0.18) 0%, rgba(124,58,237,0.06) 100%)",
+                border: "1px solid rgba(255,255,255,0.18)",
+              }}
+            >
+              <Smartphone size={20} className="text-violet-300/90" strokeWidth={1.6} />
+            </div>
+            <h3 className="text-[14px] font-semibold text-white/95 mb-1" style={{ fontFamily: "var(--font-syne)" }}>
+              Flows needs a larger screen
+            </h3>
+            <p className="text-[11px] text-white/55 leading-relaxed mb-4">
+              The canvas is designed for desktop and tablet. Open this page on a wider device to build and run flows.
+            </p>
+            <button
+              ref={viewportCloseBtnRef}
+              onClick={() => navigate("/dashboard")}
+              className="w-full py-2 rounded-md text-[11px] font-semibold text-white/85 hover:text-white tap-target-min
+                bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.18] transition-colors"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              BACK TO DASHBOARD
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

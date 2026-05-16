@@ -1,6 +1,14 @@
 /**
  * NodePalette — refined left rail. Categorized, searchable, drag-source.
  * Each entry uses a real lucide icon (no emojis) tinted by its category.
+ *
+ * Two ways to add a node to the canvas:
+ *   1. Drag the row onto the canvas (precision drop, original UX).
+ *   2. Click the row — the parent's `onClickAdd(type)` drops the node at
+ *      the visible centre of the viewport. Mirrors the affordance offered
+ *      by every modern node editor (Figma, Blender, Comfy) and makes the
+ *      palette usable on trackpads / accessibility setups where dragging
+ *      a 24-px tile across the screen is painful.
  */
 
 import { useState } from "react";
@@ -8,6 +16,7 @@ import {
   Search,
   ChevronDown,
   ChevronRight,
+  Plus,
   Image as ImageIcon,
   Type,
   User,
@@ -71,18 +80,29 @@ const NODE_ICONS = {
   "merge-outputs":      Shuffle,
 };
 
-export function NodePalette() {
+export function NodePalette({ onClickAdd }) {
   const nodeTypes = useFlowStore((s) => s.nodeTypes);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState({});
 
-  const filtered = nodeTypes.filter(
-    (t) =>
-      !t.hidden &&
-      (!search ||
-        t.label.toLowerCase().includes(search.toLowerCase()) ||
-        t.description.toLowerCase().includes(search.toLowerCase()))
-  );
+  // Search matches against label, description, type-id, and category — so
+  // typing "video", "nsfw", "face", "img" all surface the right tools.
+  const q = search.trim().toLowerCase();
+  const filtered = nodeTypes.filter((t) => {
+    if (t.hidden) return false;
+    if (!q) return true;
+    const hay = [
+      t.label,
+      t.description,
+      t.type,
+      t.category,
+      ...(Array.isArray(t.tags) ? t.tags : []),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return hay.includes(q);
+  });
 
   const grouped = {};
   for (const t of filtered) {
@@ -93,6 +113,12 @@ export function NodePalette() {
   const onDragStart = (e, type) => {
     e.dataTransfer.setData("application/flow-node-type", type);
     e.dataTransfer.effectAllowed = "copy";
+  };
+
+  const handleClickRow = (e, type) => {
+    // Only treat as click-to-add when the user isn't actually dragging
+    if (!onClickAdd) return;
+    onClickAdd(type);
   };
 
   const toggleCategory = (cat) =>
@@ -176,16 +202,30 @@ export function NodePalette() {
                 <div className="px-1.5 space-y-[2px]">
                   {items.map((node) => {
                     const Icon = NODE_ICONS[node.type] || Layers;
+                    const fullTooltip = node.description
+                      ? `${node.label} — ${node.description}\nClick to drop at canvas centre · Drag for precise placement`
+                      : `${node.label}\nClick to drop · Drag for precise placement`;
                     return (
                       <div
                         key={node.type}
                         draggable
                         onDragStart={(e) => onDragStart(e, node.type)}
+                        onClick={(e) => handleClickRow(e, node.type)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onClickAdd?.(node.type);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Add ${node.label} node${node.creditCost ? ` (${node.creditCost} credits)` : ""}`}
                         className="group/node relative flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-grab active:cursor-grabbing
-                          border border-transparent transition-all duration-150
+                          border border-transparent transition-all duration-150 outline-none
                           hover:bg-white/[0.10] hover:border-white/[0.22]
+                          focus-visible:bg-white/[0.10] focus-visible:border-violet-400/45
                           hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]"
-                        title={node.description}
+                        title={fullTooltip}
                       >
                         {/* Icon tile (frosted) */}
                         <div
@@ -213,12 +253,18 @@ export function NodePalette() {
                           )}
                         </div>
 
-                        {/* Drag indicator dots */}
-                        <div className="opacity-0 group-hover/node:opacity-50 transition-opacity flex flex-col gap-0.5">
-                          <span className="w-0.5 h-0.5 rounded-full bg-white/40" />
-                          <span className="w-0.5 h-0.5 rounded-full bg-white/40" />
-                          <span className="w-0.5 h-0.5 rounded-full bg-white/40" />
-                        </div>
+                        {/* Click-to-add affordance — fades in on hover so the
+                            drag-handle dots aren't competing for attention */}
+                        <span
+                          className="opacity-0 group-hover/node:opacity-90 transition-opacity flex-shrink-0 w-4 h-4 rounded-md flex items-center justify-center"
+                          style={{
+                            background: "rgba(167,139,250,0.18)",
+                            border: "1px solid rgba(167,139,250,0.4)",
+                          }}
+                          aria-hidden="true"
+                        >
+                          <Plus size={9} className="text-violet-200" strokeWidth={2.2} />
+                        </span>
                       </div>
                     );
                   })}
@@ -238,15 +284,27 @@ export function NodePalette() {
       </div>
 
       {/* Footer hint */}
-      <div className="px-3 py-2.5 border-t border-white/[0.05] flex items-center gap-1.5">
+      <div className="px-3 py-2.5 border-t border-white/[0.05] flex items-center gap-1.5 flex-wrap">
         <kbd
-          className="px-1.5 py-0.5 rounded text-[8px] text-white/40 border border-white/10 bg-white/[0.03]"
+          className="px-1.5 py-0.5 rounded text-[8px] text-white/45 border border-white/10 bg-white/[0.03]"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          click
+        </kbd>
+        <span className="text-[9px] text-white/30" style={{ fontFamily: "var(--font-mono)" }}>
+          add
+        </span>
+        <span className="text-[9px] text-white/20" style={{ fontFamily: "var(--font-mono)" }}>
+          ·
+        </span>
+        <kbd
+          className="px-1.5 py-0.5 rounded text-[8px] text-white/45 border border-white/10 bg-white/[0.03]"
           style={{ fontFamily: "var(--font-mono)" }}
         >
           drag
         </kbd>
-        <span className="text-[9px] text-white/25" style={{ fontFamily: "var(--font-mono)" }}>
-          to canvas
+        <span className="text-[9px] text-white/30" style={{ fontFamily: "var(--font-mono)" }}>
+          place
         </span>
       </div>
     </div>
