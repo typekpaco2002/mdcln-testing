@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+﻿import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -2523,54 +2523,32 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
             )}
           </div>
 
-          {/* Floating bottom bar — desktop */}
+          {/* ── Floating prompt bar — DESKTOP ────────────────────────────────────────────── */}
           <div
-            className="hidden md:flex justify-center fixed bottom-4 right-6 z-20 pointer-events-none transition-all duration-300"
+            className="hidden md:flex justify-center fixed bottom-5 right-6 z-20 pointer-events-none transition-all duration-300"
             style={{ left: sidebarCollapsed ? "72px" : "260px" }}
           >
-            {/*
-              Spinning-border technique:
-              Outer wrapper clips the rotating gradient with overflow:hidden.
-              Inner card has solid opaque background + 2px margin to expose exactly the border strip.
-            */}
             <div
-              className="pointer-events-auto w-full max-w-4xl relative"
-              style={{ borderRadius: "1rem", overflow: "hidden", padding: 0 }}
-            >
-              {/* Rotating gradient — behind inner content via z-index 0 */}
-              <div style={{
-                position: "absolute",
-                zIndex: 0,
-                inset: 0,
-                padding: "1.5px",
-                borderRadius: "1rem",
-                background: "conic-gradient(from 0deg, transparent 300deg, rgba(255,255,255,0.06) 335deg, rgba(255,255,255,0.5) 357deg, rgba(255,255,255,0.06) 360deg)",
-                animation: "bar-spin 4s linear infinite",
-                pointerEvents: "none",
-                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-              }} />
-              {/* Inner card — glass, 1.5px inset from edge to reveal border strip */}
-            <div
-              className="relative flex flex-col items-stretch justify-center p-3 backdrop-blur-xl"
+              className="pointer-events-auto w-full max-w-[860px] rounded-2xl overflow-hidden"
               style={{
-                zIndex: 1,
-                margin: 0,
-                borderRadius: "1rem",
-                background: "var(--bg-surface)",
+                background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.72)",
+                backdropFilter: "blur(32px) saturate(180%)",
+                WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 64px -16px rgba(0,0,0,0.70)",
               }}
             >
+            <div className="relative flex flex-col items-stretch justify-center p-3">
               <textarea
                 value={prompt} onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerate(); } }}
                 placeholder={copy.promptPlaceholder}
                 rows={2}
-                className="w-full bg-transparent text-sm text-white placeholder-slate-500 resize-none outline-none px-1 py-1 leading-relaxed"
+                className="w-full bg-transparent text-[14px] text-white placeholder:text-white/30 resize-none outline-none leading-relaxed"
               />
               <div className="flex flex-col gap-3 mt-2 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Model</span>
+                  <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Model</span>
                   <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                     {IMAGE_MODELS.map((model) => (
                       <Chip key={model.id} active={imageModel === model.id} onClick={() => setImageModel(model.id)}>
@@ -2581,7 +2559,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 </div>
                 {(isIdeogramImageModel || isWanImageModel) && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Outputs</span>
+                    <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Outputs</span>
                     <div className="flex items-center gap-1.5">
                       {[1, 2, 3, 4].map((n) => (
                         <Chip key={n} active={imageNumOutputs === n} onClick={() => setImageNumOutputs(n)}>
@@ -2591,7 +2569,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     </div>
                     {isIdeogramImageModel && (
                       <>
-                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0 ml-1">Speed</span>
+                        <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0 ml-2">Speed</span>
                         <div className="flex items-center gap-1.5">
                           {["TURBO", "BALANCED", "QUALITY"].map((mode) => (
                             <Chip key={mode} active={ideogramRenderingSpeed === mode} onClick={() => setIdeogramRenderingSpeed(mode)}>
@@ -2635,12 +2613,12 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     <button
                       type="button"
                       onClick={() => setFluxPromptUpsampling((v) => !v)}
-                      className={`px-3 py-1.5 rounded-lg text-xs ${fluxPromptUpsampling ? "bg-violet-600 text-white" : "bg-white/10 text-slate-300"}`}
+                      className={""}
                     >
                       Prompt upsampling: {fluxPromptUpsampling ? "On" : "Off"}
                     </button>
                     <span
-                      className="text-[10px] text-slate-500 uppercase tracking-widest ml-2"
+                      className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0 ml-2"
                       title="Flux Kontext editing: KIE allows moderation level 0 (strict) to 2 (most permissive) only."
                     >
                       Safety
@@ -2656,7 +2634,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     <button
                       type="button"
                       onClick={() => setWanThinkingMode((v) => !v)}
-                      className={`px-3 py-2 rounded-lg text-xs ${wanThinkingMode ? "bg-violet-600 text-white" : "bg-white/10 text-slate-300"}`}
+                      className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all"}
                     >
                       Thinking mode: {wanThinkingMode ? "On" : "Off"}
                     </button>
@@ -2734,7 +2712,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 )}
                 {supportsReferenceSlots && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">{copy.refs}</span>
+                    <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">{copy.refs}</span>
                     <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                       {refs.map((url, i) => (
                         <RefSlot key={i} url={url} uploading={uploadingIdx === i}
@@ -2749,7 +2727,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     <button
                       type="button"
                       onClick={() => setGptImage2NsfwChecker((v) => !v)}
-                      className={`px-3 py-1.5 rounded-lg text-xs ${gptImage2NsfwChecker ? "bg-violet-600 text-white" : "bg-white/10 text-slate-300"}`}
+                      className={"px-3 py-1.5 rounded-lg text-xs font-medium transition-all"}
                       title="When ON, KIE filters NSFW results. When OFF, the model returns results directly without filtering."
                     >
                       NSFW filter: {gptImage2NsfwChecker ? "On" : "Off"}
@@ -2758,7 +2736,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 )}
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 min-w-0">
                   <div className="flex items-center gap-2 min-w-0 overflow-x-auto pb-1 -mx-1 px-1 [scrollbar-width:thin]">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">{copy.aspect}</span>
+                    <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">{copy.aspect}</span>
                     <div className="flex items-center gap-1 shrink-0">
                       {aspectRatioOptions.map((ar) => (
                         <Chip key={ar.value} active={aspectRatio === ar.value} onClick={() => setAspectRatio(ar.value)}>
@@ -2769,7 +2747,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                   </div>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mr-0.5">{copy.res}</span>
+                      <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">{copy.res}</span>
                       {RESOLUTIONS.map((r) => (
                         <Chip key={r} active={resolution === r} onClick={() => setResolution(r)}>{r}</Chip>
                       ))}
@@ -2778,46 +2756,36 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                       type="button"
                       onClick={handleGenerate}
                       disabled={imageGenerateDisabled}
-                      className="relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide overflow-hidden transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 min-w-[10.5rem] whitespace-nowrap"
-                      style={{
-                        background: "rgba(109,40,217,0.35)",
-                        backdropFilter: "blur(12px)",
-                        WebkitBackdropFilter: "blur(12px)",
-                        border: "1px solid rgba(139,92,246,0.5)",
-                        boxShadow: "0 0 18px rgba(109,40,217,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
-                        color: "#ffffff",
-                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
+                      style={{background:"#ffffff",color:"#0a0a0e",boxShadow:"0 2px 12px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.90)"}}
                     >
-                      <span className="absolute inset-0 pointer-events-none rounded-xl" style={{
-                        background: "linear-gradient(160deg, rgba(255,255,255,0.07) 0%, transparent 60%)",
-                      }} />
                       {isGenerating
-                        ? <Loader2 className="w-4 h-4 animate-spin relative z-10" />
-                        : <Zap className="w-4 h-4 relative z-10 shrink-0" />}
-                      <span className="relative z-10 flex items-center gap-1.5">
+                        ? <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        : <Zap className="w-4 h-4 shrink-0" />}
+                      <span className="flex items-center gap-1.5">
                         {isGenerating ? copy.buttonGenerating : (
-                          <>{formatCopy(copy.buttonGenerateCost, { cost: COST })} <Coins className="w-3.5 h-3.5 text-yellow-400 shrink-0" /></>
+                          <>{formatCopy(copy.buttonGenerateCost, { cost: COST })} <Coins className="w-3.5 h-3.5 text-amber-500 shrink-0" /></>
                         )}
                       </span>
                     </button>
                   </div>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-600 mt-1.5 text-right pr-1">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
-            </div>{/* /inner card */}
-            </div>{/* /spinning-border outer */}
-          </div>{/* /fixed positioner */}
+              <p className="text-[10px] text-white/25 mt-2 text-right pr-1">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
+            </div>
+            </div>
+          </div>
 
           {/* Mobile bar — collapsible: compact prompt + generate; expand for refs / aspect / res */}
           <div
-            className={`md:hidden fixed left-1/2 z-[35] w-[min(calc(100vw-1rem),28rem)] -translate-x-1/2 overflow-x-hidden rounded-2xl backdrop-blur-2xl p-2.5 [scrollbar-width:thin] ${
-              mobileGenBarExpanded ? "max-h-[min(78vh,640px)] overflow-y-auto" : ""
-            }`}
+            className="md:hidden fixed left-1/2 -translate-x-1/2 z-[35] w-[calc(100vw-1rem)]"
             style={{
-              background: "linear-gradient(180deg, rgba(17,24,39,0.94) 0%, rgba(11,16,28,0.94) 100%)",
-              border: "1px solid rgba(148,163,184,0.18)",
-              boxShadow: "0 24px 64px -24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
               bottom: "max(0.75rem, calc(var(--dashboard-mobile-tab-stack, calc(3.5rem + env(safe-area-inset-bottom))) + 0.625rem))",
+              borderRadius: "1.125rem", overflow: "hidden",
+              background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.80)",
+              backdropFilter: "blur(32px) saturate(180%)", WebkitBackdropFilter: "blur(32px) saturate(180%)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 20px 60px -12px rgba(0,0,0,0.80)",
             }}
           >
             <div className="flex items-stretch gap-2">
@@ -2828,7 +2796,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 aria-label={mobileGenBarExpanded ? copy.collapseGenControls : copy.expandGenControls}
                 className={`flex-shrink-0 w-11 min-h-[44px] rounded-xl border flex items-center justify-center transition-all ${
                   mobileGenBarExpanded
-                    ? "border-violet-500/40 bg-violet-500/15 text-violet-200"
+                    ? "border-white/20 bg-white/10 text-white"
                     : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]"
                 }`}
               >
@@ -2850,7 +2818,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     onClick={handleGenerate}
                     disabled={imageGenerateDisabled}
                     className="flex-shrink-0 min-w-[6.25rem] min-h-[44px] px-3 rounded-xl text-xs font-bold disabled:opacity-40 flex flex-col items-center justify-center gap-0.5 leading-tight shadow-[0_8px_20px_-6px_rgba(124,58,237,0.55)] active:scale-[0.97] transition-transform"
-                    style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" }}
+                    style={{background:"#ffffff",color:"#0a0a0e",boxShadow:"0 2px 12px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.90)"}}
                   >
                     {isGenerating ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -2876,7 +2844,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
               )}
             </div>
             {!mobileGenBarExpanded && (
-              <p className="text-[10px] text-slate-500 mt-2 text-center leading-snug px-0.5 tabular-nums">
+              <p className="text-[10px] text-white/25 mt-2 text-center tabular-nums">
                 {formatCopy(copy.creditsAvailable, { credits: creditsLeft })}
               </p>
             )}
@@ -2889,7 +2857,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 resize-none outline-none min-h-[2.5rem]" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">{copy.model || "Model"}</span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Model</span>
                   <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
                     {IMAGE_MODELS.map((model) => (
                       <Chip key={model.id} active={imageModel === model.id} onClick={() => setImageModel(model.id)}>
@@ -2900,7 +2868,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 </div>
                 {(isIdeogramImageModel || isWanImageModel) && (
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Outputs</span>
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Outputs</span>
                     <div className="flex gap-1.5">
                       {[1, 2, 3, 4].map((n) => (
                         <Chip key={n} active={imageNumOutputs === n} onClick={() => setImageNumOutputs(n)}>
@@ -2912,7 +2880,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 )}
                 {isIdeogramImageModel && (
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Speed</span>
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Speed</span>
                     <div className="flex gap-1.5">
                       {["TURBO", "BALANCED", "QUALITY"].map((mode) => (
                         <Chip key={mode} active={ideogramRenderingSpeed === mode} onClick={() => setIdeogramRenderingSpeed(mode)}>
@@ -2924,7 +2892,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 )}
                 {supportsReferenceSlots && (
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">{copy.refs}</span>
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">{copy.refs}</span>
                     <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
                       {refs.map((url, i) => (
                         <RefSlot key={i} url={url} uploading={uploadingIdx === i}
@@ -2935,7 +2903,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 )}
                 {showSingleInputUploader && (
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Input Image</span>
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Input Image</span>
                     <MediaUploadField
                       label={singleInputRequired ? "Required" : "Optional"}
                       value={imageInputUrl}
@@ -2966,12 +2934,12 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     <button
                       type="button"
                       onClick={() => setFluxPromptUpsampling((v) => !v)}
-                      className={`w-full min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${fluxPromptUpsampling ? "bg-violet-600 text-white border-violet-500 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
+                      className={"px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"}
                     >
                       Prompt upsampling · {fluxPromptUpsampling ? "On" : "Off"}
                     </button>
                     <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Safety</span>
+                      <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Safety</span>
                       <div className="flex gap-1.5">
                         <Chip active={fluxSafetyTolerance === 0} onClick={() => setFluxSafetyTolerance(0)}>
                           <span className="whitespace-nowrap">Strict</span>
@@ -2988,7 +2956,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     <button
                       type="button"
                       onClick={() => setWanThinkingMode((v) => !v)}
-                      className={`w-full min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${wanThinkingMode ? "bg-violet-600 text-white border-violet-500 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
+                      className={"px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"}
                     >
                       Thinking mode · {wanThinkingMode ? "On" : "Off"}
                     </button>
@@ -3070,14 +3038,14 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     <button
                       type="button"
                       onClick={() => setGptImage2NsfwChecker((v) => !v)}
-                      className={`w-full min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${gptImage2NsfwChecker ? "bg-violet-600 text-white border-violet-500 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
+                      className={"px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"}
                     >
                       NSFW filter · {gptImage2NsfwChecker ? "On" : "Off"}
                     </button>
                   </div>
                 )}
                 <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">{copy.aspect}</span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">{copy.aspect}</span>
                   <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
                     {aspectRatioOptions.map((ar) => (
                       <Chip key={ar.value} active={aspectRatio === ar.value} onClick={() => setAspectRatio(ar.value)}>
@@ -3087,7 +3055,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">{copy.res}</span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">{copy.res}</span>
                   <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 [scrollbar-width:thin]">
                     {RESOLUTIONS.map((r) => (
                       <Chip key={r} active={resolution === r} onClick={() => setResolution(r)}>
@@ -3097,14 +3065,14 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                   </div>
                 </div>
                 <button type="button" onClick={handleGenerate} disabled={imageGenerateDisabled}
-                  className="w-full min-h-[48px] shrink-0 px-4 py-3 rounded-xl text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_8px_24px_-6px_rgba(124,58,237,0.55)] active:scale-[0.99] transition-transform"
-                  style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" }}>
+                  className="w-full min-h-[52px] rounded-xl text-[14px] font-semibold disabled:opacity-40 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
+                  style={{background:"#ffffff",color:"#0a0a0e",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.90), 0 4px 16px rgba(255,255,255,0.12)"}}>
                   {isGenerating
                     ? <Loader2 className="w-5 h-5 animate-spin" />
                     : <span className="flex items-center gap-1.5 whitespace-nowrap">{formatCopy(copy.buttonGenerateCost, { cost: COST })} <Coins className="w-4 h-4 text-yellow-400" /></span>
                   }
                 </button>
-                <p className="text-[10px] text-slate-500 text-center tabular-nums">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
+                <p className="text-[10px] text-white/25 text-center tabular-nums">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
               </div>
             )}
           </div>
@@ -3176,37 +3144,22 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
             )}
           </div>
 
-          {/* Floating bottom bar — desktop (spinning border) */}
+          {/* Floating bottom bar — desktop (video) */}
           <div
-            className="hidden md:flex justify-center fixed bottom-4 right-6 z-20 pointer-events-none transition-all duration-300"
+            className="hidden md:flex justify-center fixed bottom-5 right-6 z-20 pointer-events-none transition-all duration-300"
             style={{ left: sidebarCollapsed ? "72px" : "260px" }}
           >
             <div
-              className="pointer-events-auto w-full max-w-4xl relative"
-              style={{ borderRadius: "1rem", overflow: "hidden", padding: 0 }}
-            >
-              <div style={{
-                position: "absolute",
-                zIndex: 0,
-                inset: 0,
-                padding: "1.5px",
-                borderRadius: "1rem",
-                background: "conic-gradient(from 0deg, transparent 300deg, rgba(255,255,255,0.06) 335deg, rgba(255,255,255,0.5) 357deg, rgba(255,255,255,0.06) 360deg)",
-                animation: "bar-spin 4s linear infinite",
-                pointerEvents: "none",
-                WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                WebkitMaskComposite: "xor",
-                maskComposite: "exclude",
-              }} />
-            <div
-              className="relative flex flex-col items-stretch justify-center p-3 backdrop-blur-xl"
+              className="pointer-events-auto w-full max-w-[860px] rounded-2xl overflow-hidden"
               style={{
-                zIndex: 1,
-                margin: 0,
-                borderRadius: "1rem",
-                background: "var(--bg-surface)",
+                background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.72)",
+                backdropFilter: "blur(32px) saturate(180%)",
+                WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 64px -16px rgba(0,0,0,0.70)",
               }}
             >
+            <div className="relative flex flex-col items-stretch justify-center p-4">
               <textarea
                 value={videoPrompt} onChange={(e) => setVideoPrompt(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleGenerateVideo(); } }}
@@ -3218,8 +3171,8 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
               <div className="flex flex-col gap-2.5 min-w-0">
                 {/* ── Model ────────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Model</span>
-                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                  <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Model</span>
+                  <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     {VIDEO_FAMILIES.map((family) => (
                       <Chip
                         key={family.id}
@@ -3239,7 +3192,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 </div>
                 {/* ── Mode ─────────────────────────────────────────── */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Mode</span>
+                  <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Mode</span>
                   <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                     {videoModes.map((m) => (
                       <Chip key={m} active={videoMode === m} onClick={() => setVideoMode(m)}>
@@ -3350,7 +3303,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 {/* ── Settings row (family-specific) ───────────────── */}
                 {videoFamily !== "sora2" && videoFamily !== "kling26" && videoFamily !== "veo31" && videoFamily !== "kling30" && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Duration</span>
+                    <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Duration</span>
                     <span className="text-[10px] text-white font-medium shrink-0">{videoDuration}s</span>
                     <input type="range" min={durationConfig.min} max={durationConfig.max} step={durationConfig.step} disabled={durationConfig.fixed} value={videoDuration} onChange={(e) => setVideoDuration(Number(e.target.value))} className="w-24 accent-violet-500 disabled:opacity-50" />
                   </div>
@@ -3365,7 +3318,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     </div>
                     {videoMode === "i2v" ? (
                       <>
-                        <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Resolution</span>
+                        <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Resolution</span>
                         <div className="flex items-center gap-1.5">
                           <Chip active={soraResolution === "720p"} onClick={() => setSoraResolution("720p")}>720p</Chip>
                           <Chip active={soraResolution === "1080p"} onClick={() => setSoraResolution("1080p")}>1080p</Chip>
@@ -3381,7 +3334,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                         </div>
                       </>
                     )}
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Aspect</span>
+                    <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Aspect</span>
                     <div className="flex items-center gap-1.5">
                       <Chip active={videoAspectRatio === "portrait"} onClick={() => setVideoAspectRatio("portrait")}>Portrait</Chip>
                       <Chip active={videoAspectRatio === "landscape"} onClick={() => setVideoAspectRatio("landscape")}>Landscape</Chip>
@@ -3391,7 +3344,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 {videoFamily === "kling30" && (
                   <>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest shrink-0">Quality</span>
+                      <span className="text-[10px] font-semibold text-white/35 uppercase tracking-[0.14em] shrink-0">Quality</span>
                       <div className="flex items-center gap-1.5">
                         <Chip active={kling30Quality === "std"} onClick={() => setKling30Quality("std")}>Standard</Chip>
                         <Chip active={kling30Quality === "pro"} onClick={() => setKling30Quality("pro")}>Pro</Chip>
@@ -3630,45 +3583,41 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     type="button"
                     onClick={handleGenerateVideo}
                     disabled={isVideoGenerating}
-                    className="relative flex items-center justify-center gap-2 ml-auto px-5 py-2 rounded-xl text-sm font-bold tracking-wide overflow-hidden transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 ml-auto px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 whitespace-nowrap active:scale-[0.97]"
                     style={{
-                      background: "rgba(109,40,217,0.35)",
-                      backdropFilter: "blur(12px)",
-                      WebkitBackdropFilter: "blur(12px)",
-                      border: "1px solid rgba(139,92,246,0.5)",
-                      boxShadow: "0 0 18px rgba(109,40,217,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
-                      color: "#ffffff",
+                      background: "#ffffff",
+                      color: "#0a0a0e",
+                      boxShadow: "0 2px 12px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.90)",
                     }}
                   >
-                    <span className="absolute inset-0 pointer-events-none rounded-xl" style={{
-                      background: "linear-gradient(160deg, rgba(255,255,255,0.07) 0%, transparent 60%)",
-                    }} />
                     {isVideoGenerating
-                      ? <Loader2 className="w-4 h-4 animate-spin relative z-10" />
-                      : <Video className="w-4 h-4 relative z-10 shrink-0" />}
-                    <span className="relative z-10 flex items-center gap-1.5">
+                      ? <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      : <Video className="w-4 h-4 shrink-0" />}
+                    <span className="flex items-center gap-1.5">
                       {isVideoGenerating ? copy.generatingVideo : (
-                        <>{copy.generateVideo} {videoPricingInfo.cost} <Coins className="w-3.5 h-3.5 text-yellow-400 shrink-0" /></>
+                        <>{copy.generateVideo} {videoPricingInfo.cost} <Coins className="w-3.5 h-3.5 text-amber-500 shrink-0" /></>
                       )}
                     </span>
                   </button>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-600 mt-1.5 text-right pr-1">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
-            </div>{/* /inner card */}
-            </div>{/* /spinning-border outer */}
-          </div>{/* /fixed positioner */}
+              <p className="text-[10px] text-white/25 mt-2 text-right pr-1">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
+            </div>
+            </div>
+          </div>
 
           {/* Mobile bar — collapsible video controls */}
           <div
-            className={`md:hidden fixed left-1/2 z-[35] w-[min(calc(100vw-1rem),28rem)] -translate-x-1/2 overflow-x-hidden rounded-2xl backdrop-blur-2xl p-2.5 [scrollbar-width:thin] ${
-              mobileVideoBarExpanded ? "max-h-[min(78vh,640px)] overflow-y-auto" : ""
+            className={`md:hidden fixed left-1/2 -translate-x-1/2 z-[35] w-[calc(100vw-1rem)] ${
+              mobileVideoBarExpanded ? "overflow-y-auto max-h-[min(75vh,600px)]" : ""
             }`}
             style={{
-              background: "linear-gradient(180deg, rgba(17,24,39,0.94) 0%, rgba(11,16,28,0.94) 100%)",
-              border: "1px solid rgba(148,163,184,0.18)",
-              boxShadow: "0 24px 64px -24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
               bottom: "max(0.75rem, calc(var(--dashboard-mobile-tab-stack, calc(3.5rem + env(safe-area-inset-bottom))) + 0.625rem))",
+              borderRadius: "1.125rem", overflow: "hidden",
+              background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.80)",
+              backdropFilter: "blur(32px) saturate(180%)", WebkitBackdropFilter: "blur(32px) saturate(180%)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 20px 60px -12px rgba(0,0,0,0.80)",
             }}
           >
             <div className="flex items-stretch gap-2">

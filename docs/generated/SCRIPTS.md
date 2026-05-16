@@ -1,10 +1,10 @@
 # Generated: Repository scripts
 
-**Generated at:** 2026-05-16T14:03:04.686Z
+**Generated at:** 2026-05-16T15:00:00.386Z
 
 Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — under `scripts/` only.
 
-**Count:** 93
+**Count:** 95
 
 - `scripts/add-credits-manual.js`
 - `scripts/audit-stripe-subscriptions.mjs`
@@ -70,6 +70,8 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/migrate-model-photos-to-r2.js`
 - `scripts/migrate-voice-previews-to-r2.js`
 - `scripts/openapi-client-operation-overrides.mjs`
+- `scripts/patch-creator-bar.py`
+- `scripts/patch-creator-inner.py`
 - `scripts/playwright-creator-studio-smoke.mjs`
 - `scripts/playwright-kie-docs.mjs`
 - `scripts/push-to-figma.mjs`
