@@ -91,7 +91,7 @@ info:
     Path inventory is merged by **`npm run openapi:client`** (**`x-openapi-client-generated-at`** ISO timestamp on each run).
   x-doc-class: production
   termsOfService: https://modelclone.app/terms
-  x-openapi-client-generated-at: 2026-05-16T16:41:07.453Z
+  x-openapi-client-generated-at: 2026-05-16T17:07:32.093Z
 externalDocs:
   description: Repo reference **`docs/API_REFERENCE.md`** · generation JSON **`docs/API_GENERATION_UX_PARITY.md`**
   url: https://github.com/typekpaco2002/mdlcln/tree/main/docs
@@ -14278,7 +14278,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2263**) or add **docs/openapi/overrides/POST__stripe__create-portal-session.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2266**) or add **docs/openapi/overrides/POST__stripe__create-portal-session.md**.
         content:
           application/json:
             schema:
@@ -14422,7 +14422,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2631**) or add **docs/openapi/overrides/POST__stripe__recover-credits.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2634**) or add **docs/openapi/overrides/POST__stripe__recover-credits.md**.
         content:
           application/json:
             schema:
@@ -14470,7 +14470,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2674**) or add **docs/openapi/overrides/POST__stripe__recover-special-offer.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2677**) or add **docs/openapi/overrides/POST__stripe__recover-special-offer.md**.
         content:
           application/json:
             schema:
@@ -14620,7 +14620,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2289**) or add **docs/openapi/overrides/POST__stripe__verify-session.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2292**) or add **docs/openapi/overrides/POST__stripe__verify-session.md**.
         content:
           application/json:
             schema:
@@ -27983,7 +27983,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2263**) or add **docs/openapi/overrides/POST__stripe__create-portal-session.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2266**) or add **docs/openapi/overrides/POST__stripe__create-portal-session.md**.
         content:
           application/json:
             schema:
@@ -28115,7 +28115,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2631**) or add **docs/openapi/overrides/POST__stripe__recover-credits.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2634**) or add **docs/openapi/overrides/POST__stripe__recover-credits.md**.
         content:
           application/json:
             schema:
@@ -28159,7 +28159,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2674**) or add **docs/openapi/overrides/POST__stripe__recover-special-offer.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2677**) or add **docs/openapi/overrides/POST__stripe__recover-special-offer.md**.
         content:
           application/json:
             schema:
@@ -28293,7 +28293,7 @@ paths:
           description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2289**) or add **docs/openapi/overrides/POST__stripe__verify-session.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/stripe.routes.js** (~line **2292**) or add **docs/openapi/overrides/POST__stripe__verify-session.md**.
         content:
           application/json:
             schema:
