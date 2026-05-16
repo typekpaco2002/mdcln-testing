@@ -568,7 +568,7 @@ export default function AppSidebar({
                       >
                         {isActive && (
                           <motion.span
-                            layoutId="activeTab"
+                            layoutId="activeTab-nsfw"
                             className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
                             style={{ background: "#ef4444" }}
                             transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
