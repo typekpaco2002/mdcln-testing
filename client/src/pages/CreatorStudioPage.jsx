@@ -2823,10 +2823,11 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                   style={{
                     background: "rgba(255,255,255,0.05)",
                     border: "1px solid rgba(255,255,255,0.09)",
-                    minHeight: "56px",
+                    minHeight: "48px",
                   }}
                 >
                   {prompt ? (
+
                     <span className="text-[13px] text-white/85 line-clamp-2 leading-snug">{prompt}</span>
                   ) : (
                     <span className="text-[13px] text-white/30 leading-snug">{copy.promptPlaceholder}</span>
@@ -2839,14 +2840,14 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                   aria-label={copy.buttonGenerating || "Generate"}
                   className="shrink-0 rounded-xl flex items-center justify-center disabled:opacity-40 active:scale-[0.94] transition-all"
                   style={{
-                    width: "56px",
-                    height: "56px",
+                    width: "48px",
+                    height: "48px",
                     background: "#ffffff",
                     color: "#0a0a0e",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 6px 18px rgba(255,255,255,0.18)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 14px rgba(255,255,255,0.15)",
                   }}
                 >
-                  {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" strokeWidth={2.5} />}
+                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" strokeWidth={2.5} />}
                 </button>
               </div>
             </div>
@@ -2892,7 +2893,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                 </div>
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-5 py-2 border-b border-white/[0.06]">
+                <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/[0.06]">
                   <h3 className="text-[15px] font-semibold text-white tracking-tight">Generate</h3>
                   <button
                     type="button"
@@ -2907,21 +2908,21 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
 
                 {/* Body */}
                 <div
-                  className="flex-1 overflow-y-auto px-5 py-4 space-y-5 [scrollbar-width:thin]"
+                  className="flex-1 overflow-y-auto px-4 py-3 space-y-4 [scrollbar-width:thin]"
                   style={{ overscrollBehavior: "contain" }}
                 >
                   {/* Prompt */}
                   <div>
                     <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Prompt</label>
                     <div
-                      className="rounded-2xl px-4 py-3.5 focus-within:border-white/25 transition-colors"
+                      className="rounded-2xl px-3.5 py-3 focus-within:border-white/25 transition-colors"
                       style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                     >
                       <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder={copy.promptPlaceholder}
-                        rows={4}
+                        rows={3}
                         className="w-full bg-transparent text-[14px] text-white placeholder:text-white/25 resize-none outline-none leading-relaxed"
                       />
                     </div>
@@ -2930,7 +2931,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                   {/* Model — horizontal rail */}
                   <div>
                     <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Model</label>
-                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
+                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
                       {IMAGE_MODELS.map((m) => {
                         const active = imageModel === m.id;
                         return (
@@ -2967,7 +2968,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                               key={n}
                               type="button"
                               onClick={() => setImageNumOutputs(n)}
-                              className="w-11 h-11 rounded-xl text-[13px] font-semibold transition-all"
+                              className="w-10 h-10 rounded-lg text-[12px] font-semibold transition-all"
                               style={imageNumOutputs === n ? {
                                 background: "#ffffff", color: "#0a0a0e",
                               } : {
@@ -2988,7 +2989,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                                 key={mode}
                                 type="button"
                                 onClick={() => setIdeogramRenderingSpeed(mode)}
-                                className="px-3 h-11 rounded-xl text-[11px] font-semibold transition-all"
+                                className="px-2.5 h-10 rounded-lg text-[11px] font-semibold transition-all"
                                 style={ideogramRenderingSpeed === mode ? {
                                   background: "#ffffff", color: "#0a0a0e",
                                 } : {
@@ -3058,7 +3059,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                         <button
                           type="button"
                           onClick={() => setFluxPromptUpsampling((v) => !v)}
-                          className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-[13px] font-medium transition-all"
+                          className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[13px] font-medium transition-all"
                           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
                         >
                           <span>Prompt upsampling</span>
@@ -3219,7 +3220,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                           key={ar.value}
                           type="button"
                           onClick={() => setAspectRatio(ar.value)}
-                          className="h-12 rounded-xl text-[11px] font-semibold transition-all flex items-center justify-center"
+                          className="h-10 rounded-lg text-[11px] font-semibold transition-all flex items-center justify-center"
                           style={aspectRatio === ar.value
                             ? { background: "#ffffff", color: "#0a0a0e" }
                             : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
@@ -3237,7 +3238,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                           key={r}
                           type="button"
                           onClick={() => setResolution(r)}
-                          className="h-12 rounded-xl text-[13px] font-semibold transition-all"
+                          className="h-10 rounded-lg text-[12px] font-semibold transition-all"
                           style={resolution === r
                             ? { background: "#ffffff", color: "#0a0a0e" }
                             : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
@@ -3252,7 +3253,7 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
 
                 {/* Sticky footer */}
                 <div
-                  className="px-5 pt-3"
+                  className="px-4 pt-2.5"
                   style={{
                     background: "linear-gradient(180deg, transparent 0%, rgba(8,8,12,0.96) 40%)",
                     borderTop: "1px solid rgba(255,255,255,0.06)",
@@ -3265,10 +3266,10 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
                     disabled={imageGenerateDisabled}
                     className="w-full rounded-2xl flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-all"
                     style={{
-                      height: "56px",
+                      height: "48px",
                       background: "#ffffff",
                       color: "#0a0a0e",
-                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 6px 20px rgba(255,255,255,0.15)",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 16px rgba(255,255,255,0.12)",
                     }}
                   >
                     {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : (
@@ -3821,587 +3822,823 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
             </div>
           </div>
 
-          {/* Mobile bar — collapsible video controls */}
-          <div
-            className={`md:hidden fixed left-1/2 -translate-x-1/2 z-[35] w-[calc(100vw-1rem)] ${
-              mobileVideoBarExpanded ? "overflow-y-auto max-h-[min(75vh,600px)]" : ""
-            }`}
-            style={{
-              bottom: "max(0.75rem, calc(var(--dashboard-mobile-tab-stack, calc(3.5rem + env(safe-area-inset-bottom))) + 0.625rem))",
-              borderRadius: "1.125rem", overflow: "hidden",
-              background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.80)",
-              backdropFilter: "blur(32px) saturate(180%)", WebkitBackdropFilter: "blur(32px) saturate(180%)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 20px 60px -12px rgba(0,0,0,0.80)",
-            }}
-          >
-            <div className="flex items-stretch gap-2">
-              <button type="button" onClick={() => setMobileVideoBarExpanded((e) => !e)}
-                aria-expanded={mobileVideoBarExpanded}
-                aria-label={mobileVideoBarExpanded ? "Collapse" : "Expand controls"}
-                className={`flex-shrink-0 w-11 min-h-[44px] rounded-xl border flex items-center justify-center transition-all ${
-                  mobileVideoBarExpanded
-                    ? "border-violet-500/40 bg-violet-500/15 text-violet-200"
-                    : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]"
-                }`}>
-                <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${mobileVideoBarExpanded ? "rotate-180" : ""}`} aria-hidden />
-              </button>
-              {!mobileVideoBarExpanded && (
-                <>
-                  <div className="flex-1 min-w-0 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 flex items-center focus-within:border-violet-500/40 focus-within:bg-white/[0.05] transition-colors">
-                    <textarea value={videoPrompt} onChange={(e) => setVideoPrompt(e.target.value)}
-                      placeholder="Video prompt…" rows={1}
-                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 resize-none outline-none leading-snug min-h-[2.5rem] max-h-[2.5rem] overflow-y-auto [scrollbar-width:thin]" />
-                  </div>
-                  <button type="button" onClick={handleGenerateVideo} disabled={isVideoGenerating}
-                    className="flex-shrink-0 min-w-[6.25rem] min-h-[44px] px-3 rounded-xl text-xs font-bold disabled:opacity-40 flex flex-col items-center justify-center gap-0.5 leading-tight shadow-[0_8px_20px_-6px_rgba(124,58,237,0.55)] active:scale-[0.97] transition-transform"
-                    style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" }}>
-                    {isVideoGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                      <>
-                        <span className="flex items-center gap-1">
-                          <Video className="w-3.5 h-3.5 shrink-0" />
-                          <span className="whitespace-nowrap tabular-nums">{videoPricingInfo.cost}</span>
-                          <Coins className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                        </span>
-                        <span className="text-[10px] font-medium opacity-90 tracking-wide">Video</span>
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
-              {mobileVideoBarExpanded && (
-                <div className="flex-1 min-w-0 flex items-center min-h-[44px] px-2 gap-2 truncate">
-                  <span className="text-[11px] text-violet-200 font-semibold truncate">{selectedVideoFamily?.label}</span>
-                  <span className="text-[10px] text-slate-500 px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] uppercase tracking-wider">{videoMode}</span>
+          {/* ── Video mobile / tablet panel ────────────────────────────── */}
+          {/* COLLAPSED — floating pill above bottom tab bar */}
+          {!mobileVideoBarExpanded && (
+            <div
+              className="md:hidden fixed left-1/2 -translate-x-1/2 z-[35] w-[calc(100vw-1rem)]"
+              style={{
+                bottom: "max(0.75rem, calc(var(--dashboard-mobile-tab-stack, calc(3.5rem + env(safe-area-inset-bottom))) + 0.625rem))",
+                borderRadius: "1.125rem",
+                overflow: "hidden",
+                background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.85)",
+                backdropFilter: "blur(32px) saturate(180%)",
+                WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 60px -12px rgba(0,0,0,0.85)",
+              }}
+            >
+              {/* Meta strip */}
+              <button
+                type="button"
+                onClick={() => setMobileVideoBarExpanded(true)}
+                aria-label="Expand video controls"
+                className="w-full flex items-center justify-between px-3.5 pt-2 pb-1 text-left"
+              >
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className="text-[11px] font-semibold text-white/85 truncate">
+                    {selectedVideoFamily?.label || "Video"}
+                  </span>
+                  <span className="text-white/20 shrink-0">·</span>
+                  <span className="text-[10px] uppercase tracking-wider text-white/55 shrink-0">{videoMode}</span>
                   {soundAvailable && soundEnabled && (
-                    <Volume2 className="w-3.5 h-3.5 text-violet-300 shrink-0" aria-label="Sound on" />
+                    <Volume2 className="w-3 h-3 text-white/55 shrink-0" aria-label="Sound on" />
                   )}
-                  <span className="ml-auto text-[11px] text-white font-bold tabular-nums shrink-0">{videoPricingInfo.cost} cr</span>
                 </div>
-              )}
+                <div className="flex items-center gap-1 text-[11px] font-bold text-white tabular-nums shrink-0 ml-2">
+                  <Video className="w-3 h-3 text-amber-400" />{videoPricingInfo.cost}
+                </div>
+              </button>
+
+              {/* Prompt + Generate */}
+              <div className="flex items-stretch gap-2 px-2 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setMobileVideoBarExpanded(true)}
+                  aria-label="Expand video controls"
+                  className="flex-1 min-w-0 flex items-start text-left rounded-xl px-3 py-2.5"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.09)",
+                    minHeight: "48px",
+                  }}
+                >
+                  {videoPrompt ? (
+                    <span className="text-[13px] text-white/85 line-clamp-2 leading-snug">{videoPrompt}</span>
+                  ) : (
+                    <span className="text-[13px] text-white/30 leading-snug">Describe motion, camera, timing…</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateVideo}
+                  disabled={isVideoGenerating}
+                  aria-label="Generate video"
+                  className="shrink-0 rounded-xl flex items-center justify-center disabled:opacity-40 active:scale-[0.94] transition-all"
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    background: "#ffffff",
+                    color: "#0a0a0e",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 14px rgba(255,255,255,0.15)",
+                  }}
+                >
+                  {isVideoGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" strokeWidth={2.5} />}
+                </button>
+              </div>
             </div>
-            {!mobileVideoBarExpanded && (
-              <p className="text-[10px] text-slate-500 mt-2 text-center leading-snug px-0.5 tabular-nums">
-                {formatCopy(copy.creditsAvailable, { credits: creditsLeft })}
-              </p>
-            )}
-            {mobileVideoBarExpanded && (
-              <div className="mt-2.5 space-y-3 border-t border-white/[0.06] pt-3">
-                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 focus-within:border-violet-500/40 focus-within:bg-white/[0.05] transition-colors">
-                  <textarea value={videoPrompt} onChange={(e) => setVideoPrompt(e.target.value)}
-                    placeholder="Describe motion, camera, timing…" rows={2}
-                    className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 resize-none outline-none min-h-[2.5rem] leading-relaxed" />
+          )}
+
+          {/* EXPANDED — full bottom sheet */}
+          {mobileVideoBarExpanded && (
+            <div className="md:hidden fixed inset-0 z-[60] flex flex-col" role="dialog" aria-modal="true">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: "rgba(0,0,0,0.55)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                }}
+                onClick={() => setMobileVideoBarExpanded(false)}
+              />
+
+              {/* Sheet */}
+              <div
+                className="relative mt-auto w-full flex flex-col"
+                style={{
+                  maxHeight: "92vh",
+                  background: "linear-gradient(180deg, rgba(20,20,26,0.96) 0%, rgba(12,12,16,0.96) 100%)",
+                  backdropFilter: "blur(32px) saturate(180%)",
+                  WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                  borderTopLeftRadius: "1.5rem",
+                  borderTopRightRadius: "1.5rem",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderBottom: "none",
+                  boxShadow: "0 -20px 60px -12px rgba(0,0,0,0.85)",
+                }}
+              >
+                {/* Drag handle */}
+                <div className="flex justify-center pt-2 pb-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMobileVideoBarExpanded(false)}
+                    aria-label="Collapse"
+                    className="w-12 h-1.5 rounded-full bg-white/25 hover:bg-white/40 transition-colors"
+                  />
                 </div>
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Model</span>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
-                    {VIDEO_FAMILIES.map((family) => (
-                      <Chip
-                        key={family.id}
-                        active={videoFamily === family.id}
-                        onClick={() => {
-                          setVideoFamily(family.id);
-                          setVideoMode(defaultModeByFamily(family.id));
-                          if (family.id === "wan26") setWanResolution("720p");
-                          if (family.id === "wan22") setWanResolution("580p");
-                          if (family.id === "wan27") setWanResolution("1080p");
-                        }}
-                      >
-                        <span className="whitespace-nowrap">{family.label}</span>
-                      </Chip>
-                    ))}
+
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/[0.06]">
+                  <h3 className="text-[14px] font-semibold text-white tracking-tight">Generate video</h3>
+                  <button
+                    type="button"
+                    onClick={() => setMobileVideoBarExpanded(false)}
+                    aria-label="Collapse"
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white/55 hover:text-white transition-colors"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Body */}
+                <div
+                  className="flex-1 overflow-y-auto px-4 py-3 space-y-4 [scrollbar-width:thin]"
+                  style={{ overscrollBehavior: "contain" }}
+                >
+                  {/* Prompt */}
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Prompt</label>
+                    <div
+                      className="rounded-xl px-3 py-2.5 focus-within:border-white/25 transition-colors"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                    >
+                      <textarea
+                        value={videoPrompt}
+                        onChange={(e) => setVideoPrompt(e.target.value)}
+                        placeholder="Describe motion, camera, timing, atmosphere…"
+                        rows={3}
+                        className="w-full bg-transparent text-[13px] text-white placeholder:text-white/25 resize-none outline-none leading-relaxed"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Mode</span>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
-                    {videoModes.map((m) => (
-                      <Chip key={m} active={videoMode === m} onClick={() => setVideoMode(m)}>
-                        <span className="whitespace-nowrap">{m === "t2v"
-                          ? "Text → Video"
-                          : m === "i2v"
-                            ? "Image → Video"
-                            : m === "multi-ref"
-                              ? "Multi-Ref"
-                              : m === "ref2v"
-                                ? "Ref → Video"
-                                : m === "move"
-                                  ? "Animate"
-                                  : m === "replace"
-                                    ? "Replace"
-                                    : m === "edit"
-                                      ? (videoFamily === "wan27" ? "Video Edit" : "First + Last")
-                                      : "Extend"}</span>
-                      </Chip>
-                    ))}
+
+                  {/* Model rail */}
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Model</label>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
+                      {VIDEO_FAMILIES.map((family) => {
+                        const active = videoFamily === family.id;
+                        return (
+                          <button
+                            key={family.id}
+                            type="button"
+                            onClick={() => {
+                              setVideoFamily(family.id);
+                              setVideoMode(defaultModeByFamily(family.id));
+                              if (family.id === "wan26") setWanResolution("720p");
+                              if (family.id === "wan22") setWanResolution("580p");
+                              if (family.id === "wan27") setWanResolution("1080p");
+                            }}
+                            className="shrink-0 snap-start px-3 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all"
+                            style={active ? {
+                              background: "#ffffff",
+                              color: "#0a0a0e",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)",
+                            } : {
+                              background: "rgba(255,255,255,0.04)",
+                              color: "rgba(255,255,255,0.65)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                            }}
+                          >
+                            {family.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-                {/* Audio — prominent, only when the selected family supports sound */}
-                {soundAvailable && (
-                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {soundEnabled
-                          ? <Volume2 className="w-4 h-4 text-violet-300 shrink-0" aria-hidden />
-                          : <VolumeX className="w-4 h-4 text-slate-500 shrink-0" aria-hidden />}
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-white">Audio</div>
-                          <div className="text-[10px] text-slate-400 truncate">
-                            {soundEnabled ? "Generate with sound" : "No sound"}
-                          </div>
-                        </div>
-                      </div>
+
+                  {/* Mode */}
+                  <div>
+                    <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Mode</label>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
+                      {videoModes.map((m) => {
+                        const active = videoMode === m;
+                        const label = m === "t2v" ? "Text → Video"
+                          : m === "i2v" ? "Image → Video"
+                          : m === "multi-ref" ? "Multi-Ref"
+                          : m === "ref2v" ? "Ref → Video"
+                          : m === "move" ? "Animate"
+                          : m === "replace" ? "Replace"
+                          : m === "edit" ? (videoFamily === "wan27" ? "Video Edit" : "First + Last")
+                          : "Extend";
+                        return (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setVideoMode(m)}
+                            className="shrink-0 snap-start px-3 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-all"
+                            style={active ? {
+                              background: "#ffffff",
+                              color: "#0a0a0e",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)",
+                            } : {
+                              background: "rgba(255,255,255,0.04)",
+                              color: "rgba(255,255,255,0.65)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                            }}
+                          >{label}</button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Audio */}
+                  {soundAvailable && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Audio</label>
                       <button
                         type="button"
-                        role="switch"
-                        aria-checked={soundEnabled}
                         onClick={() => setSoundEnabled((v) => !v)}
-                        className={`relative shrink-0 inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 ${
-                          soundEnabled
-                            ? "bg-gradient-to-r from-violet-600 to-indigo-600 shadow-[0_0_12px_rgba(124,58,237,0.45)]"
-                            : "bg-white/[0.08] border border-white/[0.08]"
-                        }`}
+                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[13px] font-medium transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
                       >
+                        <span className="flex items-center gap-2">
+                          {soundEnabled
+                            ? <Volume2 className="w-4 h-4 text-white/85" aria-hidden />
+                            : <VolumeX className="w-4 h-4 text-white/35" aria-hidden />}
+                          {soundEnabled ? "Generate with sound" : "No sound"}
+                        </span>
                         <span
-                          className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform duration-200 ${
-                            soundEnabled ? "translate-x-6" : "translate-x-1"
-                          }`}
-                        />
+                          className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                          style={soundEnabled
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}
+                        >
+                          {soundEnabled ? "ON" : "OFF"}
+                        </span>
                       </button>
+                      {soundEnabled && (
+                        <input
+                          value={soundPrompt}
+                          onChange={(e) => setSoundPrompt(e.target.value)}
+                          placeholder="Optional sound prompt (speech, ambience, SFX…)"
+                          className="mt-2 w-full rounded-xl px-3 py-2.5 text-[12px] text-white outline-none placeholder:text-white/25"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                        />
+                      )}
                     </div>
-                    {soundEnabled && (
-                      <input
-                        value={soundPrompt}
-                        onChange={(e) => setSoundPrompt(e.target.value)}
-                        placeholder="Optional sound prompt (speech, ambience, SFX…)"
-                        className="w-full rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-xs text-white outline-none placeholder:text-slate-600 focus:border-violet-500/50 focus:bg-black/40 transition-colors"
-                      />
-                    )}
-                  </div>
-                )}
-                {/* Uploads — conditional by family + mode */}
-                {((videoFamily === "sora2" || videoFamily === "kling26") && videoMode === "i2v") && (
-                  <MediaUploadField label="Input Image" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                )}
-                {(videoFamily === "kling30" || videoFamily === "veo31") && videoMode === "i2v" && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadField label="Start Frame" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                    <MediaUploadField label="End Frame (opt)" value={videoEndFrameUrl} onUploaded={setVideoEndFrameUrl} />
-                  </div>
-                )}
-                {videoFamily === "veo31" && videoMode === "ref2v" && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadField label="Ref 1" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                    <MediaUploadField label="Ref 2 (opt)" value={videoRefImageUrl} onUploaded={setVideoRefImageUrl} />
-                    <MediaUploadField label="Ref 3 (opt)" value={videoThirdImageUrl} onUploaded={setVideoThirdImageUrl} />
-                  </div>
-                )}
-                {videoFamily === "wan22" && (videoMode === "move" || videoMode === "replace") && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadField label="Input Video" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
-                    <MediaUploadField label="Input Image" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                  </div>
-                )}
-                {videoFamily === "wan26" && videoMode === "i2v" && (
-                  <MediaUploadField label="Input Image" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                )}
-                {videoFamily === "wan27" && videoMode === "i2v" && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadField label="Start Frame (opt)" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                    <MediaUploadField label="End Frame (opt)" value={videoEndFrameUrl} onUploaded={setVideoEndFrameUrl} />
-                    <MediaUploadField label="First Clip (opt)" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
-                  </div>
-                )}
-                {videoFamily === "wan27" && videoMode === "replace" && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadField label="Ref Image 1 (opt)" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                    <MediaUploadField label="Ref Image 2 (opt)" value={videoRefImageUrl} onUploaded={setVideoRefImageUrl} />
-                    <MediaUploadField label="Ref Image 3 (opt)" value={videoThirdImageUrl} onUploaded={setVideoThirdImageUrl} />
-                    <MediaUploadField label="Ref Video (opt)" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
-                  </div>
-                )}
-                {videoFamily === "wan27" && videoMode === "edit" && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadField label="Input Video" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
-                    <MediaUploadField label="Reference Image (opt)" value={videoImageUrl} onUploaded={setVideoImageUrl} />
-                  </div>
-                )}
-                {videoFamily === "seedance2" && videoMode === "edit" && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadFieldWithAssetPicker label="First Frame" value={videoImageUrl} onUploaded={setVideoImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
-                    <MediaUploadFieldWithAssetPicker label="Last Frame" value={videoEndFrameUrl} onUploaded={setVideoEndFrameUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
-                  </div>
-                )}
-                {videoFamily === "seedance2" && videoMode === "i2v" && (
-                  <MediaUploadFieldWithAssetPicker label="First Frame" value={videoImageUrl} onUploaded={setVideoImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
-                )}
-                {videoFamily === "seedance2" && videoMode === "multi-ref" && (
-                  <div className="flex flex-wrap gap-2">
-                    <MediaUploadFieldWithAssetPicker label="Ref 1 (opt)" value={videoImageUrl} onUploaded={setVideoImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
-                    <MediaUploadFieldWithAssetPicker label="Ref 2 (opt)" value={videoRefImageUrl} onUploaded={setVideoRefImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
-                    <MediaUploadFieldWithAssetPicker label="Ref 3 (opt)" value={videoThirdImageUrl} onUploaded={setVideoThirdImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
-                    <MediaUploadFieldWithAssetPicker label="Ref Video (opt)" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" pickerType="video" onOpenAssetPicker={openAssetPicker} />
-                  </div>
-                )}
-                {videoFamily === "veo31" && videoMode === "extend" && (
-                  <select value={extendSourceId} onChange={(e) => setExtendSourceId(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs text-white outline-none">
-                    <option value="">Select Veo video to extend…</option>
-                    {videoHistory
-                      .filter((item) => item?.providerFamily === "veo31" && item?.providerTaskId && item?.status === "completed")
-                      .map((item) => (
-                        <option key={item.id} value={item.providerTaskId}>
-                          {item.prompt?.slice(0, 56) || "Veo generation"} ({item.providerTaskId})
-                        </option>
-                      ))}
-                  </select>
-                )}
-                {/* Family-specific settings */}
-                {videoFamily === "sora2" && (
-                  <div className="space-y-2">
+                  )}
+
+                  {/* Uploads */}
+                  {((videoFamily === "sora2" || videoFamily === "kling26") && videoMode === "i2v") && (
                     <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Duration</span>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {SORA_DURATION_OPTIONS.map((d) => (
-                          <Chip key={d} active={videoDuration === d} onClick={() => setVideoDuration(d)}><span className="whitespace-nowrap">{d}s</span></Chip>
-                        ))}
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Input</label>
+                      <MediaUploadField label="Input Image" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                    </div>
+                  )}
+                  {(videoFamily === "kling30" || videoFamily === "veo31") && videoMode === "i2v" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Frames</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <MediaUploadField label="Start Frame" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                        <MediaUploadField label="End Frame (opt)" value={videoEndFrameUrl} onUploaded={setVideoEndFrameUrl} />
                       </div>
                     </div>
-                    {videoMode === "i2v" ? (
+                  )}
+                  {videoFamily === "veo31" && videoMode === "ref2v" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">References</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <MediaUploadField label="Ref 1" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                        <MediaUploadField label="Ref 2" value={videoRefImageUrl} onUploaded={setVideoRefImageUrl} />
+                        <MediaUploadField label="Ref 3" value={videoThirdImageUrl} onUploaded={setVideoThirdImageUrl} />
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "wan22" && (videoMode === "move" || videoMode === "replace") && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Inputs</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <MediaUploadField label="Input Video" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
+                        <MediaUploadField label="Input Image" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "wan26" && videoMode === "i2v" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Input</label>
+                      <MediaUploadField label="Input Image" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                    </div>
+                  )}
+                  {videoFamily === "wan27" && videoMode === "i2v" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Inputs</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <MediaUploadField label="Start" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                        <MediaUploadField label="End" value={videoEndFrameUrl} onUploaded={setVideoEndFrameUrl} />
+                        <MediaUploadField label="Clip" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "wan27" && videoMode === "replace" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">References</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <MediaUploadField label="Ref 1" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                        <MediaUploadField label="Ref 2" value={videoRefImageUrl} onUploaded={setVideoRefImageUrl} />
+                        <MediaUploadField label="Ref 3" value={videoThirdImageUrl} onUploaded={setVideoThirdImageUrl} />
+                        <MediaUploadField label="Ref Video" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "wan27" && videoMode === "edit" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Inputs</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <MediaUploadField label="Input Video" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" />
+                        <MediaUploadField label="Ref Image" value={videoImageUrl} onUploaded={setVideoImageUrl} />
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "seedance2" && videoMode === "edit" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Frames</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <MediaUploadFieldWithAssetPicker label="First" value={videoImageUrl} onUploaded={setVideoImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
+                        <MediaUploadFieldWithAssetPicker label="Last" value={videoEndFrameUrl} onUploaded={setVideoEndFrameUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "seedance2" && videoMode === "i2v" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">First frame</label>
+                      <MediaUploadFieldWithAssetPicker label="First Frame" value={videoImageUrl} onUploaded={setVideoImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
+                    </div>
+                  )}
+                  {videoFamily === "seedance2" && videoMode === "multi-ref" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">References</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <MediaUploadFieldWithAssetPicker label="Ref 1" value={videoImageUrl} onUploaded={setVideoImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
+                        <MediaUploadFieldWithAssetPicker label="Ref 2" value={videoRefImageUrl} onUploaded={setVideoRefImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
+                        <MediaUploadFieldWithAssetPicker label="Ref 3" value={videoThirdImageUrl} onUploaded={setVideoThirdImageUrl} pickerType="image" onOpenAssetPicker={openAssetPicker} />
+                        <MediaUploadFieldWithAssetPicker label="Ref Video" value={videoInputVideoUrl} onUploaded={setVideoInputVideoUrl} accept="video/*" preview="video" pickerType="video" onOpenAssetPicker={openAssetPicker} />
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "veo31" && videoMode === "extend" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Extend source</label>
+                      <select
+                        value={extendSourceId}
+                        onChange={(e) => setExtendSourceId(e.target.value)}
+                        className="w-full rounded-xl px-3 py-2.5 text-[12px] text-white outline-none"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        <option value="">Select Veo video to extend…</option>
+                        {videoHistory
+                          .filter((item) => item?.providerFamily === "veo31" && item?.providerTaskId && item?.status === "completed")
+                          .map((item) => (
+                            <option key={item.id} value={item.providerTaskId}>
+                              {item.prompt?.slice(0, 56) || "Veo generation"} ({item.providerTaskId})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Sora 2 family settings */}
+                  {videoFamily === "sora2" && (
+                    <>
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Resolution</span>
-                        <div className="flex gap-1.5">
-                          <Chip active={soraResolution === "720p"} onClick={() => setSoraResolution("720p")}><span className="whitespace-nowrap">720p</span></Chip>
-                          <Chip active={soraResolution === "1080p"} onClick={() => setSoraResolution("1080p")}><span className="whitespace-nowrap">1080p</span></Chip>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Duration</label>
+                        <div className="grid grid-cols-5 gap-1.5">
+                          {SORA_DURATION_OPTIONS.map((d) => (
+                            <button key={d} type="button" onClick={() => setVideoDuration(d)}
+                              className="h-10 rounded-lg text-[12px] font-semibold transition-all"
+                              style={videoDuration === d
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{d}s</button>
+                          ))}
                         </div>
                       </div>
-                    ) : (
+                      {videoMode === "i2v" ? (
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Resolution</label>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {["720p", "1080p"].map((r) => (
+                              <button key={r} type="button" onClick={() => setSoraResolution(r)}
+                                className="h-10 rounded-lg text-[12px] font-semibold transition-all"
+                                style={soraResolution === r
+                                  ? { background: "#ffffff", color: "#0a0a0e" }
+                                  : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                              >{r}</button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Size</label>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {["720p", "1024p", "1080p"].map((t) => (
+                              <button key={t} type="button" onClick={() => setSoraT2vTier(t)}
+                                className="h-10 rounded-lg text-[12px] font-semibold transition-all"
+                                style={soraT2vTier === t
+                                  ? { background: "#ffffff", color: "#0a0a0e" }
+                                  : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                              >{t}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Size</span>
-                        <div className="flex gap-1.5 flex-wrap">
-                          <Chip active={soraT2vTier === "720p"} onClick={() => setSoraT2vTier("720p")}><span className="whitespace-nowrap">720p</span></Chip>
-                          <Chip active={soraT2vTier === "1024p"} onClick={() => setSoraT2vTier("1024p")}><span className="whitespace-nowrap">1024p</span></Chip>
-                          <Chip active={soraT2vTier === "1080p"} onClick={() => setSoraT2vTier("1080p")}><span className="whitespace-nowrap">1080p</span></Chip>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Aspect</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[{v:"portrait",l:"Portrait"},{v:"landscape",l:"Landscape"}].map((a) => (
+                            <button key={a.v} type="button" onClick={() => setVideoAspectRatio(a.v)}
+                              className="h-10 rounded-lg text-[12px] font-semibold transition-all"
+                              style={videoAspectRatio === a.v
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{a.l}</button>
+                          ))}
                         </div>
                       </div>
-                    )}
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Aspect</span>
-                      <div className="flex gap-1.5">
-                        <Chip active={videoAspectRatio === "portrait"} onClick={() => setVideoAspectRatio("portrait")}><span className="whitespace-nowrap">Portrait</span></Chip>
-                        <Chip active={videoAspectRatio === "landscape"} onClick={() => setVideoAspectRatio("landscape")}><span className="whitespace-nowrap">Landscape</span></Chip>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {videoFamily === "kling30" && (
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Quality</span>
-                      <div className="flex gap-1.5">
-                        <Chip active={kling30Quality === "std"} onClick={() => setKling30Quality("std")}><span className="whitespace-nowrap">Standard</span></Chip>
-                        <Chip active={kling30Quality === "pro"} onClick={() => setKling30Quality("pro")}><span className="whitespace-nowrap">Pro</span></Chip>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Aspect</span>
-                      <div className="flex gap-1.5">
-                        <Chip active={videoAspectRatio === "16:9"} onClick={() => setVideoAspectRatio("16:9")}><span className="whitespace-nowrap">16:9</span></Chip>
-                        <Chip active={videoAspectRatio === "9:16"} onClick={() => setVideoAspectRatio("9:16")}><span className="whitespace-nowrap">9:16</span></Chip>
-                        <Chip active={videoAspectRatio === "1:1"} onClick={() => setVideoAspectRatio("1:1")}><span className="whitespace-nowrap">1:1</span></Chip>
-                      </div>
-                    </div>
-                    {!kling30MultiShot && (
+                    </>
+                  )}
+
+                  {/* Kling 3.0 family settings */}
+                  {videoFamily === "kling30" && (
+                    <>
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Duration</span>
-                        <div className="flex items-center gap-2">
-                          <input type="range" min={3} max={15} step={1} value={videoDuration} onChange={(e) => setVideoDuration(Number(e.target.value))} className="flex-1 accent-violet-500" />
-                          <span className="text-xs text-white font-medium w-6 text-right">{videoDuration}s</span>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Quality</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[{v:"std",l:"Standard"},{v:"pro",l:"Pro"}].map((q) => (
+                            <button key={q.v} type="button" onClick={() => setKling30Quality(q.v)}
+                              className="h-10 rounded-lg text-[12px] font-semibold transition-all"
+                              style={kling30Quality === q.v
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{q.l}</button>
+                          ))}
                         </div>
                       </div>
-                    )}
-                    <div className="flex flex-wrap gap-2">
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Aspect</label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {["16:9","9:16","1:1"].map((r) => (
+                            <button key={r} type="button" onClick={() => setVideoAspectRatio(r)}
+                              className="h-10 rounded-lg text-[11px] font-semibold transition-all"
+                              style={videoAspectRatio === r
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{r}</button>
+                          ))}
+                        </div>
+                      </div>
+                      {!kling30MultiShot && (
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Duration · {videoDuration}s</label>
+                          <input type="range" min={3} max={15} step={1} value={videoDuration}
+                            onChange={(e) => setVideoDuration(Number(e.target.value))}
+                            className="w-full accent-white" />
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={() => setKling30MultiShot((v) => !v)}
-                        className={`flex-1 min-w-[6rem] min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${kling30MultiShot ? "bg-violet-600 text-white border-violet-500 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
+                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[13px] font-medium transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
                       >
-                        Multi-shot
+                        <span>Multi-shot</span>
+                        <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                          style={kling30MultiShot
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}>
+                          {kling30MultiShot ? "ON" : "OFF"}
+                        </span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setKling30AdvancedOpen((v) => !v)}
-                        className={`flex-1 min-w-[6rem] min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${kling30AdvancedOpen ? "bg-white/[0.08] text-white border-white/[0.16]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
-                      >
-                        {klingElements.length > 0 ? `Elements (${klingElements.length})` : "Elements"}
-                      </button>
-                    </div>
-                    {kling30MultiShot && (
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-2 space-y-1.5 max-h-[28vh] overflow-y-auto [scrollbar-width:thin]">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-slate-400">
-                            {kling30Shots.length} shot{kling30Shots.length !== 1 ? "s" : ""} · {kling30Shots.reduce((sum, s) => sum + s.duration, 0)}s / 15s
-                          </p>
-                          {kling30Shots.length < 5 && (
-                            <button
-                              type="button"
-                              onClick={() => setKling30Shots((prev) => [...prev, { prompt: "", duration: 3 }])}
-                              className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors"
-                            >
-                              <Plus className="w-3 h-3" /> Shot
-                            </button>
-                          )}
-                        </div>
-                        {kling30Shots.map((shot, idx) => (
-                          <div key={idx} className="flex flex-col gap-1.5 rounded-md bg-black/30 p-1.5">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-slate-500 shrink-0 w-4">{idx + 1}</span>
-                              <input
-                                value={shot.prompt}
-                                onChange={(e) => setKling30Shots((prev) => prev.map((s, i) => i === idx ? { ...s, prompt: e.target.value } : s))}
-                                placeholder={`Shot ${idx + 1} — motion, camera…`}
-                                className="flex-1 min-w-0 rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none placeholder:text-slate-600"
-                              />
-                              {kling30Shots.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => setKling30Shots((prev) => prev.filter((_, i) => i !== idx))}
-                                  className="text-slate-600 hover:text-red-400 transition-colors shrink-0"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 pl-6">
-                              <input
-                                type="range"
-                                min={3}
-                                max={Math.min(10, 15 - kling30Shots.filter((_, i) => i !== idx).reduce((s, sh) => s + sh.duration, 0))}
-                                step={1}
-                                value={shot.duration}
-                                onChange={(e) => setKling30Shots((prev) => prev.map((s, i) => i === idx ? { ...s, duration: Number(e.target.value) } : s))}
-                                className="flex-1 accent-violet-500"
-                              />
-                              <span className="text-[10px] text-white w-7 text-right">{shot.duration}s</span>
-                            </div>
+                      {kling30MultiShot && (
+                        <div className="rounded-xl p-2.5 space-y-1.5 max-h-[28vh] overflow-y-auto [scrollbar-width:thin]"
+                          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] text-white/45">
+                              {kling30Shots.length} shot{kling30Shots.length !== 1 ? "s" : ""} · {kling30Shots.reduce((s,sh)=>s+sh.duration,0)}s / 15s
+                            </p>
+                            {kling30Shots.length < 5 && (
+                              <button type="button"
+                                onClick={() => setKling30Shots((prev) => [...prev, { prompt: "", duration: 3 }])}
+                                className="flex items-center gap-1 text-[10px] text-white/65 hover:text-white transition-colors">
+                                <Plus className="w-3 h-3" /> Shot
+                              </button>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
-                    {kling30AdvancedOpen && (
-                      <div className="rounded-lg border border-white/10 bg-black/20 p-2 space-y-2">
-                        <div className="space-y-1.5">
-                          <input value={klingElementName} onChange={(e) => setKlingElementName(e.target.value)} placeholder="@name" className="w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none placeholder:text-slate-600" />
-                          <input value={klingElementDescription} onChange={(e) => setKlingElementDescription(e.target.value)} placeholder="Description" className="w-full rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none placeholder:text-slate-600" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {klingElementMediaUrls.map((url, idx) => (
-                            <MediaUploadField key={idx} label={`Img ${idx + 1}${idx < 2 ? "*" : ""}`} value={url} onUploaded={(newUrl) => setKlingElementMediaUrls((prev) => prev.map((v, i) => (i === idx ? newUrl : v)))} />
+                          {kling30Shots.map((shot, idx) => (
+                            <div key={idx} className="flex flex-col gap-1.5 rounded-lg p-2"
+                              style={{ background: "rgba(0,0,0,0.30)" }}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-white/40 shrink-0 w-3">{idx+1}</span>
+                                <input
+                                  value={shot.prompt}
+                                  onChange={(e) => setKling30Shots((prev) => prev.map((s, i) => i === idx ? { ...s, prompt: e.target.value } : s))}
+                                  placeholder={`Shot ${idx+1}`}
+                                  className="flex-1 min-w-0 rounded-md px-2 py-1.5 text-[11px] text-white outline-none placeholder:text-white/25"
+                                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                                />
+                                {kling30Shots.length > 1 && (
+                                  <button type="button"
+                                    onClick={() => setKling30Shots((prev) => prev.filter((_, i) => i !== idx))}
+                                    className="text-white/35 hover:text-red-400 transition-colors shrink-0">
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 pl-5">
+                                <input type="range" min={3}
+                                  max={Math.min(10, 15 - kling30Shots.filter((_,i) => i !== idx).reduce((s,sh)=>s+sh.duration,0))}
+                                  step={1} value={shot.duration}
+                                  onChange={(e) => setKling30Shots((prev) => prev.map((s, i) => i === idx ? { ...s, duration: Number(e.target.value) } : s))}
+                                  className="flex-1 accent-white" />
+                                <span className="text-[10px] text-white/75 w-6 text-right tabular-nums">{shot.duration}s</span>
+                              </div>
+                            </div>
                           ))}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const media = klingElementMediaUrls.filter(Boolean);
-                            if (!klingElementName.trim() || !klingElementDescription.trim() || media.length < 2) { toast.error("Need name, description, and 2+ images."); return; }
-                            setKlingElements((prev) => [...prev.slice(0, 2), { name: klingElementName.trim(), description: klingElementDescription.trim(), element_input_urls: media.slice(0, 4) }]);
-                            setKlingElementName(""); setKlingElementDescription(""); setKlingElementMediaUrls(["", "", "", ""]);
-                          }}
-                          className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Add element
-                        </button>
-                        {klingElements.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {klingElements.map((element, idx) => (
-                              <span key={`${element.name}-${idx}`} className="inline-flex items-center gap-1 text-[10px] text-slate-300 rounded-md bg-black/40 px-1.5 py-0.5">
-                                @{element.name} · {element.element_input_urls.length}
-                                <button type="button" className="text-slate-600 hover:text-red-400" onClick={() => setKlingElements((prev) => prev.filter((_, i) => i !== idx))}>
-                                  <X className="w-2.5 h-2.5" />
-                                </button>
-                              </span>
+                      )}
+                    </>
+                  )}
+
+                  {/* Kling 2.6 family settings */}
+                  {videoFamily === "kling26" && (
+                    <>
+                      {videoMode === "t2v" && (
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Aspect</label>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {["1:1","16:9","9:16"].map((r) => (
+                              <button key={r} type="button" onClick={() => setVideoAspectRatio(r)}
+                                className="h-10 rounded-lg text-[11px] font-semibold transition-all"
+                                style={videoAspectRatio === r
+                                  ? { background: "#ffffff", color: "#0a0a0e" }
+                                  : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                              >{r}</button>
                             ))}
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {videoFamily === "kling26" && (
-                  <div className="space-y-2">
-                    {videoMode === "t2v" && (
+                        </div>
+                      )}
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Aspect</span>
-                        <div className="flex gap-1.5">
-                          <Chip active={videoAspectRatio === "1:1"} onClick={() => setVideoAspectRatio("1:1")}><span className="whitespace-nowrap">1:1</span></Chip>
-                          <Chip active={videoAspectRatio === "16:9"} onClick={() => setVideoAspectRatio("16:9")}><span className="whitespace-nowrap">16:9</span></Chip>
-                          <Chip active={videoAspectRatio === "9:16"} onClick={() => setVideoAspectRatio("9:16")}><span className="whitespace-nowrap">9:16</span></Chip>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Duration</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[5, 10].map((d) => (
+                            <button key={d} type="button" onClick={() => setVideoDuration(d)}
+                              className="h-10 rounded-lg text-[12px] font-semibold transition-all"
+                              style={videoDuration === d
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{d}s</button>
+                          ))}
                         </div>
                       </div>
-                    )}
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Duration</span>
-                      <div className="flex gap-1.5">
-                        <Chip active={videoDuration === 5} onClick={() => setVideoDuration(5)}><span className="whitespace-nowrap">5s</span></Chip>
-                        <Chip active={videoDuration === 10} onClick={() => setVideoDuration(10)}><span className="whitespace-nowrap">10s</span></Chip>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {videoFamily === "veo31" && (
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Speed</span>
-                      <div className="flex gap-1.5">
-                        <Chip active={videoSpeed === "fast"} onClick={() => setVideoSpeed("fast")}><span className="whitespace-nowrap">Fast</span></Chip>
-                        <Chip active={videoSpeed === "quality"} onClick={() => setVideoSpeed("quality")}><span className="whitespace-nowrap">Quality</span></Chip>
-                        <Chip active={videoSpeed === "lite"} onClick={() => setVideoSpeed("lite")}><span className="whitespace-nowrap">Lite</span></Chip>
-                      </div>
-                    </div>
-                    {(videoMode === "ref2v" || videoMode === "i2v") && (
+                    </>
+                  )}
+
+                  {/* Veo 3.1 family settings */}
+                  {videoFamily === "veo31" && (
+                    <>
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Aspect</span>
-                        <div className="flex gap-1.5">
-                          {videoMode !== "ref2v" && (
-                            <Chip active={videoAspectRatio === "Auto"} onClick={() => setVideoAspectRatio("Auto")}><span className="whitespace-nowrap">Auto</span></Chip>
-                          )}
-                          <Chip active={videoAspectRatio === "16:9"} onClick={() => setVideoAspectRatio("16:9")}><span className="whitespace-nowrap">16:9</span></Chip>
-                          <Chip active={videoAspectRatio === "9:16"} onClick={() => setVideoAspectRatio("9:16")}><span className="whitespace-nowrap">9:16</span></Chip>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Speed</label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {["fast","quality","lite"].map((s) => (
+                            <button key={s} type="button" onClick={() => setVideoSpeed(s)}
+                              className="h-10 rounded-lg text-[11px] font-semibold transition-all capitalize"
+                              style={videoSpeed === s
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{s}</button>
+                          ))}
                         </div>
                       </div>
-                    )}
-                    <div className="flex flex-wrap items-center gap-2">
+                      {(videoMode === "ref2v" || videoMode === "i2v") && (
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Aspect</label>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            {(videoMode !== "ref2v" ? ["Auto","16:9","9:16"] : ["16:9","9:16"]).map((r) => (
+                              <button key={r} type="button" onClick={() => setVideoAspectRatio(r)}
+                                className="h-10 rounded-lg text-[11px] font-semibold transition-all"
+                                style={videoAspectRatio === r
+                                  ? { background: "#ffffff", color: "#0a0a0e" }
+                                  : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                              >{r}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={() => setVeoEnableTranslation((v) => !v)}
-                        className={`min-h-[36px] px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all border ${veoEnableTranslation ? "bg-violet-600 text-white border-violet-500 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
+                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[13px] font-medium transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
                       >
-                        Translate
+                        <span>Translate</span>
+                        <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                          style={veoEnableTranslation
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}>
+                          {veoEnableTranslation ? "ON" : "OFF"}
+                        </span>
                       </button>
-                      <span className="text-[10px] text-slate-400 px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06]">8s fixed</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min={10000}
-                        max={99999}
-                        value={veoSeed}
-                        onChange={(e) => setVeoSeed(e.target.value)}
-                        placeholder="Seed"
-                        className="flex-1 min-w-0 rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none placeholder:text-slate-600"
-                      />
-                      <input
-                        value={veoWatermark}
-                        onChange={(e) => setVeoWatermark(e.target.value)}
-                        placeholder="Watermark"
-                        className="flex-1 min-w-0 rounded-lg border border-white/10 bg-black/40 px-2 py-1.5 text-xs text-white outline-none placeholder:text-slate-600"
-                      />
-                    </div>
-                  </div>
-                )}
-                {videoFamily === "wan22" && (
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Resolution</span>
-                    <div className="flex gap-1.5">
-                      <Chip active={wanResolution === "480p"} onClick={() => setWanResolution("480p")}><span className="whitespace-nowrap">480p</span></Chip>
-                      {(videoMode === "move" || videoMode === "replace") && (
-                        <Chip active={wanResolution === "580p"} onClick={() => setWanResolution("580p")}><span className="whitespace-nowrap">580p</span></Chip>
-                      )}
-                      <Chip active={wanResolution === "720p"} onClick={() => setWanResolution("720p")}><span className="whitespace-nowrap">720p</span></Chip>
-                    </div>
-                  </div>
-                )}
-                {videoFamily === "wan26" && (
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Resolution</span>
-                    <div className="flex gap-1.5">
-                      <Chip active={wanResolution === "720p"} onClick={() => setWanResolution("720p")}><span className="whitespace-nowrap">720p</span></Chip>
-                      <Chip active={wanResolution === "1080p"} onClick={() => setWanResolution("1080p")}><span className="whitespace-nowrap">1080p</span></Chip>
-                    </div>
-                  </div>
-                )}
-                {videoFamily === "wan27" && (
-                  <div className="space-y-2">
-                    <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Resolution</span>
-                      <div className="flex gap-1.5">
-                        <Chip active={wanResolution === "720p"} onClick={() => setWanResolution("720p")}><span className="whitespace-nowrap">720p</span></Chip>
-                        <Chip active={wanResolution === "1080p"} onClick={() => setWanResolution("1080p")}><span className="whitespace-nowrap">1080p</span></Chip>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <input type="number" min={10000} max={99999} value={veoSeed}
+                          onChange={(e) => setVeoSeed(e.target.value)} placeholder="Seed"
+                          className="w-full rounded-lg px-3 py-2.5 text-[12px] text-white outline-none placeholder:text-white/25"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }} />
+                        <input value={veoWatermark}
+                          onChange={(e) => setVeoWatermark(e.target.value)} placeholder="Watermark"
+                          className="w-full rounded-lg px-3 py-2.5 text-[12px] text-white outline-none placeholder:text-white/25"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }} />
                       </div>
-                    </div>
-                    {(videoMode === "t2v" || videoMode === "replace" || videoMode === "edit") && (
-                      <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Aspect</span>
-                        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
-                          {["16:9", "9:16", "1:1", "4:3", "3:4"].map((ar) => (
-                            <Chip key={ar} active={videoAspectRatio === ar} onClick={() => setVideoAspectRatio(ar)}><span className="whitespace-nowrap">{ar}</span></Chip>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {videoFamily === "seedance2" && (
-                  <div className="space-y-2">
+                    </>
+                  )}
+
+                  {/* WAN 2.2 / 2.6 / 2.7 settings */}
+                  {videoFamily === "wan22" && (
                     <div>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Resolution</span>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {SEEDANCE_RH_RESOLUTIONS.map((r) => (
-                          <Chip key={r} active={seedanceResolution === r} onClick={() => setSeedanceResolution(r)}><span className="whitespace-nowrap">{r}</span></Chip>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Resolution</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {["480p", ...(videoMode === "move" || videoMode === "replace" ? ["580p"] : []), "720p"].map((r) => (
+                          <button key={r} type="button" onClick={() => setWanResolution(r)}
+                            className="h-10 rounded-lg text-[11px] font-semibold transition-all"
+                            style={wanResolution === r
+                              ? { background: "#ffffff", color: "#0a0a0e" }
+                              : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                          >{r}</button>
                         ))}
                       </div>
                     </div>
-                    {(videoMode === "t2v" || videoMode === "i2v" || videoMode === "edit" || videoMode === "multi-ref") && (
+                  )}
+                  {videoFamily === "wan26" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Resolution</label>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {["720p","1080p"].map((r) => (
+                          <button key={r} type="button" onClick={() => setWanResolution(r)}
+                            className="h-10 rounded-lg text-[11px] font-semibold transition-all"
+                            style={wanResolution === r
+                              ? { background: "#ffffff", color: "#0a0a0e" }
+                              : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                          >{r}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {videoFamily === "wan27" && (
+                    <>
                       <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Aspect</span>
-                        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
-                          {SEEDANCE_RH_RATIOS.map((ar) => (
-                            <Chip key={ar} active={videoAspectRatio === ar} onClick={() => setVideoAspectRatio(ar)}><span className="whitespace-nowrap">{ar}</span></Chip>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Resolution</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {["720p","1080p"].map((r) => (
+                            <button key={r} type="button" onClick={() => setWanResolution(r)}
+                              className="h-10 rounded-lg text-[11px] font-semibold transition-all"
+                              style={wanResolution === r
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{r}</button>
                           ))}
                         </div>
                       </div>
+                      {(videoMode === "t2v" || videoMode === "replace" || videoMode === "edit") && (
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Aspect</label>
+                          <div className="grid grid-cols-5 gap-1.5">
+                            {["16:9","9:16","1:1","4:3","3:4"].map((r) => (
+                              <button key={r} type="button" onClick={() => setVideoAspectRatio(r)}
+                                className="h-10 rounded-lg text-[10px] font-semibold transition-all"
+                                style={videoAspectRatio === r
+                                  ? { background: "#ffffff", color: "#0a0a0e" }
+                                  : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                              >{r}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Seedance 2 settings */}
+                  {videoFamily === "seedance2" && (
+                    <>
+                      <div>
+                        <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Resolution</label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {SEEDANCE_RH_RESOLUTIONS.map((r) => (
+                            <button key={r} type="button" onClick={() => setSeedanceResolution(r)}
+                              className="h-10 rounded-lg text-[10px] font-semibold transition-all"
+                              style={seedanceResolution === r
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                            >{r}</button>
+                          ))}
+                        </div>
+                      </div>
+                      {(videoMode === "t2v" || videoMode === "i2v" || videoMode === "edit" || videoMode === "multi-ref") && (
+                        <div>
+                          <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Aspect</label>
+                          <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
+                            {SEEDANCE_RH_RATIOS.map((r) => (
+                              <button key={r} type="button" onClick={() => setVideoAspectRatio(r)}
+                                className="shrink-0 snap-start px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                                style={videoAspectRatio === r
+                                  ? { background: "#ffffff", color: "#0a0a0e" }
+                                  : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                              >{r}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSeedanceGenerateAudio((v) => !v)}
+                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[13px] font-medium transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
+                      >
+                        <span>Audio</span>
+                        <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                          style={seedanceGenerateAudio
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}>
+                          {seedanceGenerateAudio ? "ON" : "OFF"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSeedanceRealPersonMode((v) => !v)}
+                        className="w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-[13px] font-medium transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
+                      >
+                        <span>Real person mode</span>
+                        <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                          style={seedanceRealPersonMode
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}>
+                          {seedanceRealPersonMode ? "ON" : "OFF"}
+                        </span>
+                      </button>
+                      <button type="button" onClick={() => setAssetManagerOpen(true)}
+                        className="w-full px-3.5 py-3 rounded-xl text-[13px] font-medium text-white/85 transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >Manage assets</button>
+                    </>
+                  )}
+
+                  {/* Duration slider (default for families without dedicated controls) */}
+                  {videoFamily !== "sora2" && videoFamily !== "kling26" && videoFamily !== "veo31" && videoFamily !== "kling30" && (
+                    <div>
+                      <label className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-1.5">Duration · {videoDuration}s</label>
+                      <input type="range" min={durationConfig.min} max={durationConfig.max}
+                        step={durationConfig.step} disabled={durationConfig.fixed}
+                        value={videoDuration} onChange={(e) => setVideoDuration(Number(e.target.value))}
+                        className="w-full accent-white disabled:opacity-50" />
+                    </div>
+                  )}
+
+                  <div className="h-2" />
+                </div>
+
+                {/* Sticky footer */}
+                <div
+                  className="px-4 pt-2.5"
+                  style={{
+                    background: "linear-gradient(180deg, transparent 0%, rgba(8,8,12,0.96) 40%)",
+                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                    paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => { handleGenerateVideo(); setMobileVideoBarExpanded(false); }}
+                    disabled={isVideoGenerating}
+                    className="w-full rounded-xl flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-all"
+                    style={{
+                      height: "48px",
+                      background: "#ffffff",
+                      color: "#0a0a0e",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 4px 16px rgba(255,255,255,0.12)",
+                    }}
+                  >
+                    {isVideoGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <>
+                        <Video className="w-4 h-4" strokeWidth={2.5} />
+                        <span className="text-[14px] font-semibold">{copy.generateVideo}</span>
+                        <span
+                          className="ml-1 px-2 py-0.5 rounded-md text-[11px] font-semibold tabular-nums flex items-center gap-1"
+                          style={{ background: "rgba(10,10,14,0.08)" }}
+                        >
+                          {videoPricingInfo.cost}
+                          <Coins className="w-3 h-3 text-amber-500" />
+                        </span>
+                      </>
                     )}
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => setSeedanceGenerateAudio((v) => !v)}
-                        className={`flex-1 min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${seedanceGenerateAudio ? "bg-violet-600 text-white border-violet-500 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
-                      >
-                        Audio · {seedanceGenerateAudio ? "On" : "Off"}
-                      </button>
-                      <button type="button" onClick={() => setSeedanceRealPersonMode((v) => !v)}
-                        className={`flex-1 min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${seedanceRealPersonMode ? "bg-violet-600 text-white border-violet-500 shadow-[0_4px_12px_-4px_rgba(124,58,237,0.5)]" : "bg-white/[0.03] text-slate-300 border-white/[0.08] hover:bg-white/[0.06]"}`}
-                      >
-                        Real person · {seedanceRealPersonMode ? "On" : "Off"}
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setAssetManagerOpen(true)}
-                      className="w-full min-h-[40px] px-3 py-2 rounded-lg text-xs font-semibold transition-all border bg-white/[0.03] text-slate-200 border-white/[0.08] hover:bg-white/[0.06] hover:text-white"
-                    >
-                      Manage Assets
-                    </button>
-                  </div>
-                )}
-                {videoFamily !== "sora2" && videoFamily !== "kling26" && videoFamily !== "veo31" && videoFamily !== "kling30" && (
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Duration</span>
-                    <div className="flex items-center gap-2">
-                      <input type="range" min={durationConfig.min} max={durationConfig.max} step={durationConfig.step} disabled={durationConfig.fixed} value={videoDuration} onChange={(e) => setVideoDuration(Number(e.target.value))} className="flex-1 accent-violet-500 disabled:opacity-50" />
-                      <span className="text-xs text-white font-medium w-6 text-right">{videoDuration}s</span>
-                    </div>
-                  </div>
-                )}
-                <button type="button" onClick={handleGenerateVideo} disabled={isVideoGenerating}
-                  className="w-full min-h-[48px] shrink-0 px-4 py-3 rounded-xl text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2 shadow-[0_8px_24px_-6px_rgba(124,58,237,0.55)] active:scale-[0.99] transition-transform"
-                  style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" }}>
-                  {isVideoGenerating
-                    ? <Loader2 className="w-5 h-5 animate-spin" />
-                    : <span className="flex items-center gap-1.5 whitespace-nowrap">{copy.generateVideo} {videoPricingInfo.cost} <Coins className="w-4 h-4 text-yellow-400" /></span>
-                  }
-                </button>
-                <p className="text-[10px] text-slate-500 text-center tabular-nums">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
+                  </button>
+                  <p className="text-center text-[11px] text-white/30 mt-2 tabular-nums">
+                    {formatCopy(copy.creditsAvailable, { credits: creditsLeft })}
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
 
