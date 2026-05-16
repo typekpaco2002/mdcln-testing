@@ -2776,307 +2776,522 @@ export default function CreatorStudioPage({ sidebarCollapsed = false, initialTab
             </div>
           </div>
 
-          {/* Mobile bar — collapsible: compact prompt + generate; expand for refs / aspect / res */}
-          <div
-            className="md:hidden fixed left-1/2 -translate-x-1/2 z-[35] w-[calc(100vw-1rem)]"
-            style={{
-              bottom: "max(0.75rem, calc(var(--dashboard-mobile-tab-stack, calc(3.5rem + env(safe-area-inset-bottom))) + 0.625rem))",
-              borderRadius: "1.125rem", overflow: "hidden",
-              background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.80)",
-              backdropFilter: "blur(32px) saturate(180%)", WebkitBackdropFilter: "blur(32px) saturate(180%)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 20px 60px -12px rgba(0,0,0,0.80)",
-            }}
-          >
-            <div className="flex items-stretch gap-2">
+          {/* ── Mobile / tablet generate panel ───────────────────────────── */}
+          {/* COLLAPSED — floating pill above bottom tab bar */}
+          {!mobileGenBarExpanded && (
+            <div
+              className="md:hidden fixed left-1/2 -translate-x-1/2 z-[35] w-[calc(100vw-1rem)]"
+              style={{
+                bottom: "max(0.75rem, calc(var(--dashboard-mobile-tab-stack, calc(3.5rem + env(safe-area-inset-bottom))) + 0.625rem))",
+                borderRadius: "1.25rem",
+                overflow: "hidden",
+                background: "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%), rgba(12,12,16,0.85)",
+                backdropFilter: "blur(32px) saturate(180%)",
+                WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14), 0 24px 60px -12px rgba(0,0,0,0.85)",
+              }}
+            >
+              {/* Meta strip */}
               <button
                 type="button"
-                onClick={() => setMobileGenBarExpanded((e) => !e)}
-                aria-expanded={mobileGenBarExpanded}
-                aria-label={mobileGenBarExpanded ? copy.collapseGenControls : copy.expandGenControls}
-                className={`flex-shrink-0 w-11 min-h-[44px] rounded-xl border flex items-center justify-center transition-all ${
-                  mobileGenBarExpanded
-                    ? "border-white/20 bg-white/10 text-white"
-                    : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]"
-                }`}
+                onClick={() => setMobileGenBarExpanded(true)}
+                aria-label={copy.expandGenControls}
+                className="w-full flex items-center justify-between px-4 pt-2.5 pb-1.5 text-left"
               >
-                <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${mobileGenBarExpanded ? "rotate-180" : ""}`} aria-hidden />
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                  <span className="text-[11px] font-semibold text-white/85 truncate">
+                    {(IMAGE_MODELS.find((m) => m.id === imageModel) || {}).label || "Model"}
+                  </span>
+                  <span className="text-white/20 shrink-0">·</span>
+                  <span className="text-[11px] text-white/55 tabular-nums shrink-0">{aspectSummary}</span>
+                  <span className="text-white/20 shrink-0">·</span>
+                  <span className="text-[11px] text-white/55 uppercase shrink-0">{resolution}</span>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] font-bold text-white tabular-nums shrink-0 ml-2">
+                  <Zap className="w-3 h-3 text-amber-400" />{COST}
+                </div>
               </button>
-              {!mobileGenBarExpanded && (
-                <>
-                  <div className="flex-1 min-w-0 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 flex items-center focus-within:border-violet-500/40 focus-within:bg-white/[0.05] transition-colors">
-                    <textarea
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder={copy.promptPlaceholder}
-                      rows={1}
-                      className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 resize-none outline-none leading-snug min-h-[2.5rem] max-h-[2.5rem] overflow-y-auto [scrollbar-width:thin]"
-                    />
-                  </div>
+
+              {/* Prompt + Generate */}
+              <div className="flex items-stretch gap-2 px-2 pb-2">
+                <button
+                  type="button"
+                  onClick={() => setMobileGenBarExpanded(true)}
+                  aria-label={copy.expandGenControls}
+                  className="flex-1 min-w-0 flex items-start text-left rounded-xl px-3.5 py-3"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.09)",
+                    minHeight: "56px",
+                  }}
+                >
+                  {prompt ? (
+                    <span className="text-[13px] text-white/85 line-clamp-2 leading-snug">{prompt}</span>
+                  ) : (
+                    <span className="text-[13px] text-white/30 leading-snug">{copy.promptPlaceholder}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={imageGenerateDisabled}
+                  aria-label={copy.buttonGenerating || "Generate"}
+                  className="shrink-0 rounded-xl flex items-center justify-center disabled:opacity-40 active:scale-[0.94] transition-all"
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    background: "#ffffff",
+                    color: "#0a0a0e",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 6px 18px rgba(255,255,255,0.18)",
+                  }}
+                >
+                  {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" strokeWidth={2.5} />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* EXPANDED — full bottom sheet */}
+          {mobileGenBarExpanded && (
+            <div className="md:hidden fixed inset-0 z-[60] flex flex-col" role="dialog" aria-modal="true">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: "rgba(0,0,0,0.55)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                }}
+                onClick={() => setMobileGenBarExpanded(false)}
+              />
+
+              {/* Sheet */}
+              <div
+                className="relative mt-auto w-full flex flex-col"
+                style={{
+                  maxHeight: "92vh",
+                  background: "linear-gradient(180deg, rgba(20,20,26,0.96) 0%, rgba(12,12,16,0.96) 100%)",
+                  backdropFilter: "blur(32px) saturate(180%)",
+                  WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                  borderTopLeftRadius: "1.5rem",
+                  borderTopRightRadius: "1.5rem",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderBottom: "none",
+                  boxShadow: "0 -20px 60px -12px rgba(0,0,0,0.85)",
+                }}
+              >
+                {/* Drag handle */}
+                <div className="flex justify-center pt-2.5 pb-1.5">
                   <button
                     type="button"
-                    onClick={handleGenerate}
-                    disabled={imageGenerateDisabled}
-                    className="flex-shrink-0 min-w-[6.25rem] min-h-[44px] px-3 rounded-xl text-xs font-bold disabled:opacity-40 flex flex-col items-center justify-center gap-0.5 leading-tight shadow-[0_8px_20px_-6px_rgba(124,58,237,0.55)] active:scale-[0.97] transition-transform"
-                    style={{background:"#ffffff",color:"#0a0a0e",boxShadow:"0 2px 12px rgba(255,255,255,0.18), inset 0 1px 0 rgba(255,255,255,0.90)"}}
-                  >
-                    {isGenerating ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <span className="flex items-center gap-1">
-                          <Zap className="w-3.5 h-3.5 shrink-0" />
-                          <span className="whitespace-nowrap tabular-nums">{COST}</span>
-                          <Coins className="w-3.5 h-3.5 text-yellow-400 shrink-0" />
-                        </span>
-                        <span className="text-[10px] font-medium opacity-90 tracking-wide">{copy.tabGenerate}</span>
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
-              {mobileGenBarExpanded && (
-                <div className="flex-1 min-w-0 flex items-center min-h-[44px] px-2 gap-2 truncate">
-                  <span className="text-[11px] text-violet-200 font-semibold truncate">{aspectSummary}</span>
-                  <span className="text-[10px] text-slate-500 px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.06] uppercase tracking-wider">{resolution}</span>
-                  <span className="ml-auto text-[11px] text-white font-bold tabular-nums shrink-0">{COST} cr</span>
+                    onClick={() => setMobileGenBarExpanded(false)}
+                    aria-label={copy.collapseGenControls}
+                    className="w-12 h-1.5 rounded-full bg-white/25 hover:bg-white/40 transition-colors"
+                  />
                 </div>
-              )}
-            </div>
-            {!mobileGenBarExpanded && (
-              <p className="text-[10px] text-white/25 mt-2 text-center tabular-nums">
-                {formatCopy(copy.creditsAvailable, { credits: creditsLeft })}
-              </p>
-            )}
 
-            {mobileGenBarExpanded && (
-              <div className="mt-2.5 space-y-3 border-t border-white/[0.06] pt-3">
-                <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 focus-within:border-violet-500/40 focus-within:bg-white/[0.05] transition-colors">
-                  <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={copy.promptPlaceholder} rows={2}
-                    className="w-full bg-transparent text-sm text-white placeholder:text-slate-500 resize-none outline-none min-h-[2.5rem]" />
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-2 border-b border-white/[0.06]">
+                  <h3 className="text-[15px] font-semibold text-white tracking-tight">Generate</h3>
+                  <button
+                    type="button"
+                    onClick={() => setMobileGenBarExpanded(false)}
+                    aria-label={copy.collapseGenControls}
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white/55 hover:text-white transition-colors"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <div>
-                  <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Model</span>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
-                    {IMAGE_MODELS.map((model) => (
-                      <Chip key={model.id} active={imageModel === model.id} onClick={() => setImageModel(model.id)}>
-                        <span className="whitespace-nowrap">{model.label}</span>
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-                {(isIdeogramImageModel || isWanImageModel) && (
+
+                {/* Body */}
+                <div
+                  className="flex-1 overflow-y-auto px-5 py-4 space-y-5 [scrollbar-width:thin]"
+                  style={{ overscrollBehavior: "contain" }}
+                >
+                  {/* Prompt */}
                   <div>
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Outputs</span>
-                    <div className="flex gap-1.5">
-                      {[1, 2, 3, 4].map((n) => (
-                        <Chip key={n} active={imageNumOutputs === n} onClick={() => setImageNumOutputs(n)}>
-                          <span className="whitespace-nowrap">{n}</span>
-                        </Chip>
-                      ))}
+                    <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Prompt</label>
+                    <div
+                      className="rounded-2xl px-4 py-3.5 focus-within:border-white/25 transition-colors"
+                      style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                    >
+                      <textarea
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder={copy.promptPlaceholder}
+                        rows={4}
+                        className="w-full bg-transparent text-[14px] text-white placeholder:text-white/25 resize-none outline-none leading-relaxed"
+                      />
                     </div>
                   </div>
-                )}
-                {isIdeogramImageModel && (
+
+                  {/* Model — horizontal rail */}
                   <div>
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Speed</span>
-                    <div className="flex gap-1.5">
-                      {["TURBO", "BALANCED", "QUALITY"].map((mode) => (
-                        <Chip key={mode} active={ideogramRenderingSpeed === mode} onClick={() => setIdeogramRenderingSpeed(mode)}>
-                          <span className="whitespace-nowrap">{mode}</span>
-                        </Chip>
-                      ))}
+                    <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Model</label>
+                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
+                      {IMAGE_MODELS.map((m) => {
+                        const active = imageModel === m.id;
+                        return (
+                          <button
+                            key={m.id}
+                            type="button"
+                            onClick={() => setImageModel(m.id)}
+                            className="shrink-0 snap-start px-3.5 py-2 rounded-xl text-[12px] font-medium whitespace-nowrap transition-all"
+                            style={active ? {
+                              background: "#ffffff",
+                              color: "#0a0a0e",
+                              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95)",
+                            } : {
+                              background: "rgba(255,255,255,0.04)",
+                              color: "rgba(255,255,255,0.65)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                            }}
+                          >
+                            {m.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                )}
-                {supportsReferenceSlots && (
-                  <div>
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">{copy.refs}</span>
-                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
-                      {refs.map((url, i) => (
-                        <RefSlot key={i} url={url} uploading={uploadingIdx === i}
-                          onRemove={() => removeRef(i)} onAdd={(file) => handleAddRef(file, i)} />
-                      ))}
+
+                  {/* Outputs + Speed */}
+                  {(isIdeogramImageModel || isWanImageModel) && (
+                    <div className="flex items-start gap-5 flex-wrap">
+                      <div>
+                        <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Outputs</label>
+                        <div className="flex gap-1.5">
+                          {[1, 2, 3, 4].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setImageNumOutputs(n)}
+                              className="w-11 h-11 rounded-xl text-[13px] font-semibold transition-all"
+                              style={imageNumOutputs === n ? {
+                                background: "#ffffff", color: "#0a0a0e",
+                              } : {
+                                background: "rgba(255,255,255,0.04)",
+                                color: "rgba(255,255,255,0.55)",
+                                border: "1px solid rgba(255,255,255,0.08)",
+                              }}
+                            >{n}</button>
+                          ))}
+                        </div>
+                      </div>
+                      {isIdeogramImageModel && (
+                        <div>
+                          <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Speed</label>
+                          <div className="flex gap-1.5">
+                            {["TURBO", "BALANCED", "QUALITY"].map((mode) => (
+                              <button
+                                key={mode}
+                                type="button"
+                                onClick={() => setIdeogramRenderingSpeed(mode)}
+                                className="px-3 h-11 rounded-xl text-[11px] font-semibold transition-all"
+                                style={ideogramRenderingSpeed === mode ? {
+                                  background: "#ffffff", color: "#0a0a0e",
+                                } : {
+                                  background: "rgba(255,255,255,0.04)",
+                                  color: "rgba(255,255,255,0.55)",
+                                  border: "1px solid rgba(255,255,255,0.08)",
+                                }}
+                              >{mode}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-                {showSingleInputUploader && (
-                  <div>
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Input Image</span>
-                    <MediaUploadField
-                      label={singleInputRequired ? "Required" : "Optional"}
-                      value={imageInputUrl}
-                      onUploaded={setImageInputUrl}
-                    />
-                    {imageModel === "ideogram-v3-edit" && (
-                      <div className="mt-2 rounded-xl border border-white/10 bg-black/20 p-2.5">
-                        <p className="text-xs text-slate-300 mb-1.5">Inpainting mask</p>
-                        <div className="flex items-center gap-2">
+                  )}
+
+                  {/* Input image */}
+                  {showSingleInputUploader && (
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">
+                        Input image {singleInputRequired ? "(required)" : "(optional)"}
+                      </label>
+                      <MediaUploadField
+                        label={singleInputRequired ? "Required" : "Optional"}
+                        value={imageInputUrl}
+                        onUploaded={setImageInputUrl}
+                      />
+                      {imageModel === "ideogram-v3-edit" && (
+                        <div className="mt-3 flex items-center gap-3">
                           <button
                             type="button"
                             disabled={!imageInputUrl}
                             onClick={() => setMaskEditorOpen(true)}
-                            className="px-3 py-1.5 rounded-lg text-xs bg-white/10 text-slate-200 hover:bg-white/15 disabled:opacity-40"
+                            className="px-4 py-2 rounded-xl text-[12px] font-medium text-white/85 disabled:opacity-40 transition-all"
+                            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.10)" }}
                           >
                             Draw mask
                           </button>
-                          <span className="text-[11px] text-slate-500 truncate">
-                            {imageMaskUrl ? "Mask ready" : "No mask uploaded"}
-                          </span>
+                          <span className="text-[11px] text-white/40">{imageMaskUrl ? "Mask ready" : "No mask"}</span>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {isFluxImageModel && (
-                  <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => setFluxPromptUpsampling((v) => !v)}
-                      className={"px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"}
-                    >
-                      Prompt upsampling · {fluxPromptUpsampling ? "On" : "Off"}
-                    </button>
-                    <div>
-                      <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">Safety</span>
-                      <div className="flex gap-1.5">
-                        <Chip active={fluxSafetyTolerance === 0} onClick={() => setFluxSafetyTolerance(0)}>
-                          <span className="whitespace-nowrap">Strict</span>
-                        </Chip>
-                        <Chip active={fluxSafetyTolerance === 2} onClick={() => setFluxSafetyTolerance(2)}>
-                          <span className="whitespace-nowrap">Relaxed</span>
-                        </Chip>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {isWanImageModel && (
-                  <div className="space-y-2">
-                    <button
-                      type="button"
-                      onClick={() => setWanThinkingMode((v) => !v)}
-                      className={"px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"}
-                    >
-                      Thinking mode · {wanThinkingMode ? "On" : "Off"}
-                    </button>
-                    <div className="rounded-lg border border-white/15 bg-black/30 px-3 py-2">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-[11px] text-slate-300">Color palette (optional)</span>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={wanPaletteColorValue}
-                            onChange={(e) => setWanPaletteColorValue(String(e.target.value || "#C2D1E6").toUpperCase())}
-                            className="w-7 h-7 p-0 rounded border border-white/20 bg-transparent"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const next = String(wanPaletteColorValue || "").toUpperCase();
-                              if (!/^#[0-9A-F]{6}$/.test(next)) return;
-                              setWanPaletteColors((prev) => {
-                                if (prev.includes(next) || prev.length >= 10) return prev;
-                                return [...prev, next];
-                              });
-                            }}
-                            className="px-2 py-1 rounded-md text-[11px] bg-white/10 text-slate-200 hover:bg-white/15"
-                          >
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                      {wanPaletteColors.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {wanPaletteColors.map((hex) => (
-                            <button
-                              key={hex}
-                              type="button"
-                              onClick={() => setWanPaletteColors((prev) => prev.filter((c) => c !== hex))}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] border border-white/20 text-white"
-                              style={{ background: `${hex}33` }}
-                              title="Remove color"
-                            >
-                              <span className="inline-block w-2.5 h-2.5 rounded-full border border-white/40" style={{ background: hex }} />
-                              {hex}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-slate-500">No palette set. WAN auto-selects colors.</p>
                       )}
                     </div>
-                    <div className="rounded-lg border border-white/15 bg-black/30 px-3 py-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-slate-300">BBox list (advanced, optional)</span>
+                  )}
+
+                  {/* References */}
+                  {supportsReferenceSlots && (
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">{copy.refs}</label>
+                      <div className="flex gap-2 overflow-x-auto pb-1 -mx-5 px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden snap-x">
+                        {refs.map((url, i) => (
+                          <RefSlot
+                            key={i}
+                            url={url}
+                            uploading={uploadingIdx === i}
+                            onRemove={() => removeRef(i)}
+                            onAdd={(file) => handleAddRef(file, i)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Flux options */}
+                  {isFluxImageModel && (
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Flux</label>
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setFluxPromptUpsampling((v) => !v)}
+                          className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-[13px] font-medium transition-all"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
+                        >
+                          <span>Prompt upsampling</span>
+                          <span
+                            className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                            style={fluxPromptUpsampling
+                              ? { background: "#ffffff", color: "#0a0a0e" }
+                              : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}
+                          >
+                            {fluxPromptUpsampling ? "ON" : "OFF"}
+                          </span>
+                        </button>
+                        <div
+                          className="flex items-center justify-between gap-2 px-4 py-3.5 rounded-xl"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                        >
+                          <span className="text-[13px] text-white/85">Safety</span>
+                          <div className="flex gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setFluxSafetyTolerance(0)}
+                              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                              style={fluxSafetyTolerance === 0
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)" }}
+                            >Strict</button>
+                            <button
+                              type="button"
+                              onClick={() => setFluxSafetyTolerance(2)}
+                              className="px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+                              style={fluxSafetyTolerance === 2
+                                ? { background: "#ffffff", color: "#0a0a0e" }
+                                : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.55)" }}
+                            >Relaxed</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* GPT Image 2 Safety */}
+                  {isGptImage2Model && (
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">Safety</label>
+                      <button
+                        type="button"
+                        onClick={() => setGptImage2NsfwChecker((v) => !v)}
+                        className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-[13px] font-medium transition-all"
+                        style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
+                      >
+                        <span>NSFW filter</span>
+                        <span
+                          className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                          style={gptImage2NsfwChecker
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}
+                        >
+                          {gptImage2NsfwChecker ? "ON" : "OFF"}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* WAN options */}
+                  {isWanImageModel && (
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">WAN</label>
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setWanThinkingMode((v) => !v)}
+                          className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-[13px] font-medium transition-all"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
+                        >
+                          <span>Thinking mode</span>
+                          <span
+                            className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-md"
+                            style={wanThinkingMode
+                              ? { background: "#ffffff", color: "#0a0a0e" }
+                              : { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.40)" }}
+                          >
+                            {wanThinkingMode ? "ON" : "OFF"}
+                          </span>
+                        </button>
                         <button
                           type="button"
                           onClick={() => setWanAdvancedMaskOpen((v) => !v)}
-                          className="px-2 py-1 rounded-md text-[11px] bg-white/10 text-slate-200 hover:bg-white/15"
+                          className="w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-[13px] font-medium transition-all"
+                          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }}
                         >
-                          {wanAdvancedMaskOpen ? "Hide" : "Edit"}
+                          <span>Advanced (palette · bbox)</span>
+                          <ChevronDown className={`w-4 h-4 text-white/45 transition-transform ${wanAdvancedMaskOpen ? "rotate-180" : ""}`} />
                         </button>
+                        {wanAdvancedMaskOpen && (
+                          <div className="px-4 py-3.5 rounded-xl space-y-3" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                            <div>
+                              <span className="block text-[11px] text-white/55 mb-2">Color palette</span>
+                              <div className="flex items-center gap-2 mb-2">
+                                <input
+                                  type="color"
+                                  value={wanPaletteColorValue}
+                                  onChange={(e) => setWanPaletteColorValue(String(e.target.value || "#C2D1E6").toUpperCase())}
+                                  className="w-10 h-10 p-0 rounded-lg border border-white/15 bg-transparent cursor-pointer"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = String(wanPaletteColorValue || "").toUpperCase();
+                                    if (!/^#[0-9A-F]{6}$/.test(next)) return;
+                                    setWanPaletteColors((prev) => prev.includes(next) || prev.length >= 10 ? prev : [...prev, next]);
+                                  }}
+                                  className="px-3 py-2 rounded-lg text-[11px] font-medium text-white/85"
+                                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
+                                >Add</button>
+                              </div>
+                              {wanPaletteColors.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {wanPaletteColors.map((hex) => (
+                                    <button
+                                      key={hex}
+                                      type="button"
+                                      onClick={() => setWanPaletteColors((prev) => prev.filter((c) => c !== hex))}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-white/75"
+                                      style={{ background: `${hex}22`, border: "1px solid rgba(255,255,255,0.12)" }}
+                                    >
+                                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: hex }} />
+                                      {hex}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-[10px] text-white/30">No palette set.</p>
+                              )}
+                            </div>
+                            <div>
+                              <span className="block text-[11px] text-white/55 mb-2">BBox list (JSON)</span>
+                              <textarea
+                                value={wanBboxListText}
+                                onChange={(e) => setWanBboxListText(e.target.value)}
+                                placeholder="[[10,10,120,120]]"
+                                rows={3}
+                                className="w-full rounded-lg px-3 py-2 text-[11px] text-white outline-none resize-none placeholder:text-white/25"
+                                style={{ background: "rgba(0,0,0,0.30)", border: "1px solid rgba(255,255,255,0.08)" }}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      {wanAdvancedMaskOpen && (
-                        <>
-                          <textarea
-                            value={wanBboxListText}
-                            onChange={(e) => setWanBboxListText(e.target.value)}
-                            placeholder='JSON only. Example: [[10,10,120,120]]'
-                            rows={3}
-                            className="mt-2 w-full rounded-lg border border-white/15 bg-black/40 px-3 py-2 text-xs text-white outline-none resize-y"
-                          />
-                          <p className="mt-1 text-[10px] text-slate-500">Leave empty for normal generation/editing.</p>
-                        </>
-                      )}
+                    </div>
+                  )}
+
+                  {/* Aspect — visual grid */}
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">{copy.aspect}</label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {aspectRatioOptions.map((ar) => (
+                        <button
+                          key={ar.value}
+                          type="button"
+                          onClick={() => setAspectRatio(ar.value)}
+                          className="h-12 rounded-xl text-[11px] font-semibold transition-all flex items-center justify-center"
+                          style={aspectRatio === ar.value
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                        >{ar.hint ?? ar.label}</button>
+                      ))}
                     </div>
                   </div>
-                )}
-                {isGptImage2Model && (
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 block mb-2">Safety</span>
-                    <button
-                      type="button"
-                      onClick={() => setGptImage2NsfwChecker((v) => !v)}
-                      className={"px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all"}
-                    >
-                      NSFW filter · {gptImage2NsfwChecker ? "On" : "Off"}
-                    </button>
-                  </div>
-                )}
-                <div>
-                  <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">{copy.aspect}</span>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 snap-x [scrollbar-width:thin]">
-                    {aspectRatioOptions.map((ar) => (
-                      <Chip key={ar.value} active={aspectRatio === ar.value} onClick={() => setAspectRatio(ar.value)}>
-                        <span className="whitespace-nowrap">{ar.hint ?? ar.label}</span>
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-2">{copy.res}</span>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 [scrollbar-width:thin]">
-                    {RESOLUTIONS.map((r) => (
-                      <Chip key={r} active={resolution === r} onClick={() => setResolution(r)}>
-                        <span className="whitespace-nowrap">{r}</span>
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-                <button type="button" onClick={handleGenerate} disabled={imageGenerateDisabled}
-                  className="w-full min-h-[52px] rounded-xl text-[14px] font-semibold disabled:opacity-40 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-                  style={{background:"#ffffff",color:"#0a0a0e",boxShadow:"inset 0 1px 0 rgba(255,255,255,0.90), 0 4px 16px rgba(255,255,255,0.12)"}}>
-                  {isGenerating
-                    ? <Loader2 className="w-5 h-5 animate-spin" />
-                    : <span className="flex items-center gap-1.5 whitespace-nowrap">{formatCopy(copy.buttonGenerateCost, { cost: COST })} <Coins className="w-4 h-4 text-yellow-400" /></span>
-                  }
-                </button>
-                <p className="text-[10px] text-white/25 text-center tabular-nums">{formatCopy(copy.creditsAvailable, { credits: creditsLeft })}</p>
-              </div>
-            )}
-          </div>
 
+                  {/* Resolution */}
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40 mb-2">{copy.res}</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {RESOLUTIONS.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setResolution(r)}
+                          className="h-12 rounded-xl text-[13px] font-semibold transition-all"
+                          style={resolution === r
+                            ? { background: "#ffffff", color: "#0a0a0e" }
+                            : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.55)", border: "1px solid rgba(255,255,255,0.08)" }}
+                        >{r}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Bottom spacer so last item isn't hidden by footer */}
+                  <div className="h-2" />
+                </div>
+
+                {/* Sticky footer */}
+                <div
+                  className="px-5 pt-3"
+                  style={{
+                    background: "linear-gradient(180deg, transparent 0%, rgba(8,8,12,0.96) 40%)",
+                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                    paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => { handleGenerate(); setMobileGenBarExpanded(false); }}
+                    disabled={imageGenerateDisabled}
+                    className="w-full rounded-2xl flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-all"
+                    style={{
+                      height: "56px",
+                      background: "#ffffff",
+                      color: "#0a0a0e",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.95), 0 6px 20px rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : (
+                      <>
+                        <Zap className="w-4 h-4" strokeWidth={2.5} />
+                        <span className="text-[15px] font-semibold">{copy.tabGenerate || "Generate"}</span>
+                        <span
+                          className="ml-1 px-2 py-0.5 rounded-md text-[12px] font-semibold tabular-nums flex items-center gap-1"
+                          style={{ background: "rgba(10,10,14,0.08)" }}
+                        >
+                          {COST}
+                          <Coins className="w-3 h-3 text-amber-500" />
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-center text-[11px] text-white/30 mt-2 tabular-nums">
+                    {formatCopy(copy.creditsAvailable, { credits: creditsLeft })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <AnimatePresence>
             {lightboxGen && <Lightbox gen={lightboxGen} onClose={() => setLightboxGen(null)} />}
           </AnimatePresence>
