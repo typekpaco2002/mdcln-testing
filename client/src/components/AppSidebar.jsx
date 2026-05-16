@@ -557,29 +557,13 @@ export default function AppSidebar({
                       <button
                         key={item.id}
                         onClick={() => setActiveTab(item.id)}
-                        className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-all duration-150 ${collapsedRow}`}
+                        className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors duration-150 ${collapsedRow}`}
                         style={{
-                          background: isActive
-                            ? "linear-gradient(135deg, rgba(220,38,38,0.28) 0%, rgba(239,68,68,0.14) 60%, rgba(185,28,28,0.20) 100%)"
-                            : "linear-gradient(135deg, rgba(220,38,38,0.14) 0%, rgba(239,68,68,0.06) 60%, rgba(185,28,28,0.10) 100%)",
-                          border: isActive ? "1px solid rgba(239,68,68,0.40)" : "1px solid rgba(239,68,68,0.20)",
-                          backdropFilter: "blur(12px)",
-                          WebkitBackdropFilter: "blur(12px)",
-                          boxShadow: isActive ? "inset 0 1px 0 rgba(255,100,100,0.20), 0 4px 16px rgba(220,38,38,0.18)" : "inset 0 1px 0 rgba(255,100,100,0.10)",
-                          color: isActive ? "#fca5a5" : "#f87171",
+                          color: "#f87171",
+                          background: isActive ? "rgba(239,68,68,0.10)" : "transparent",
                         }}
-                        onMouseEnter={(e) => {
-                          if (!isActive) {
-                            e.currentTarget.style.background = "linear-gradient(135deg, rgba(220,38,38,0.22) 0%, rgba(239,68,68,0.10) 60%, rgba(185,28,28,0.16) 100%)";
-                            e.currentTarget.style.borderColor = "rgba(239,68,68,0.32)";
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive) {
-                            e.currentTarget.style.background = "linear-gradient(135deg, rgba(220,38,38,0.14) 0%, rgba(239,68,68,0.06) 60%, rgba(185,28,28,0.10) 100%)";
-                            e.currentTarget.style.borderColor = "rgba(239,68,68,0.20)";
-                          }
-                        }}
+                        onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = "rgba(239,68,68,0.07)"; }}
+                        onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
                         data-testid="sidebar-nsfw"
                       >
                         {isActive && (
@@ -590,7 +574,10 @@ export default function AppSidebar({
                             transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
                           />
                         )}
-                        <Flame className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "#ef4444", filter: "drop-shadow(0 0 6px rgba(239,68,68,0.60))" }} />
+                        <Flame
+                          className="w-[18px] h-[18px] flex-shrink-0"
+                          style={{ color: "#ef4444", filter: "drop-shadow(0 0 5px rgba(239,68,68,0.55))" }}
+                        />
                         <AnimatePresence>
                           {!visuallyCollapsed && (
                             <motion.span
