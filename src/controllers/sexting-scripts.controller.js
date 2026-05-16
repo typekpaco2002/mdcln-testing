@@ -43,7 +43,7 @@ export function isValidTier(picCount) {
 /* ─────────────────────────────────────────────────────────────────────── */
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL = "x-ai/grok-4.1-fast";
+const OPENROUTER_MODEL = "x-ai/grok-4.3";
 
 async function callGrokJSON({ systemPrompt, userPrompt, maxTokens = 1200, timeoutMs = 45_000 }) {
   const apiKey = process.env.OPENROUTER_API_KEY;

@@ -613,7 +613,7 @@ RULES:
     systemPrompt = await getPromptTemplateValue("describeTargetImageSystemPrompt", systemPrompt);
 
     const completion = await grok.chat.completions.create({
-      model: "x-ai/grok-4.1-fast",
+      model: "x-ai/grok-4.3",
       messages: [
         { role: "system", content: systemPrompt },
         {

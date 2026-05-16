@@ -17,9 +17,9 @@ This document is the in-depth map of:
 
 | Flow | Mode / Feature | Model / Endpoint | Provider | Source |
 |---|---|---|---|---|
-| Prompt enhancement | `casual` | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/routes/api.routes.js` |
-| Prompt enhancement | `ultra-realism` | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/routes/api.routes.js` |
-| Prompt enhancement | `nsfw` | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/routes/api.routes.js` |
+| Prompt enhancement | `casual` | `x-ai/grok-4.3` | OpenRouter/xAI | `src/routes/api.routes.js` |
+| Prompt enhancement | `ultra-realism` | `x-ai/grok-4.3` | OpenRouter/xAI | `src/routes/api.routes.js` |
+| Prompt enhancement | `nsfw` | `x-ai/grok-4.3` | OpenRouter/xAI | `src/routes/api.routes.js` |
 | Creator Studio image generation | NanoBanana | `nano-banana-pro`, `nano-banana-2` | KIE.AI | `src/services/kie.service.js` |
 | Image edit / identity edit | Seedream | `seedream/4.5-edit` | KIE.AI | `src/services/kie.service.js` |
 | Image edit / identity edit (alt path) | Seedream | `bytedance/seedream-v4.5/edit` | WaveSpeed | `src/services/wavespeed.service.js` |
@@ -35,14 +35,14 @@ This document is the in-depth map of:
 | Creator Studio video | Veo 3.1 generate / extend | `/api/v1/veo/generate`, `/api/v1/veo/extend` | KIE.AI | `src/services/kie.service.js`, `src/controllers/generation.controller.js` |
 | Kling sound injection | Prompt shaping | `prompt, sound prompt: ...` when enabled | KIE.AI | `src/controllers/generation.controller.js` |
 | LoRA training | training pipeline | `fal-ai/z-image-turbo-trainer-v2` | fal.ai | `src/services/fal.service.js` |
-| LoRA captioning helper | dataset captions | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/services/fal.service.js` |
-| LoRA auto-assign helper | pose/additive LoRA selection | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/services/fal.service.js` |
-| Looks auto-detect | model looks extraction | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/routes/api.routes.js` |
-| Physical profile analysis | LoRA look profiling | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/controllers/nsfw.controller.js` |
-| Scene selector auto-pick | chip auto-selection | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/controllers/nsfw.controller.js` |
-| LoRA strength helper | face visibility strength | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/controllers/nsfw.controller.js` |
-| Img2img prompt injection | identity swap rewrite | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/services/img2img.service.js` |
-| Image scene describer | identity recreation prep | `x-ai/grok-4.1-fast` | OpenRouter/xAI | `src/controllers/generation.controller.js` |
+| LoRA captioning helper | dataset captions | `x-ai/grok-4.3` | OpenRouter/xAI | `src/services/fal.service.js` |
+| LoRA auto-assign helper | pose/additive LoRA selection | `x-ai/grok-4.3` | OpenRouter/xAI | `src/services/fal.service.js` |
+| Looks auto-detect | model looks extraction | `x-ai/grok-4.3` | OpenRouter/xAI | `src/routes/api.routes.js` |
+| Physical profile analysis | LoRA look profiling | `x-ai/grok-4.3` | OpenRouter/xAI | `src/controllers/nsfw.controller.js` |
+| Scene selector auto-pick | chip auto-selection | `x-ai/grok-4.3` | OpenRouter/xAI | `src/controllers/nsfw.controller.js` |
+| LoRA strength helper | face visibility strength | `x-ai/grok-4.3` | OpenRouter/xAI | `src/controllers/nsfw.controller.js` |
+| Img2img prompt injection | identity swap rewrite | `x-ai/grok-4.3` | OpenRouter/xAI | `src/services/img2img.service.js` |
+| Image scene describer | identity recreation prep | `x-ai/grok-4.3` | OpenRouter/xAI | `src/controllers/generation.controller.js` |
 | Talking head | image+audio -> speaking video | `kwaivgi/kling-v2-ai-avatar-standard` | WaveSpeed | `src/services/wavespeed.service.js` |
 | Face swap (video) | swap | `wavespeed-ai/video-face-swap` | WaveSpeed | `src/services/wavespeed.service.js` |
 | Face swap (image) | swap | `wavespeed-ai/image-face-swap` | WaveSpeed | `src/services/wavespeed.service.js` |

@@ -249,7 +249,7 @@ async function captionSingleImage(imageUrl, triggerWord, index, captionSubjectCl
       const baseSystemPrompt = buildCaptionSystemPrompt(triggerWord, captionSubjectClass);
       const systemPrompt = await getPromptTemplateValue("falCaptionSystemPrompt", baseSystemPrompt);
       const completion = await grok.chat.completions.create({
-        model: "x-ai/grok-4.1-fast",
+        model: "x-ai/grok-4.3",
         temperature: 0.3,
         max_tokens: 300,
         messages: [
@@ -1733,7 +1733,7 @@ OUTPUT: Return ONLY valid JSON on one line, no explanation:
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "x-ai/grok-4.1-fast",
+        model: "x-ai/grok-4.3",
         max_tokens: 128,
         temperature: 0,
         response_format: { type: "json_object" },

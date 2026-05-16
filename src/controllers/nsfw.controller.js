@@ -426,7 +426,7 @@ OUTPUT: Return ONLY a single decimal number between 0.55 and 0.80. Nothing else.
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "x-ai/grok-4.1-fast",
+        model: "x-ai/grok-4.3",
         max_tokens: 32,
         temperature: 0,
         messages: [{ role: "user", content: systemPrompt }],
@@ -1182,7 +1182,7 @@ Try to fill ALL fields. Only omit a key if it is truly impossible to determine f
     let completion;
     try {
       completion = await grok.chat.completions.create({
-        model: "x-ai/grok-4.1-fast",
+        model: "x-ai/grok-4.3",
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -3848,7 +3848,7 @@ async function runNsfwPromptGenerationForModel(
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "x-ai/grok-4.1-fast",
+        model: "x-ai/grok-4.3",
         max_tokens: 1200,
         messages: [
           { role: "system", content: systemPrompt },
@@ -4423,7 +4423,7 @@ RULES:
       Authorization: `Bearer ${OPENROUTER_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "x-ai/grok-4.1-fast",
+      model: "x-ai/grok-4.3",
       max_tokens: 512,
       temperature: 0,
       response_format: { type: "json_object" },

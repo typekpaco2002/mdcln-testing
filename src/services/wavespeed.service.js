@@ -63,7 +63,7 @@ if (!WAVESPEED_API_KEY) {
   console.warn("âš ï¸  WAVESPEED_API_KEY not set â€” WaveSpeed generation endpoints will not work");
 }
 
-const NANO_BANANA_PROMPT_ENHANCER_MODEL = "x-ai/grok-4.1-fast";
+const NANO_BANANA_PROMPT_ENHANCER_MODEL = "x-ai/grok-4.3";
 
 function extractSinglePromptText(raw) {
   const content = String(raw || "")

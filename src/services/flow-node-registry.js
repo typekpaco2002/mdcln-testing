@@ -130,7 +130,7 @@ async function maybeEnhancePrompt(prompt, nodeData, userId, onProgress) {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENROUTER_API_KEY}` },
       body: JSON.stringify({
-        model: "x-ai/grok-4.1-fast",
+        model: "x-ai/grok-4.3",
         messages: [
           { role: "system", content: INSTARAW_NANO_BANANA_ENHANCE_SYSTEM },
           { role: "user", content: `User's idea: "${base}"\n\nWrite the full INSTARAW image edit instruction now.` },
@@ -251,7 +251,7 @@ export const NODE_REGISTRY = {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_API_KEY}` },
         body: JSON.stringify({
-          model: "x-ai/grok-4.1-fast",
+          model: "x-ai/grok-4.3",
           messages: [
             { role: "system", content: INSTARAW_NANO_BANANA_ENHANCE_SYSTEM },
             { role: "user", content: `User's idea: "${prompt}"\n\nWrite the full INSTARAW image edit instruction now.` },

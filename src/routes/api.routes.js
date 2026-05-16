@@ -1636,7 +1636,7 @@ router.post(
                 "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
               },
               body: JSON.stringify({
-                model: "x-ai/grok-4.1-fast",
+                model: "x-ai/grok-4.3",
                 messages: [
                   { role: "system", content: INSTARAW_NANO_BANANA_ENHANCE_SYSTEM },
                   { role: "user", content: userMsg },
@@ -1975,7 +1975,7 @@ Rules:
     systemPrompt = await getPromptTemplateValue("analyzeLooksSystemPrompt", systemPrompt);
 
     const requestBody = {
-      model: "x-ai/grok-4.1-fast",
+      model: "x-ai/grok-4.3",
       messages: [
         { role: "system", content: systemPrompt },
         {
@@ -2178,7 +2178,7 @@ NON-NEGOTIABLE QUALITY + CONSISTENCY POLICY:
 
     const callOpenRouterEnhance = async (temperature, maxTokens) => {
       const requestBody = {
-        model: "x-ai/grok-4.1-fast",
+        model: "x-ai/grok-4.3",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `User's idea: "${prompt.trim()}"${modelContext}\n\nWrite the superprompt now:` },
@@ -3604,7 +3604,7 @@ async function optimizeModelCloneXPrompt({
   const preferredModel = String(
     process.env.MODELCLONE_X_PROMPT_MODEL || process.env.SOULX_PROMPT_MODEL || "x-ai/grok-4",
   ).trim();
-  const modelCandidates = Array.from(new Set([preferredModel, "x-ai/grok-4.1-fast"])).filter(Boolean);
+  const modelCandidates = Array.from(new Set([preferredModel, "x-ai/grok-4.3"])).filter(Boolean);
   let systemPrompt = (await getPromptTemplateValue("modelcloneXPromptOptimizerSystem", "")).trim();
   if (!systemPrompt) {
     systemPrompt = (await getPromptTemplateValue("modelcloneXZImageTurbo", "")).trim();

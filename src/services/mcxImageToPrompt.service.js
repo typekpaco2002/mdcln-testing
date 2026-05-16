@@ -4,7 +4,7 @@ const MCX_I2P_MODEL = String(
   process.env.MODELCLONE_X_IMG2IMG_PROMPT_MODEL ||
     process.env.MCX_SCENE_GROK_MODEL ||
     process.env.GROK_VISION_MODEL ||
-    "x-ai/grok-4.1-fast",
+    "x-ai/grok-4.3",
 ).trim();
 
 const MCX_I2P_TIMEOUT_MS = Math.max(

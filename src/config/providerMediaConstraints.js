@@ -150,7 +150,7 @@ export const elevenLabsConstraints = {
 
 /**
  * OpenRouter — confirm at openrouter.ai/models for exact routed model.
- * x-ai/grok-4.1-fast: window/output not verified here; override via env when you lock values.
+ * x-ai/grok-4.3: window/output not verified here; override via env when you lock values.
  */
 export const openRouterConstraints = {
   defaultContextTokens: envInt("PROVIDER_LIMIT_OPENROUTER_CONTEXT_TOKENS", 131_072),

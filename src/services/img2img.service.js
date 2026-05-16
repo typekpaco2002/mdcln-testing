@@ -46,7 +46,7 @@ const RUNPOD_ENDPOINT = (
 const RUNPOD_BASE = RUNPOD_ENDPOINT ? `https://api.runpod.ai/v2/${RUNPOD_ENDPOINT}` : null;
 
 /** Grok 4 Fast (vision) via OpenRouter — used for the image-describe step (replaces JoyCaption). */
-const GROK_VISION_MODEL = (process.env.GROK_VISION_MODEL || "x-ai/grok-4.1-fast").trim();
+const GROK_VISION_MODEL = (process.env.GROK_VISION_MODEL || "x-ai/grok-4.3").trim();
 const GROK_DESCRIBE_TIMEOUT_MS = Number(process.env.GROK_DESCRIBE_TIMEOUT_MS) || 60_000;
 
 if (!RUNPOD_API_KEY) {
@@ -1030,7 +1030,7 @@ ORIGINAL_IMAGE_PROMPT (keep scene/pose/camera/lighting/background; drop source i
 ${rawDescription}`;
 
     const completion = await grok.chat.completions.create({
-      model: "x-ai/grok-4.1-fast",
+      model: "x-ai/grok-4.3",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage },

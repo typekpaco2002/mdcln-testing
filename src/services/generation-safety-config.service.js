@@ -7,7 +7,7 @@ let cache = null;
 let cacheAt = 0;
 
 export const DEFAULT_GENERATION_SAFETY_CONFIG = Object.freeze({
-  openrouterModel: "x-ai/grok-4.1-fast",
+  openrouterModel: "x-ai/grok-4.3",
   aiSystemPrompt:
     "You are a strict content safety classifier for AI image/video generation prompts.",
   aiGeneralPolicy:

@@ -5,11 +5,11 @@
  * optimizeModelCloneXPrompt(). Uses the same OpenRouter stack as NSFW /img2img/describe
  * (avoids Google moderation flags on some reference images).
  *
- * Env: OPENROUTER_API_KEY, optional MCX_SCENE_GROK_MODEL (defaults to GROK_VISION_MODEL or x-ai/grok-4.1-fast).
+ * Env: OPENROUTER_API_KEY, optional MCX_SCENE_GROK_MODEL (defaults to GROK_VISION_MODEL or x-ai/grok-4.3).
  */
 
 const MCX_SCENE_GROK_MODEL = String(
-  process.env.MCX_SCENE_GROK_MODEL || process.env.GROK_VISION_MODEL || "x-ai/grok-4.1-fast",
+  process.env.MCX_SCENE_GROK_MODEL || process.env.GROK_VISION_MODEL || "x-ai/grok-4.3",
 ).trim();
 
 const MCX_JSON_TIMEOUT_MS = Math.max(
