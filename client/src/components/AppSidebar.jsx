@@ -95,6 +95,10 @@ const SIDEBAR_COPY = {
     referralProgram: "Referral Program",
     logout: "Logout",
     navigation: "Navigation",
+    groupAvatars: "Avatars",
+    groupCreate: "Create",
+    groupTools: "Tools",
+    groupPremium: "Premium",
     monetize: "Monetize",
     socials: "Socials",
     soon: "Soon",
@@ -134,6 +138,10 @@ const SIDEBAR_COPY = {
     referralProgram: "Реферальная программа",
     logout: "Выйти",
     navigation: "Навигация",
+    groupAvatars: "Аватары",
+    groupCreate: "Создание",
+    groupTools: "Инструменты",
+    groupPremium: "Премиум",
     monetize: "Монетизация",
     socials: "Соцсети",
     soon: "Скоро",
@@ -280,30 +288,55 @@ export default function AppSidebar({
     typeof window !== "undefined" &&
     !/(^|\.)modelclone\.app$/i.test(window.location.hostname);
 
-  const mainNavItems = [
-    { id: "home", label: copy.dashboard, icon: Home },
-    { id: "models", label: copy.myModels, icon: Users },
-    { id: "generate", label: copy.generate, icon: Zap },
-    { id: "creator-studio", label: copy.creatorStudio, icon: Clapperboard, isCreatorStudio: true },
-    { id: "voice-studio", label: copy.voiceStudio, icon: Mic, premium: true },
-    { id: "reformatter", label: copy.reformatter, icon: FileType2 },
-    { id: "frame-extractor", label: copy.firstFrameExtractor, icon: ImageIcon },
-    { id: "upscaler", label: copy.upscaler, icon: ZoomIn },
-    { id: "synthid-remove", label: copy.synthidRemover, icon: ShieldOff },
-    { id: "modelclone-x", label: copy.modelcloneX, icon: Wand2 },
-    { id: "flows", label: "AI Flows", icon: Workflow },
-    ...(isTestingOnlyHost ? [{ id: "gptx", label: copy.gptx, icon: Bot }] : []),
-    { id: "history", label: copy.history, icon: Clock },
-    { id: "settings", label: copy.settings, icon: SettingsIcon },
-    { id: "course", label: copy.courses, icon: BookOpen, premium: true },
-    { id: "nsfw", label: "NSFW", icon: Flame, isNsfw: true },
-    { id: "repurposer", label: copy.repurposer, icon: Shuffle, premium: true },
-    { id: "reelfinder", label: copy.reelFinder, icon: SiInstagram, premium: true },
+  const showNsfw = !hideRestrictedTabs;
+
+  const navGroups = [
+    {
+      id: "main",
+      label: null,
+      items: [
+        { id: "home", label: copy.dashboard, icon: Home },
+      ],
+    },
+    {
+      id: "avatars",
+      label: copy.groupAvatars,
+      items: [
+        { id: "models", label: copy.myModels, icon: Users },
+        ...(showNsfw ? [{ id: "nsfw", label: "NSFW", icon: Flame, isNsfw: true }] : []),
+        { id: "generate", label: copy.generate, icon: Zap },
+      ],
+    },
+    {
+      id: "create",
+      label: copy.groupCreate,
+      items: [
+        { id: "creator-studio", label: copy.creatorStudio, icon: Clapperboard, isCreatorStudio: true },
+        { id: "voice-studio", label: copy.voiceStudio, icon: Mic, premium: true },
+        { id: "modelclone-x", label: copy.modelcloneX, icon: Wand2 },
+        { id: "flows", label: "AI Flows", icon: Workflow },
+        ...(isTestingOnlyHost ? [{ id: "gptx", label: copy.gptx, icon: Bot }] : []),
+      ],
+    },
+    {
+      id: "tools",
+      label: copy.groupTools,
+      items: [
+        { id: "upscaler", label: copy.upscaler, icon: ZoomIn },
+        { id: "frame-extractor", label: copy.firstFrameExtractor, icon: ImageIcon },
+        { id: "synthid-remove", label: copy.synthidRemover, icon: ShieldOff },
+        { id: "repurposer", label: copy.repurposer, icon: Shuffle, premium: true },
+      ],
+    },
+    {
+      id: "premium",
+      label: copy.groupPremium,
+      items: [
+        { id: "course", label: copy.courses, icon: BookOpen, premium: true },
+        { id: "reelfinder", label: copy.reelFinder, icon: SiInstagram, premium: true },
+      ],
+    },
   ];
-  const visibleMainNavItems = mainNavItems.filter((item) => {
-    if (!hideRestrictedTabs) return true;
-    return item.id !== "nsfw" && item.id !== "course";
-  });
 
   const promoItems = [
     {
@@ -493,78 +526,157 @@ export default function AppSidebar({
 
       {/* Main Navigation */}
       <nav className="flex-1 px-2 overflow-y-auto scrollbar-hide">
-        <AnimatePresence>
-          {!visuallyCollapsed && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="eyebrow px-3 mb-2"
-            >
-              {copy.navigation}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        <div className="space-y-0.5">
-          {visibleMainNavItems.map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (item.id === "home") navigate("/dashboard");
-                  setActiveTab(item.id);
-                }}
-                className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors duration-150 ${collapsedRow}`}
-                style={{
-                  color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
-                  background: isActive ? "var(--bg-surface)" : "transparent",
-                }}
-                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; } }}
-                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; } }}
-                data-testid={`sidebar-${item.id}`}
-              >
-                {isActive && (
-                  <motion.span
-                    layoutId="activeTab"
-                    className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
-                    style={{ background: "var(--accent)" }}
-                    transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
-                  />
-                )}
-
-                <item.icon
-                  className="w-[18px] h-[18px] flex-shrink-0"
-                  style={{ color: "currentColor", opacity: isActive ? 1 : 0.75 }}
-                />
+        {navGroups.map((group, groupIdx) => {
+          const isFirstGroup = groupIdx === 0;
+          const isLastGroup = groupIdx === navGroups.length - 1;
+          return (
+            <div key={group.id}>
+              {/* Section label — hidden when collapsed */}
+              {group.label && (
                 <AnimatePresence>
                   {!visuallyCollapsed && (
-                    <motion.div
+                    <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="flex items-center gap-2 flex-1 min-w-0"
+                      className="eyebrow px-3 mt-3 mb-1.5"
                     >
-                      <span className="text-[13px] font-medium truncate">{item.label}</span>
-                      {item.premium && !canAccessPremium && (
-                        <Lock className="ml-auto w-3 h-3" style={{ color: "var(--text-muted)" }} />
-                      )}
-                      {item.comingSoon && (
-                        <span
-                          className="ml-auto px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded"
-                          style={{ color: "var(--text-muted)", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
-                        >
-                          {copy.soon}
-                        </span>
-                      )}
-                    </motion.div>
+                      {group.label}
+                    </motion.p>
                   )}
                 </AnimatePresence>
-              </button>
-            );
-          })}
-        </div>
+              )}
+
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive = activeTab === item.id;
+
+                  /* NSFW chip — red glassy gradient */
+                  if (item.isNsfw) {
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-all duration-150 ${collapsedRow}`}
+                        style={{
+                          background: isActive
+                            ? "linear-gradient(135deg, rgba(220,38,38,0.28) 0%, rgba(239,68,68,0.14) 60%, rgba(185,28,28,0.20) 100%)"
+                            : "linear-gradient(135deg, rgba(220,38,38,0.14) 0%, rgba(239,68,68,0.06) 60%, rgba(185,28,28,0.10) 100%)",
+                          border: isActive ? "1px solid rgba(239,68,68,0.40)" : "1px solid rgba(239,68,68,0.20)",
+                          backdropFilter: "blur(12px)",
+                          WebkitBackdropFilter: "blur(12px)",
+                          boxShadow: isActive ? "inset 0 1px 0 rgba(255,100,100,0.20), 0 4px 16px rgba(220,38,38,0.18)" : "inset 0 1px 0 rgba(255,100,100,0.10)",
+                          color: isActive ? "#fca5a5" : "#f87171",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = "linear-gradient(135deg, rgba(220,38,38,0.22) 0%, rgba(239,68,68,0.10) 60%, rgba(185,28,28,0.16) 100%)";
+                            e.currentTarget.style.borderColor = "rgba(239,68,68,0.32)";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isActive) {
+                            e.currentTarget.style.background = "linear-gradient(135deg, rgba(220,38,38,0.14) 0%, rgba(239,68,68,0.06) 60%, rgba(185,28,28,0.10) 100%)";
+                            e.currentTarget.style.borderColor = "rgba(239,68,68,0.20)";
+                          }
+                        }}
+                        data-testid="sidebar-nsfw"
+                      >
+                        {isActive && (
+                          <motion.span
+                            layoutId="activeTab"
+                            className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+                            style={{ background: "#ef4444" }}
+                            transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+                          />
+                        )}
+                        <Flame className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "#ef4444", filter: "drop-shadow(0 0 6px rgba(239,68,68,0.60))" }} />
+                        <AnimatePresence>
+                          {!visuallyCollapsed && (
+                            <motion.span
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              className="text-[13px] font-semibold tracking-wide"
+                            >
+                              NSFW
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </button>
+                    );
+                  }
+
+                  /* Standard nav item */
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (item.id === "home") navigate("/dashboard");
+                        setActiveTab(item.id);
+                      }}
+                      className={`w-full relative flex items-center gap-2.5 px-2.5 py-2 rounded-md transition-colors duration-150 ${collapsedRow}`}
+                      style={{
+                        color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+                        background: isActive ? "var(--bg-surface)" : "transparent",
+                      }}
+                      onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "var(--bg-surface)"; e.currentTarget.style.color = "var(--text-primary)"; } }}
+                      onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; } }}
+                      data-testid={`sidebar-${item.id}`}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="activeTab"
+                          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+                          style={{ background: "var(--accent)" }}
+                          transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+                        />
+                      )}
+                      <item.icon
+                        className="w-[18px] h-[18px] flex-shrink-0"
+                        style={{ color: "currentColor", opacity: isActive ? 1 : 0.75 }}
+                      />
+                      <AnimatePresence>
+                        {!visuallyCollapsed && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex items-center gap-2 flex-1 min-w-0"
+                          >
+                            <span className="text-[13px] font-medium truncate">{item.label}</span>
+                            {item.premium && !canAccessPremium && (
+                              <Lock className="ml-auto w-3 h-3" style={{ color: "var(--text-muted)" }} />
+                            )}
+                            {item.comingSoon && (
+                              <span
+                                className="ml-auto px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded"
+                                style={{ color: "var(--text-muted)", background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+                              >
+                                {copy.soon}
+                              </span>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dashed separator after Dashboard group */}
+              {isFirstGroup && (
+                <div className="mx-2 mt-3 mb-0.5" style={{ borderTop: "1px dashed rgba(255,255,255,0.12)" }} />
+              )}
+
+              {/* Regular separator between remaining groups (except after last) */}
+              {!isFirstGroup && !isLastGroup && (
+                <div className="mx-2 mt-3 mb-0.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }} />
+              )}
+            </div>
+          );
+        })}
+
 
         {/* Pro Studio link - only when user has proAccess */}
         {user?.proAccess && (
