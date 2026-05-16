@@ -2,9 +2,9 @@
 
 **Schema:** `prisma/schema.prisma`
 
-**Generated at:** 2026-05-16T15:20:19.448Z
+**Generated at:** 2026-05-16T16:41:05.738Z
 
-## Models (53)
+## Models (54)
 
 ### `AbandonedSignupEmailOffer`
 
@@ -185,6 +185,10 @@
 ### `SignupFingerprint`
 
 - **Fields (7):** `id`, `ipAddress`, `deviceFingerprint`, `userAgent`, `email`, `freeCreditsGiven`, `createdAt`
+
+### `StripeWebhookEvent`
+
+- **Fields (4):** `id`, `account`, `type`, `receivedAt`
 
 ### `SystemHealthMetric`
 

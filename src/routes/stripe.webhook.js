@@ -314,6 +314,32 @@ function buildWebhookHandler(account) {
 
     console.log(`📨 Received webhook event [${accountName}]: ${event.type}`);
 
+    // Idempotent webhook delivery: insert (event.id) row first.
+    // If P2002, this delivery is a redelivery and we already ran the handler
+    // — short-circuit with 200 to stop Stripe from retrying further.
+    // Account is recorded for ops disambiguation (both NEW and LEGACY share the table).
+    try {
+      await prisma.stripeWebhookEvent.create({
+        data: {
+          id: event.id,
+          account: accountName,
+          type: event.type,
+        },
+      });
+    } catch (dedupErr) {
+      if (dedupErr.code === "P2002") {
+        console.log(
+          `🔁 Duplicate Stripe webhook delivery [${accountName}] ${event.id} (${event.type}) — skipping`,
+        );
+        return res.json({ received: true, duplicate: true });
+      }
+      console.error(
+        `❌ Webhook dedup write failed [${accountName}] ${event.id}:`,
+        dedupErr.message,
+      );
+      return res.status(500).json({ error: "Webhook dedup write failed" });
+    }
+
     // Handle the event
     try {
       switch (event.type) {
@@ -367,6 +393,16 @@ function buildWebhookHandler(account) {
                     },
                   },
                 });
+
+                // Atomically with the credit grant: bump discount code usage so a
+                // failed credit grant never undercounts. Combined with webhook
+                // event.id dedup, redeliveries cannot double-increment either.
+                if (session.metadata?.discountCodeId) {
+                  await tx.discountCode.update({
+                    where: { id: session.metadata.discountCodeId },
+                    data: { currentUses: { increment: 1 } },
+                  });
+                }
               });
 
               isNewTransaction = true;
@@ -520,6 +556,14 @@ function buildWebhookHandler(account) {
                     maxModels: 999, // Unlimited models for all paid tiers
                   },
                 });
+
+                // Atomically with the credit grant: bump discount code usage.
+                if (session.metadata?.discountCodeId) {
+                  await tx.discountCode.update({
+                    where: { id: session.metadata.discountCodeId },
+                    data: { currentUses: { increment: 1 } },
+                  });
+                }
               });
 
               isNewTransaction = true;
@@ -633,19 +677,10 @@ function buildWebhookHandler(account) {
             }
           }
 
-          if (isNewTransaction) {
-            const discountCodeId = session.metadata?.discountCodeId;
-            if (discountCodeId) {
-              try {
-                await prisma.discountCode.update({
-                  where: { id: discountCodeId },
-                  data: { currentUses: { increment: 1 } },
-                });
-                console.log(`🏷️ Discount code usage incremented (webhook checkout.session.completed): ${discountCodeId}`);
-              } catch (dcErr) {
-                console.warn('⚠️ Failed to increment discount code usage in webhook (non-fatal):', dcErr.message);
-              }
-            }
+          if (isNewTransaction && session.metadata?.discountCodeId) {
+            console.log(
+              `🏷️ Discount code usage incremented (webhook checkout.session.completed): ${session.metadata.discountCodeId}`,
+            );
           }
           break;
         }
@@ -812,6 +847,13 @@ function buildWebhookHandler(account) {
                         purchasedCredits: { increment: checkoutCredits },
                       },
                     });
+
+                    if (meta.discountCodeId) {
+                      await tx.discountCode.update({
+                        where: { id: meta.discountCodeId },
+                        data: { currentUses: { increment: 1 } },
+                      });
+                    }
                   });
                   isNewTransaction = true;
                   console.log(`✅ PI fallback credited one-time purchase for user ${checkoutUserId}: +${checkoutCredits}`);
@@ -877,6 +919,13 @@ function buildWebhookHandler(account) {
                       where: { id: checkoutUserId },
                       data: updateData,
                     });
+
+                    if (meta.discountCodeId) {
+                      await tx.discountCode.update({
+                        where: { id: meta.discountCodeId },
+                        data: { currentUses: { increment: 1 } },
+                      });
+                    }
                   });
                   isNewTransaction = true;
                   console.log(`✅ PI fallback credited subscription for user ${checkoutUserId}: +${checkoutCredits}`);
@@ -899,17 +948,10 @@ function buildWebhookHandler(account) {
                   sourceId: checkoutSession.id,
                 });
 
-                const fallbackDiscountCodeId = meta.discountCodeId;
-                if (fallbackDiscountCodeId) {
-                  try {
-                    await prisma.discountCode.update({
-                      where: { id: fallbackDiscountCodeId },
-                      data: { currentUses: { increment: 1 } },
-                    });
-                    console.log(`🏷️ Discount code usage incremented (PI fallback): ${fallbackDiscountCodeId}`);
-                  } catch (dcErr) {
-                    console.warn("⚠️ Failed to increment discount code usage in PI fallback (non-fatal):", dcErr.message);
-                  }
+                if (meta.discountCodeId) {
+                  console.log(
+                    `🏷️ Discount code usage incremented (PI fallback): ${meta.discountCodeId}`,
+                  );
                 }
               }
             } catch (fallbackOuterErr) {
@@ -948,6 +990,13 @@ function buildWebhookHandler(account) {
                     },
                   },
                 });
+
+                if (paymentIntent.metadata?.discountCodeId) {
+                  await tx.discountCode.update({
+                    where: { id: paymentIntent.metadata.discountCodeId },
+                    data: { currentUses: { increment: 1 } },
+                  });
+                }
               });
 
               console.log(`✅ Embedded one-time purchase for user ${userId}: +${credits} purchased credits`);
@@ -960,17 +1009,10 @@ function buildWebhookHandler(account) {
                 sourceId: paymentIntent.id,
               });
 
-              const piDiscountCodeId = paymentIntent.metadata?.discountCodeId;
-              if (piDiscountCodeId) {
-                try {
-                  await prisma.discountCode.update({
-                    where: { id: piDiscountCodeId },
-                    data: { currentUses: { increment: 1 } },
-                  });
-                  console.log(`🏷️ Discount code usage incremented (PI webhook one-time-embedded): ${piDiscountCodeId}`);
-                } catch (dcErr) {
-                  console.warn('⚠️ Failed to increment discount code usage (non-fatal):', dcErr.message);
-                }
+              if (paymentIntent.metadata?.discountCodeId) {
+                console.log(
+                  `🏷️ Discount code usage incremented (PI webhook one-time-embedded): ${paymentIntent.metadata.discountCodeId}`,
+                );
               }
             } catch (error) {
               if (error.code === "P2002") {
@@ -1029,10 +1071,25 @@ function buildWebhookHandler(account) {
               }
             }
 
+            // Derive billing cycle from the subscription itself, not PI metadata.
+            // Older PIs (pre-metadata-copy patch) default to "monthly" and would
+            // give an annual sub a 1-month expiry; the subscription always knows.
+            let resolvedSubscription = null;
+            try {
+              resolvedSubscription = await stripe.subscriptions.retrieve(resolvedSubId);
+            } catch (subErr) {
+              console.warn(
+                `⚠️ PI safety net could not retrieve subscription ${resolvedSubId}: ${subErr.message}`,
+              );
+            }
+            const piBillingCycle = resolvedSubscription
+              ? resolveSubscriptionBillingCycle(resolvedSubscription)
+              : (billingCycle || "monthly");
+
             try {
               const now = new Date();
               const creditsExpireAt = new Date(now);
-              if (billingCycle === "annual") {
+              if (piBillingCycle === "annual") {
                 creditsExpireAt.setFullYear(creditsExpireAt.getFullYear() + 1);
               } else {
                 creditsExpireAt.setMonth(creditsExpireAt.getMonth() + 1);
@@ -1066,7 +1123,7 @@ function buildWebhookHandler(account) {
                   ...rolloverEmb,
                   subscriptionTier: tierId,
                   subscriptionStatus: "active",
-                  subscriptionBillingCycle: billingCycle || "monthly",
+                  subscriptionBillingCycle: piBillingCycle,
                   subscriptionCredits: normalizeCreditUnits(credits),
                   creditsExpireAt,
                   maxModels: 999,
@@ -1079,6 +1136,13 @@ function buildWebhookHandler(account) {
                   where: { id: userId },
                   data: updateData,
                 });
+
+                if (paymentIntent.metadata?.discountCodeId) {
+                  await tx.discountCode.update({
+                    where: { id: paymentIntent.metadata.discountCodeId },
+                    data: { currentUses: { increment: 1 } },
+                  });
+                }
               });
 
               console.log(`✅ Embedded subscription (PI safety net) for user ${userId}: +${credits} credits (${tierId}), sub=${resolvedSubId || 'unknown'}`);
@@ -1091,17 +1155,10 @@ function buildWebhookHandler(account) {
                 sourceId: paymentIntent.id,
               });
 
-              const piSubDiscountCodeId = paymentIntent.metadata?.discountCodeId;
-              if (piSubDiscountCodeId) {
-                try {
-                  await prisma.discountCode.update({
-                    where: { id: piSubDiscountCodeId },
-                    data: { currentUses: { increment: 1 } },
-                  });
-                  console.log(`🏷️ Discount code usage incremented (PI webhook subscription-embedded): ${piSubDiscountCodeId}`);
-                } catch (dcErr) {
-                  console.warn('⚠️ Failed to increment discount code usage (non-fatal):', dcErr.message);
-                }
+              if (paymentIntent.metadata?.discountCodeId) {
+                console.log(
+                  `🏷️ Discount code usage incremented (PI webhook subscription-embedded): ${paymentIntent.metadata.discountCodeId}`,
+                );
               }
             } catch (error) {
               if (error.code === "P2002") {
@@ -1137,109 +1194,40 @@ function buildWebhookHandler(account) {
             where: userWhereForSubscription(accountName, subscriptionId),
           });
 
-          // Fallback: if user not found by subscriptionId (first payment where
-          // /confirm-subscription may have failed), look up via subscription metadata
-          if (!user) {
-            try {
-              const subObj = await stripe.subscriptions.retrieve(subscriptionId);
-              const metaUserId = subObj.metadata?.userId;
-              if (metaUserId) {
-                user = await prisma.user.findUnique({ where: { id: metaUserId } });
-                if (user) {
-                  console.log(`🔄 invoice.payment_succeeded: Found user ${metaUserId} via subscription metadata (stripeSubscriptionId not yet set)`);
-                  // Set subscription details since /confirm-subscription never ran
-                  const metaTierId = subObj.metadata?.tierId;
-                  const metaBillingCycle = resolveSubscriptionBillingCycle(subObj);
-                  const metaCredits = normalizeCreditUnits(subObj.metadata?.credits);
+          // Fallback 1: stripeCustomerId (also covers users whose stripeSubscriptionId
+          // was wiped by an older past_due/payment_failed handler — now fixed but old
+          // rows may still be in that shape).
+          if (!user && stripeCustomerId) {
+            user = await prisma.user.findFirst({
+              where: userWhereForCustomer(accountName, stripeCustomerId),
+            });
+            if (user) {
+              console.log(
+                `🔄 invoice.payment_succeeded: recovered user ${user.id} via stripeCustomerId for subscription ${subscriptionId}`,
+              );
+            }
+          }
 
-                  if (metaTierId && metaCredits && !user.stripeSubscriptionId) {
-                    // Cross-path idempotency: check if /confirm-subscription or PI webhook already awarded
-                    const existingTx = await prisma.creditTransaction.findUnique({
-                      where: { paymentSessionId: subscriptionId },
-                    });
-                    if (existingTx) {
-                      console.log(`✅ invoice.payment_succeeded: credits already awarded for sub ${subscriptionId} — skipping`);
-                      break;
-                    }
+          // Retrieve the subscription once — reused for metadata.userId fallback,
+          // the first-cycle safety net, and the renewal credit-derivation logic.
+          let subscription = null;
+          try {
+            subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          } catch (subErr) {
+            console.warn(
+              `⚠️ invoice.payment_succeeded: could not retrieve subscription ${subscriptionId}: ${subErr.message}`,
+            );
+          }
 
-                    const creditsExpireAt = subscriptionCreditsExpireAtFromInvoice(
-                      invoice,
-                      metaBillingCycle || "monthly",
-                    );
-
-                    try {
-                      await prisma.$transaction(async (tx) => {
-                        // Use subscriptionId as paymentSessionId to match /confirm-subscription
-                        // for cross-path idempotency via the UNIQUE constraint
-                        await tx.creditTransaction.create({
-                          data: {
-                            userId: user.id,
-                            amount: metaCredits,
-                            type: "subscription",
-                            description: `${metaTierId.charAt(0).toUpperCase() + metaTierId.slice(1)} subscription (${metaBillingCycle || "monthly"}) — invoice safety net`,
-                            paymentSessionId: subscriptionId,
-                          },
-                        });
-
-                        const priorInv = await tx.user.findUnique({
-                          where: { id: user.id },
-                          select: { subscriptionCredits: true },
-                        });
-                        const rolloverInv = rolloverSubPoolToPurchasedUpdate(priorInv?.subscriptionCredits);
-                        if (Object.keys(rolloverInv).length) {
-                          console.log(
-                            `💾 Invoice safety net: rolling ${priorInv?.subscriptionCredits || 0} subscription credits → purchased`,
-                          );
-                        }
-
-                        await tx.user.update({
-                          where: { id: user.id },
-                          data: {
-                            ...rolloverInv,
-                            stripeSubscriptionId: subscriptionId,
-                            subscriptionTier: metaTierId,
-                            subscriptionStatus: "active",
-                            subscriptionBillingCycle: metaBillingCycle || "monthly",
-                            subscriptionCredits: metaCredits,
-                            creditsExpireAt,
-                            maxModels: 999,
-                          },
-                        });
-                      });
-
-                      console.log(`✅ invoice.payment_succeeded safety net: awarded ${metaCredits} credits to user ${user.id} (${metaTierId})`);
-                      const subReferrerId = subObj?.metadata?.referrerUserId || null;
-                      if (subReferrerId) await linkReferrerOnFirstPurchase(user.id, subReferrerId);
-                      await recordReferralCommissionFromPayment({
-                        referredUserId: user.id,
-                        purchaseAmountCents: invoice.amount_paid || 0,
-                        sourceType: "stripe_invoice",
-                        sourceId: invoice.id,
-                      });
-                    } catch (safetyErr) {
-                      if (safetyErr.code === "P2002") {
-                        console.log(`✅ Invoice ${invoice.id} already processed (safety net P2002)`);
-                      } else {
-                        console.error("❌ invoice.payment_succeeded safety net failed:", safetyErr.message);
-                      }
-                    }
-                    break;
-                  }
-                }
-              }
-
-              if (!user && stripeCustomerId) {
-                user = await prisma.user.findFirst({
-                  where: userWhereForCustomer(accountName, stripeCustomerId),
-                });
-                if (user) {
-                  console.log(
-                    `🔄 invoice.payment_succeeded: recovered user ${user.id} via stripeCustomerId for subscription ${subscriptionId}`,
-                  );
-                }
-              }
-            } catch (subLookupErr) {
-              console.warn("⚠️ Could not retrieve subscription for invoice fallback:", subLookupErr.message);
+          // Fallback 2: subscription.metadata.userId
+          if (!user && subscription?.metadata?.userId) {
+            user = await prisma.user.findUnique({
+              where: { id: subscription.metadata.userId },
+            });
+            if (user) {
+              console.log(
+                `🔄 invoice.payment_succeeded: recovered user ${user.id} via subscription metadata`,
+              );
             }
           }
 
@@ -1251,9 +1239,91 @@ function buildWebhookHandler(account) {
             break;
           }
 
-          // Get subscription details to find credits amount
-          const subscription =
-            await stripe.subscriptions.retrieve(subscriptionId);
+          // First-cycle safety net: when /confirm-subscription never ran, the user
+          // record still lacks stripeSubscriptionId. Derive tier / credits / expiry
+          // from subscription metadata and grant credits with paymentSessionId=
+          // subscriptionId for cross-path idempotency.
+          if (subscription && !user.stripeSubscriptionId) {
+            const metaTierId = subscription.metadata?.tierId;
+            const metaBillingCycle = resolveSubscriptionBillingCycle(subscription);
+            const metaCredits = normalizeCreditUnits(subscription.metadata?.credits);
+
+            if (metaTierId && metaCredits) {
+              const existingTx = await prisma.creditTransaction.findUnique({
+                where: { paymentSessionId: subscriptionId },
+              });
+              if (existingTx) {
+                console.log(`✅ invoice.payment_succeeded: credits already awarded for sub ${subscriptionId} — skipping`);
+                break;
+              }
+
+              const creditsExpireAt = subscriptionCreditsExpireAtFromInvoice(
+                invoice,
+                metaBillingCycle || "monthly",
+              );
+
+              try {
+                await prisma.$transaction(async (tx) => {
+                  await tx.creditTransaction.create({
+                    data: {
+                      userId: user.id,
+                      amount: metaCredits,
+                      type: "subscription",
+                      description: `${metaTierId.charAt(0).toUpperCase() + metaTierId.slice(1)} subscription (${metaBillingCycle || "monthly"}) — invoice safety net`,
+                      paymentSessionId: subscriptionId,
+                    },
+                  });
+
+                  const priorInv = await tx.user.findUnique({
+                    where: { id: user.id },
+                    select: { subscriptionCredits: true },
+                  });
+                  const rolloverInv = rolloverSubPoolToPurchasedUpdate(priorInv?.subscriptionCredits);
+                  if (Object.keys(rolloverInv).length) {
+                    console.log(
+                      `💾 Invoice safety net: rolling ${priorInv?.subscriptionCredits || 0} subscription credits → purchased`,
+                    );
+                  }
+
+                  await tx.user.update({
+                    where: { id: user.id },
+                    data: {
+                      ...rolloverInv,
+                      stripeSubscriptionId: subscriptionId,
+                      subscriptionTier: metaTierId,
+                      subscriptionStatus: "active",
+                      subscriptionBillingCycle: metaBillingCycle || "monthly",
+                      subscriptionCredits: metaCredits,
+                      creditsExpireAt,
+                      maxModels: 999,
+                    },
+                  });
+                });
+
+                console.log(`✅ invoice.payment_succeeded safety net: awarded ${metaCredits} credits to user ${user.id} (${metaTierId})`);
+                const subReferrerId = subscription?.metadata?.referrerUserId || null;
+                if (subReferrerId) await linkReferrerOnFirstPurchase(user.id, subReferrerId);
+                await recordReferralCommissionFromPayment({
+                  referredUserId: user.id,
+                  purchaseAmountCents: invoice.amount_paid || 0,
+                  sourceType: "stripe_invoice",
+                  sourceId: invoice.id,
+                });
+              } catch (safetyErr) {
+                if (safetyErr.code === "P2002") {
+                  console.log(`✅ Invoice ${invoice.id} already processed (safety net P2002)`);
+                } else {
+                  console.error("❌ invoice.payment_succeeded safety net failed:", safetyErr.message);
+                }
+              }
+              break;
+            }
+          }
+
+          if (!subscription) {
+            // We still need the subscription object for renewal credit derivation.
+            subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          }
           const billingCycle = resolveSubscriptionBillingCycle(subscription);
           const billedAmountCents =
             invoice.subtotal_excluding_tax ||
@@ -1300,7 +1370,17 @@ function buildWebhookHandler(account) {
           let credits = subscription.metadata?.credits;
           let parsedCredits = 0;
 
-          if (billingReason === "subscription_cycle") {
+          // Trust subscription.metadata.credits over amount inference. With a high
+          // first-cycle discount coupon (e.g. Pro Annual $787 × 50% = $393.50),
+          // inferSubscriptionCreditsFromAmount can land within tolerance of a lower
+          // tier and silently grant fewer credits. Metadata is authoritative.
+          const metaCreditsDirect = normalizeCreditUnits(subscription.metadata?.credits);
+          if (metaCreditsDirect > 0) {
+            parsedCredits = metaCreditsDirect;
+            credits = String(parsedCredits);
+          }
+
+          if (!parsedCredits && billingReason === "subscription_cycle") {
             parsedCredits = inferSubscriptionCreditsFromAmount(
               billedAmountCents,
               billingCycle,
@@ -1502,45 +1582,30 @@ function buildWebhookHandler(account) {
             }
           }
 
-          // Critical behavior: first rebill failure should immediately end the subscription to stop retries.
-          try {
-            const subSnapshot = await stripe.subscriptions.retrieve(subscriptionId);
-            if (subSnapshot.status !== "canceled") {
-              await stripe.subscriptions.cancel(subscriptionId);
-              console.warn(
-                `❌ invoice.payment_failed: canceled subscription ${subscriptionId} immediately after failed payment (invoice ${invoice.id})`,
-              );
-            } else {
-              console.log(`ℹ️ invoice.payment_failed: subscription ${subscriptionId} already canceled`);
-            }
-          } catch (cancelErr) {
-            console.error(
-              `❌ invoice.payment_failed: failed to cancel subscription ${subscriptionId}:`,
-              cancelErr.message,
-            );
-          }
-
           if (user) {
-            const cancellationUpdate = buildSubscriptionCancelledUpdate(
-              user,
-              accountName,
-              subscriptionId,
-            );
-
+            const role = classifySubscriptionForUser(user, accountName, subscriptionId);
+            if (role === "stale") {
+              // Upgrade race: the failed invoice is for an OLD subscription the
+              // user already upgraded away from. Touching primary fields would
+              // erase the brand-new sub credits — ignore.
+              console.log(
+                `⚠️ invoice.payment_failed for ${subscriptionId} is STALE for user ${user.id} (current sub=${user.stripeSubscriptionId || "none"}) — ignoring (likely upgrade race)`,
+              );
+              break;
+            }
+            // Soft transition: enter dunning. Keep credits, keep tier, keep stripeSubscriptionId.
+            // Stripe Smart Retries (default 4 retries over 1–3 weeks) will keep attempting
+            // collection; if they exhaust, Stripe sends customer.subscription.deleted and
+            // we fully cancel there. Cancelling here would defeat Smart Retries.
             await prisma.user.update({
               where: { id: user.id },
-              data: cancellationUpdate.data,
+              data: {
+                subscriptionStatus: "past_due",
+              },
             });
-
-            if (cancellationUpdate.isLegacyOnlyEvent) {
-              console.log(
-                `🧹 Legacy subscription ${subscriptionId} payment failed — cleared legacy link for user ${user.id}; NEW subscription stays untouched`,
-              );
-            } else {
-              console.warn(
-                `⚠️ invoice.payment_failed: user ${user.id} subscription set to cancelled and subscription credits cleared`,
-              );
-            }
+            console.warn(
+              `⚠️ invoice.payment_failed: user ${user.id} sub ${subscriptionId} marked past_due (Stripe Smart Retries continue; final cancel via subscription.deleted)`,
+            );
           } else {
             console.warn(
               `⚠️ invoice.payment_failed: could not find local user for subscription ${subscriptionId} (invoice ${invoice.id})`,
@@ -1624,7 +1689,9 @@ function buildWebhookHandler(account) {
               : subscription.customer?.id || null;
           const activeStatuses = new Set(["active", "trialing"]);
           // Do not treat `paused` (e.g. pause collection) like cancellation — wiping credits there was incorrect.
-          const inactiveStatuses = new Set(["canceled", "unpaid", "incomplete_expired", "past_due"]);
+          // `past_due` is dunning — Stripe Smart Retries are still running; do NOT wipe credits.
+          const inactiveStatuses = new Set(["canceled", "unpaid", "incomplete_expired"]);
+          const dunningStatuses = new Set(["past_due"]);
 
           if (activeStatuses.has(subscription.status)) {
             let user = await prisma.user.findFirst({
@@ -1679,6 +1746,106 @@ function buildWebhookHandler(account) {
 
               console.log(
                 `🔄 Subscription sync repaired for user ${user.id}: ${subscription.id} (${subscription.status})`,
+              );
+
+              // Self-heal zombie: user is "active" but has no subscription credits
+              // AND no expiry. This means /confirm-subscription, PI fallback, AND
+              // the invoice safety net all missed. Derive credits from metadata
+              // (or fall back to tier-pricing) and grant once. paymentSessionId=
+              // subscription.id matches the other paths' UNIQUE key so a parallel
+              // grant from confirm/invoice will P2002 instead of double-granting.
+              if ((user.subscriptionCredits ?? 0) === 0 && !user.creditsExpireAt) {
+                const billingCycleHeal = resolveSubscriptionBillingCycle(subscription);
+                const tierIdHeal =
+                  subscription.metadata?.tierId || user.subscriptionTier || null;
+                let healCredits = normalizeCreditUnits(subscription.metadata?.credits);
+                if (!healCredits && tierIdHeal) {
+                  const pricing = getSubscriptionPricing(tierIdHeal, billingCycleHeal || "monthly");
+                  if (pricing?.credits) healCredits = pricing.credits;
+                }
+
+                if (healCredits > 0) {
+                  const periodEndSec =
+                    subscription.current_period_end ||
+                    subscription.items?.data?.[0]?.current_period_end ||
+                    null;
+                  const creditsExpireAt = periodEndSec ? new Date(periodEndSec * 1000) : null;
+
+                  try {
+                    await prisma.$transaction(async (tx) => {
+                      await tx.creditTransaction.create({
+                        data: {
+                          userId: user.id,
+                          amount: healCredits,
+                          type: "subscription",
+                          description: `Self-heal subscription.updated: ${tierIdHeal || "plan"} (${billingCycleHeal || "monthly"})`,
+                          paymentSessionId: subscription.id,
+                        },
+                      });
+                      const prior = await tx.user.findUnique({
+                        where: { id: user.id },
+                        select: { subscriptionCredits: true },
+                      });
+                      const rollover = rolloverSubPoolToPurchasedUpdate(prior?.subscriptionCredits);
+                      await tx.user.update({
+                        where: { id: user.id },
+                        data: {
+                          ...rollover,
+                          subscriptionCredits: healCredits,
+                          ...(creditsExpireAt ? { creditsExpireAt } : {}),
+                          maxModels: 999,
+                        },
+                      });
+                    });
+                    console.log(
+                      `🩺 customer.subscription.updated self-heal: granted ${healCredits} credits to user ${user.id} for ${subscription.id}`,
+                    );
+                  } catch (healErr) {
+                    if (healErr.code !== "P2002") {
+                      console.warn(
+                        `⚠️ customer.subscription.updated self-heal failed for user ${user.id}: ${healErr.message}`,
+                      );
+                    }
+                  }
+                }
+              }
+            }
+            break;
+          }
+
+          if (dunningStatuses.has(subscription.status)) {
+            // Dunning: Stripe is still trying to collect. Stamp status only — keep
+            // tier / credits / creditsExpireAt / stripeSubscriptionId intact so the
+            // user retains service until Smart Retries succeed or Stripe finally
+            // sends customer.subscription.deleted.
+            let user = await prisma.user.findFirst({
+              where: userWhereForSubscription(accountName, subscription.id),
+            });
+            if (!user) {
+              const metadataUserId = subscription.metadata?.userId || null;
+              if (metadataUserId) {
+                user = await prisma.user.findUnique({ where: { id: metadataUserId } });
+              }
+            }
+            if (!user && stripeCustomerId) {
+              user = await prisma.user.findFirst({
+                where: userWhereForCustomer(accountName, stripeCustomerId),
+              });
+            }
+            if (user) {
+              const role = classifySubscriptionForUser(user, accountName, subscription.id);
+              if (role === "stale") {
+                console.log(
+                  `⚠️ customer.subscription.updated past_due for ${subscription.id} is STALE for user ${user.id} — ignoring`,
+                );
+                break;
+              }
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { subscriptionStatus: "past_due" },
+              });
+              console.warn(
+                `⚠️ customer.subscription.updated: user ${user.id} sub ${subscription.id} → past_due (dunning; credits preserved)`,
               );
             }
             break;
@@ -1738,6 +1905,109 @@ function buildWebhookHandler(account) {
               );
             }
           }
+          break;
+        }
+
+        case "customer.subscription.paused": {
+          // Stripe explicit pause (pause collection). Stamp status only — credits stay.
+          // Stripe will fire customer.subscription.resumed when the user resumes; the
+          // next invoice.payment_succeeded grants fresh credits via the existing path.
+          const subscription = event.data.object;
+          const stripeCustomerId =
+            typeof subscription.customer === "string"
+              ? subscription.customer
+              : subscription.customer?.id || null;
+
+          let user = await prisma.user.findFirst({
+            where: userWhereForSubscription(accountName, subscription.id),
+          });
+          if (!user) {
+            const metadataUserId = subscription.metadata?.userId || null;
+            if (metadataUserId) {
+              user = await prisma.user.findUnique({ where: { id: metadataUserId } });
+            }
+          }
+          if (!user && stripeCustomerId) {
+            user = await prisma.user.findFirst({
+              where: userWhereForCustomer(accountName, stripeCustomerId),
+            });
+          }
+          if (!user) break;
+
+          const role = classifySubscriptionForUser(user, accountName, subscription.id);
+          if (role !== "primary") {
+            console.log(
+              `⏸ customer.subscription.paused for ${subscription.id} is ${role} for user ${user.id} — ignoring`,
+            );
+            break;
+          }
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { subscriptionStatus: "paused" },
+          });
+          console.log(
+            `⏸ customer.subscription.paused: user ${user.id} sub ${subscription.id} → paused (credits preserved)`,
+          );
+          break;
+        }
+
+        case "customer.subscription.resumed": {
+          // Stripe pause → resume. Stamp status active and recompute creditsExpireAt
+          // from the new period end (Stripe rolls the period forward on resume). Do
+          // NOT grant credits here — the next invoice.payment_succeeded does that
+          // through the existing renewal path.
+          const subscription = event.data.object;
+          const billingCycle = resolveSubscriptionBillingCycle(subscription);
+          const stripeCustomerId =
+            typeof subscription.customer === "string"
+              ? subscription.customer
+              : subscription.customer?.id || null;
+
+          let user = await prisma.user.findFirst({
+            where: userWhereForSubscription(accountName, subscription.id),
+          });
+          if (!user) {
+            const metadataUserId = subscription.metadata?.userId || null;
+            if (metadataUserId) {
+              user = await prisma.user.findUnique({ where: { id: metadataUserId } });
+            }
+          }
+          if (!user && stripeCustomerId) {
+            user = await prisma.user.findFirst({
+              where: userWhereForCustomer(accountName, stripeCustomerId),
+            });
+          }
+          if (!user) break;
+
+          const role = classifySubscriptionForUser(user, accountName, subscription.id);
+          if (role === "stale" || role === "legacy-slot") {
+            console.log(
+              `🔄 customer.subscription.resumed for ${subscription.id} is ${role} for user ${user.id} — ignoring`,
+            );
+            break;
+          }
+
+          const periodEndSec =
+            subscription.current_period_end ||
+            subscription.items?.data?.[0]?.current_period_end ||
+            null;
+          const creditsExpireAt = periodEndSec
+            ? new Date(periodEndSec * 1000)
+            : null;
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              subscriptionStatus: "active",
+              subscriptionTier: subscription.metadata?.tierId || user.subscriptionTier,
+              subscriptionBillingCycle: billingCycle || user.subscriptionBillingCycle,
+              ...(creditsExpireAt ? { creditsExpireAt } : {}),
+            },
+          });
+          console.log(
+            `✅ customer.subscription.resumed: user ${user.id} sub ${subscription.id} → active (credits preserved; next invoice grants)`,
+          );
           break;
         }
 

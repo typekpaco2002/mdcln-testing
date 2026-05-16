@@ -1121,3 +1121,16 @@ model SextingScriptRun {
   @@index([scriptId])
   @@index([userId])
 }
+
+/// Stripe webhook event-id dedup. Insert at the top of every webhook handler;
+/// on P2002 we already processed this delivery and short-circuit with 200.
+/// Both NEW and LEGACY accounts share this table; account is the disambiguator.
+model StripeWebhookEvent {
+  id         String   @id
+  account    String
+  type       String
+  receivedAt DateTime @default(now())
+
+  @@index([account, receivedAt])
+  @@index([type, receivedAt])
+}

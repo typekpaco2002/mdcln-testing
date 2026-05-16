@@ -2215,7 +2215,10 @@ router.post('/cancel-subscription', authMiddleware, async (req, res) => {
       return res.status(500).json({ error: 'Stripe is not configured for this user account' });
     }
 
-    // Cancel immediately on explicit user request.
+    // Intentional revoke-on-cancel: user clicked "Cancel Subscription" in-app and
+    // is choosing to end access immediately. We do NOT use cancel_at_period_end here;
+    // see docs/STRIPE_WEBHOOK.md "In-app cancel" for the policy rationale and the
+    // admin refund flow (admin.controller.js) for the period-end variant.
     console.log('🔄 Calling Stripe to cancel subscription:', activeSubId);
     const subscription = await stripe.subscriptions.cancel(activeSubId);
 

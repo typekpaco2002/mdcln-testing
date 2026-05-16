@@ -80,6 +80,14 @@ This feature identifies top-performing Instagram reels from tracked profiles usi
 ### Subscription Lifecycle & Stale State Protection
 Stripe subscription status is synced to prevent stale database entries. A manual `sync-subscription` endpoint is available. Both `/create-checkout-session` and `/create-embedded-subscription` perform live Stripe sync before the purchase guard. Legacy billing-cycle NULL blocks also handle `resource_missing` by clearing stale data instead of returning 503.
 
+**Dunning is non-destructive.** `invoice.payment_failed` and `customer.subscription.updated` with status `past_due` both stamp `subscriptionStatus="past_due"` only — credits, tier, `creditsExpireAt`, and `stripeSubscriptionId` are preserved so the user keeps service while Stripe Smart Retries continue. Final cancellation happens only via `customer.subscription.deleted` after Stripe exhausts retries. Pause is also non-destructive: `customer.subscription.paused` → status `"paused"`, credits preserved; `customer.subscription.resumed` → status `"active"`, expiry recomputed from the new period end (the next paid invoice grants credits).
+
+**Webhook idempotency:** every Stripe webhook delivery (both NEW and LEGACY accounts) is recorded once in `StripeWebhookEvent` keyed by `event.id`. Redeliveries P2002 and short-circuit with HTTP 200 — handlers are safe end-to-end regardless of side effects.
+
+**Stale-event protection:** all cancellation/dunning handlers run `classifySubscriptionForUser(user, account, subscriptionId)`. Events for a subscription the user already upgraded away from (typical upgrade race) are tagged `stale` and ignored, never wiping the brand-new sub's credits. `legacy-slot` events touch only the `legacy*` id columns.
+
+**Zombie self-heal:** `customer.subscription.updated` (active branch) detects users where `subscriptionCredits=0` AND `creditsExpireAt=null` AND `subscriptionStatus="active"` (the rare case where confirm-subscription, PI fallback, and invoice safety net all missed) and grants credits derived from `subscription.metadata` or the tier pricing table. Idempotent via `paymentSessionId=subscription.id`.
+
 ### Special Offer Webhook Safety Net
 The `payment_intent.succeeded` webhook acts as a fallback for special offer model creation, ensuring model creation and credit awards even if frontend calls fail. All `JSON.parse` calls on Stripe metadata are wrapped in try/catch to prevent webhook crashes from truncated metadata.
 

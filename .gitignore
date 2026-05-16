@@ -40,3 +40,11 @@ __pycache__/
 /scripts/figma-captures.json
 /scripts/figma-captures-result.json
 /scripts/figma-auth-state.json
+
+# Multitask scratch dir
+.multitask/
+
+# Ephemeral aurora deploy screenshots + one-off patch scripts
+/scripts/aurora-deploy-*.png
+/scripts/patch-*.py
+/scripts/patch-*.ps1
