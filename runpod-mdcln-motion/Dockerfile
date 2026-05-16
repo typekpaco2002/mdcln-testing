@@ -80,6 +80,18 @@ RUN python3 -m pip install --no-cache-dir \
 RUN python3 -m pip install --no-cache-dir "sageattention<3" \
  || echo "[WARN] sageattention install failed — PathchSageAttentionKJ 'auto' will fall back to disabled at runtime, workflow still works"
 
+# NVRTC builtins shim — PyTorch's jiterator (the per-op CUDA JIT used by ops
+# like `lgamma`, fired by samplers such as `sa_solver`) can race onnxruntime-gpu
+# wheel deps and end up calling into CUDA 13 NVRTC while the matching
+# `libnvrtc-builtins.so.13.0` is absent, causing a runtime compile failure that
+# kills the whole KSampler step. Ship both cu12 + cu13 builtins so whichever
+# NVRTC PyTorch resolves at runtime has its matching libs on disk. ~150 MiB
+# extra layer; cheap insurance for any future workflow that uses sa_solver.
+RUN python3 -m pip install --no-cache-dir \
+      "nvidia-cuda-nvrtc-cu12" \
+      "nvidia-cuda-nvrtc-cu13" \
+ || echo "[WARN] nvrtc builtins shim install failed — sa_solver / lgamma JIT may break at runtime; the shipped workflow uses 'euler' so this is non-fatal"
+
 # -----------------------------------------------
 # 4. Pre-create model directories (models downloaded at runtime by start.sh)
 # -----------------------------------------------

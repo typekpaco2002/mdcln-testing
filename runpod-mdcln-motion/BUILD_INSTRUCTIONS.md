@@ -172,6 +172,22 @@ Response on success:
 6. **Black / static output** — known SageAttention + torch-compile interaction
    on RTX 30xx. Set the `296` (`TORCH COMPILE`) node to `false` in the request
    payload to disable torch.compile.
+   - **`nvrtc: error: failed to open libnvrtc-builtins.so.13.0`** at the
+     KSampler step — PyTorch's jiterator tried to JIT-compile a kernel (e.g.
+     `lgamma_kernel_vectorized4_kernel`) via CUDA 13 NVRTC while the matching
+     builtins library was missing. The Kijai `IG+MOTION+CONTROL` workflow ships
+     `sa_solver` + `linear_quadratic` on KSampler `353`, and `sa_solver`'s
+     stochastic Adams coefficient compute is the only sampler that fires
+     `lgamma` on a CUDA tensor. Two fixes (both shipped):
+     1. `workflow_api.json` swaps node `353` to `euler` + `simple` — quality
+        is comparable at 4 steps + CFG 1 with the lightx2v step-distilled
+        LoRAs and dodges the JIT path entirely. Effective on next request
+        (the backend reads this file at submit time).
+     2. The Dockerfile installs both `nvidia-cuda-nvrtc-cu12` and
+        `nvidia-cuda-nvrtc-cu13` so whichever NVRTC PyTorch resolves at
+        runtime has its matching builtins on disk. Effective after image
+        rebuild — keeps `sa_solver` available for future workflow revisions
+        if you want to flip it back.
 7. **`ModuleNotFoundError: No module named 'sageattention'`** — the graph
    `PathchSageAttentionKJ` (node `322`) must not use `sage_attention: "auto"` on
    workers without the optional `sageattention` wheel. The API and shipped
