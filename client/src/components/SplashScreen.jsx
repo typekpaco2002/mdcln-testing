@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 const DEFAULT_VIDEO_URL = '/splash.mp4';
 // Hard cap so a stalled / unsupported video can't keep the splash up forever.
-const FALLBACK_DURATION_MS = 5000;
+const FALLBACK_DURATION_MS = 4000;
 
 /**
  * Boot splash that plays a short looping-disabled video fullscreen-cover and

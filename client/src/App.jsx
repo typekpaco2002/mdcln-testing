@@ -538,8 +538,14 @@ function GlobalGenerationNotifier() {
   return null;
 }
 
+const SPLASH_SESSION_KEY = 'mc_splash_shown';
+
 function App() {
-  const [showSplash, setShowSplash] = useState(true);
+  // Only show splash on first cold boot — not on page reloads or in-app tab changes.
+  // sessionStorage survives hot-reloads within the same tab session but is cleared
+  // when the tab is closed or a brand-new browser session starts.
+  const isFirstBoot = !sessionStorage.getItem(SPLASH_SESSION_KEY);
+  const [showSplash, setShowSplash] = useState(isFirstBoot);
   const branding = useBranding();
   useClickSound();
   
@@ -547,15 +553,14 @@ function App() {
     setErrorDisplay(showErrorDetails);
   }, []);
 
-  // SplashScreen now plays the boot GIF for its full duration and calls onFinish when the
-  // animation completes one playthrough. We still ensure auth has hydrated before dismissing
-  // (auth hydration is typically <100ms and finishes well before the GIF ends, so the GIF
-  // duration normally dominates). Do NOT call refreshUserCredits here — it can 401 with stale
-  // session and trigger forceLogout → redirect loop. Let protected pages (e.g. Dashboard) fetch on mount.
+  // SplashScreen plays the boot video for its full duration then calls onFinish.
+  // We also wait for auth hydration before dismissing so the app is ready underneath.
+  // Do NOT call refreshUserCredits here — it can 401 and trigger forceLogout loops.
   const authHydratedRef = useRef(useAuthStore.persist.hasHydrated());
   const splashFinishedRef = useRef(false);
 
   useEffect(() => {
+    if (!isFirstBoot) return undefined;
     if (authHydratedRef.current) return undefined;
     const unsubscribe = useAuthStore.persist.onFinishHydration(() => {
       authHydratedRef.current = true;
@@ -565,6 +570,7 @@ function App() {
   }, []);
 
   const handleSplashFinish = () => {
+    sessionStorage.setItem(SPLASH_SESSION_KEY, '1');
     splashFinishedRef.current = true;
     if (authHydratedRef.current) {
       setShowSplash(false);
