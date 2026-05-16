@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { HelpCircle, X } from "lucide-react";
+import { HelpCircle, X } from "@/components/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 

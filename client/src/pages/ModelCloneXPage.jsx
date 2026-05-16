@@ -17,7 +17,7 @@ import {
   Trash2,
   AlertCircle,
   Check,
-} from "lucide-react";
+} from "@/components/icons";
 import toast from "react-hot-toast";
 import api, { formatApiError } from "../services/api.js";
 import { downloadFromPublicUrl } from "../utils/directDownload";

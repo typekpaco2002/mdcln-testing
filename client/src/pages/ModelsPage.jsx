@@ -16,7 +16,7 @@ import {
   Coins,
   User,
   AlertTriangle,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   MagnifyingGlass,
   Sparkle,

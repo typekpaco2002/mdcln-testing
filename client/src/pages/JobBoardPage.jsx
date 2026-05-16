@@ -1,4 +1,4 @@
-import { Briefcase, Clock, MessageSquare, Video, Users, Pen } from "lucide-react";
+import { Briefcase, Clock, MessageSquare, Video, Users, Pen } from "@/components/icons";
 
 const ROLES = [
   { icon: MessageSquare, label: "Chatters", desc: "Fan engagement specialists" },

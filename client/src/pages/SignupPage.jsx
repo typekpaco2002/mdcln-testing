@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Zap, Shield, CheckCircle, Mail, Lock, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
-import { SiGoogle } from 'react-icons/si';
+import { Zap, Shield, CheckCircle, Mail, Lock, User, ArrowRight, Eye, EyeOff } from '@/components/icons';
+import { SiGoogle } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { authAPI, referralAPI } from '../services/api';
 import { useAuthStore } from '../store';

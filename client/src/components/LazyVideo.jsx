@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, memo } from "react";
-import { Play } from "lucide-react";
+import { Play } from "@/components/icons";
 
 const LazyVideo = memo(function LazyVideo({
   src,

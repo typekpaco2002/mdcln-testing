@@ -9,7 +9,7 @@ import { ErrorDisplay, showErrorDetails } from './components/ErrorDisplay';
 import api, { setErrorDisplay, stripeAPI } from './services/api';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Info, X, Gift } from 'lucide-react';
+import { Info, X, Gift } from '@/components/icons';
 import SplashScreen from './components/SplashScreen';
 import { useBranding } from './hooks/useBranding';
 import { sound } from './utils/sounds';

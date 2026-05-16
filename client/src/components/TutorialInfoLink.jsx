@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { Info } from "@/components/icons";
 import toast from "react-hot-toast";
 
 const LOCALE_STORAGE_KEY = "app_locale";

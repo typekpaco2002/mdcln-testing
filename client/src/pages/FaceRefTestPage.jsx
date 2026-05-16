@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Play, Loader2, RefreshCw, Copy, Check } from "lucide-react";
+import { ArrowLeft, Play, Loader2, RefreshCw, Copy, Check } from "@/components/icons";
 import api from "../services/api";
 import { toast } from "react-hot-toast";
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Check, Image as ImageIcon, Video, X } from 'lucide-react';
+import { Upload, Check, Image as ImageIcon, Video, X } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { uploadToCloudinary as uploadFile } from '../services/api';
 

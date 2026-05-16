@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowRight, Zap, CheckCircle } from 'lucide-react';
+import { Mail, ArrowRight, Zap, CheckCircle } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
 const LOCALE_STORAGE_KEY = 'app_locale';

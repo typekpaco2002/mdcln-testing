@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Mail, Twitter, Instagram, Linkedin } from '@/components/icons';
 import BrandMark from './BrandMark.jsx';
 
 export default function Footer() {

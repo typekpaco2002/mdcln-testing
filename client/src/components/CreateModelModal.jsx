@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Upload, Check, Sparkles, ImagePlus } from "lucide-react";
+import { X, Upload, Check, Sparkles, ImagePlus } from "@/components/icons";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
 import { uploadToCloudinary as uploadFile } from "../services/api";

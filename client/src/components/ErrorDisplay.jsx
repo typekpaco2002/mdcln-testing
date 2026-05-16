@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Copy, AlertTriangle } from 'lucide-react';
+import { X, Copy, AlertTriangle } from '@/components/icons';
 import toast from 'react-hot-toast';
 
 // Global error store

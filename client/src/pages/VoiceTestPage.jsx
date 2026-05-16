@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Volume2, Pause, Check, X } from 'lucide-react';
+import { Volume2, Pause, Check, X } from '@/components/icons';
 import api from '../services/api';
 
 export default function VoiceTestPage() {

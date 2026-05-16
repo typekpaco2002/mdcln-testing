@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo } from 'react';
-import { X, Zap, Sparkles, Check, Coins } from 'lucide-react';
+import { X, Zap, Sparkles, Check, Coins } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { stripeAPI } from '../services/api';
 import CheckoutModal from './CheckoutModal';

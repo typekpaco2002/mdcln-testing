@@ -30,7 +30,7 @@ import {
   Wand2,
   BookOpen,
   FilePenLine,
-} from "lucide-react";
+} from "@/components/icons";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 

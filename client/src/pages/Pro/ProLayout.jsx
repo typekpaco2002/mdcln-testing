@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, User, Sparkles, Video, LogOut } from "lucide-react";
+import { LayoutDashboard, User, Sparkles, Video, LogOut } from "@/components/icons";
 import { useAuthStore } from "../../store";
 
 const LOCALE_STORAGE_KEY = "app_locale";

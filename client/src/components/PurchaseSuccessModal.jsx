@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, X, Zap, Mail } from 'lucide-react';
+import { CheckCircle, X, Zap, Mail } from '@/components/icons';
 import confetti from 'canvas-confetti';
 import { useEffect, useRef } from 'react';
 

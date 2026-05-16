@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { User, Plus } from "lucide-react";
+import { User, Plus } from "@/components/icons";
 import { useCachedModels } from "../../hooks/useCachedModels";
 import { getThumbnailUrl } from "../../utils/imageUtils";
 import CreateModelModal from "../../components/CreateModelModal";

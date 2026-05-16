@@ -22,7 +22,7 @@ import {
   TrendingUp,
   Shield,
   Sparkles,
-} from "lucide-react";
+} from "@/components/icons";
 import { useAuthStore } from "../store";
 import api, { uploadFile } from "../services/api";
 import toast from "react-hot-toast";

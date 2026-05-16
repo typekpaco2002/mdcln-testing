@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Settings } from 'lucide-react';
+import { X, Settings } from '@/components/icons';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 

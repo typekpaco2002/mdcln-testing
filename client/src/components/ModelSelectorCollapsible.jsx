@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check } from "@/components/icons";
 
 const PURPLE_CORNER_GLOW_STYLE = {
   background:

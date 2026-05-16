@@ -16,7 +16,7 @@ import {
   Info,
   Wand2,
   RefreshCw,
-} from "lucide-react";
+} from "@/components/icons";
 import api from "../services/api";
 import { usePageVisibility } from "../hooks/usePageVisibility";
 import { useReducedMotion } from "../hooks/useReducedMotion";

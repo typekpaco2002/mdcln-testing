@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Layers,
   Zap,
-} from "lucide-react";
+} from "@/components/icons";
 import { useGenerations } from "../hooks/useGenerations";
 import { downloadFromPublicUrl } from "../utils/directDownload";
 

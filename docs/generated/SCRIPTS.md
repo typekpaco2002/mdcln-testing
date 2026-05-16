@@ -1,10 +1,10 @@
 # Generated: Repository scripts
 
-**Generated at:** 2026-05-16T18:17:56.519Z
+**Generated at:** 2026-05-16T19:18:16.670Z
 
 Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — under `scripts/` only.
 
-**Count:** 97
+**Count:** 102
 
 - `scripts/add-credits-manual.js`
 - `scripts/audit-stripe-subscriptions.mjs`
@@ -59,6 +59,11 @@ Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — u
 - `scripts/generate-fix-session-summary-pdf.mjs`
 - `scripts/generate-previews.js`
 - `scripts/generate-registry.mjs`
+- `scripts/icon-codemod.mjs`
+- `scripts/icon-inventory.mjs`
+- `scripts/icon-mapping.mjs`
+- `scripts/icon-shim-build.mjs`
+- `scripts/icon-shim-verify.mjs`
 - `scripts/import-user.mjs`
 - `scripts/insert_gallery_prod.js`
 - `scripts/inspect-aurora.mjs`

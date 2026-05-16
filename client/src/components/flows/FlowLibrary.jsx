@@ -28,7 +28,7 @@ import {
   ChevronRight,
   ArrowDownAZ,
   Clock,
-} from "lucide-react";
+} from "@/components/icons";
 import { useFlowStore } from "../../store/flowStore";
 import { FLOW_TEMPLATES } from "../../data/flow-templates";
 

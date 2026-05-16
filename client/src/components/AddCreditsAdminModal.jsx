@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus } from 'lucide-react';
+import { X, Plus } from '@/components/icons';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 

@@ -1,10 +1,10 @@
 # Generated: Client components (all matching files)
 
-**Generated at:** 2026-05-16T18:17:56.519Z
+**Generated at:** 2026-05-16T19:18:16.670Z
 
 Extensions: `.jsx, .tsx, .js, .ts, .css, .scss` — under `client/src/components/` only.
 
-**Count:** 77
+**Count:** 78
 
 - `client/src/components/AddCreditsAdminModal.jsx`
 - `client/src/components/AddCreditsModal.jsx`
@@ -75,6 +75,7 @@ Extensions: `.jsx, .tsx, .js, .ts, .css, .scss` — under `client/src/components
 - `client/src/components/flows/nodes/VideoPromptNode.jsx`
 - `client/src/components/flows/nodes/VoiceGenNode.jsx`
 - `client/src/components/generateAIModelFormCopy.js`
+- `client/src/components/icons/index.js`
 - `client/src/components/landerNew/LanderNewPublicApp.jsx`
 - `client/src/components/landerNew/LanderNewRenderer.jsx`
 - `client/src/components/nsfw/SextingScriptsTab.jsx`

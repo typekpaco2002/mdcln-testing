@@ -10,7 +10,7 @@ import {
   AlertCircle,
   ExternalLink,
   Sparkles,
-} from "lucide-react";
+} from "@/components/icons";
 import toast from "react-hot-toast";
 import api from "../services/api";
 

@@ -46,8 +46,8 @@ import {
   EyeOff,
   ZoomIn,
   ShieldOff,
-} from "lucide-react";
-import { SiTelegram, SiDiscord } from "react-icons/si";
+} from "@/components/icons";
+import { SiTelegram, SiDiscord } from "@/components/icons";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store";
 import { useTheme } from "../hooks/useTheme.jsx";

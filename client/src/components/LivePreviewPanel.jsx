@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, Loader2, AlertTriangle, Clock, CheckCircle, X, Maximize2, Info } from 'lucide-react';
+import { Download, Loader2, AlertTriangle, Clock, CheckCircle, X, Maximize2, Info } from '@/components/icons';
 import { resolveLocale } from './generateAIModelFormCopy';
 import { downloadFromPublicUrl } from '../utils/directDownload';
 

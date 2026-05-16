@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Shield, FileText, Cookie, CreditCard, AlertTriangle, X, TrendingUp, Lock, Eye, EyeOff, ShieldCheck, Smartphone, CheckCircle, ExternalLink, Key, Coins } from 'lucide-react';
+import { User, Shield, FileText, Cookie, CreditCard, AlertTriangle, X, TrendingUp, Lock, Eye, EyeOff, ShieldCheck, Smartphone, CheckCircle, ExternalLink, Key, Coins } from '@/components/icons';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store';
 import { useQuery, useMutation } from '@tanstack/react-query';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, Loader2, Check } from "lucide-react";
+import { User, Loader2, Check } from "@/components/icons";
 import BaseNode from "./BaseNode";
 import { useFlowStore } from "../../../store/flowStore";
 

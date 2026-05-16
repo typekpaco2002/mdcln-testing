@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Upload, RefreshCw, Download, Copy, CheckCircle2, AlertCircle, FileType2, Video, History } from "lucide-react";
+import { Upload, RefreshCw, Download, Copy, CheckCircle2, AlertCircle, FileType2, Video, History } from "@/components/icons";
 import toast from "react-hot-toast";
 import { reformatterAPI } from "../services/api";
 import { downloadFromPublicUrl } from "../utils/directDownload";

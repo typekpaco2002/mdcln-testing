@@ -32,7 +32,7 @@ import {
   Info,
   Shirt,
   Coins,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   NSFW_MOTION_RUNPOD_ENGINE,
   MOTION_X_CREATE_LABEL,
@@ -837,7 +837,7 @@ import TutorialButton from "../components/TutorialButton";
 import { TUTORIALS } from "../utils/tutorials";
 import { useTutorialCatalog } from "../hooks/useTutorialCatalog";
 import AddCreditsModal from "../components/AddCreditsModal";
-import { CreditCard } from "lucide-react";
+import { CreditCard } from "@/components/icons";
 import LivePreviewPanel from "../components/LivePreviewPanel";
 import CourseTipBanner from "../components/CourseTipBanner";
 import { useDraft } from "../hooks/useDraft";

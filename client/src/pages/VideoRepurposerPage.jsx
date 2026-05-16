@@ -53,7 +53,7 @@ import {
   ScanSearch,
   ChevronDown,
   Coins,
-} from "lucide-react";
+} from "@/components/icons";
 import toast from "react-hot-toast";
 import api, { uploadFile, getUploadConfig } from "../services/api";
 import { downloadFromPublicUrl } from "../utils/directDownload";

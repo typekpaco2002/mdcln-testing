@@ -43,7 +43,7 @@ import {
   Search,
   Upload,
   MessageCircleHeart,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   MagnifyingGlass,
   CaretUpDown,

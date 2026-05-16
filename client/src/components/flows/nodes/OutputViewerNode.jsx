@@ -1,4 +1,4 @@
-import { Download, ExternalLink, Inbox } from "lucide-react";
+import { Download, ExternalLink, Inbox } from "@/components/icons";
 import BaseNode from "./BaseNode";
 import { useFlowStore } from "../../../store/flowStore";
 

@@ -4,8 +4,8 @@ import {
   Zap, Shield, ArrowRight, Check, 
   Clock, Wand2, Image, Palette,
   User, Settings, Menu, X, Volume2, VolumeX, TrendingUp
-} from 'lucide-react';
-import { SiDiscord } from 'react-icons/si';
+} from '@/components/icons';
+import { SiDiscord } from '@/components/icons';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import OptimizedGalleryImage from '../components/OptimizedGalleryImage';
 import CursorGlow from '../components/CursorGlow';

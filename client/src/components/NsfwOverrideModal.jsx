@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Shield, ShieldCheck, ShieldX, Loader2, Image as ImageIcon, Lock, LockOpen } from 'lucide-react';
+import { X, Shield, ShieldCheck, ShieldX, Loader2, Image as ImageIcon, Lock, LockOpen } from '@/components/icons';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 

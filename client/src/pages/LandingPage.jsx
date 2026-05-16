@@ -6,8 +6,8 @@ import {
   DollarSign, Crown, Camera,
   BarChart, UserCheck, RefreshCw, Menu, X, ChevronDown,
   Briefcase, TrendingUp, GraduationCap, Repeat, BookOpen
-} from 'lucide-react';
-import { SiTrustpilot } from 'react-icons/si';
+} from '@/components/icons';
+import { SiTrustpilot } from '@/components/icons';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import OptimizedGalleryImage from '../components/OptimizedGalleryImage';
 import CursorGlow from '../components/CursorGlow';

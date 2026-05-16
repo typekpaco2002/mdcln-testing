@@ -28,7 +28,7 @@ import {
   Copy,
   Coins,
   Wand2,
-} from "lucide-react";
+} from "@/components/icons";
 import toast from "react-hot-toast";
 import { modelAPI, generationAPI, pricingAPI, uploadToCloudinary as uploadFile } from "../services/api";
 import api from "../services/api";

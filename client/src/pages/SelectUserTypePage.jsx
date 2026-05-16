@@ -1,7 +1,7 @@
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import CursorGlow from '../components/CursorGlow';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { User, Users, ArrowRight, Check, Wand2 } from 'lucide-react';
+import { User, Users, ArrowRight, Check, Wand2 } from '@/components/icons';
 import { useState, useSyncExternalStore, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store';
 

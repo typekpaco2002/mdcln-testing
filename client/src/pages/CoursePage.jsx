@@ -13,7 +13,7 @@ import {
   Award,
   Megaphone,
   MessageCircle,
-} from "lucide-react";
+} from "@/components/icons";
 import api from "../services/api";
 
 const CATEGORIES = [

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Download, Sparkles, Image as ImageIcon, X, ShieldOff, AlertCircle, Coins } from "lucide-react";
+import { Upload, Download, Sparkles, Image as ImageIcon, X, ShieldOff, AlertCircle, Coins } from "@/components/icons";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store";

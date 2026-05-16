@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, CreditCard, Lock, Zap, Check, Loader2, Sparkles, Bitcoin, ExternalLink, Tag } from 'lucide-react';
+import { X, CreditCard, Lock, Zap, Check, Loader2, Sparkles, Bitcoin, ExternalLink, Tag } from '@/components/icons';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, PaymentRequestButtonElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { createPortal } from 'react-dom';

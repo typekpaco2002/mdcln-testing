@@ -41,7 +41,7 @@ import {
   Smartphone,
   AlertTriangle,
   X,
-} from "lucide-react";
+} from "@/components/icons";
 
 import { useNavigate } from "react-router-dom";
 import { useFlowStore, isCompatibleConnection } from "../store/flowStore";

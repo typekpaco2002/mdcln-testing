@@ -6,7 +6,7 @@ import {
   Copy, Check, AlertTriangle, Zap, Server, Clock, TrendingUp, TrendingDown,
   ChevronLeft, ChevronRight, X, Send, UserX, Download, Upload, Loader2, Wallet, ExternalLink,
   Ban,
-} from 'lucide-react';
+} from '@/components/icons';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api, { adminAPI, adminTelemetryAPI, affiliateLanderAdminAPI, brandingAPI, formatApiError, referralAPI, tutorialsAPI, uploadToCloudinary as uploadFile } from '../services/api';

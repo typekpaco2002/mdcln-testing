@@ -15,7 +15,7 @@ import {
   Volume2,
   Wand2,
   X,
-} from "lucide-react";
+} from "@/components/icons";
 import ModelSelectorCollapsible from "./ModelSelectorCollapsible";
 import { modelAPI } from "../services/api";
 import { useAuthStore } from "../store";

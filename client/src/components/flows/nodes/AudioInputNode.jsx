@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Upload, Link2, X, Music } from "lucide-react";
+import { Upload, Link2, X, Music } from "@/components/icons";
 import BaseNode from "./BaseNode";
 import { useFlowStore } from "../../../store/flowStore";
 

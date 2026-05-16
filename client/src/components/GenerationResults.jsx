@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Eye, Download, Clock, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Eye, Download, Clock, CheckCircle, AlertTriangle, Loader2 } from '@/components/icons';
 import { useState } from 'react';
 
 /**

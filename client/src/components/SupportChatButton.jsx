@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Headphones, Send, ImagePlus } from "lucide-react";
+import { MessageCircle, X, Headphones, Send, ImagePlus } from "@/components/icons";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuthStore } from "../store";
 import { supportAPI } from "../services/api";

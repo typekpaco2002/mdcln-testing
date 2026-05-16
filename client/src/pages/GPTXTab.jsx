@@ -13,7 +13,7 @@ import {
   ChevronDown, X, Copy, Download, Check, Loader2, AlertCircle,
   Wand2, Camera, Film, ChevronLeft, Menu, Search,
   Pin, RotateCcw, Square, Pencil,
-} from "lucide-react";
+} from "@/components/icons";
 import api from "../services/api";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import toast from "react-hot-toast";

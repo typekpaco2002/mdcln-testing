@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Mail, RefreshCw, Zap, CheckCircle2 } from 'lucide-react';
+import { Mail, RefreshCw, Zap, CheckCircle2 } from '@/components/icons';
 import toast from 'react-hot-toast';
 import { authAPI } from '../services/api';
 import { useAuthStore } from '../store';

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, RefreshCw, Headset } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Headset } from '@/components/icons';
 
 const IS_PROD = import.meta.env.PROD;
 

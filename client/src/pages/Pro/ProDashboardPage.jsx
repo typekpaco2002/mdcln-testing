@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, Sparkles, Video, LayoutDashboard, ArrowRight } from "lucide-react";
+import { User, Sparkles, Video, LayoutDashboard, ArrowRight } from "@/components/icons";
 
 const LOCALE_STORAGE_KEY = "app_locale";
 

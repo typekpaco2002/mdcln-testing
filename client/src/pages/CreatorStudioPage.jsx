@@ -6,7 +6,7 @@ import {
   X, Plus, Download, Loader2, Maximize2, Wand2, Sparkles, AlertCircle, Zap,
   Trash2, Video, User, Play, Clock, Coins, ChevronDown, Mic, CheckCircle,
   PauseCircle, Info, Volume2, VolumeX,
-} from "lucide-react";
+} from "@/components/icons";
 import { creatorStudioAPI, avatarAPI, modelAPI, pricingAPI, uploadFile } from "../services/api";
 import { downloadFromPublicUrl } from "../utils/directDownload";
 import { useAuthStore } from "../store";

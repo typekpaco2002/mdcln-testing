@@ -66,7 +66,7 @@ import {
   X,
   XCircle,
   Zap,
-} from "lucide-react";
+} from "@/components/icons";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Layout helpers

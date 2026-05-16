@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, X, ArrowRight } from "lucide-react";
+import { BookOpen, X, ArrowRight } from "@/components/icons";
 import { resolveLocale } from "./generateAIModelFormCopy";
 
 const STORAGE_KEYS = {

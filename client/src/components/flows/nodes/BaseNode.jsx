@@ -25,7 +25,7 @@ import {
   CheckCircle2,
   Minimize2,
   Maximize2,
-} from "lucide-react";
+} from "@/components/icons";
 import { useFlowStore } from "../../../store/flowStore";
 
 // Port handle colors by data type — saturated, glassy

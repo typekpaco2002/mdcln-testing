@@ -25,7 +25,7 @@ import {
   ChevronRight,
   AlertTriangle,
   Crosshair,
-} from "lucide-react";
+} from "@/components/icons";
 import { useFlowStore } from "../../store/flowStore";
 
 const STATUS_CONFIG = {

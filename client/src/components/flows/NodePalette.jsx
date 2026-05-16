@@ -41,7 +41,7 @@ import {
   Music,
   AudioWaveform,
   Waves,
-} from "lucide-react";
+} from "@/components/icons";
 import { useFlowStore } from "../../store/flowStore";
 
 const CATEGORY_LABELS = {

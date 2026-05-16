@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { X, Loader2, CheckSquare, Square, Layers, Coins } from "lucide-react";
+import { X, Loader2, CheckSquare, Square, Layers, Coins } from "@/components/icons";
 import {
   NUDES_PACK_POSES,
   NUDES_PACK_CREDITS_MIN,

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy, RefreshCw } from "@/components/icons";
 import { referralAPI } from "../services/api";
 import { resolveLocale } from "../components/generateAIModelFormCopy";
 import { REFERRAL_PAGE_COPY, formatReferralCopy } from "../data/referralProgramCopy";

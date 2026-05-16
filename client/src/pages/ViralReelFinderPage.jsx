@@ -6,12 +6,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { SiInstagram } from "react-icons/si";
+import { SiInstagram } from "@/components/icons";
 import {
   TrendingUp, RefreshCw, Play, X, Volume2, VolumeX,
   Download, ExternalLink, Heart, MessageCircle, Send,
   Eye, Clock, Lock, Zap, Wand2,
-} from "lucide-react";
+} from "@/components/icons";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuthStore } from "../store";

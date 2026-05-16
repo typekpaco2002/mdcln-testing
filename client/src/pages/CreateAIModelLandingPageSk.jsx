@@ -5,8 +5,8 @@ import {
   Zap, Shield, ArrowRight, Check, 
   Clock, Wand2, Image, Video, Palette,
   User, Settings, Menu, X, Play, DollarSign, Star, Users, TrendingUp, Volume2, VolumeX
-} from 'lucide-react';
-import { SiDiscord } from 'react-icons/si';
+} from '@/components/icons';
+import { SiDiscord } from '@/components/icons';
 import { useState, useEffect, useRef } from 'react';
 import OptimizedGalleryImage from '../components/OptimizedGalleryImage';
 

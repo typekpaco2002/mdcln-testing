@@ -41,8 +41,8 @@ import {
   Bot,
   ShieldOff,
   Workflow,
-} from "lucide-react";
-import { SiTelegram, SiDiscord, SiInstagram } from "react-icons/si";
+} from "@/components/icons";
+import { SiTelegram, SiDiscord, SiInstagram } from "@/components/icons";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useBranding } from "../hooks/useBranding";
 import { useTheme } from "../hooks/useTheme.jsx";

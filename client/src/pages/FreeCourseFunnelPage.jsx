@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Play, CheckCircle, Sparkles, TrendingUp, DollarSign, Clock } from "lucide-react";
+import { ArrowRight, Play, CheckCircle, Sparkles, TrendingUp, DollarSign, Clock } from "@/components/icons";
 import { useAuthStore } from "../store";
 import api from "../services/api";
 
