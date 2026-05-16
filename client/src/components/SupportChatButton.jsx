@@ -232,6 +232,7 @@ export default function SupportChatButton() {
                 onClick={onClose}
                 className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-500 hover:text-white transition-colors"
                 data-testid="button-close-support"
+                aria-label="Close support chat"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -321,7 +322,7 @@ export default function SupportChatButton() {
                 href={TELEGRAM_SUPPORT_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full h-9 rounded-lg border border-[#26A5E4]/40 text-[#7fd2ff] bg-[#26A5E4]/10 hover:bg-[#26A5E4]/15 text-sm inline-flex items-center justify-center"
+                className="w-full h-9 rounded-lg border border-white/15 text-white/70 bg-white/5 hover:bg-white/10 text-sm inline-flex items-center justify-center"
               >
                 Rather talk to a human?
               </a>
@@ -346,6 +347,7 @@ export default function SupportChatButton() {
         onClick={open ? onClose : onOpen}
         className="relative w-12 h-12 rounded-full bg-white text-black flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-white/10"
         data-testid="button-open-support"
+        aria-label={open ? "Close support chat" : "Open support chat"}
       >
         {!open && hasUnreadReply && (
           <span className="absolute -top-1 -right-1 flex h-3 w-3">

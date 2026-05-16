@@ -6,7 +6,7 @@ import { useAuthStore } from './store';
 import { queryClient } from './lib/queryClient';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ErrorDisplay, showErrorDetails } from './components/ErrorDisplay';
-import { setErrorDisplay, stripeAPI } from './services/api';
+import api, { setErrorDisplay, stripeAPI } from './services/api';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Info, X, Gift } from 'lucide-react';
@@ -188,7 +188,8 @@ function LoraPromoBanner() {
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 24 }}
-      className="fixed bottom-4 right-4 z-[9999] w-[320px] max-w-[calc(100vw-2rem)]"
+      className="fixed bottom-4 right-4 w-[320px] max-w-[calc(100vw-2rem)]"
+      style={{ zIndex: 'var(--z-overlay, 30)' }}
     >
       <div
         className="relative rounded-xl p-4"
@@ -637,10 +638,11 @@ function App() {
             <GlobalGenerationNotifier />
             <Toaster
           position="top-right"
+          containerStyle={{ zIndex: 'var(--z-toast, 80)' }}
           toastOptions={{
             duration: 4000,
             style: {
-              background: 'var(--bg-elevated)',
+              background: 'var(--mc-toast-bg, rgba(18,18,22,0.96))',
               backdropFilter: 'blur(12px)',
               WebkitBackdropFilter: 'blur(12px)',
               color: 'var(--text-primary)',
@@ -652,10 +654,10 @@ function App() {
               boxShadow: '0 10px 32px var(--shadow-ambient)',
             },
             success: {
-              iconTheme: { primary: 'var(--success)', secondary: 'var(--bg-elevated)' },
+              iconTheme: { primary: 'var(--success)', secondary: 'var(--mc-toast-bg, rgba(18,18,22,0.96))' },
             },
             error: {
-              iconTheme: { primary: 'var(--danger)', secondary: 'var(--bg-elevated)' },
+              iconTheme: { primary: 'var(--danger)', secondary: 'var(--mc-toast-bg, rgba(18,18,22,0.96))' },
             },
           }}
         />

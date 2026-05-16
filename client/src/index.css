@@ -76,6 +76,22 @@
   --warning:          #f59e0b;
   --danger:           #ef4444;
 
+  /* ── Z-index scale — single source of truth for stacking ─────────────
+   * Prefer these tokens (e.g. `style={{ zIndex: 'var(--z-modal)' }}` or
+   * `z-[var(--z-modal)]`) over arbitrary `z-[N]` classes. Migrate ad-hoc
+   * z-indices onto this ladder; do NOT introduce new numeric values.
+   * ────────────────────────────────────────────────────────────────── */
+  --z-base:    1;
+  --z-overlay: 30;  /* mobile menu backdrops, sticky bars */
+  --z-sticky:  40;  /* sticky page headers */
+  --z-nav:     45;  /* bottom tab nav */
+  --z-sidebar: 50;  /* main left sidebar */
+  --z-modal:   60;  /* standard modals */
+  --z-popover: 70;  /* dropdowns, popovers */
+  --z-toast:   80;  /* react-hot-toast */
+  --z-splash:  90;  /* splash screen */
+  --z-tooltip: 100; /* tooltips */
+
   color-scheme: dark;
 }
 
@@ -876,6 +892,74 @@ html {
   opacity: 0.92;
 }
 
+/* ──────────────────────────────────────────────────────────────────────
+ * CTA / surface utilities introduced by the color-killer migration
+ * (audit Patterns B & D). All survive the dark-mode killer because they
+ * resolve through tokens (`var(--text-primary)`, `var(--danger)`) or
+ * rgba(255,255,255,X) rather than brand-hex utilities.
+ * ────────────────────────────────────────────────────────────────────── */
+
+/* Primary CTA fallback for inline-violet buttons (Premium Gate, etc).
+ * White solid fill with black text, glass rim, hover lift. */
+.btn-cta-glass {
+  background: var(--text-primary, #fff) !important;
+  color: var(--bg-page, #000) !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+.btn-cta-glass:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.btn-cta-glass:active { transform: translateY(0); }
+.btn-cta-glass:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Quiet destructive CTA — for admin/cancel buttons. Survives the killer
+ * because it reaches the `var(--danger)` token directly. */
+.btn-danger-quiet {
+  background: color-mix(in srgb, var(--danger, #ef4444) 14%, transparent) !important;
+  color: var(--danger, #ef4444) !important;
+  border: 1px solid color-mix(in srgb, var(--danger, #ef4444) 35%, transparent);
+  background-image: none !important;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.btn-danger-quiet:hover {
+  background: color-mix(in srgb, var(--danger, #ef4444) 22%, transparent) !important;
+  border-color: color-mix(in srgb, var(--danger, #ef4444) 50%, transparent);
+}
+
+/* Translucent monochrome accent surface for cards/tiles that previously
+ * used inline-violet decoration. */
+.tile-accent {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+
+/* 44×44 hit-area utility for small icon buttons (WCAG 2.5.5 / Apple HIG). */
+.tap-target-min {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Replacement for `bg-slate-800` tooltips — solid-enough monochrome glass. */
+.glass-tooltip {
+  background: rgba(18, 18, 22, 0.96) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
 /* Unified generate button style (sitewide) — neutral outlined, no gradient */
 button[data-testid^="button-generate"] {
   background: var(--bg-elevated) !important;
@@ -1035,6 +1119,19 @@ button[data-testid^="button-generate"] {
 :is(html[data-theme="light"], html.light) .text-slate-500 { color: #7f8ea3 !important; }
 :is(html[data-theme="light"], html.light) .text-slate-600 { color: #4a5568 !important; }
 :is(html[data-theme="light"], html.light) .text-slate-700 { color: #334155 !important; }
+
+/* ─── DARK MODE: mirror text-slate-* onto monochrome token scale ─────────
+ * Mirrors the light-mode mapping above so secondary copy across the
+ * dashboard renders as warm white/X tokens instead of Tailwind's cool
+ * slate-blue defaults (see audit Critical #9). ──────────────────────── */
+:is(html.dark) .text-slate-100 { color: rgba(255, 255, 255, 0.95) !important; }
+:is(html.dark) .text-slate-200 { color: rgba(255, 255, 255, 0.90) !important; }
+:is(html.dark) .text-slate-300 { color: rgba(255, 255, 255, 0.85) !important; }
+:is(html.dark) .text-slate-400 { color: rgba(255, 255, 255, 0.55) !important; }
+:is(html.dark) .text-slate-500 { color: rgba(255, 255, 255, 0.40) !important; }
+:is(html.dark) .text-slate-600 { color: rgba(255, 255, 255, 0.30) !important; }
+:is(html.dark) .text-slate-700 { color: rgba(255, 255, 255, 0.25) !important; }
+
 :is(html[data-theme="light"], html.light) .text-gray-300,
 :is(html[data-theme="light"], html.light) .text-gray-400 { color: #64748b !important; }
 :is(html[data-theme="light"], html.light) .text-gray-500 { color: #7f8ea3 !important; }
@@ -1455,6 +1552,16 @@ textarea:focus-visible {
   .hover-lift-ultra:hover,
   .card-3d:hover,
   .card-hover:hover {
+    transform: none !important;
+  }
+
+  /* Disable Tailwind hover:scale-* transforms for vestibular safety
+   * (see audit Pattern E — CSS half). The framer-motion half is owned
+   * by component-level wrappers. */
+  .hover\:scale-105:hover,
+  .hover\:scale-110:hover,
+  .hover\:scale-\[1\.02\]:hover,
+  [class*="hover:scale-"]:hover {
     transform: none !important;
   }
 }
@@ -3767,6 +3874,81 @@ body > * { position: relative; z-index: 1; }
   background-image: none !important;
 }
 
+/* Neutral-gray bg utilities → also flattened (audit Major #19).
+ * NOTE: `*-900` shades are explicitly excluded — those are legitimate
+ * near-black surfaces we want to keep. */
+:is(html.dark) .bg-slate-50,
+:is(html.dark) .bg-slate-100,
+:is(html.dark) .bg-slate-200,
+:is(html.dark) .bg-slate-300,
+:is(html.dark) .bg-slate-400,
+:is(html.dark) .bg-slate-500,
+:is(html.dark) .bg-slate-600,
+:is(html.dark) .bg-slate-700,
+:is(html.dark) .bg-slate-800,
+:is(html.dark) [class*="bg-slate-50/"],
+:is(html.dark) [class*="bg-slate-100/"],
+:is(html.dark) [class*="bg-slate-200/"],
+:is(html.dark) [class*="bg-slate-300/"],
+:is(html.dark) [class*="bg-slate-400/"],
+:is(html.dark) [class*="bg-slate-500/"],
+:is(html.dark) [class*="bg-slate-600/"],
+:is(html.dark) [class*="bg-slate-700/"],
+:is(html.dark) [class*="bg-slate-800/"],
+:is(html.dark) .bg-zinc-50,
+:is(html.dark) .bg-zinc-100,
+:is(html.dark) .bg-zinc-200,
+:is(html.dark) .bg-zinc-300,
+:is(html.dark) .bg-zinc-400,
+:is(html.dark) .bg-zinc-500,
+:is(html.dark) .bg-zinc-600,
+:is(html.dark) .bg-zinc-700,
+:is(html.dark) .bg-zinc-800,
+:is(html.dark) [class*="bg-zinc-50/"],
+:is(html.dark) [class*="bg-zinc-100/"],
+:is(html.dark) [class*="bg-zinc-200/"],
+:is(html.dark) [class*="bg-zinc-300/"],
+:is(html.dark) [class*="bg-zinc-400/"],
+:is(html.dark) [class*="bg-zinc-500/"],
+:is(html.dark) [class*="bg-zinc-600/"],
+:is(html.dark) [class*="bg-zinc-700/"],
+:is(html.dark) [class*="bg-zinc-800/"],
+:is(html.dark) .bg-neutral-50,
+:is(html.dark) .bg-neutral-100,
+:is(html.dark) .bg-neutral-200,
+:is(html.dark) .bg-neutral-300,
+:is(html.dark) .bg-neutral-400,
+:is(html.dark) .bg-neutral-500,
+:is(html.dark) .bg-neutral-600,
+:is(html.dark) .bg-neutral-700,
+:is(html.dark) .bg-neutral-800,
+:is(html.dark) [class*="bg-neutral-50/"],
+:is(html.dark) [class*="bg-neutral-100/"],
+:is(html.dark) [class*="bg-neutral-200/"],
+:is(html.dark) [class*="bg-neutral-300/"],
+:is(html.dark) [class*="bg-neutral-400/"],
+:is(html.dark) [class*="bg-neutral-500/"],
+:is(html.dark) [class*="bg-neutral-600/"],
+:is(html.dark) [class*="bg-neutral-700/"],
+:is(html.dark) [class*="bg-neutral-800/"],
+:is(html.dark) .bg-gray-100,
+:is(html.dark) .bg-gray-200,
+:is(html.dark) .bg-gray-300,
+:is(html.dark) .bg-gray-400,
+:is(html.dark) .bg-gray-500,
+:is(html.dark) .bg-gray-600,
+:is(html.dark) .bg-gray-700,
+:is(html.dark) [class*="bg-gray-100/"],
+:is(html.dark) [class*="bg-gray-200/"],
+:is(html.dark) [class*="bg-gray-300/"],
+:is(html.dark) [class*="bg-gray-400/"],
+:is(html.dark) [class*="bg-gray-500/"],
+:is(html.dark) [class*="bg-gray-600/"],
+:is(html.dark) [class*="bg-gray-700/"] {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  background-image: none !important;
+}
+
 /* Coloured text → white at varying brightness */
 :is(html[data-theme="dark"], html.dark) [class*="text-purple-"],
 :is(html[data-theme="dark"], html.dark) [class*="text-violet-"],
@@ -3831,7 +4013,11 @@ body > * { position: relative; z-index: 1; }
 :is(html[data-theme="dark"], html.dark) [style*="rgba(0, 182, 122"],
 :is(html[data-theme="dark"], html.dark) [style*="rgba(0,182,122"],
 :is(html[data-theme="dark"], html.dark) [style*="rgba(252, 211, 77"],
-:is(html[data-theme="dark"], html.dark) [style*="rgba(252,211,77"] {
+:is(html[data-theme="dark"], html.dark) [style*="rgba(252,211,77"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(250, 204, 21"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(250,204,21"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(59, 130, 246"],
+:is(html[data-theme="dark"], html.dark) [style*="rgba(59,130,246"] {
   background-color: rgba(255, 255, 255, 0.06) !important;
   background-image: none !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
@@ -3847,6 +4033,8 @@ body > * { position: relative; z-index: 1; }
 :is(html[data-theme="dark"], html.dark) [style*="#7c3aed"],
 :is(html[data-theme="dark"], html.dark) [style*="#3B82F6"],
 :is(html[data-theme="dark"], html.dark) [style*="#3b82f6"],
+:is(html[data-theme="dark"], html.dark) [style*="#A855F7"],
+:is(html[data-theme="dark"], html.dark) [style*="#a855f7"],
 :is(html[data-theme="dark"], html.dark) [style*="#22D3EE"],
 :is(html[data-theme="dark"], html.dark) [style*="#22d3ee"],
 :is(html[data-theme="dark"], html.dark) [style*="#14B8A6"],
@@ -3855,6 +4043,16 @@ body > * { position: relative; z-index: 1; }
 :is(html[data-theme="dark"], html.dark) [style*="#10b981"],
 :is(html[data-theme="dark"], html.dark) [style*="#EC4899"],
 :is(html[data-theme="dark"], html.dark) [style*="#ec4899"],
+:is(html[data-theme="dark"], html.dark) [style*="#F43F5E"],
+:is(html[data-theme="dark"], html.dark) [style*="#f43f5e"],
+:is(html[data-theme="dark"], html.dark) [style*="#26A5E4"],
+:is(html[data-theme="dark"], html.dark) [style*="#26a5e4"],
+:is(html[data-theme="dark"], html.dark) [style*="#5865F2"],
+:is(html[data-theme="dark"], html.dark) [style*="#5865f2"],
+:is(html[data-theme="dark"], html.dark) [style*="#4752C4"],
+:is(html[data-theme="dark"], html.dark) [style*="#4752c4"],
+:is(html[data-theme="dark"], html.dark) [style*="#0088cc"],
+:is(html[data-theme="dark"], html.dark) [style*="#0088CC"],
 :is(html[data-theme="dark"], html.dark) [style*="#fb923c"],
 :is(html[data-theme="dark"], html.dark) [style*="#FB923C"] {
   background-color: rgba(255, 255, 255, 0.06) !important;
@@ -3922,4 +4120,82 @@ body > * { position: relative; z-index: 1; }
 /* Zap icon drop-shadow neutralizer */
 .drop-shadow-\[0_0_8px_rgba\(252\,211\,77\,0\.4\)\] {
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.35)) !important;
+}
+
+/* ─── Tailwind gradient-stop killers — `from-*` / `via-*` / `to-*` ─────────
+ * Tailwind gradient utilities set CSS vars (`--tw-gradient-from`,
+ * `--tw-gradient-via`, `--tw-gradient-to`, `--tw-gradient-stops`) that the
+ * bg-gradient-to-* utilities then consume via `background-image`. The
+ * neutral-bg killer above doesn't touch these vars, so vivid rainbow
+ * gradients still leak in dark mode (see audit Critical #6).
+ *
+ * Here we collapse every branded gradient stop down to a flat
+ * translucent-white wash so the surface tier reads as monochrome glass
+ * without breaking the gradient direction (`bg-gradient-to-br` etc).
+ * ───────────────────────────────────────────────────────────────────── */
+
+/* `from-*` stops */
+:is(html.dark) [class*="from-violet-"],
+:is(html.dark) [class*="from-purple-"],
+:is(html.dark) [class*="from-blue-"],
+:is(html.dark) [class*="from-indigo-"],
+:is(html.dark) [class*="from-rose-"],
+:is(html.dark) [class*="from-pink-"],
+:is(html.dark) [class*="from-fuchsia-"],
+:is(html.dark) [class*="from-orange-"],
+:is(html.dark) [class*="from-amber-"],
+:is(html.dark) [class*="from-yellow-"],
+:is(html.dark) [class*="from-cyan-"],
+:is(html.dark) [class*="from-sky-"],
+:is(html.dark) [class*="from-teal-"],
+:is(html.dark) [class*="from-green-"],
+:is(html.dark) [class*="from-emerald-"],
+:is(html.dark) [class*="from-lime-"],
+:is(html.dark) [class*="from-red-"] {
+  --tw-gradient-from: rgba(255, 255, 255, 0.08) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(255, 255, 255, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+/* `via-*` stops (3-stop gradients) */
+:is(html.dark) [class*="via-violet-"],
+:is(html.dark) [class*="via-purple-"],
+:is(html.dark) [class*="via-blue-"],
+:is(html.dark) [class*="via-indigo-"],
+:is(html.dark) [class*="via-rose-"],
+:is(html.dark) [class*="via-pink-"],
+:is(html.dark) [class*="via-fuchsia-"],
+:is(html.dark) [class*="via-orange-"],
+:is(html.dark) [class*="via-amber-"],
+:is(html.dark) [class*="via-yellow-"],
+:is(html.dark) [class*="via-cyan-"],
+:is(html.dark) [class*="via-sky-"],
+:is(html.dark) [class*="via-teal-"],
+:is(html.dark) [class*="via-green-"],
+:is(html.dark) [class*="via-emerald-"],
+:is(html.dark) [class*="via-lime-"],
+:is(html.dark) [class*="via-red-"] {
+  --tw-gradient-via: rgba(255, 255, 255, 0.04) var(--tw-gradient-via-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
+}
+
+/* `to-*` stops */
+:is(html.dark) [class*="to-violet-"],
+:is(html.dark) [class*="to-purple-"],
+:is(html.dark) [class*="to-blue-"],
+:is(html.dark) [class*="to-indigo-"],
+:is(html.dark) [class*="to-rose-"],
+:is(html.dark) [class*="to-pink-"],
+:is(html.dark) [class*="to-fuchsia-"],
+:is(html.dark) [class*="to-orange-"],
+:is(html.dark) [class*="to-amber-"],
+:is(html.dark) [class*="to-yellow-"],
+:is(html.dark) [class*="to-cyan-"],
+:is(html.dark) [class*="to-sky-"],
+:is(html.dark) [class*="to-teal-"],
+:is(html.dark) [class*="to-green-"],
+:is(html.dark) [class*="to-emerald-"],
+:is(html.dark) [class*="to-lime-"],
+:is(html.dark) [class*="to-red-"] {
+  --tw-gradient-to: rgba(255, 255, 255, 0) var(--tw-gradient-to-position) !important;
 }

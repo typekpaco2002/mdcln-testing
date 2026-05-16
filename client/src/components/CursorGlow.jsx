@@ -5,6 +5,11 @@ export default function CursorGlow() {
   const glowRef = useRef(null);
 
   useEffect(() => {
+    // Only activate on devices with a true hover-capable, fine pointer (desktop
+    // mice / trackpads). Touch and coarse pointers get the native cursor.
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
     const dot = dotRef.current;
     const glow = glowRef.current;
     if (!dot || !glow) return;
@@ -61,7 +66,7 @@ export default function CursorGlow() {
     <>
       <div
         ref={dotRef}
-        className="fixed top-0 left-0 pointer-events-none z-[9999]"
+        className="fixed top-0 left-0 pointer-events-none z-[5]"
         style={{
           width: '8px',
           height: '8px',
@@ -77,7 +82,7 @@ export default function CursorGlow() {
       />
       <div
         ref={glowRef}
-        className="fixed top-0 left-0 pointer-events-none z-[9998]"
+        className="fixed top-0 left-0 pointer-events-none z-[5]"
         style={{
           width: '120px',
           height: '120px',

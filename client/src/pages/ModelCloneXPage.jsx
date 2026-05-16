@@ -360,11 +360,7 @@ function ResultCard({ imageUrl, isDark, onDownload }) {
         <button
           type="button"
           onClick={() => onDownload(imageUrl)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
-          style={{
-            background: "rgba(124,58,237,0.9)",
-            boxShadow: "0 4px 12px rgba(124,58,237,0.35)",
-          }}
+          className="btn-cta-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform hover:scale-[1.02] active:scale-[0.98]"
         >
           <Download className="w-3.5 h-3.5" /> Download
         </button>

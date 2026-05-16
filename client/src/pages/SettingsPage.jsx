@@ -1200,7 +1200,7 @@ export default function SettingsPage() {
                 </button>
                 <button
                   onClick={handleCancelClick}
-                  className="flex-1 px-6 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl font-semibold transition"
+                  className="btn-danger-quiet flex-1 px-6 py-3 rounded-xl font-semibold transition"
                   data-testid="button-proceed-cancel"
                 >
                   {t.proceedCancel}
@@ -1351,7 +1351,7 @@ export default function SettingsPage() {
                   href={TELEGRAM_ENROLL_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 px-5 py-3 bg-violet-600 hover:bg-violet-500 text-white text-center rounded-xl font-semibold transition inline-flex items-center justify-center gap-2"
+                  className="btn-cta-glass flex-1 rounded-xl px-5 py-3 font-semibold text-center inline-flex items-center justify-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
                   {t.apiEnrollTelegramCta}

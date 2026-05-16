@@ -1255,11 +1255,11 @@ export default function CheckoutModal({ isOpen, onClose, item, itemType, onSucce
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/5 rounded-2xl sm:rounded-3xl blur-xl pointer-events-none" />
             
             <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-white/15 bg-[#0b0f24]/92 backdrop-blur-2xl shadow-[0_24px_80px_rgba(0,0,0,0.55)]">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_10%_0%,rgba(139,92,246,0.22),transparent_45%),radial-gradient(90%_70%_at_100%_100%,rgba(56,189,248,0.14),transparent_45%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_10%_0%,rgba(255,255,255,0.06),transparent_45%),radial-gradient(90%_70%_at_100%_100%,rgba(255,255,255,0.04),transparent_45%)]" />
               <div className={`absolute top-0 left-0 right-0 h-1 ${
-                paymentMethod === 'crypto' 
-                  ? 'bg-gradient-to-r from-orange-500 to-yellow-500'
-                  : 'bg-gradient-to-r from-violet-500/90 via-fuchsia-400/90 to-cyan-400/90'
+                paymentMethod === 'crypto'
+                  ? 'bg-gradient-to-r from-white/[0.10] to-white/[0.04]'
+                  : 'bg-gradient-to-r from-white/[0.10] to-white/[0.04]'
               }`} />
               
               <div className="relative p-4 sm:p-6">
@@ -1267,7 +1267,7 @@ export default function CheckoutModal({ isOpen, onClose, item, itemType, onSucce
                   <div className="flex items-center gap-2.5 sm:gap-3">
                     <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0 ${
                       paymentMethod === 'crypto'
-                        ? 'bg-gradient-to-br from-orange-500 to-yellow-500'
+                        ? 'bg-gradient-to-br from-white/[0.10] to-white/[0.04] border border-white/15'
                         : 'bg-white/12 border border-white/20'
                     }`}>
                       {paymentMethod === 'crypto' ? (
@@ -1283,8 +1283,9 @@ export default function CheckoutModal({ isOpen, onClose, item, itemType, onSucce
                   </div>
                   <button
                     onClick={handleClose}
-                    className="w-10 h-10 sm:w-9 sm:h-9 rounded-lg bg-white/8 border border-white/15 flex items-center justify-center active:bg-white/12 transition-colors flex-shrink-0"
+                    className="w-11 h-11 sm:w-9 sm:h-9 rounded-lg bg-white/8 border border-white/15 flex items-center justify-center active:bg-white/12 transition-colors flex-shrink-0"
                     data-testid="button-close-checkout"
+                    aria-label="Close checkout"
                   >
                     <X className="w-5 h-5 text-slate-400" />
                   </button>

@@ -813,13 +813,13 @@ export default function DashboardPage() {
                 aria-checked={privateMode}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
                   privateMode
-                    ? "bg-violet-500/15 text-violet-100 border-violet-500/35 shadow-[0_0_18px_rgba(139,92,246,0.18)]"
+                    ? "bg-white/[0.15] text-white border-white/[0.30] shadow-[0_0_18px_rgba(255,255,255,0.18)]"
                     : "bg-white/[0.02] text-slate-400 hover:text-slate-200 hover:bg-white/[0.05] border-white/[0.06]"
                 }`}
                 data-testid="mobile-private-mode-toggle"
               >
                 {privateMode ? (
-                  <EyeOff className="w-5 h-5 flex-shrink-0 text-violet-300" />
+                  <EyeOff className="w-5 h-5 flex-shrink-0 text-white" />
                 ) : (
                   <Eye className="w-5 h-5 flex-shrink-0" />
                 )}
@@ -872,10 +872,10 @@ export default function DashboardPage() {
                     navigate("/admin");
                     setShowMobileMenu(false);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/20 text-slate-200 font-medium transition-all"
+                  className="btn-danger-quiet w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-medium transition-all"
                   data-testid="mobile-admin"
                 >
-                  <SettingsIcon className="w-5 h-5 text-rose-400" />
+                  <SettingsIcon className="w-5 h-5" />
                   {copy.mobileAdmin}
                 </button>
               )}
@@ -899,17 +899,19 @@ export default function DashboardPage() {
       )}
       </AnimatePresence>
 
-      {/* Mobile bottom nav ΓÇö compact pill */}
+      {/* Mobile bottom nav ΓÇö compact pill. Hidden while the slide-in mobile menu
+          is open so its dim backdrop (z-40) is the only interactive surface. */}
       <nav
-        className="md:hidden fixed bottom-1.5 left-2 right-2 z-[45] flex items-center justify-around gap-0.5 rounded-xl px-1.5 py-0.5 pb-[max(0.125rem,env(safe-area-inset-bottom))] backdrop-blur-2xl"
-        style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)" }}
+        className={`${showMobileMenu ? "hidden" : ""} md:hidden fixed bottom-1.5 left-2 right-2 flex items-center justify-around gap-0.5 rounded-xl px-1.5 py-0.5 pb-[max(0.125rem,env(safe-area-inset-bottom))] backdrop-blur-2xl`}
+        style={{ background: "var(--bg-surface)", border: "1px solid var(--border-subtle)", zIndex: 29 }}
         aria-label="Primary navigation"
+        aria-hidden={showMobileMenu || undefined}
       >
         {!hideRestrictedTabs && (
           <button type="button" onClick={() => handleTabChange("nsfw")}
-            className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg py-1 max-w-[5rem] transition-colors active:scale-[0.97] ${activeTab === "nsfw" ? "text-rose-400" : "text-slate-500 hover:text-slate-300"}`}
+            className={`relative flex flex-1 flex-col items-center justify-center gap-0 rounded-xl py-1.5 max-w-[5rem] border transition-all active:scale-[0.97] ${activeTab === "nsfw" ? "text-white bg-white/[0.12] border-white/20 before:absolute before:top-1 before:right-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-white/60" : "text-slate-300 border-transparent hover:text-white hover:bg-white/[0.04]"}`}
             aria-label={copy.mobileNavNsfw} aria-current={activeTab === "nsfw" ? "page" : undefined} data-testid="mobile-tab-nsfw">
-            <Flame className={`w-5 h-5 ${activeTab === "nsfw" ? "drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]" : ""}`} />
+            <Flame className="w-5 h-5" />
             <span className="text-[9px] font-semibold">{copy.mobileNavNsfw}</span>
           </button>
         )}
@@ -920,9 +922,9 @@ export default function DashboardPage() {
           <span className="text-[9px] font-semibold">{copy.mobileNavDashboard}</span>
         </button>
         <button type="button" onClick={() => handleTabChange("generate")}
-          className={`flex flex-1 flex-col items-center justify-center gap-0 rounded-lg py-1 max-w-[5rem] transition-colors active:scale-[0.97] ${activeTab === "generate" ? "text-amber-300" : "text-slate-500 hover:text-slate-300"}`}
+          className={`relative flex flex-1 flex-col items-center justify-center gap-0 rounded-xl py-1.5 max-w-[5rem] border transition-all active:scale-[0.97] ${activeTab === "generate" ? "text-white bg-white/[0.12] border-white/20 before:absolute before:top-1 before:right-2 before:w-1.5 before:h-1.5 before:rounded-full before:bg-white/60" : "text-slate-300 border-transparent hover:text-white hover:bg-white/[0.04]"}`}
           aria-label={copy.mobileNavGenerate} aria-current={activeTab === "generate" ? "page" : undefined} data-testid="mobile-tab-generate">
-          <Zap className={`w-5 h-5 ${activeTab === "generate" ? "drop-shadow-[0_0_8px_rgba(252,211,77,0.4)]" : ""}`} />
+          <Zap className="w-5 h-5" />
           <span className="text-[9px] font-semibold">{copy.mobileNavGenerate}</span>
         </button>
       </nav>
@@ -1028,8 +1030,7 @@ export default function DashboardPage() {
                     setShowPremiumGate(false);
                     setShowAddCredits(true);
                   }}
-                  className="w-full py-3 rounded-xl font-semibold text-black transition-all hover:scale-[1.02]"
-                  style={{ background: 'linear-gradient(135deg, #a78bfa, #7c3aed)' }}
+                  className="btn-cta-glass w-full rounded-full px-6 py-3 font-semibold"
                   data-testid="button-premium-subscribe"
                 >
                   {copy.premiumGateViewPlans}
@@ -1074,11 +1075,11 @@ export default function DashboardPage() {
                 </svg>
               </button>
 
-              <div className="text-center mb-4 sm:mb-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <DollarSign className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-400" />
+              <div className="flex items-center gap-4 mb-4 sm:mb-6">
+                <div className="tile-accent w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl flex items-center justify-center shrink-0">
+                  <DollarSign className="w-9 h-9 sm:w-10 sm:h-10 text-white" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
                   {copy.earnModalTitle}
                 </h2>
               </div>
@@ -1165,14 +1166,14 @@ export default function DashboardPage() {
                 </svg>
               </button>
 
-              <div className="text-center mb-4 sm:mb-6">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  <Share2 className="w-7 h-7 sm:w-8 sm:h-8 text-purple-400" />
+              <div className="border-l-2 border-white/30 pl-4 sm:pl-5 mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl tile-accent flex items-center justify-center mb-3">
+                  <Share2 className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 leading-tight">
                   {copy.referralModalTitle}
                 </h2>
-                <p className="text-purple-300 text-sm sm:text-base">
+                <p className="text-white/60 text-sm sm:text-base">
                   {copy.referralModalSubtitle}
                 </p>
               </div>

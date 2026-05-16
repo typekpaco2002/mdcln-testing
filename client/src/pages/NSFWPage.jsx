@@ -637,52 +637,6 @@ function resolveLocale() {
 // references `copy` without a local declaration.
 const copy = NSFW_COPY[resolveLocale()] || NSFW_COPY.en;
 
-function useMainViewportBounds() {
-  const [bounds, setBounds] = useState({ left: 0, width: null });
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    let rafId = 0;
-    let ro = null;
-    let mo = null;
-    const update = () => {
-      const mainEl = document.querySelector("main");
-      if (mainEl && window.innerWidth >= 768) {
-        const rect = mainEl.getBoundingClientRect();
-        setBounds({ left: Math.max(0, Math.round(rect.left)), width: Math.max(320, Math.round(rect.width)) });
-      } else {
-        setBounds({ left: 0, width: null });
-      }
-    };
-    const schedule = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(update);
-    };
-
-    schedule();
-    window.addEventListener("resize", schedule);
-    const mainEl = document.querySelector("main");
-    if (mainEl && "ResizeObserver" in window) {
-      ro = new ResizeObserver(schedule);
-      ro.observe(mainEl);
-    }
-    if (mainEl && "MutationObserver" in window) {
-      mo = new MutationObserver(schedule);
-      mo.observe(mainEl, { attributes: true, attributeFilter: ["class", "style"] });
-    }
-
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", schedule);
-      if (ro) ro.disconnect();
-      if (mo) mo.disconnect();
-    };
-  }, []);
-
-  return bounds;
-}
-
-
 // ============================================
 // Gallery Picker for NSFW Face Swap (optional — or user-uploaded source face)
 // Only shows images generated for the selected model
@@ -759,7 +713,6 @@ function NsfwGallery({ modelId }) {
   const pageSize = 24;
   const { data, isLoading, processingCount } = useNsfwGallery(modelId, page, pageSize);
   const [previewGen, setPreviewGen] = useState(null);
-  const viewportBounds = useMainViewportBounds();
 
   const generations = data?.generations || [];
   const total = data?.pagination?.total || 0;
@@ -893,7 +846,11 @@ function NsfwGallery({ modelId }) {
                     {urls.length > 1 && (
                       <span
                         className="px-1.5 py-0.5 rounded text-[8px] font-bold"
-                        style={{ background: "rgba(139,92,246,0.9)", color: "#fff" }}
+                        style={{
+                          background: "rgba(255,255,255,0.18)",
+                          border: "1px solid rgba(255,255,255,0.30)",
+                          color: "#fff",
+                        }}
                       >
                         {urls.length}
                       </span>
@@ -920,8 +877,8 @@ function NsfwGallery({ modelId }) {
       {/* Preview Modal - Responsive, fits screen */}
       {previewGen && createPortal(
         <div
-          className="fixed inset-y-0 right-0 bg-black/95 backdrop-blur-sm z-[9999] flex items-center justify-center"
-          style={{ left: viewportBounds.left, width: viewportBounds.width ? `${viewportBounds.width}px` : undefined }}
+          className="fixed inset-0 bg-black/95 backdrop-blur-sm z-[9999] flex items-center justify-center"
+          style={{ left: 0, width: '100%' }}
           onClick={() => setPreviewGen(null)}
         >
           <div
@@ -967,7 +924,7 @@ function NsfwGallery({ modelId }) {
                           />
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDownload(url, previewGen.id, idx); }}
-                            className="absolute bottom-2 right-2 p-2 rounded-lg opacity-0 group-hover/img:opacity-100 transition-opacity bg-white border border-white/20"
+                            className="absolute bottom-2 right-2 p-2 rounded-lg opacity-60 group-hover/img:opacity-100 md:opacity-0 md:group-hover/img:opacity-100 transition-opacity bg-white border border-white/20"
                           >
                             <Download className="w-4 h-4 text-black" />
                           </button>
@@ -1866,7 +1823,7 @@ function NsfwImg2ImgTab({ modelId, activeLoraObj, chipSelections = {}, nsfwImage
             {isGenerating ? (
               <><Loader2 className="w-4 h-4 animate-spin" /><span>{statusLabel || copy.i2iProcessing}</span></>
             ) : (
-              <><Flame className="w-4 h-4 text-white" /><span>{copy.labelGenerate}</span><span className="inline-flex items-center gap-0.5 text-yellow-400">{nsfwImageCost} <Coins className="w-3.5 h-3.5" /></span></>
+              <><Flame className="w-4 h-4 text-white" /><span>{copy.labelGenerate}</span><span className="inline-flex items-center gap-0.5" style={{ color: 'var(--warning, #facc15)' }}>{nsfwImageCost} <Coins className="w-3.5 h-3.5" /></span></>
             )}
           </button>
 
@@ -1980,6 +1937,21 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
   const [videoModal, setVideoModal] = useState(null); // { url, title, chain }
   const [viewingSegment, setViewingSegment] = useState({}); // { [chainRootId]: 'original' | 'extended' }
   const pageSize = 12;
+
+  const videoModalCloseRef = useRef(null);
+
+  useEffect(() => {
+    if (!videoModal) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setVideoModal(null);
+    };
+    window.addEventListener("keydown", onKey);
+    // Focus close button on open for basic focus trap
+    requestAnimationFrame(() => {
+      if (videoModalCloseRef.current) videoModalCloseRef.current.focus();
+    });
+    return () => window.removeEventListener("keydown", onKey);
+  }, [videoModal]);
 
   const { data: imageData, isLoading: imagesLoading } = useQuery({
     queryKey: ["nsfw-video-source-images", modelId, videoGalleryPage],
@@ -2674,7 +2646,7 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
                                 <FastForward className="w-4 h-4" />
                                 Extend +{extendDuration}s
                                 <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1.5">
-                                  <Coins className="w-3 h-3 text-yellow-400" />
+                                  <Coins className="w-3 h-3" style={{ color: 'var(--warning, #facc15)' }} />
                                   <span>{extendDuration === 8 ? 80 : 50}</span>
                                 </span>
                               </>
@@ -2703,9 +2675,11 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
           >
             {/* Close */}
             <button
+              ref={videoModalCloseRef}
               onClick={() => setVideoModal(null)}
               className="absolute -top-10 right-0 p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
               data-testid="button-close-video-modal"
+              aria-label="Close video"
             >
               <X className="w-4 h-4" />
             </button>
@@ -2731,7 +2705,7 @@ function NsfwVideoTab({ modelId, videoSelectedImage, setVideoSelectedImage, vide
                     const dur = getSegmentDuration(seg);
                     return (
                       <span key={seg.id} className="flex items-center gap-0.5">
-                        {i > 0 && <ChevronRight className="w-2.5 h-2.5 text-slate-600 flex-shrink-0" />}
+                        {i > 0 && <ChevronRight className="w-2.5 h-2.5 text-white/35 flex-shrink-0" />}
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium border ${
                           i === 0
                             ? "bg-red-500/10 border-red-500/20 text-red-400"
@@ -2815,9 +2789,7 @@ function NsfwUnlockModal({ isOpen, onClose, sidebarCollapsed = false }) {
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className={`fixed top-0 right-0 bottom-0 z-[60] overflow-y-auto p-4 left-0 ${
-        sidebarCollapsed ? "md:left-[80px]" : "md:left-[260px]"
-      }`}>
+      <div className="fixed top-0 right-0 bottom-0 z-[60] overflow-y-auto p-4 left-0 md:left-0">
       <div className="relative min-h-full flex items-center justify-center">
       <div 
         className="relative w-full max-w-md rounded-2xl panel-strong p-5 max-h-[calc(100dvh-48px)] overflow-y-auto"
@@ -2873,9 +2845,15 @@ function NsfwUnlockModal({ isOpen, onClose, sidebarCollapsed = false }) {
             href="https://discord.gg/vpwGygjEaB"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3 rounded-xl bg-[#5865F2] hover:bg-[#4752C4] text-white font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/10 font-medium transition-colors flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              style={{ color: "#5865F2" }}
+            >
               <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
             </svg>
             Contact on Discord
@@ -2884,9 +2862,15 @@ function NsfwUnlockModal({ isOpen, onClose, sidebarCollapsed = false }) {
             href="https://t.me/modelclonechat"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3 rounded-xl bg-[#0088cc] hover:bg-[#006699] text-white font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/10 font-medium transition-colors flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              style={{ color: "#26A5E4" }}
+            >
               <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
             </svg>
             Contact on Telegram
@@ -2919,11 +2903,7 @@ function NudesPackComingSoonModal({
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div
-        className={`fixed top-0 right-0 bottom-0 z-[60] overflow-y-auto p-4 left-0 ${
-          sidebarCollapsed ? "md:left-[80px]" : "md:left-[260px]"
-        }`}
-      >
+      <div className="fixed top-0 right-0 bottom-0 z-[60] overflow-y-auto p-4 left-0 md:left-0">
         <div className="relative min-h-full flex items-center justify-center">
           <div
             className="relative w-full max-w-md rounded-2xl panel-strong p-5 max-h-[calc(100dvh-48px)] overflow-y-auto"
@@ -3790,7 +3770,7 @@ function LoRAManager({
                   <span className="text-xs font-medium text-white">{copy.loraStandard}</span>
                   <p className="text-[10px] text-slate-400 flex items-center gap-1">
                     <span>{LORA_TRAINING_TIERS.standard.requiredImages} images, {loraStandardCost}</span>
-                    <Coins className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+                    <Coins className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--warning, #facc15)' }} />
                   </p>
                   <p className="text-[10px] text-slate-500">{copy.loraTime1h}</p>
                 </div>
@@ -3812,7 +3792,7 @@ function LoRAManager({
                   </span>
                   <p className="text-[10px] text-slate-400 flex items-center gap-1">
                     <span>{LORA_TRAINING_TIERS.pro.requiredImages} images, {loraProCost}</span>
-                    <Coins className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+                    <Coins className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--warning, #facc15)' }} />
                   </p>
                   <p className="text-[10px] text-slate-500">{copy.loraTime2h}</p>
                 </div>
@@ -3834,7 +3814,7 @@ function LoRAManager({
                   </span>
                   <p className="text-[10px] text-slate-400 flex items-center gap-1">
                     <span>{LORA_TRAINING_TIERS.ultra.requiredImages} images, {loraUltraCost}</span>
-                    <Coins className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+                    <Coins className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--warning, #facc15)' }} />
                   </p>
                   <p className="text-[10px] text-slate-500">{copy.loraTime6h}</p>
                 </div>
@@ -5834,7 +5814,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                                 <Zap className="w-5 h-5" />
                                 {isCuratedTier ? tierAccent.ctaLabel : "Generate LoRA"}
                                 <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1">
-                                  <Coins className="w-3 h-3 text-yellow-400" />{trainingCreditCost}
+                                  <Coins className="w-3 h-3" style={{ color: 'var(--warning, #facc15)' }} />{trainingCreditCost}
                                 </span>
                               </>
                             )}
@@ -6404,15 +6384,28 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                           <div className="flex items-center gap-1.5">
                             <label className="text-xs font-medium text-slate-300">LoRA Strength</label>
                             <div className="group relative">
-                              <Info className="w-3 h-3 text-slate-500 cursor-help" />
-                              <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 rounded-lg bg-slate-800 border border-slate-700 text-[11px] text-slate-300 leading-relaxed z-50 shadow-xl">
+                              <Info
+                                className="w-3 h-3 text-slate-500 cursor-help"
+                                tabIndex={0}
+                                aria-describedby="lora-strength-tooltip"
+                              />
+                              {/* Desktop: hover/focus tooltip */}
+                              <div
+                                id="lora-strength-tooltip"
+                                role="tooltip"
+                                className="glass-tooltip hidden md:block invisible group-hover:visible group-focus-within:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 rounded-lg text-[11px] leading-relaxed z-50"
+                              >
                                 Controls how strongly your face model is applied. Lower values (0.1–0.5) give softer identity with less risk of distortion. Higher values (0.7–0.9) make the face more prominent.
-                                <div className="text-[10px] text-slate-500 mt-1">Default: 0.65 | Range: 0.10 – 0.90</div>
+                                <div className="text-[10px] opacity-70 mt-1">Default: 0.65 | Range: 0.10 – 0.90</div>
                               </div>
                             </div>
                           </div>
                           <span className="text-xs font-mono text-white">{genConfig.loraStrength.toFixed(2)}</span>
                         </div>
+                        {/* Mobile: always-visible help (tooltip equivalent for touch) */}
+                        <p className="md:hidden text-[10px] text-white/55 mb-2 leading-relaxed">
+                          Controls how strongly your face model is applied. Lower (0.1–0.5) = softer identity; higher (0.7–0.9) = stronger. Default 0.65.
+                        </p>
                         <input
                           type="range"
                           min="0.10"
@@ -6673,7 +6666,7 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
                       <Flame className="w-5 h-5 text-rose-300" />
                       Generate {imageQuantity === 2 ? "2 Images" : "Image"}
                       <span className="px-2 py-0.5 rounded-full bg-white/20 text-xs inline-flex items-center gap-1.5">
-                        <Coins className="w-3 h-3 text-yellow-400" />
+                        <Coins className="w-3 h-3" style={{ color: 'var(--warning, #facc15)' }} />
                         <span>
                           {imageQuantity === 2
                             ? (skipFaceSwap ? nsfwImageDoubleCost : nsfwImageDoubleCost + faceSwapExtraCost * 2)
@@ -6739,29 +6732,32 @@ export default function NSFWPage({ embedded = false, sidebarCollapsed = false, s
               "linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%)",
           }}
         >
-          <h3 className="text-sm font-medium text-yellow-400 mb-3 inline-flex items-center gap-1.5">
+          <h3
+            className="text-sm font-medium mb-3 inline-flex items-center gap-1.5"
+            style={{ color: 'var(--warning, #facc15)' }}
+          >
             {copy.creditsPanelTitle}
-            <Coins className="w-4 h-4 text-yellow-400" />
+            <Coins className="w-4 h-4" style={{ color: 'var(--warning, #facc15)' }} />
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
-              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">{loraStandardCost}/{loraProCost}/{loraUltraCost} <Coins className="w-4 h-4" /></span>
+              <span className="font-bold text-lg flex items-center justify-center gap-1" style={{ color: 'var(--warning, #facc15)' }}>{loraStandardCost}/{loraProCost}/{loraUltraCost} <Coins className="w-4 h-4" /></span>
               <span className="text-slate-400">{copy.creditsPanelLoraTraining}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
-              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">{nsfwImageBaseCost} <Coins className="w-4 h-4" /></span>
+              <span className="font-bold text-lg flex items-center justify-center gap-1" style={{ color: 'var(--warning, #facc15)' }}>{nsfwImageBaseCost} <Coins className="w-4 h-4" /></span>
               <span className="text-slate-400">{copy.creditsPanelNsfwImage}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
-              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">{nsfwFaceSwapCost} <Coins className="w-4 h-4" /></span>
+              <span className="font-bold text-lg flex items-center justify-center gap-1" style={{ color: 'var(--warning, #facc15)' }}>{nsfwFaceSwapCost} <Coins className="w-4 h-4" /></span>
               <span className="text-slate-400">{copy.creditsPanelFaceSwap}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
-              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">{nsfwVideoMinCost}-{nsfwVideoMaxCost} <Coins className="w-4 h-4" /></span>
+              <span className="font-bold text-lg flex items-center justify-center gap-1" style={{ color: 'var(--warning, #facc15)' }}>{nsfwVideoMinCost}-{nsfwVideoMaxCost} <Coins className="w-4 h-4" /></span>
               <span className="text-slate-400">{copy.creditsPanelNsfwVideo}</span>
             </div>
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.16] backdrop-blur-xl text-center">
-              <span className="text-yellow-400 font-bold text-lg flex items-center justify-center gap-1">0 <Coins className="w-4 h-4" /></span>
+              <span className="font-bold text-lg flex items-center justify-center gap-1" style={{ color: 'var(--warning, #facc15)' }}>0 <Coins className="w-4 h-4" /></span>
               <span className="text-slate-400">{copy.creditsPanelRetryFailed}</span>
             </div>
           </div>

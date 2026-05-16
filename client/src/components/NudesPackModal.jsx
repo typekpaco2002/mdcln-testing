@@ -76,14 +76,14 @@ export default function NudesPackModal({
         <div className="p-4 sm:p-5 border-b border-white/10 flex items-start justify-between gap-3 shrink-0">
           <div>
             <div className="flex items-center gap-2 text-white font-semibold text-lg">
-              <Layers className="w-5 h-5 text-rose-400" />
+              <Layers className="w-5 h-5" style={{ color: 'var(--danger, #ef4444)' }} />
               Nudes pack — approve poses
             </div>
             <p className="text-[11px] text-slate-500 mt-1 max-w-xl">
               30 curated shots: amateur-style nudes and explicit couple poses. Each image uses your model trigger and
               current looks.               Toggle off any pose you don&apos;t want — about{" "}
-              {perImage} <Coins className="w-3 h-3 inline align-text-bottom text-yellow-400" /> per image on average ({count} selected = {totalCredits}{" "}
-              <Coins className="w-3 h-3 inline text-yellow-400 align-text-bottom" />
+              {perImage} <Coins className="w-3 h-3 inline align-text-bottom" style={{ color: 'var(--warning, #facc15)' }} /> per image on average ({count} selected = {totalCredits}{" "}
+              <Coins className="w-3 h-3 inline align-text-bottom" style={{ color: 'var(--warning, #facc15)' }} />
               ).
             </p>
           </div>
@@ -153,10 +153,10 @@ export default function NudesPackModal({
           <div className="text-[11px] text-slate-400">
             <span className="text-slate-300 font-medium">{count}</span> poses ·{" "}
             <span className="inline-flex items-center gap-0.5 text-slate-300">
-              {perImage} <Coins className="w-3 h-3 text-yellow-400" />
+              {perImage} <Coins className="w-3 h-3" style={{ color: 'var(--warning, #facc15)' }} />
             </span>
             <span className="text-slate-500"> each · total </span>
-            <span className="inline-flex items-center gap-0.5 text-yellow-400 font-semibold">
+            <span className="inline-flex items-center gap-0.5 font-semibold" style={{ color: 'var(--warning, #facc15)' }}>
               {totalCredits} <Coins className="w-3.5 h-3.5" />
             </span>
             {count === safePoses.length && (

@@ -59,14 +59,21 @@ export default function ProLayout() {
   ];
 
   return (
-    <div className="pro-studio min-h-screen flex relative overflow-hidden" style={{ background: "var(--pro-bg)", color: "var(--pro-text)" }}>
-      {/* Background: subtle gradient mesh + grain */}
+    <div
+      className="pro-studio min-h-screen flex relative overflow-hidden"
+      style={{
+        background: "var(--pro-bg)",
+        color: "var(--pro-text)",
+        "--pro-accent": "var(--text-primary, #fff)",
+      }}
+    >
+      {/* Background: subtle monochrome wash + grain */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute inset-0 opacity-[0.4]"
           style={{
             background:
-              "radial-gradient(ellipse 70% 50% at 70% 20%, rgba(245, 158, 11, 0.06) 0%, transparent 50%), radial-gradient(ellipse 50% 40% at 20% 80%, rgba(255,255,255,0.02) 0%, transparent 50%)",
+              "radial-gradient(ellipse 70% 50% at 70% 20%, rgba(255, 255, 255, 0.04) 0%, transparent 50%), radial-gradient(ellipse 50% 40% at 20% 80%, rgba(255,255,255,0.02) 0%, transparent 50%)",
           }}
         />
         <div className="pro-grain absolute inset-0" aria-hidden="true" />

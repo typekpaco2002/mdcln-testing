@@ -47,6 +47,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useBranding } from "../hooks/useBranding";
 import { useTheme } from "../hooks/useTheme.jsx";
 import { usePrivateMode } from "../hooks/usePrivateMode.js";
+import { useReducedMotion } from "../hooks/useReducedMotion.js";
 import { hasPremiumAccess } from "../utils/premiumAccess";
 import { sound } from "../utils/sounds";
 import BrandMark from "./BrandMark.jsx";
@@ -212,6 +213,13 @@ export default function AppSidebar({
   const [locale, setLocale] = useState(getCurrentLocale);
   const [soundEnabled, setSoundEnabled] = useState(() => sound.isEnabled());
   const [privateMode, setPrivateMode] = usePrivateMode();
+  const reduceMotion = useReducedMotion();
+  const fadeProps = reduceMotion
+    ? { initial: false, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0 } }
+    : { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } };
+  const slideXProps = reduceMotion
+    ? { initial: false, animate: { opacity: 1, x: 0 }, exit: { opacity: 0 }, transition: { duration: 0 } }
+    : { initial: { opacity: 0, x: -6 }, animate: { opacity: 1, x: 0 }, exit: { opacity: 0, x: -6 } };
   const copy = SIDEBAR_COPY[locale] || SIDEBAR_COPY.en;
   const collapsedRow = visuallyCollapsed ? "justify-center px-0 gap-0 min-h-[44px]" : "";
   const collapsedProfileRow = visuallyCollapsed ? "justify-center px-0 gap-0 min-h-[48px]" : "";
@@ -357,7 +365,7 @@ export default function AppSidebar({
     <motion.aside
       initial={false}
       animate={{ width: visuallyCollapsed ? 72 : 244 }}
-      transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: reduceMotion ? 0 : 0.22, ease: [0.4, 0, 0.2, 1] }}
       className="glass-sidebar fixed left-0 top-0 h-screen z-50 flex flex-col max-md:pointer-events-auto md:overflow-visible"
       onPointerEnter={handleAsidePointerEnter}
       onPointerLeave={handleAsidePointerLeave}
@@ -373,10 +381,8 @@ export default function AppSidebar({
           <AnimatePresence>
             {!visuallyCollapsed && (
               <motion.span
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -6 }}
-                transition={{ duration: 0.18 }}
+                {...slideXProps}
+                transition={reduceMotion ? { duration: 0 } : { duration: 0.18 }}
                 className="text-[15px] font-semibold tracking-tight truncate"
                 style={{ color: "var(--text-primary)", letterSpacing: "-0.01em" }}
               >
@@ -411,9 +417,7 @@ export default function AppSidebar({
             <AnimatePresence>
               {!visuallyCollapsed && (
                 <motion.div
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -6 }}
+                  {...slideXProps}
                   className="flex items-center gap-2 flex-1 min-w-0"
                 >
                   <span className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
@@ -464,10 +468,10 @@ export default function AppSidebar({
                   aria-hidden="true"
                 />
                 <motion.div
-                  initial={{ opacity: 0, y: -4 }}
+                  initial={reduceMotion ? false : { opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.14 }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.14 }}
                   className="absolute left-0 right-0 top-full mt-1 w-full min-w-[208px] rounded-lg overflow-hidden z-50"
                   style={{
                     background: "var(--bg-elevated)",
@@ -536,9 +540,7 @@ export default function AppSidebar({
                 <AnimatePresence>
                   {!visuallyCollapsed && (
                     <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
+                      {...fadeProps}
                       className="eyebrow px-3 mt-3 mb-1.5"
                     >
                       {group.label}
@@ -566,7 +568,7 @@ export default function AppSidebar({
                             layoutId="activeTab-nsfw"
                             className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
                             style={{ background: "#ef4444" }}
-                            transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+                            transition={reduceMotion ? { duration: 0 } : { type: "spring", bounce: 0.15, duration: 0.35 }}
                           />
                         )}
                         <Flame
@@ -579,9 +581,7 @@ export default function AppSidebar({
                         <AnimatePresence>
                           {!visuallyCollapsed && (
                             <motion.span
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
+                              {...fadeProps}
                               className="text-[13px] font-semibold tracking-wide"
                             >
                               NSFW
@@ -614,7 +614,7 @@ export default function AppSidebar({
                           layoutId="activeTab"
                           className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
                           style={{ background: "var(--accent)" }}
-                          transition={{ type: "spring", bounce: 0.15, duration: 0.35 }}
+                          transition={reduceMotion ? { duration: 0 } : { type: "spring", bounce: 0.15, duration: 0.35 }}
                         />
                       )}
                       <item.icon
@@ -624,9 +624,7 @@ export default function AppSidebar({
                       <AnimatePresence>
                         {!visuallyCollapsed && (
                           <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                            {...fadeProps}
                             className="flex items-center gap-2 flex-1 min-w-0"
                           >
                             <span className="text-[13px] font-medium truncate">{item.label}</span>
@@ -681,7 +679,7 @@ export default function AppSidebar({
               <Zap className="w-[18px] h-[18px] flex-shrink-0" />
               <AnimatePresence>
                 {!visuallyCollapsed && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
+                  <motion.span {...fadeProps} className="text-[13px] font-medium">
                     {copy.proStudio}
                   </motion.span>
                 )}
@@ -697,9 +695,7 @@ export default function AppSidebar({
         <AnimatePresence>
           {!visuallyCollapsed && (
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...fadeProps}
               className="eyebrow px-3 mb-2"
             >
               {copy.monetize}
@@ -726,9 +722,7 @@ export default function AppSidebar({
               <AnimatePresence>
                 {!visuallyCollapsed && (
                   <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                    {...fadeProps}
                     className="text-[13px] font-medium"
                   >
                     {item.label}
@@ -742,9 +736,7 @@ export default function AppSidebar({
           <AnimatePresence>
             {!visuallyCollapsed && (
               <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                {...fadeProps}
                 className="eyebrow px-3 mt-4 mb-2"
               >
                 {copy.socials}
@@ -763,10 +755,10 @@ export default function AppSidebar({
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             data-testid="sidebar-contact"
           >
-            <SiTelegram className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "#26A5E4" }} />
+            <SiTelegram className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "var(--text-secondary, rgba(255,255,255,0.55))" }} />
             <AnimatePresence>
               {!visuallyCollapsed && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
+                <motion.span {...fadeProps} className="text-[13px] font-medium">
                   Telegram
                 </motion.span>
               )}
@@ -784,10 +776,10 @@ export default function AppSidebar({
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
             data-testid="sidebar-discord"
           >
-            <SiDiscord className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "#5865F2" }} />
+            <SiDiscord className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "var(--text-secondary, rgba(255,255,255,0.55))" }} />
             <AnimatePresence>
               {!visuallyCollapsed && (
-                <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
+                <motion.span {...fadeProps} className="text-[13px] font-medium">
                   Discord
                 </motion.span>
               )}
@@ -803,7 +795,7 @@ export default function AppSidebar({
             <Briefcase className="w-[18px] h-[18px] flex-shrink-0" />
             <AnimatePresence>
               {!visuallyCollapsed && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 min-w-0">
+                <motion.div {...fadeProps} className="flex items-center gap-2 min-w-0">
                   <span className="text-[13px] font-medium truncate">{copy.jobBoard}</span>
                   <span
                     className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded"
@@ -832,7 +824,7 @@ export default function AppSidebar({
               <Shield className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "var(--danger)" }} />
               <AnimatePresence>
                 {!visuallyCollapsed && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-[13px] font-medium">
+                  <motion.span {...fadeProps} className="text-[13px] font-medium">
                     {copy.adminPanel}
                   </motion.span>
                 )}
@@ -914,9 +906,7 @@ export default function AppSidebar({
           <AnimatePresence>
             {!visuallyCollapsed && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                {...fadeProps}
                 className="flex-1 min-w-0 text-left"
               >
                 <div className="text-[12px] font-semibold truncate">
@@ -958,9 +948,7 @@ export default function AppSidebar({
           <AnimatePresence>
             {!visuallyCollapsed && (
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                {...fadeProps}
                 className="text-[13px] font-medium"
               >
                 {copy.logout}

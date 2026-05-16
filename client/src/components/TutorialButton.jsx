@@ -41,19 +41,22 @@ export default function TutorialButton({ tutorial, showWhenMissing = false, miss
 
   return (
     <>
-      {/* Tutorial Button - using div with role="button" to avoid nesting buttons */}
+      {/* Tutorial Button - using div with role="button" to avoid nesting buttons.
+          Outer hit-area is 44×44 (WCAG 2.5.5 Target Size); the visible chip
+          stays 24×24 inside via the tap-target-min utility. */}
       <div
         onClick={handleOpen}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handleOpen(e)}
-        className="group/tut relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 hover:scale-110 cursor-pointer"
+        className="tap-target-min group/tut relative inline-flex items-center justify-center cursor-pointer"
         title="Watch tutorial"
         aria-label="Watch tutorial"
       >
-        <HelpCircle className="w-4 h-4 text-gray-400 group-hover/tut:text-white transition-colors" />
-
-        <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover/tut:opacity-100 transition-opacity duration-300" />
+        <span className="relative inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/10 group-hover/tut:bg-white/20 transition-all duration-200 group-hover/tut:scale-110">
+          <HelpCircle className="w-4 h-4 text-gray-400 group-hover/tut:text-white transition-colors" />
+          <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 group-hover/tut:opacity-100 transition-opacity duration-300" />
+        </span>
       </div>
 
       {/* Modal - Rendered via Portal */}

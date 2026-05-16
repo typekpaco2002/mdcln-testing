@@ -377,11 +377,17 @@ const PrimaryBtn = ({ onClick, disabled, children, className = '', ...rest }) =>
   </button>
 );
 
-const DangerBtn = ({ onClick, disabled, children, className = '', ...rest }) => (
+const DangerBtn = ({ onClick, disabled, children, className = '', style, ...rest }) => (
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.08] hover:bg-red-500/[0.15] text-xs text-red-400 transition disabled:opacity-40 flex items-center gap-1.5 ${className}`}
+    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition disabled:opacity-40 flex items-center gap-1.5 ${className}`}
+    style={{
+      color: 'var(--danger, #f87171)',
+      background: 'color-mix(in srgb, var(--danger, #f87171) 10%, transparent)',
+      border: '1px solid color-mix(in srgb, var(--danger, #f87171) 28%, transparent)',
+      ...style,
+    }}
     {...rest}
   >
     {children}
@@ -2779,7 +2785,8 @@ export default function AdminPage() {
                       <button
                         type="button"
                         onClick={() => deleteAffiliateLander(row.suffix)}
-                        className="text-red-400/90 hover:text-red-300"
+                        className="transition-opacity hover:opacity-80"
+                        style={{ color: 'var(--danger, #f87171)' }}
                       >
                         Delete
                       </button>
@@ -3263,10 +3270,18 @@ export default function AdminPage() {
                               <Zap className="w-3.5 h-3.5 text-blue-300" />
                               <span className="text-[10px] text-blue-300">Login</span>
                             </button>
-                            <button onClick={() => setConfirmDelete(user)}
-                              className="px-2 py-1.5 rounded-md bg-red-500/[0.08] hover:bg-red-500/[0.15] border border-red-500/[0.12] transition inline-flex items-center gap-1" title="Delete User">
-                              <Trash2 className="w-3.5 h-3.5 text-red-400/70" />
-                              <span className="text-[10px] text-red-300">Delete</span>
+                            <button
+                              onClick={() => setConfirmDelete(user)}
+                              className="px-2 py-1.5 rounded-md transition inline-flex items-center gap-1"
+                              style={{
+                                color: 'var(--danger, #f87171)',
+                                background: 'color-mix(in srgb, var(--danger, #f87171) 10%, transparent)',
+                                border: '1px solid color-mix(in srgb, var(--danger, #f87171) 24%, transparent)',
+                              }}
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" style={{ color: 'var(--danger, #f87171)' }} />
+                              <span className="text-[10px]" style={{ color: 'var(--danger, #f87171)' }}>Delete</span>
                         </button>
                       </div>
                     </td>
@@ -5155,8 +5170,15 @@ export default function AdminPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <PrimaryBtn onClick={() => handleScrapeSingleProfile(p)} className="py-1 px-2.5 text-[11px]">Scrape</PrimaryBtn>
                           <GhostBtn onClick={() => handleToggleReelProfile(p)} className="py-1 px-2.5 text-[11px]">{p.isActive ? 'Disable' : 'Enable'}</GhostBtn>
-                          <button onClick={() => handleDeleteReelProfile(p)} className="p-1.5 rounded-md bg-red-500/[0.08] hover:bg-red-500/[0.15] border border-red-500/[0.12] transition">
-                            <Trash2 className="w-3 h-3 text-red-400/70" />
+                          <button
+                            onClick={() => handleDeleteReelProfile(p)}
+                            className="p-1.5 rounded-md transition"
+                            style={{
+                              background: 'color-mix(in srgb, var(--danger, #f87171) 10%, transparent)',
+                              border: '1px solid color-mix(in srgb, var(--danger, #f87171) 24%, transparent)',
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" style={{ color: 'var(--danger, #f87171)' }} />
                         </button>
                       </div>
                     </td>
@@ -5265,7 +5287,12 @@ export default function AdminPage() {
 
                   {brandSettings.tutorialVideoUrl && (
                     <button
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/25 bg-red-500/8 hover:bg-red-500/18 text-xs text-red-400 transition"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition"
+                      style={{
+                        color: 'var(--danger, #f87171)',
+                        background: 'color-mix(in srgb, var(--danger, #f87171) 10%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--danger, #f87171) 28%, transparent)',
+                      }}
                       onClick={async () => {
                         if (!confirm('Reset tutorial video to default?')) return;
                         try {
@@ -5321,7 +5348,12 @@ export default function AdminPage() {
                     {brandSettings.landerDemoVideoUrl && (
                       <button
                         type="button"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-500/25 bg-red-500/8 hover:bg-red-500/18 text-xs text-red-400 transition"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition"
+                        style={{
+                          color: 'var(--danger, #f87171)',
+                          background: 'color-mix(in srgb, var(--danger, #f87171) 10%, transparent)',
+                          border: '1px solid color-mix(in srgb, var(--danger, #f87171) 28%, transparent)',
+                        }}
                         onClick={async () => {
                           if (!confirm('Reset lander demo video to built-in default?')) return;
                           try {

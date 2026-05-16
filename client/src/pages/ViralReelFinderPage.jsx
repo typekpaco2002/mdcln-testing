@@ -172,7 +172,7 @@ function ReelModal({ reel, onClose, token }) {
       >
         {/* Header */}
         <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-white/[0.08] shrink-0">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-rose-500 to-orange-400 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white/[0.20] via-white/[0.12] to-white/[0.06] flex items-center justify-center shrink-0">
             <span className="text-[10px] font-bold text-white">
               {(reel.profiles?.username || "?")[0].toUpperCase()}
             </span>
