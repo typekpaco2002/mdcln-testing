@@ -1696,7 +1696,18 @@ textarea:focus-visible {
   display: flex;
   gap: 0.7rem;
   width: max-content;
-  animation: landerMarquee 26s linear infinite;
+  will-change: transform;
+}
+
+/* Contra-rotating marquees, both 20% slower than the original 26s (= 31s).
+   TopChoice scrolls right -> left, Partners scrolls left -> right, per
+   user-reported direction fix. The two tracks must NOT share an animation. */
+.top-choice-track {
+  animation: landerMarquee 31s linear infinite;
+}
+
+.partners-track {
+  animation: landerMarqueeReverse 31s linear infinite;
 }
 
 .choice-card {
@@ -1921,6 +1932,13 @@ textarea:focus-visible {
 @keyframes landerMarquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+/* Reverse direction for the partners marquee so it scrolls left -> right
+   while .top-choice-track scrolls right -> left. */
+@keyframes landerMarqueeReverse {
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
 }
 
 @media (max-width: 950px) {
