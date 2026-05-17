@@ -1140,8 +1140,12 @@ main {
 }
 
 @keyframes topChoiceDrift {
-  0% { transform: translateX(-50%); }
-  100% { transform: translateX(0); }
+  /* Drift "right to left" — track moves from 0 to -50% so items appear
+     on the right edge and slide leftward across the viewport. Pairs
+     with partnersDrift below which now scrolls in the opposite
+     direction. */
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 /* ─── Choice Card ─────────────────────────────────────────────────────────── */
@@ -1395,10 +1399,10 @@ main {
 }
 
 @keyframes partnersDrift {
-  /* Was 0% -> -50% (track drifts left = items appear from the right side
-     of the screen, "right-to-left" reading direction). Flipped to
-     -50% -> 0 so the partners row drifts left-to-right and visually
-     contra-rotates the .top-choice-track marquee above it. */
+  /* Drift "left to right" — track moves from -50% to 0 so items appear
+     on the left edge and slide rightward. Opposite of topChoiceDrift
+     above (which now scrolls right-to-left) so the two marquees
+     contra-rotate visibly. */
   0%   { transform: translateX(-50%); }
   100% { transform: translateX(0); }
 }
