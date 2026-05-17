@@ -216,11 +216,11 @@ export default function LanderNewPublicApp({ config, noCursor = false, editMode 
     <div className={`page${editMode ? " edit-mode" : ""}`} style={rootStyle}>
       <div className="legacy-grid-bg" aria-hidden="true" />
       {!noCursor && <CustomCursor />}
-      {promotionBar.enabled && <PromoBar data={promotionBar} />}
-      {promotionBar.enabled && renderSpacer(spacers.beforeHeader, "layout.spacer.beforeHeader")}
       <div className="site-header-shell">
         <Navbar brand={brand} />
       </div>
+      {promotionBar.enabled && renderSpacer(spacers.beforeHeader, "layout.spacer.beforeHeader")}
+      {promotionBar.enabled && <PromoBar data={promotionBar} />}
 
       <main id="main">
         {renderSpacer(spacers.beforeHero, "layout.spacer.beforeHero")}
