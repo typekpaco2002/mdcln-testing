@@ -160,17 +160,17 @@ GENDER LOCK (highest priority, supersedes every other rule):
 - The blueprint specifies a gender presentation (woman / feminine, or man / masculine). The output MUST read unambiguously as that gender on first glance — no androgyny, no "soft masculine for a young woman", no "delicate features for a young man". If the blueprint says "feminine presentation (non-negotiable)", the resulting face must read clearly female to any viewer.
 - This is the most common failure mode at high temperature: the LLM dilutes feminine cues with character-driven asymmetries and ends up with an androgynous face. Hold the line.
 
-IDENTITY PRESERVATION — BLUEPRINT IS AUTHORITATIVE (non-negotiable):
-- The caller passes a STRUCTURED BLUEPRINT with labeled fields (Hair / Skin tone / Eyes / Nose / Lips / Body type / Waist / Hips / etc.). Every field present in the blueprint MUST appear in the output verbatim — same words, same descriptors.
-- NEVER substitute. If the blueprint says "bangs with long hair", the output describes bangs with long hair. If it says "small button nose", the output describes a small button nose. Do not "improve" or "refine" toward generic defaults.
-- Do not drift toward blonde / soft-pale / symmetric defaults.
-- Do not introduce contradictory traits.
+IDENTITY PRESERVATION — BLUEPRINT IS THE ENTIRE IDENTITY (non-negotiable):
+- The caller passes a STRUCTURED BLUEPRINT with labeled fields (Ethnicity / Hair Color / Hair Style / Skin tone / Eye Color / Eye Shape / Face Shape / Nose / Lips / Body type / Height / Waist / Hips / Bust / Seat / Tattoos / etc.). The blueprint is ALWAYS COMPLETE — every required field is present at the call site because the UI blocks generation until all chips are selected.
+- Every field present in the blueprint MUST appear in the output verbatim — same words, same descriptors. If the blueprint says "bangs with long hair", the output describes bangs with long hair. If it says "small button nose", the output describes a small button nose. If it says "pale white skin" + "green eyes" + "athletic body", every one of those phrases appears in the output.
+- NEVER substitute. NEVER "improve" or "refine" toward generic defaults. Do not drift toward blonde / soft-pale / symmetric defaults. Do not introduce contradictory traits.
+- NEVER swap descriptors between fields (do not turn "bangs with long hair" into "wavy bob", do not turn "small button nose" into "aquiline nose", do not turn "round eyes" into "almond eyes").
 
-DISTINCTIVENESS — FILL THE GAPS ONLY:
-- ONLY invent anatomical specifics for fields the blueprint does NOT provide. If the blueprint already states hair / nose / lips / eyes / face shape / body / etc., USE THOSE VERBATIM and do not add competing variants on top.
-- For fields the blueprint leaves blank, pick 2-4 specifics from: nose bridge character (bump, narrow tip, deviated, wider nostrils), eyelid type (hooded / monolid / deep-set / almond / asymmetric crease), eyebrow shape and density, philtrum length, ear shape and protrusion, lash density, iris detail (limbal ring tone, central radiation, faint heterochromia), tooth detail if visible. These must REINFORCE the locked gender presentation, never undermine it.
-- Add 1-2 small asymmetries that are subtle and gender-consistent (one eye sits slightly higher, faint asymmetric brow arch, one lip corner lifts more, hair parts off-center). Avoid heavy "character-actor" asymmetries on young feminine faces.
-- At most 1 small specific marking when it fits the persona: a single mole, a freckle cluster, a healed nick. Do NOT stack multiple markings.
+NO INVENTION (strict):
+- DO NOT add anatomical identity traits that are not in the blueprint. No "high cheekbones", no "defined jawline", no "full lashes", no "plump cupid's bow lips" unless the blueprint literally lists them.
+- DO NOT add hair color, eye color, skin tone, body type, face shape, nose shape, lip size, height, waist, hips, bust, seat, ethnicity, or tattoos beyond what the blueprint states.
+- Allowed (and encouraged for realism, NOT identity): subtle micro-asymmetries (one eye sits a hair higher, brow arches at a slightly different angle, one lip corner lifts more, hair parts off-center), realistic skin texture (pores, fine lines, faint redness, light freckles where the heritage supports them), alive expression, age-appropriate softness/lines. These are surface realism details that REINFORCE the locked blueprint, never override it.
+- At most 1 small specific marking when it fits the persona AND is not contradicted by the blueprint: a single mole, a freckle cluster, a healed nick. Do NOT stack multiple markings. Skip entirely if the blueprint already covers skin detail.
 
 SKIN AND BODY — match the blueprint, then refine texture:
 - Skin tone is set by the blueprint ("pale white skin", "olive skin", "brown skin", etc.) — preserve it exactly. THEN layer realistic texture on top: visible pores, age-appropriate fine lines, faint redness, light freckles where the heritage supports them. Match texture intensity to the stated age.
@@ -322,17 +322,17 @@ THE TEST: a viewer scrolling Instagram should not flag the result as AI within t
 GENDER LOCK (highest priority, supersedes every other rule):
 - The blueprint and uploaded references specify a gender presentation. The output MUST read unambiguously as that gender — no androgyny, no diluted feminine cues for a young woman, no softened masculine cues for a young man. Hold the line at high temperature; this is the most common failure mode.
 
-IDENTITY PRESERVATION — BLUEPRINT + REFERENCE ARE AUTHORITATIVE (non-negotiable):
-- The caller passes a STRUCTURED BLUEPRINT with labeled fields. Every field present MUST appear verbatim in the output — same words, same descriptors. Combine that with face/body anatomy from the uploaded reference image(s).
-- NEVER substitute. If the blueprint says "bangs with long hair", the edit describes bangs with long hair.
-- Do not drift toward blonde / soft-pale / symmetric defaults.
-- Do not introduce contradictory traits.
+IDENTITY PRESERVATION — BLUEPRINT + REFERENCE ARE THE ENTIRE IDENTITY (non-negotiable):
+- The caller passes a STRUCTURED BLUEPRINT with labeled fields. The blueprint is ALWAYS COMPLETE — every required appearance field is present because the UI blocks generation until all chips are selected.
+- Every field present MUST appear verbatim in the output — same words, same descriptors. Combine that with face/body anatomy from the uploaded reference image(s).
+- NEVER substitute. If the blueprint says "bangs with long hair", the edit describes bangs with long hair. If "small button nose", "small button nose".
+- NEVER swap descriptors between fields. Do not drift toward blonde / soft-pale / symmetric defaults. Do not introduce contradictory traits.
 
-DISTINCTIVENESS — FILL THE GAPS ONLY:
-- ONLY invent anatomical specifics for fields the blueprint does NOT provide. If hair / nose / lips / eyes / face shape / body / etc. are stated, USE VERBATIM.
-- For unstated fields, pick 2-4 specifics from: nose bridge character, eyelid type, eyebrow shape and density, philtrum length, ear shape, lash density, iris detail, tooth detail. Must reinforce the locked gender presentation.
-- Add 1-2 subtle gender-consistent asymmetries. Avoid heavy character-actor asymmetries on young feminine faces.
-- At most 1 small specific marking when it fits the persona. Do NOT stack multiple markings.
+NO INVENTION (strict):
+- DO NOT add anatomical identity traits that are not in the blueprint. No "high cheekbones", no "defined jawline", no "full lashes", no "plump cupid's bow lips" unless the blueprint literally lists them.
+- DO NOT add hair color, eye color, skin tone, body type, face shape, nose shape, lip size, height, waist, hips, bust, seat, ethnicity, or tattoos beyond what the blueprint states or what the uploaded reference visibly shows.
+- Allowed (surface realism, NOT identity): subtle micro-asymmetries, realistic skin texture (pores, fine lines, faint redness, light freckles where heritage supports them), alive expression, age-appropriate softness. These reinforce the locked blueprint, never override it.
+- At most 1 small specific marking when it fits the persona AND is not contradicted by the blueprint or the reference. Do NOT stack multiple markings.
 
 SKIN AND BODY — match the blueprint, then refine texture:
 - Skin tone is set by the blueprint and the reference — preserve it exactly. Layer realistic texture on top: visible pores, age-appropriate fine lines, faint redness, light freckles where heritage supports them.

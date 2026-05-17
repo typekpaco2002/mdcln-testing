@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBranding } from "../hooks/useBranding";
@@ -489,8 +489,23 @@ export default function GenerateAIModelForm({ name, onSuccess, onCancel, onNeedC
   };
 
   const handleGenerateReference = async () => {
+    // Hard-block generation if any required field is missing. The product
+    // contract is: no chip selected → no generation. This stops the enhancer
+    // from inventing identity traits (which is what produced the off-blueprint
+    // / androgynous outputs).
     if (!formData.gender) {
       toast.error(copy.toastSelectGender);
+      return;
+    }
+    if (!formData.age || !String(formData.age).trim()) {
+      toast.error(copy.toastEnterAge);
+      return;
+    }
+    const missing = missingChipLabels;
+    if (missing.length > 0) {
+      toast.error(
+        formatCopy(copy.toastSelectAllChips, { missing: missing.join(", ") }),
+      );
       return;
     }
     setGenerating(true);
@@ -762,7 +777,24 @@ export default function GenerateAIModelForm({ name, onSuccess, onCancel, onNeedC
     setPhase("params");
   };
 
-  const isFormValid = formData.gender;
+  // ALL appearance chips + gender + age are required to start a generation.
+  // The enhancer must NEVER invent traits — if a chip is missing the LLM
+  // will guess and override what the user actually picked. Block at the
+  // button instead.
+  const missingChipLabels = useMemo(() => {
+    const missing = [];
+    for (const g of modelLooksGroups) {
+      const raw = formData[g.key];
+      const v = typeof raw === "string" ? raw.trim() : "";
+      if (!v) missing.push(displayModelLooksGroupLabel(g.label, locale));
+    }
+    return missing;
+  }, [formData, locale]);
+  const chipsSelectedCount = modelLooksGroups.length - missingChipLabels.length;
+  const isFormValid =
+    !!formData.gender &&
+    !!String(formData.age || "").trim() &&
+    missingChipLabels.length === 0;
   const isFromPhotosValid = photoConfigs.every(
     (c) => c.referencePhotos.length > 0 && c.prompt.trim().length > 0
   );
@@ -1013,18 +1045,45 @@ export default function GenerateAIModelForm({ name, onSuccess, onCancel, onNeedC
           >
             {/* Model Looks — same chips + custom as edit model (single source of truth) */}
             <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-              <p className="text-xs font-medium text-white flex items-center gap-1.5 mb-2">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                {copy.modelLooksTitle}
-              </p>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <p className="text-xs font-medium text-white flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  {copy.modelLooksTitle}
+                </p>
+                <span
+                  className={`text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full border ${
+                    missingChipLabels.length === 0
+                      ? "text-emerald-300 border-emerald-400/40 bg-emerald-400/10"
+                      : "text-amber-300 border-amber-400/40 bg-amber-400/10"
+                  }`}
+                >
+                  {formatCopy(copy.modelLooksProgress, {
+                    done: chipsSelectedCount,
+                    total: modelLooksGroups.length,
+                  })}
+                </span>
+              </div>
+              {missingChipLabels.length > 0 && (
+                <p className="text-[10px] text-amber-300/90 mb-2 leading-snug">
+                  {formatCopy(copy.modelLooksMissingHint, {
+                    missing: missingChipLabels.join(", "),
+                  })}
+                </p>
+              )}
               <div className="space-y-2.5 max-h-[40vh] overflow-y-auto pr-1">
                 {modelLooksGroups.map((g) => {
                   const value = formData[g.key] || "";
                   const isCustom = value && !g.options.includes(value);
+                  const isMissing = !String(value).trim();
                   return (
                     <div key={g.key}>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
+                      <p
+                        className={`text-[10px] uppercase tracking-wider mb-1 ${
+                          isMissing ? "text-amber-300" : "text-slate-500"
+                        }`}
+                      >
                         {displayModelLooksGroupLabel(g.label, locale)}
+                        {isMissing ? " *" : ""}
                       </p>
                       <div className="flex flex-wrap gap-1">
                         {g.options.map((opt) => {

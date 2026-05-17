@@ -163,8 +163,9 @@ export async function optimizeNanoBananaPrompt(basePrompt, context = {}) {
     !hasReferenceImages
       ? "- STRICT: do not mention 'reference image', 'reimagined', or edit-only language."
       : "- STRICT: include the identity-anchor sentence and tag every changed scene element with 'reimagined' per the Identity Lock section.",
-    "- STRICT: preserve every explicit identity marker in the prompt (heritage, age, hair color/length/texture, eye color, lip size, face type, body type).",
-    "- STRICT: enforce the Universal Quality Bar — distinctiveness, asymmetries, real skin texture, alive expression. Reject the AI-headshot stock look.",
+    "- STRICT: preserve every explicit identity marker in the prompt (ethnicity, age, hair color, hair style, skin tone, eye color, eye shape, face shape, nose, lips, body type, height, waist, hips, bust, seat, tattoos/piercings). Quote them verbatim.",
+    "- STRICT: NO INVENTION. The blueprint is complete. Do not add anatomical identity traits the blueprint does not list (no 'high cheekbones', 'defined jawline', 'full lashes', 'plump cupid\u2019s bow' unless literally in the blueprint). Surface realism (pores, micro-asymmetries, alive expression) is allowed and required, but it must reinforce — never override — the blueprint.",
+    "- STRICT: enforce the Universal Quality Bar — real skin texture, gender-consistent subtle asymmetries, alive expression. Reject the AI-headshot stock look.",
   ]
     .filter(Boolean)
     .join("\n");

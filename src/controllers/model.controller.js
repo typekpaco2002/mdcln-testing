@@ -833,11 +833,60 @@ export async function generateAIModelReference(req, res) {
     } = req.body;
     userId = req.user.userId;
 
-    // Validate required fields
-    if (!gender) {
+    // Validate required fields. Product contract: every appearance chip
+    // (plus gender + age) must be selected before generation can fire. This
+    // is enforced on the frontend (disabled button + missing-list toast) and
+    // re-validated here so any API consumer / legacy caller cannot bypass it
+    // and force the enhancer to invent traits.
+    //
+    // Keys MUST stay in sync with client/src/data/nsfwSelectors.js
+    // categories[id=appearance].groups[].key. If a chip group is added there,
+    // add it here.
+    const REQUIRED_APPEARANCE_CHIPS = {
+      ethnicity: "Ethnicity",
+      hairColor: "Hair Color",
+      hairType: "Hair Style",
+      skinTone: "Skin Tone",
+      eyeColor: "Eye Color",
+      eyeShape: "Eye Shape",
+      faceShape: "Face Shape",
+      noseShape: "Nose",
+      lipSize: "Lips",
+      bodyType: "Body Type",
+      height: "Height",
+      breastSize: "Breast Size",
+      buttSize: "Butt",
+      waist: "Waist",
+      hips: "Hips",
+      tattoos: "Tattoos & Piercings",
+    };
+    if (!gender || !String(gender).trim()) {
       return res.status(400).json({
         success: false,
         message: "Gender is required",
+        missing: ["Gender"],
+      });
+    }
+    if (!age || !String(age).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Age is required",
+        missing: ["Age"],
+      });
+    }
+    const missingChipLabels = Object.entries(REQUIRED_APPEARANCE_CHIPS)
+      .filter(([key]) => {
+        const v = req.body[key];
+        return !v || !String(v).trim();
+      })
+      .map(([, label]) => label);
+    if (missingChipLabels.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Every appearance category must be selected before generation. Missing: " +
+          missingChipLabels.join(", "),
+        missing: missingChipLabels,
       });
     }
 
