@@ -1113,7 +1113,8 @@ main {
   display: flex;
   width: max-content;
   gap: 0.8rem;
-  animation: topChoiceDrift 80s linear infinite;
+  /* +20% slower (80s -> 96s) per user feedback that the marquee was too fast. */
+  animation: topChoiceDrift 96s linear infinite;
   will-change: transform;
 }
 
@@ -1364,7 +1365,11 @@ main {
   display: flex;
   width: max-content;
   gap: 0.65rem;
-  animation: partnersDrift 40s linear infinite;
+  /* +20% slower (40s -> 48s) per user feedback. Direction is now
+     opposite to .top-choice-track so the two marquees scroll in
+     contra-flow (partners drift left -> right, top choice drift
+     right -> left). See @keyframes partnersDrift below. */
+  animation: partnersDrift 48s linear infinite;
   will-change: transform;
 }
 
@@ -1390,8 +1395,12 @@ main {
 }
 
 @keyframes partnersDrift {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  /* Was 0% -> -50% (track drifts left = items appear from the right side
+     of the screen, "right-to-left" reading direction). Flipped to
+     -50% -> 0 so the partners row drifts left-to-right and visually
+     contra-rotates the .top-choice-track marquee above it. */
+  0%   { transform: translateX(-50%); }
+  100% { transform: translateX(0); }
 }
 
 /* individual logo chip */
