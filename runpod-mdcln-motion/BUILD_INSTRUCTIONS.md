@@ -137,11 +137,12 @@ The worker supports **two output transports**, picked at request time by the
 backend:
 
 1. **PREFERRED — presigned PUT URL (small response, reliable webhooks)**.
-   Backend mints a presigned R2 PUT URL via
-   `getR2PresignedPutForKey()` and passes it as `output_upload_url` in the
-   request input (alongside `output_public_url` + `output_key` to round-trip).
-   The worker PUTs the rendered mp4 bytes directly to R2 and returns only a
-   tiny URL payload:
+   Backend mints a presigned R2 PUT URL via `getR2PresignedPutForKey()` and
+   passes it as `output_upload_url` in the request input (alongside
+   `output_public_url` + `output_key` to round-trip). R2 is used here only as
+   a **transit hop** because Vercel Blob (the rest of the app's canonical
+   store) has no presigned-PUT API a Python worker can use. The worker PUTs
+   the rendered mp4 directly to R2 and returns only a tiny URL payload:
 
    ```jsonc
    {
@@ -160,6 +161,12 @@ backend:
    backend was burned by this — 30 s motion clips ≈ 30-80 MB base64, which
    meant webhooks never reached our handler and rows stayed in `processing`
    until the watchdog timed them out. The new path is the fix.
+
+**Persistence on the backend side**: once the materializer has the R2 URL
+(from either transport's URL field), it mirrors the file to Vercel Blob via
+`mirrorProviderOutputUrl()` and deletes the transient R2 object. The
+user-facing `generation.outputUrl` ends up on Blob — same as every other
+generation in the app — so the R2 hop is invisible to consumers.
 
 > ⚠ Always supply `output_upload_url` when R2 is configured — there is no
 > reliable way to deliver 30-80 MB inline through serverless edges.

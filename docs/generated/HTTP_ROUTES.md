@@ -3,7 +3,7 @@
 > Auto-built by **`npm run docs:registry`**. Matches **literal** path strings only (e.g. `router.get('/path')`).
 > Dynamic paths, template literals, or multi-line route definitions may be missing — add manual rows in `docs/COVERAGE_INDEX.md`.
 
-**Generated at:** 2026-05-17T16:37:37.506Z
+**Generated at:** 2026-05-17T16:43:24.883Z
 
 | Verb | Path | Source file |
 |------|------|-------------|

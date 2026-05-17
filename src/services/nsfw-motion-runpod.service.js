@@ -13,15 +13,19 @@
  * /run body cap) and patches nodes 167 (reference image) and 52 (driving
  * video) server-side. Output node 226 (VHS_VideoCombine) returns mp4.
  *
- * Two output transports (worker decides at runtime based on input):
- * 1. PREFERRED — backend mints a presigned R2 PUT URL via
- *    `getR2PresignedPutForKey()`, passes it as `output_upload_url`. Worker
- *    PUTs the mp4 bytes directly, returns a tiny `{ output_url, videos:[{ url }] }`
- *    payload. Avoids Vercel's 4.5 MB webhook body cap and keeps `/status`
- *    responses small.
+ * Output transport (chosen at submit time):
+ * 1. PREFERRED — backend mints a presigned R2 PUT URL (R2 is used here as a
+ *    transit hop because Vercel Blob has no equivalent presigned-PUT API; its
+ *    client-upload flow needs a `handleUpload` token round-trip that's awkward
+ *    from a Python worker). Worker PUTs the mp4 directly to R2, returns a
+ *    tiny `{ output_url, videos:[{ url }] }` payload — avoids Vercel's 4.5 MB
+ *    webhook body cap and keeps `/status` responses small. The materializer
+ *    then mirrors the R2 file to Vercel Blob so the user-facing URL ends up
+ *    on Blob (consistent with the rest of the app); the transient R2 object
+ *    is deleted best-effort after the mirror succeeds.
  * 2. FALLBACK — if R2 isn't configured the worker still emits
- *    `videos[].base64`; the materializer decodes + uploads to Blob/R2. Works
- *    on long-lived hosts but webhooks may get truncated by edge proxies.
+ *    `videos[].base64`; the materializer decodes + uploads to Blob. Works on
+ *    long-lived hosts but webhooks may get truncated by serverless edges.
  *
  * @see runpod-mdcln-motion/handler.py
  * @see runpod-mdcln-motion/workflow_api.json
@@ -31,8 +35,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
-import { uploadBufferToBlobOrR2 } from "../utils/kieUpload.js";
-import { getR2PresignedPutForKey, isR2Configured } from "../utils/r2.js";
+import {
+  uploadBufferToBlobOrR2,
+  mirrorProviderOutputUrl,
+  isVercelBlobConfigured,
+} from "../utils/kieUpload.js";
+import { getR2PresignedPutForKey, isR2Configured, deleteFromR2 } from "../utils/r2.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -292,6 +300,46 @@ function isHttpUrlLike(v) {
   return typeof v === "string" && /^https?:\/\//i.test(v);
 }
 
+function looksLikeR2Url(url) {
+  if (!url || typeof url !== "string") return false;
+  const r2pub = process.env.R2_PUBLIC_URL;
+  if (r2pub && url.startsWith(r2pub)) return true;
+  return /\bcloudflarestorage\.com\b|\br2\.dev\b/.test(url);
+}
+
+function looksLikeBlobUrl(url) {
+  return typeof url === "string" && (url.includes("vercel-storage.com") || url.includes("blob.vercel.app"));
+}
+
+/**
+ * Mirror an R2 transit URL to Vercel Blob so the persisted generation URL
+ * matches the rest of the app's storage (Blob). Best-effort deletes the
+ * transient R2 object after a successful mirror — never throws if cleanup
+ * fails. When Blob isn't configured (or mirror fails), returns the R2 URL
+ * unchanged so the row still completes.
+ */
+async function persistMotionOutputToBlob(transitUrl, logTag = "") {
+  if (!isHttpUrlLike(transitUrl)) return transitUrl;
+  if (looksLikeBlobUrl(transitUrl)) return transitUrl;
+  if (!isVercelBlobConfigured()) return transitUrl;
+  try {
+    const persisted = await mirrorProviderOutputUrl(transitUrl, "video/mp4");
+    if (looksLikeBlobUrl(persisted) && looksLikeR2Url(transitUrl)) {
+      // R2 hop served its purpose; remove the now-redundant transient object.
+      deleteFromR2(transitUrl).catch((e) =>
+        console.warn(`[NSFW Motion-RP] R2 transit cleanup failed: ${e?.message || e}`),
+      );
+    }
+    if (persisted !== transitUrl) {
+      console.log(`[NSFW Motion-RP] ${logTag} mirrored R2 transit → Blob (${String(persisted).slice(0, 96)})`);
+    }
+    return persisted;
+  } catch (e) {
+    console.warn(`[NSFW Motion-RP] ${logTag} Blob mirror failed (${e?.message || e}) — keeping R2 URL`);
+    return transitUrl;
+  }
+}
+
 function pickVideoFromArray(arr) {
   if (!Array.isArray(arr)) return null;
   for (const v of arr) {
@@ -338,10 +386,10 @@ export async function materializeNsfwMotionRunpodVideoOutput(rp, logCtx = {}) {
   const out = rp.output !== undefined && rp.output !== null ? rp.output : rp;
   const tag = logCtx.generationId ? `gen=${String(logCtx.generationId).slice(0, 8)}` : "";
 
-  // Direct URL output from worker (preferred path — worker PUT mp4 to presigned URL).
+  // Direct URL output from worker (preferred path — worker PUT mp4 to presigned R2 URL).
   if (out && typeof out === "object" && typeof out.output_url === "string" && isHttpUrlLike(out.output_url)) {
-    console.log(`[NSFW Motion-RP materializer] ${tag} using worker output_url`);
-    return out.output_url;
+    console.log(`[NSFW Motion-RP materializer] ${tag} using worker output_url (${out.output_url.slice(0, 96)})`);
+    return await persistMotionOutputToBlob(out.output_url, tag);
   }
 
   /** @type {{ kind: "url" | "base64", value: string } | null} */
@@ -377,8 +425,8 @@ export async function materializeNsfwMotionRunpodVideoOutput(rp, logCtx = {}) {
   }
 
   if (pick.kind === "url") {
-    console.log(`[NSFW Motion-RP materializer] ${tag} returning URL pick (${String(pick.value).slice(0, 96)})`);
-    return pick.value;
+    console.log(`[NSFW Motion-RP materializer] ${tag} URL pick (${String(pick.value).slice(0, 96)})`);
+    return await persistMotionOutputToBlob(pick.value, tag);
   }
 
   try {
