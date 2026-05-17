@@ -64,7 +64,11 @@ from urllib.parse import urlparse, unquote
 
 COMFYUI_URL = "http://127.0.0.1:8188"
 DEFAULT_OUTPUT_NODE = "226"
-DEFAULT_TIMEOUT_SECS = 1800
+# Default per-job runtime cap when the caller does not pass `input.timeout`.
+# Motion-X jobs typically take 10-20 min; 30 min gives healthy headroom for
+# longer driving videos. Backend overrides this explicitly via
+# `MOTION_JOB_TIMEOUT_SECS` in nsfw-motion-runpod.service.js.
+DEFAULT_TIMEOUT_SECS = 1800  # 30 min
 # Max in-memory download per URL (signed blob URLs; large 4K motion refs need headroom)
 MAX_DOWNLOAD_BYTES = 450 * 1024 * 1024
 # Node 296 (easy boolean "TORCH COMPILE") gates TorchCompileModelWanVideoV2 (321). Inductor

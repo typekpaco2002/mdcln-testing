@@ -48,11 +48,37 @@ const __dirname = path.dirname(__filename);
 const RUNPOD_API_KEY = process.env.RUNPOD_API_KEY;
 const RUNPOD_MOTION_ENDPOINT_ID = (process.env.RUNPOD_MOTION_ENDPOINT_ID || "").trim() || null;
 const MOTION_OUTPUT_NODE = "226"; // VHS_VideoCombine in workflow_api.json
-// Bumped from 25s → 120s: completed motion jobs can return 30-80 MB `/status`
-// responses (worker base64) which take 5-30s to download on a slow link, and
-// 25s consistently timed out on prod (rows stuck 24h+).
-const POLL_TIMEOUT_MS = 120_000;
-const PRESIGN_EXPIRES_SEC = 6 * 60 * 60; // 6h: matches RunPod's max job runtime
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Timeout chain (read this before tweaking any number below):
+//
+//   1. MOTION_JOB_TIMEOUT_SECS (30 min) — the actual job-runtime budget.
+//      Passed into the worker as `input.timeout`; handler.py uses it to cap
+//      `poll_history()` waiting on ComfyUI. Motion-X jobs typically take
+//      10-20 min depending on driving-video length + complexity.
+//
+//   2. POLL_TIMEOUT_MS (180 s) — timeout for a SINGLE `/status` HTTP fetch.
+//      Has nothing to do with the job runtime; each poll while the job is
+//      running completes in <1 s with status=IN_PROGRESS. The only poll
+//      that needs the bigger budget is the FINAL one, when the worker
+//      returns the result inline (legacy base64 mode → 30-80 MB body).
+//
+//   3. SUBMIT_TIMEOUT_MS (30 s) — timeout for the `/run` enqueue call.
+//      RunPod returns instantly with a job id, so this just needs to cover
+//      basic network latency.
+//
+//   4. Watchdog grace / hard-timeout (in generation-poller.service.js):
+//      MOTION_GRACE_MS = 2 min  (min row age before polling /status)
+//      no hard-timeout on the RunPod-motion branch — polls until
+//      RunPod itself reports COMPLETED or FAILED.
+//
+// If a motion job appears to time out, FIRST suspect the worker's internal
+// poll budget (1) — not the HTTP timeouts here.
+// ─────────────────────────────────────────────────────────────────────────────
+const MOTION_JOB_TIMEOUT_SECS = Number(process.env.RUNPOD_MOTION_JOB_TIMEOUT_SECS) || 30 * 60;
+const POLL_TIMEOUT_MS = 180_000;
+const SUBMIT_TIMEOUT_MS = 30_000;
+const PRESIGN_EXPIRES_SEC = 12 * 60 * 60; // 12h: comfortable margin over MOTION_JOB_TIMEOUT_SECS
 
 if (RUNPOD_MOTION_ENDPOINT_ID) {
   console.log(`[NSFW Motion-RP] endpoint=${RUNPOD_MOTION_ENDPOINT_ID}`);
@@ -121,6 +147,9 @@ export function buildNsfwMotionRunpodInput(args) {
     driving_video_url: args.drivingVideoUrl,
     output_node_id: MOTION_OUTPUT_NODE,
     output_type: "video",
+    // Explicit job-runtime budget — worker passes this straight into
+    // poll_history(). 30 min covers normal 10-20 min jobs with headroom.
+    timeout: MOTION_JOB_TIMEOUT_SECS,
     seed,
   };
   if (args.outputUploadUrl) {
@@ -191,7 +220,7 @@ export async function submitNsfwMotionRunpodJob(args) {
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30_000);
+  const timer = setTimeout(() => controller.abort(), SUBMIT_TIMEOUT_MS);
   let resp;
   try {
     resp = await fetch(`${base}/run`, {
