@@ -1173,10 +1173,14 @@ async function generateReferenceImage(params, opts = {}) {
           SKIN_TEXTURE: skinTexture,
         });
 
-    console.log(`\nðŸ“ Generated base prompt: ${basePrompt}`);
+    // Loud, always-on log: shows the EXACT structured blueprint the enhancer
+    // is being asked to expand. If a chip is missing here it was dropped by
+    // the controller. If it is here but the optimized prompt below does not
+    // mention it, the enhancer is ignoring it.
+    console.log(`\n[generate-reference] blueprint sent to enhancer:\n${basePrompt}`);
 
     // Generate reference image
-    console.log("\nðŸ“ Generating reference image...");
+    console.log("\n[generate-reference] Generating reference image...");
     // The enhancer reads `operation: ai-model-reference` (normalized to
     // identity_plate) from the addendum and applies the identity-plate recipe
     // + Universal Quality Bar. Do NOT append a hardcoded quality tail here —
@@ -1187,6 +1191,38 @@ async function generateReferenceImage(params, opts = {}) {
       resolution: "2K",
       referenceCount: 0,
     });
+
+    // CRITICAL SAFETY: if the enhancer failed silently (missing
+    // OPENROUTER_API_KEY, network error, rate limit, etc.) it returns the
+    // raw basePrompt unchanged — which in our case is a key:value blueprint
+    // ("Subject: ..., Hair: ..., Skin: ..."). Nano Banana cannot parse that
+    // as a real image prompt and hallucinates freely, producing the off-
+    // blueprint / androgynous / wrong-look faces. Detect that case, log it
+    // very loudly so we can fix the env, AND synthesize a natural-language
+    // paragraph from the same blueprint as a last-resort fallback.
+    let promptForKie = finalPrompt;
+    const enhancerNoOp = finalPrompt === basePrompt;
+    if (enhancerNoOp) {
+      console.error(
+        "[generate-reference] ENHANCER NO-OP — optimizer returned the raw blueprint unchanged. " +
+          "OPENROUTER_API_KEY is likely missing/invalid OR the enhancer call failed. " +
+          "Nano Banana will ignore the key:value blueprint. Falling back to paragraph synthesis.",
+      );
+      const flatBlueprint = blueprintLines
+        .filter(Boolean)
+        .map((line) => line.replace(/^[A-Za-z ]+:\s*/, ""))
+        .map((line) => line.replace(/\.$/, ""))
+        .join(", ");
+      promptForKie =
+        `A photorealistic portrait photograph of ${flatBlueprint}. ` +
+        `Sharp focus on the face, natural daylight, real DSLR character with 50mm lens at f/4, ` +
+        `visible skin texture and pores, alive composed expression, neutral textured background, ` +
+        `no studio polish, no AI-headshot look, no symmetric beauty defaults.`;
+    }
+    console.log(
+      `\n[generate-reference] enhancer ${enhancerNoOp ? "FAILED -> synthesized fallback" : "OK"}. ` +
+        `Final prompt sent to Nano Banana:\n${promptForKie}`,
+    );
 
     // Fresh random seed prevents Nano Banana from collapsing similar prompts
     // to similar faces — critical for the AI-model creation flow where every
@@ -1203,7 +1239,7 @@ async function generateReferenceImage(params, opts = {}) {
             "AI callback URL is not configured. Set CALLBACK_BASE_URL or KIE_CALLBACK_URL so onboarding can complete via webhook.",
         };
       }
-      const referenceResult = await generateTextToImageNanoBananaKie(finalPrompt, {
+      const referenceResult = await generateTextToImageNanoBananaKie(promptForKie, {
         aspectRatio: "1:1",
         resolution: "2K",
         outputFormat: "png",
@@ -1225,11 +1261,11 @@ async function generateReferenceImage(params, opts = {}) {
         success: true,
         deferred: true,
         taskId: referenceResult.taskId,
-        promptUsed: finalPrompt,
+        promptUsed: promptForKie,
       };
     }
 
-    const referenceResult = await generateTextToImage(finalPrompt, {
+    const referenceResult = await generateTextToImage(promptForKie, {
       aspectRatio: "1:1",
       forcePolling: true,
       seed,
@@ -1247,7 +1283,7 @@ async function generateReferenceImage(params, opts = {}) {
     return {
       success: true,
       referenceUrl: referenceImageUrl,
-      promptUsed: finalPrompt,
+      promptUsed: promptForKie,
     };
   } catch (error) {
     console.error("âŒ ERROR in reference image generation:", error.message);

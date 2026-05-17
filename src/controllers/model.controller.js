@@ -871,20 +871,36 @@ export async function generateAIModelReference(req, res) {
 
     // Generate reference image
     console.log("\n🤖 Starting reference image generation...");
-    console.log("Parameters:", {
-      referencePrompt,
+    // Loud, always-on log of WHAT chip selections actually reached the
+    // controller. If a field shows up empty here, the form is not sending it.
+    // If it shows up here but the LLM output ignores it, the problem is
+    // downstream (enhancer / Nano Banana), not data flow.
+    console.log("[generate-reference] chips received:", {
       gender,
       age,
-      savedAppearance,
+      ethnicity,
       hairColor,
       hairLength,
       hairTexture,
-      lipSize,
-      faceType,
+      hairType,
+      skinTone,
       eyeColor,
-      style,
+      eyeShape,
+      faceShape,
+      faceType,
+      noseShape,
+      lipSize,
       bodyType,
+      height,
+      breastSize,
+      buttSize,
+      waist,
+      hips,
+      tattoos,
+      style,
       heritage,
+      hasSavedAppearance: !!savedAppearance,
+      hasReferencePrompt: !!referencePrompt,
     });
 
     const generationResult = await generateReferenceImage({
