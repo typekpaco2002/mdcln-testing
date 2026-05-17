@@ -820,6 +820,9 @@ export async function login(req, res) {
 export async function getProfile(req, res) {
   try {
     const { checkAndExpireCredits } = await import("../services/credit.service.js");
+    const { maybeReconcileUnsyncedUser } = await import(
+      "../services/stripe-sync-watchdog.service.js"
+    );
     let freshUser = null;
     try {
       freshUser = await checkAndExpireCredits(req.user.userId);
@@ -841,6 +844,8 @@ export async function getProfile(req, res) {
         subscriptionStatus: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        legacyStripeCustomerId: true,
+        legacyStripeSubscriptionId: true,
         isVerified: true,
         onboardingCompleted: true,
         hasUsedFreeTrial: true,
@@ -864,6 +869,13 @@ export async function getProfile(req, res) {
         message: "User not found",
       });
     }
+
+    // Background self-heal: if this user looks like they paid Stripe but our
+    // DB never recorded the subscription (lost webhook during signup, closed
+    // tab before /confirm-subscription, etc.), kick off a reconcile in the
+    // background. Throttled to once per hour per user and fully idempotent,
+    // so this is cheap to call on every profile fetch.
+    maybeReconcileUnsyncedUser(user, { reason: "auth/profile" });
 
     // Always send credit fields as numbers so client never receives null/undefined (prevents 0-credits display bugs)
     const credits = Number(freshUser?.credits ?? user.credits ?? 0) || 0;

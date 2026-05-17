@@ -1,6 +1,6 @@
 # Generated: Backend module lists
 
-**Generated at:** 2026-05-17T17:03:54.735Z
+**Generated at:** 2026-05-17T17:52:27.641Z
 
 ## Controllers
 
@@ -59,6 +59,7 @@
 - `src/services/runninghub.service.js`
 - `src/services/signup-winback-email.service.js`
 - `src/services/stripe-credit-reconcile.service.js`
+- `src/services/stripe-sync-watchdog.service.js`
 - `src/services/telegramBot.js`
 - `src/services/telemetry.service.js`
 - `src/services/tutorial-videos.service.js`
