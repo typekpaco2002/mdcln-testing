@@ -131,6 +131,39 @@ Response on success:
 }
 ```
 
+### Output transports (strongly recommended: presigned URL)
+
+The worker supports **two output transports**, picked at request time by the
+backend:
+
+1. **PREFERRED — presigned PUT URL (small response, reliable webhooks)**.
+   Backend mints a presigned R2 PUT URL via
+   `getR2PresignedPutForKey()` and passes it as `output_upload_url` in the
+   request input (alongside `output_public_url` + `output_key` to round-trip).
+   The worker PUTs the rendered mp4 bytes directly to R2 and returns only a
+   tiny URL payload:
+
+   ```jsonc
+   {
+     "status": "COMPLETED",
+     "prompt_id": "abc...",
+     "output_url": "https://pub-xxx.r2.dev/generations/.../<id>_<ts>_<rand>.mp4",
+     "output_key": "generations/...mp4",
+     "videos": [{ "filename": "KIARA_...mp4", "url": "https://...mp4", "size": 38123456 }]
+   }
+   ```
+
+2. **LEGACY FALLBACK — base64 in webhook body** (used when no
+   `output_upload_url` is provided). Encodes the full mp4 as base64 inline.
+   Works on long-lived hosts, but webhooks/proxies (e.g. Vercel serverless
+   has a **4.5 MB body cap**) will silently truncate >5 MB payloads. The
+   backend was burned by this — 30 s motion clips ≈ 30-80 MB base64, which
+   meant webhooks never reached our handler and rows stayed in `processing`
+   until the watchdog timed them out. The new path is the fix.
+
+> ⚠ Always supply `output_upload_url` when R2 is configured — there is no
+> reliable way to deliver 30-80 MB inline through serverless edges.
+
 ## File overview
 
 | File | Purpose |

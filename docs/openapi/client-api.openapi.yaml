@@ -91,7 +91,7 @@ info:
     Path inventory is merged by **`npm run openapi:client`** (**`x-openapi-client-generated-at`** ISO timestamp on each run).
   x-doc-class: production
   termsOfService: https://modelclone.app/terms
-  x-openapi-client-generated-at: 2026-05-16T20:50:36.038Z
+  x-openapi-client-generated-at: 2026-05-17T16:37:41.123Z
 externalDocs:
   description: Repo reference **`docs/API_REFERENCE.md`** · generation JSON **`docs/API_GENERATION_UX_PARITY.md`**
   url: https://github.com/typekpaco2002/mdlcln/tree/main/docs
@@ -818,7 +818,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2605**) or add **docs/openapi/overrides/POST__admin__assign-lora.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2608**) or add **docs/openapi/overrides/POST__admin__assign-lora.md**.
         content:
           application/json:
             schema:
@@ -866,7 +866,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1098**) or add **docs/openapi/overrides/POST__admin__backup__create.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1101**) or add **docs/openapi/overrides/POST__admin__backup__create.md**.
         content:
           application/json:
             schema:
@@ -939,7 +939,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1126**) or add **docs/openapi/overrides/POST__admin__backup__restore-credits.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1129**) or add **docs/openapi/overrides/POST__admin__backup__restore-credits.md**.
         content:
           application/json:
             schema:
@@ -1011,7 +1011,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **337**) or add **docs/openapi/overrides/PUT__admin__branding.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **340**) or add **docs/openapi/overrides/PUT__admin__branding.md**.
         content:
           application/json:
             schema:
@@ -1074,7 +1074,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3284**) or add **docs/openapi/overrides/POST__admin__bulk-import-gallery.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3386**) or add **docs/openapi/overrides/POST__admin__bulk-import-gallery.md**.
         content:
           application/json:
             schema:
@@ -1220,7 +1220,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3684**) or add **docs/openapi/overrides/POST__admin__disaster-recovery.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3786**) or add **docs/openapi/overrides/POST__admin__disaster-recovery.md**.
         content:
           application/json:
             schema:
@@ -1317,7 +1317,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3575**) or add **docs/openapi/overrides/POST__admin__discount-codes.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3677**) or add **docs/openapi/overrides/POST__admin__discount-codes.md**.
         content:
           application/json:
             schema:
@@ -1371,7 +1371,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3614**) or add **docs/openapi/overrides/PATCH__admin__discount-codes__id.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3716**) or add **docs/openapi/overrides/PATCH__admin__discount-codes__id.md**.
         content:
           application/json:
             schema:
@@ -1517,7 +1517,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3477**) or add **docs/openapi/overrides/POST__admin__impersonate.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3579**) or add **docs/openapi/overrides/POST__admin__impersonate.md**.
         content:
           application/json:
             schema:
@@ -1565,7 +1565,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **405**) or add **docs/openapi/overrides/POST__admin__lander-demo-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **408**) or add **docs/openapi/overrides/POST__admin__lander-demo-video.md**.
         content:
           application/json:
             schema:
@@ -1762,7 +1762,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2697**) or add **docs/openapi/overrides/POST__admin__lora-recovery.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2700**) or add **docs/openapi/overrides/POST__admin__lora-recovery.md**.
         content:
           application/json:
             schema:
@@ -1825,7 +1825,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2940**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3042**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile.md**.
         content:
           application/json:
             schema:
@@ -1888,7 +1888,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3129**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile-all.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3231**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile-all.md**.
         content:
           application/json:
             schema:
@@ -1979,7 +1979,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2022**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2025**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns.md**.
         content:
           application/json:
             schema:
@@ -2033,7 +2033,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2096**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns__campaignId__cancel.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2099**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns__campaignId__cancel.md**.
         content:
           application/json:
             schema:
@@ -2089,7 +2089,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1281**) or add **docs/openapi/overrides/POST__admin__models__modelId__fix-photos.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1284**) or add **docs/openapi/overrides/POST__admin__models__modelId__fix-photos.md**.
         content:
           application/json:
             schema:
@@ -2145,7 +2145,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1236**) or add **docs/openapi/overrides/POST__admin__models__modelId__looks-unlock.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1239**) or add **docs/openapi/overrides/POST__admin__models__modelId__looks-unlock.md**.
         content:
           application/json:
             schema:
@@ -2201,7 +2201,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1190**) or add **docs/openapi/overrides/POST__admin__models__modelId__nsfw-override.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1193**) or add **docs/openapi/overrides/POST__admin__models__modelId__nsfw-override.md**.
         content:
           application/json:
             schema:
@@ -2354,7 +2354,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **757**) or add **docs/openapi/overrides/PUT__admin__nudes-pack-poses.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **760**) or add **docs/openapi/overrides/PUT__admin__nudes-pack-poses.md**.
         content:
           application/json:
             schema:
@@ -2441,7 +2441,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **608**) or add **docs/openapi/overrides/PUT__admin__pricing__generation.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **611**) or add **docs/openapi/overrides/PUT__admin__pricing__generation.md**.
         content:
           application/json:
             schema:
@@ -2504,7 +2504,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **630**) or add **docs/openapi/overrides/POST__admin__pricing__generation__reset.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **633**) or add **docs/openapi/overrides/POST__admin__pricing__generation__reset.md**.
         content:
           application/json:
             schema:
@@ -2607,7 +2607,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **656**) or add **docs/openapi/overrides/PUT__admin__prompt-templates.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **659**) or add **docs/openapi/overrides/PUT__admin__prompt-templates.md**.
         content:
           application/json:
             schema:
@@ -2770,6 +2770,62 @@ paths:
           $ref: "#/components/responses/Internal500"
         "503":
           $ref: "#/components/responses/ServiceUnavailable503"
+  /api/admin/runpod-motion/reconcile/{generationId}:
+    post:
+      operationId: post_api_admin_runpod_motion_reconcile_generationid
+      summary: Create Reconcile
+      description: "**Internal admin-only** (**`src/routes/admin.routes.js`**). Session JWT enforced — `mcl_` REST keys are rejected (**ADMIN_SESSION_ONLY**)."
+      tags:
+        - Admin
+      deprecated: true
+      x-modelclone-generated-from: src/routes/admin.routes.js
+      x-internal: true
+      parameters:
+        - name: generationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: generationId segment from the HTTP path.
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 8
+          description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
+      security:
+        - SessionCookieAuth: []
+      requestBody:
+        required: false
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2920**) or add **docs/openapi/overrides/POST__admin__runpod-motion__reconcile__generationId.md**.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Route-defined JSON envelope (no static schema mined).
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessOk"
+        "400":
+          $ref: "#/components/responses/ValidationFailed400"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden403"
+        "404":
+          $ref: "#/components/responses/NotFound404"
+        "409":
+          $ref: "#/components/responses/Conflict409"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge413"
+        "429":
+          $ref: "#/components/responses/RateLimited429"
+        "500":
+          $ref: "#/components/responses/Internal500"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable503"
   /api/admin/runpod/batch-reconcile:
     post:
       operationId: post_api_admin_runpod_batch_reconcile
@@ -2792,7 +2848,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2861**) or add **docs/openapi/overrides/POST__admin__runpod__batch-reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2864**) or add **docs/openapi/overrides/POST__admin__runpod__batch-reconcile.md**.
         content:
           application/json:
             schema:
@@ -2895,7 +2951,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **715**) or add **docs/openapi/overrides/PUT__admin__safety-checker-config.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **718**) or add **docs/openapi/overrides/PUT__admin__safety-checker-config.md**.
         content:
           application/json:
             schema:
@@ -2984,7 +3040,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2119**) or add **docs/openapi/overrides/POST__admin__send-marketing-email.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2122**) or add **docs/openapi/overrides/POST__admin__send-marketing-email.md**.
         content:
           application/json:
             schema:
@@ -3032,7 +3088,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2505**) or add **docs/openapi/overrides/POST__admin__send-promo-50off.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2508**) or add **docs/openapi/overrides/POST__admin__send-promo-50off.md**.
         content:
           application/json:
             schema:
@@ -3152,7 +3208,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1349**) or add **docs/openapi/overrides/POST__admin__stripe__reconcile-user__userId.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1352**) or add **docs/openapi/overrides/POST__admin__stripe__reconcile-user__userId.md**.
         content:
           application/json:
             schema:
@@ -3510,7 +3566,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **369**) or add **docs/openapi/overrides/POST__admin__tutorial-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **372**) or add **docs/openapi/overrides/POST__admin__tutorial-video.md**.
         content:
           application/json:
             schema:
@@ -3586,7 +3642,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **540**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **543**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot.md**.
         content:
           application/json:
             schema:
@@ -3634,7 +3690,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **502**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot-commit.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **505**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot-commit.md**.
         content:
           application/json:
             schema:
@@ -4193,7 +4249,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1070**) or add **docs/openapi/overrides/POST__admin__users__userId__ban-lock.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1073**) or add **docs/openapi/overrides/POST__admin__users__userId__ban-lock.md**.
         content:
           application/json:
             schema:
@@ -4350,7 +4406,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1045**) or add **docs/openapi/overrides/POST__admin__users__userId__pro-access.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1048**) or add **docs/openapi/overrides/POST__admin__users__userId__pro-access.md**.
         content:
           application/json:
             schema:
@@ -4400,7 +4456,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1438**) or add **docs/openapi/overrides/POST__admin__users__by-email__audit.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1441**) or add **docs/openapi/overrides/POST__admin__users__by-email__audit.md**.
         content:
           application/json:
             schema:
@@ -4584,7 +4640,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **836**) or add **docs/openapi/overrides/POST__admin__voice-platform__cleanup-zombies.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **839**) or add **docs/openapi/overrides/POST__admin__voice-platform__cleanup-zombies.md**.
         content:
           application/json:
             schema:
@@ -4687,7 +4743,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **804**) or add **docs/openapi/overrides/PUT__admin__voice-platform__config.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **807**) or add **docs/openapi/overrides/PUT__admin__voice-platform__config.md**.
         content:
           application/json:
             schema:
@@ -4790,7 +4846,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **686**) or add **docs/openapi/overrides/PUT__admin__winback-email-template.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **689**) or add **docs/openapi/overrides/PUT__admin__winback-email-template.md**.
         content:
           application/json:
             schema:
@@ -15793,7 +15849,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2605**) or add **docs/openapi/overrides/POST__admin__assign-lora.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2608**) or add **docs/openapi/overrides/POST__admin__assign-lora.md**.
         content:
           application/json:
             schema:
@@ -15840,7 +15896,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1098**) or add **docs/openapi/overrides/POST__admin__backup__create.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1101**) or add **docs/openapi/overrides/POST__admin__backup__create.md**.
         content:
           application/json:
             schema:
@@ -15911,7 +15967,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1126**) or add **docs/openapi/overrides/POST__admin__backup__restore-credits.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1129**) or add **docs/openapi/overrides/POST__admin__backup__restore-credits.md**.
         content:
           application/json:
             schema:
@@ -15981,7 +16037,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **337**) or add **docs/openapi/overrides/PUT__admin__branding.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **340**) or add **docs/openapi/overrides/PUT__admin__branding.md**.
         content:
           application/json:
             schema:
@@ -16043,7 +16099,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3284**) or add **docs/openapi/overrides/POST__admin__bulk-import-gallery.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3386**) or add **docs/openapi/overrides/POST__admin__bulk-import-gallery.md**.
         content:
           application/json:
             schema:
@@ -16186,7 +16242,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3684**) or add **docs/openapi/overrides/POST__admin__disaster-recovery.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3786**) or add **docs/openapi/overrides/POST__admin__disaster-recovery.md**.
         content:
           application/json:
             schema:
@@ -16280,7 +16336,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3575**) or add **docs/openapi/overrides/POST__admin__discount-codes.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3677**) or add **docs/openapi/overrides/POST__admin__discount-codes.md**.
         content:
           application/json:
             schema:
@@ -16333,7 +16389,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3614**) or add **docs/openapi/overrides/PATCH__admin__discount-codes__id.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3716**) or add **docs/openapi/overrides/PATCH__admin__discount-codes__id.md**.
         content:
           application/json:
             schema:
@@ -16475,7 +16531,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3477**) or add **docs/openapi/overrides/POST__admin__impersonate.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3579**) or add **docs/openapi/overrides/POST__admin__impersonate.md**.
         content:
           application/json:
             schema:
@@ -16522,7 +16578,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **405**) or add **docs/openapi/overrides/POST__admin__lander-demo-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **408**) or add **docs/openapi/overrides/POST__admin__lander-demo-video.md**.
         content:
           application/json:
             schema:
@@ -16714,7 +16770,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2697**) or add **docs/openapi/overrides/POST__admin__lora-recovery.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2700**) or add **docs/openapi/overrides/POST__admin__lora-recovery.md**.
         content:
           application/json:
             schema:
@@ -16776,7 +16832,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2940**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3042**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile.md**.
         content:
           application/json:
             schema:
@@ -16838,7 +16894,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3129**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile-all.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **3231**) or add **docs/openapi/overrides/POST__admin__lost-generations__reconcile-all.md**.
         content:
           application/json:
             schema:
@@ -16927,7 +16983,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2022**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2025**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns.md**.
         content:
           application/json:
             schema:
@@ -16980,7 +17036,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2096**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns__campaignId__cancel.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2099**) or add **docs/openapi/overrides/POST__admin__marketing-campaigns__campaignId__cancel.md**.
         content:
           application/json:
             schema:
@@ -17035,7 +17091,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1281**) or add **docs/openapi/overrides/POST__admin__models__modelId__fix-photos.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1284**) or add **docs/openapi/overrides/POST__admin__models__modelId__fix-photos.md**.
         content:
           application/json:
             schema:
@@ -17090,7 +17146,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1236**) or add **docs/openapi/overrides/POST__admin__models__modelId__looks-unlock.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1239**) or add **docs/openapi/overrides/POST__admin__models__modelId__looks-unlock.md**.
         content:
           application/json:
             schema:
@@ -17145,7 +17201,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1190**) or add **docs/openapi/overrides/POST__admin__models__modelId__nsfw-override.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1193**) or add **docs/openapi/overrides/POST__admin__models__modelId__nsfw-override.md**.
         content:
           application/json:
             schema:
@@ -17295,7 +17351,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **757**) or add **docs/openapi/overrides/PUT__admin__nudes-pack-poses.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **760**) or add **docs/openapi/overrides/PUT__admin__nudes-pack-poses.md**.
         content:
           application/json:
             schema:
@@ -17380,7 +17436,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **608**) or add **docs/openapi/overrides/PUT__admin__pricing__generation.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **611**) or add **docs/openapi/overrides/PUT__admin__pricing__generation.md**.
         content:
           application/json:
             schema:
@@ -17442,7 +17498,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **630**) or add **docs/openapi/overrides/POST__admin__pricing__generation__reset.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **633**) or add **docs/openapi/overrides/POST__admin__pricing__generation__reset.md**.
         content:
           application/json:
             schema:
@@ -17543,7 +17599,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **656**) or add **docs/openapi/overrides/PUT__admin__prompt-templates.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **659**) or add **docs/openapi/overrides/PUT__admin__prompt-templates.md**.
         content:
           application/json:
             schema:
@@ -17703,6 +17759,61 @@ paths:
           $ref: "#/components/responses/Internal500"
         "503":
           $ref: "#/components/responses/ServiceUnavailable503"
+  /api/v1/admin/runpod-motion/reconcile/{generationId}:
+    post:
+      operationId: post_api_v1_admin_runpod_motion_reconcile_generationid
+      summary: Create Reconcile
+      description: "**Internal admin-only** (**`src/routes/admin.routes.js`**). Session JWT enforced — `mcl_` REST keys are rejected (**ADMIN_SESSION_ONLY**)."
+      tags:
+        - Admin
+      x-modelclone-generated-from: src/routes/admin.routes.js
+      x-internal: true
+      parameters:
+        - name: generationId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: generationId segment from the HTTP path.
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            minLength: 8
+          description: Optional idempotency / replay-protection token for safe retries (conventional HTTP header — enforcement is route-specific).
+      security:
+        - SessionCookieAuth: []
+      requestBody:
+        required: false
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2920**) or add **docs/openapi/overrides/POST__admin__runpod-motion__reconcile__generationId.md**.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Route-defined JSON envelope (no static schema mined).
+      responses:
+        "200":
+          $ref: "#/components/responses/SuccessOk"
+        "400":
+          $ref: "#/components/responses/ValidationFailed400"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden403"
+        "404":
+          $ref: "#/components/responses/NotFound404"
+        "409":
+          $ref: "#/components/responses/Conflict409"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge413"
+        "429":
+          $ref: "#/components/responses/RateLimited429"
+        "500":
+          $ref: "#/components/responses/Internal500"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable503"
   /api/v1/admin/runpod/batch-reconcile:
     post:
       operationId: post_api_v1_admin_runpod_batch_reconcile
@@ -17724,7 +17835,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2861**) or add **docs/openapi/overrides/POST__admin__runpod__batch-reconcile.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2864**) or add **docs/openapi/overrides/POST__admin__runpod__batch-reconcile.md**.
         content:
           application/json:
             schema:
@@ -17825,7 +17936,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **715**) or add **docs/openapi/overrides/PUT__admin__safety-checker-config.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **718**) or add **docs/openapi/overrides/PUT__admin__safety-checker-config.md**.
         content:
           application/json:
             schema:
@@ -17912,7 +18023,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2119**) or add **docs/openapi/overrides/POST__admin__send-marketing-email.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2122**) or add **docs/openapi/overrides/POST__admin__send-marketing-email.md**.
         content:
           application/json:
             schema:
@@ -17959,7 +18070,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2505**) or add **docs/openapi/overrides/POST__admin__send-promo-50off.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **2508**) or add **docs/openapi/overrides/POST__admin__send-promo-50off.md**.
         content:
           application/json:
             schema:
@@ -18076,7 +18187,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1349**) or add **docs/openapi/overrides/POST__admin__stripe__reconcile-user__userId.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1352**) or add **docs/openapi/overrides/POST__admin__stripe__reconcile-user__userId.md**.
         content:
           application/json:
             schema:
@@ -18426,7 +18537,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **369**) or add **docs/openapi/overrides/POST__admin__tutorial-video.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **372**) or add **docs/openapi/overrides/POST__admin__tutorial-video.md**.
         content:
           application/json:
             schema:
@@ -18500,7 +18611,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **540**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **543**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot.md**.
         content:
           application/json:
             schema:
@@ -18547,7 +18658,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **502**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot-commit.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **505**) or add **docs/openapi/overrides/POST__admin__tutorial-video-slot-commit.md**.
         content:
           application/json:
             schema:
@@ -19093,7 +19204,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1070**) or add **docs/openapi/overrides/POST__admin__users__userId__ban-lock.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1073**) or add **docs/openapi/overrides/POST__admin__users__userId__ban-lock.md**.
         content:
           application/json:
             schema:
@@ -19247,7 +19358,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1045**) or add **docs/openapi/overrides/POST__admin__users__userId__pro-access.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1048**) or add **docs/openapi/overrides/POST__admin__users__userId__pro-access.md**.
         content:
           application/json:
             schema:
@@ -19296,7 +19407,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1438**) or add **docs/openapi/overrides/POST__admin__users__by-email__audit.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **1441**) or add **docs/openapi/overrides/POST__admin__users__by-email__audit.md**.
         content:
           application/json:
             schema:
@@ -19476,7 +19587,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **836**) or add **docs/openapi/overrides/POST__admin__voice-platform__cleanup-zombies.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **839**) or add **docs/openapi/overrides/POST__admin__voice-platform__cleanup-zombies.md**.
         content:
           application/json:
             schema:
@@ -19577,7 +19688,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **804**) or add **docs/openapi/overrides/PUT__admin__voice-platform__config.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **807**) or add **docs/openapi/overrides/PUT__admin__voice-platform__config.md**.
         content:
           application/json:
             schema:
@@ -19678,7 +19789,7 @@ paths:
         - SessionCookieAuth: []
       requestBody:
         required: false
-        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **686**) or add **docs/openapi/overrides/PUT__admin__winback-email-template.md**.
+        description: Request shape not statically extracted from **express-validator**. Inspect source **src/routes/admin.routes.js** (~line **689**) or add **docs/openapi/overrides/PUT__admin__winback-email-template.md**.
         content:
           application/json:
             schema:

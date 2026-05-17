@@ -70,6 +70,9 @@ import {
   deleteElevenLabsVoiceStrict,
 } from "../services/elevenlabs.service.js";
 import { runRunpodWatchdog } from "../services/generation-poller.service.js";
+import { forceReconcileRunpodMotionRow } from "../services/nsfw-motion-runpod.service.js";
+import { refundGeneration } from "../services/credit.service.js";
+import { enqueueCleanupOldGenerations } from "../controllers/generation.controller.js";
 import { runDisasterRecovery } from "../services/disaster-recovery.service.js";
 import { getStripeForAccount } from "../lib/stripeClients.js";
 
@@ -2896,6 +2899,105 @@ router.post("/runpod/batch-reconcile", async (req, res) => {
     return res.status(500).json({
       success: false,
       error: error?.message || "Failed to run RunPod batch check",
+    });
+  }
+});
+
+/**
+ * POST /api/admin/runpod-motion/reconcile/:generationId
+ *
+ * Manual rescue for a single Motion-X RunPod row that's stuck in `processing`
+ * (e.g. the webhook never reached us — Vercel edge truncated a >4.5 MB body,
+ * RunPod retried until it gave up, watchdog missed it). Fetches /status from
+ * RunPod, runs the materializer, updates the row.
+ *
+ * Body: optional `{ markFailedIfMissingVideo?: boolean }` — when true, marks
+ * the row failed (and refunds) if RunPod reports COMPLETED but no video can
+ * be materialized. Default false (leaves the row in processing so manual
+ * inspection is possible).
+ */
+router.post("/runpod-motion/reconcile/:generationId", async (req, res) => {
+  const { generationId } = req.params;
+  if (!generationId) {
+    return res.status(400).json({ success: false, error: "generationId required" });
+  }
+
+  try {
+    const gen = await prisma.generation.findUnique({ where: { id: generationId } });
+    if (!gen) return res.status(404).json({ success: false, error: "generation not found" });
+    if (gen.type !== "nsfw-video-motion") {
+      return res.status(400).json({ success: false, error: `generation type ${gen.type} is not nsfw-video-motion` });
+    }
+    if (String(gen.provider || "").toLowerCase() !== "runpod-motion") {
+      return res.status(400).json({
+        success: false,
+        error: `generation provider is ${gen.provider || "(legacy)"} — only runpod-motion rows can be reconciled here`,
+      });
+    }
+
+    const result = await forceReconcileRunpodMotionRow(gen);
+
+    if (result.status === "completed" && result.outputUrl) {
+      await prisma.generation.update({
+        where: { id: gen.id },
+        data: { status: "completed", outputUrl: result.outputUrl, completedAt: new Date(), errorMessage: null },
+      });
+      if (gen.userId && gen.modelId) enqueueCleanupOldGenerations(gen.userId, gen.modelId);
+
+      await prisma.adminAuditLog.create({
+        data: {
+          adminUserId: req.user.userId,
+          adminEmail: req.user.email || null,
+          action: "runpod_motion_reconcile",
+          targetType: "generation",
+          targetId: gen.id,
+          detailsJson: JSON.stringify({ ok: true, outputUrl: result.outputUrl }),
+        },
+      }).catch(() => {});
+
+      console.log(`[admin reconcile] ✅ motion gen=${gen.id} recovered → ${String(result.outputUrl).slice(0, 96)}`);
+      return res.json({ success: true, status: "completed", outputUrl: result.outputUrl });
+    }
+
+    if (result.status === "still_running") {
+      return res.json({ success: true, status: "still_running", message: result.message });
+    }
+
+    if (result.status === "skipped") {
+      return res.status(400).json({ success: false, status: "skipped", message: result.message });
+    }
+
+    // failed
+    const markFailed = req.body?.markFailedIfMissingVideo === true;
+    if (markFailed && gen.status !== "failed") {
+      await refundGeneration(gen.id).catch(() => {});
+      await prisma.generation.updateMany({
+        where: { id: gen.id, status: { in: ["queued", "processing", "pending"] } },
+        data: { status: "failed", errorMessage: String(result.message || "RunPod failure").slice(0, 400), completedAt: new Date() },
+      });
+    }
+    await prisma.adminAuditLog.create({
+      data: {
+        adminUserId: req.user.userId,
+        adminEmail: req.user.email || null,
+        action: "runpod_motion_reconcile",
+        targetType: "generation",
+        targetId: gen.id,
+        detailsJson: JSON.stringify({ ok: false, message: result.message, markedFailed: markFailed }),
+      },
+    }).catch(() => {});
+
+    return res.json({
+      success: false,
+      status: "failed",
+      message: result.message,
+      markedFailed: markFailed,
+    });
+  } catch (error) {
+    console.error(`[admin reconcile] motion gen=${generationId} failed:`, error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || "Failed to reconcile Motion-X RunPod row",
     });
   }
 });

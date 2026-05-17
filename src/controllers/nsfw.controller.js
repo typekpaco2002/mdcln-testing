@@ -46,6 +46,7 @@ import {
 import {
   submitNsfwMotionRunpodJob,
   isNsfwMotionRunpodConfigured,
+  mintMotionOutputUploadUrl,
 } from "../services/nsfw-motion-runpod.service.js";
 import { generateImageWithNanoBananaKie, generateImageWithSeedream5Lite } from "../services/kie.service.js";
 import requestQueue from "../services/queue.service.js";
@@ -5645,32 +5646,50 @@ export async function generateNsfwMotionVideo(req, res) {
         ? prompt.trim().slice(0, 1500)
         : "natural cinematic motion, subtle weight shift, soft skin lighting, smooth and continuous animation, photorealistic";
 
+    // For the RunPod path we stamp provider:"runpod-motion" at row creation
+    // (not in a follow-up update). Important because the row's `provider`
+    // selects which watchdog reconciles it (RH watchdog vs. RunPod watchdog,
+    // see generation-poller.service.js). If the post-submit update fails (DB
+    // hiccup, deploy, etc.) the row would otherwise stay at the default
+    // `provider:"kie"` and fall through BOTH watchdogs forever (the symptom
+    // that produced the original "stuck for 24h" report).
+    const _createData = {
+      userId,
+      modelId,
+      type: "nsfw-video-motion",
+      prompt: finalPrompt,
+      status: "processing",
+      creditsCost: creditsNeeded,
+      replicateModel: null,
+      isNsfw: true,
+      inputImageUrl: JSON.stringify({
+        referenceImageUrl: imageUrl,
+        duration: dur,
+        skipSeconds: skip,
+        sourceType: isGallerySourceImage ? "gallery" : "upload",
+        ...(Number.isFinite(Number(seed)) ? { seed: Math.trunc(Number(seed)) } : {}),
+      }),
+      inputVideoUrl: videoUrl,
+    };
+    if (useRunpodProvider) {
+      _createData.provider = "runpod-motion";
+    }
     const generation = await prisma.generation.create({
-      data: mergeIntegratorWebhookIntoPrismaData(
-        {
-          userId,
-          modelId,
-          type: "nsfw-video-motion",
-          prompt: finalPrompt,
-          status: "processing",
-          creditsCost: creditsNeeded,
-          replicateModel: null,
-          isNsfw: true,
-          inputImageUrl: JSON.stringify({
-            referenceImageUrl: imageUrl,
-            duration: dur,
-            skipSeconds: skip,
-            sourceType: isGallerySourceImage ? "gallery" : "upload",
-            ...(Number.isFinite(Number(seed)) ? { seed: Math.trunc(Number(seed)) } : {}),
-          }),
-          inputVideoUrl: videoUrl,
-        },
-        req.body,
-      ),
+      data: mergeIntegratorWebhookIntoPrismaData(_createData, req.body),
     });
     generationId = generation.id;
 
     if (useRunpodProvider) {
+      // Mint a presigned R2 PUT URL so the worker uploads the rendered mp4
+      // straight to our bucket and returns only a tiny URL payload. This is
+      // THE fix for the "stuck in processing for 24h" report: previously the
+      // worker base64-encoded a 30-80 MB mp4 into the webhook body, which
+      // Vercel rejected at the edge (4.5 MB function body cap), and the
+      // /status fallback response was too large for the watchdog's old 25s
+      // fetch timeout. With a presigned URL the webhook body is ~300 bytes.
+      // Falls back to base64 transparently when R2 isn't configured.
+      const presigned = await mintMotionOutputUploadUrl(generation.id);
+
       let runpodJobId;
       try {
         const webhookUrl = resolveRunpodWebhookUrl({ generationId: generation.id });
@@ -5680,6 +5699,9 @@ export async function generateNsfwMotionVideo(req, res) {
           prompt: finalPrompt,
           seed: Number.isFinite(Number(seed)) ? Math.trunc(Number(seed)) : undefined,
           webhookUrl,
+          outputUploadUrl: presigned?.uploadUrl || null,
+          outputPublicUrl: presigned?.publicUrl || null,
+          outputKey: presigned?.key || null,
         });
         runpodJobId = submission.runpodJobId;
       } catch (err) {
@@ -5703,7 +5725,7 @@ export async function generateNsfwMotionVideo(req, res) {
         data: {
           replicateModel: runpodJobId,
           providerTaskId: runpodJobId,
-          provider: "runpod-motion",
+          // provider already set at create time (see comment above)
           inputImageUrl: JSON.stringify({
             referenceImageUrl: imageUrl,
             duration: dur,
@@ -5711,12 +5733,16 @@ export async function generateNsfwMotionVideo(req, res) {
             ...(Number.isFinite(Number(seed)) ? { seed: Math.trunc(Number(seed)) } : {}),
             runpodJobId,
             via: "admin-test",
+            ...(presigned?.publicUrl
+              ? { presignedPublicUrl: presigned.publicUrl, presignedKey: presigned.key }
+              : {}),
           }),
         },
       });
 
       console.log(
-        `🎬 [Motion-X RP] submitted gen=${generation.id} runpodJob=${runpodJobId} dur=${dur}s (admin)`,
+        `🎬 [Motion-X RP] submitted gen=${generation.id} runpodJob=${runpodJobId} dur=${dur}s ` +
+        `presigned=${presigned ? "yes" : "no"} (admin)`,
       );
 
       const updatedUser = await prisma.user.findUnique({ where: { id: userId } });

@@ -21,8 +21,33 @@ Input schema:
       { "node_id": "52",  "filename": "drive.mp4", "data": "<base64>" }
     ],
     "output_node_id": "226",                           # default 226 (KIARA_AnimateX combine)
-    "timeout": 1800                                    # default 1800 s
+    "timeout": 1800,                                   # default 1800 s
+    # --- STRONGLY RECOMMENDED: presigned PUT URL for the produced mp4 ---
+    # When set, the worker uploads the rendered mp4 directly to this URL and
+    # returns only the small public URL in the response. Skips the 30-80 MB
+    # base64 path that blows past Vercel's 4.5 MB webhook body limit and
+    # makes /status responses huge. Backend mints this via
+    # `getR2PresignedPutForKey()` (see src/services/nsfw-motion-runpod.service.js).
+    "output_upload_url": "https://<r2-presigned-put-url>",   # optional
+    "output_public_url":  "https://<resulting public url>",  # optional, echoed back
+    "output_key":         "generations/...mp4"               # optional, echoed back
   }
+}
+
+Output (preferred — when output_upload_url is supplied):
+{
+  "status": "COMPLETED",
+  "prompt_id": "...",
+  "output_url": "https://pub-xxx.r2.dev/generations/...mp4",
+  "output_key": "generations/...mp4",
+  "videos": [{ "url": "https://pub-xxx.r2.dev/generations/...mp4", "filename": "..." }]
+}
+
+Output (legacy fallback — when no output_upload_url):
+{
+  "status": "COMPLETED",
+  "prompt_id": "...",
+  "videos": [{ "base64": "<...>", "filename": "...", ... }]
 }
 """
 import runpod
@@ -293,11 +318,45 @@ def get_view_bytes(filename, subfolder="", file_type="output"):
         return resp.read()
 
 
-def collect_videos(outputs, preferred_node):
+def put_bytes_to_presigned_url(url, body, content_type="video/mp4", label="output"):
+    """
+    PUT raw bytes to a presigned URL (R2 / S3). Returns the response status.
+
+    The backend mints these via `getR2PresignedPutForKey()` so we never have to
+    bake R2 credentials into the worker. Required because RunPod webhooks +
+    /status responses get truncated/dropped when the body exceeds ~4.5 MB (the
+    Vercel serverless function body cap) and even on long-running hosts a
+    60-80 MB JSON payload causes memory pressure and timeouts.
+    """
+    if not url:
+        raise ValueError(f"{label}: empty presigned URL")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        method="PUT",
+        headers={
+            "Content-Type": content_type or "application/octet-stream",
+            "Content-Length": str(len(body)),
+        },
+    )
+    # 15 min cap: 80 MB over a slow uplink can easily take 1-3 min; give headroom.
+    with urllib.request.urlopen(req, timeout=900) as resp:
+        status = resp.status
+        if 200 <= status < 300:
+            print(f"[motion] uploaded {label} → presigned URL ({len(body)} bytes, HTTP {status})")
+            return status
+        raise RuntimeError(f"{label}: presigned PUT returned HTTP {status}")
+
+
+def collect_videos(outputs, preferred_node, encode_base64=True):
     """
     VHS_VideoCombine reports its output under the `gifs` key (legacy name).
     Each entry has filename / subfolder / type / format / fullpath.
     Some VHS builds also use `videos`. Handle both.
+
+    When `encode_base64=False`, the raw bytes are returned under `bytes` and
+    no base64 is computed (saves time + memory when the bytes are about to be
+    PUT directly to a presigned URL).
     """
     priority = [preferred_node] + sorted(
         [k for k in outputs.keys() if k != preferred_node],
@@ -320,14 +379,19 @@ def collect_videos(outputs, preferred_node):
                         v.get("subfolder", ""),
                         v.get("type", "output"),
                     )
-                    videos.append({
+                    entry = {
                         "filename": fname,
                         "node_id": node_id,
                         "format": fmt,
                         "subfolder": v.get("subfolder", ""),
                         "type": v.get("type", "output"),
-                        "base64": base64.b64encode(raw).decode("utf-8"),
-                    })
+                        "size": len(raw),
+                    }
+                    if encode_base64:
+                        entry["base64"] = base64.b64encode(raw).decode("utf-8")
+                    else:
+                        entry["bytes"] = raw
+                    videos.append(entry)
                 except Exception as e:
                     print(f"WARN: failed to fetch {fname}: {e}")
         if videos:
@@ -498,10 +562,17 @@ def handler(event):
 
     outputs = poll_result.get("outputs", {})
 
-    videos = collect_videos(outputs, output_node_id)
+    output_upload_url = (inp.get("output_upload_url") or "").strip() or None
+    output_public_url = (inp.get("output_public_url") or "").strip() or None
+    output_key = (inp.get("output_key") or "").strip() or None
+
+    # Skip base64 when we have a presigned PUT URL: we'll upload raw bytes
+    # directly and return a tiny URL payload. Cuts the response from ~40-80MB
+    # to ~300 bytes and bypasses Vercel's 4.5MB webhook limit.
+    encode_base64 = output_upload_url is None
+    videos = collect_videos(outputs, output_node_id, encode_base64=encode_base64)
     images = []
     if not videos:
-        # Some workflows still emit only images — fall back to images.
         images = collect_images(outputs, output_node_id)
 
     if not videos and not images:
@@ -515,12 +586,45 @@ def handler(event):
         "status": "COMPLETED",
         "prompt_id": prompt_id,
     }
-    if videos:
-        print(f"returning {len(videos)} video(s) from node {videos[0]['node_id']}")
+
+    if videos and output_upload_url:
+        chosen = videos[0]
+        body_bytes = chosen.pop("bytes", None)
+        if body_bytes is None:
+            return {
+                "error": "internal: raw bytes missing when output_upload_url was supplied",
+                "prompt_id": prompt_id,
+            }
+        try:
+            ct = "video/mp4"
+            fmt = (chosen.get("format") or "").lower()
+            if "webm" in fmt:
+                ct = "video/webm"
+            elif "mov" in fmt or "quicktime" in fmt:
+                ct = "video/quicktime"
+            put_bytes_to_presigned_url(output_upload_url, body_bytes, content_type=ct, label="video")
+            chosen["url"] = output_public_url or output_upload_url.split("?", 1)[0]
+            payload["output_url"] = chosen["url"]
+            if output_key:
+                payload["output_key"] = output_key
+            payload["videos"] = [chosen]
+            print(f"returning URL output: {payload['output_url'][:96]} ({chosen.get('size')} bytes)")
+        except Exception as e:
+            traceback.print_exc()
+            # Fall back to base64 so the run is recoverable from /status even
+            # though the webhook will likely be truncated.
+            print(f"WARN: presigned upload failed: {e} — falling back to base64")
+            chosen["base64"] = base64.b64encode(body_bytes).decode("utf-8")
+            payload["videos"] = [chosen]
+            payload["upload_warning"] = str(e)
+    elif videos:
+        print(f"returning {len(videos)} video(s) from node {videos[0]['node_id']} (base64)")
         payload["videos"] = videos
+
     if images:
         print(f"returning {len(images)} image(s) from node {images[0]['node_id']}")
         payload["images"] = images
+
     return payload
 
 

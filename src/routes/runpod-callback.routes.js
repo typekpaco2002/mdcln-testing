@@ -14,7 +14,10 @@ import { extractUpscalerImage } from "../services/upscaler.service.js";
 import { extractModelCloneXImages } from "../services/modelcloneX.service.js";
 import { parseRunpodHandlerOutput } from "../services/img2img.service.js";
 import { extractNsfwMotionVideo, materializeNsfwMotionOutputFromRunpodResponse } from "../services/nsfw-motion.service.js";
-import { materializeNsfwMotionRunpodVideoOutput } from "../services/nsfw-motion-runpod.service.js";
+import {
+  materializeNsfwMotionRunpodVideoOutput,
+  forceReconcileRunpodMotionRow,
+} from "../services/nsfw-motion-runpod.service.js";
 import { uploadBufferToBlobOrR2 } from "../utils/kieUpload.js";
 import { scheduleIntegratorGenerationWebhook } from "../lib/integrator-generation-webhook.js";
 
@@ -349,17 +352,40 @@ async function handleRunpodCallback(req, res) {
       }
 
       if (st === "COMPLETED") {
-        // Dispatch by row provider: the RunPod worker returns base64 mp4
-        // (handler.py `videos[].base64`), RH returns COS URLs. Legacy rows
-        // without a `provider` value default to RH (pre-provider-field).
+        // Dispatch by row provider: RH returns COS URLs, the RunPod worker
+        // returns either { output_url: "..." } (preferred, presigned R2 PUT)
+        // or { videos:[{ base64 }] } (legacy fallback). Legacy rows without a
+        // `provider` value default to RH (pre-provider-field).
         const isRunpodMotion = String(motionGen.provider || "").toLowerCase() === "runpod-motion";
         const materializer = isRunpodMotion
-          ? materializeNsfwMotionRunpodVideoOutput
+          ? (payload) => materializeNsfwMotionRunpodVideoOutput(payload, { generationId: motionGen.id })
           : materializeNsfwMotionOutputFromRunpodResponse;
         let outputUrl = await materializer(rawOut);
         if (!outputUrl) {
           outputUrl = await materializer(body);
         }
+
+        // LAST-RESORT FALLBACK (RunPod path only): the webhook payload was
+        // unusable (e.g. Vercel edge truncated a >4.5 MB body). Re-fetch
+        // /status from a long-lived poll path so we still recover the video.
+        if (!outputUrl && isRunpodMotion) {
+          console.warn(
+            `[RunPod webhook] motion-video ${motionGen.id} inline payload empty — ` +
+            `falling back to /status re-fetch (webhook body likely truncated by proxy)`,
+          );
+          try {
+            const recovery = await forceReconcileRunpodMotionRow(motionGen);
+            if (recovery.status === "completed" && recovery.outputUrl) {
+              outputUrl = recovery.outputUrl;
+            } else if (recovery.status === "still_running") {
+              console.log(`[RunPod webhook] /status says still running for ${motionGen.id} — leaving row in processing`);
+              return res.status(200).json({ ok: true, type: motionGen.type, skipped: true, reason: "still_running_per_status" });
+            }
+          } catch (e) {
+            console.warn(`[RunPod webhook] /status fallback failed for ${motionGen.id}: ${e?.message || e}`);
+          }
+        }
+
         if (!outputUrl) {
           const msg = "RunPod motion job completed but returned no video (or upload failed)";
           console.warn(
@@ -367,6 +393,8 @@ async function handleRunpodCallback(req, res) {
             `provider=${motionGen.provider || "(legacy)"} ` +
             `outType=${rawOut == null ? "null" : typeof rawOut} bodyKeys=${
               body && typeof body === "object" ? Object.keys(body).slice(0, 14).join(",") : ""
+            } outKeys=${
+              rawOut && typeof rawOut === "object" ? Object.keys(rawOut).slice(0, 14).join(",") : ""
             }`,
           );
           await refundGeneration(motionGen.id).catch(() => {});
@@ -382,6 +410,7 @@ async function handleRunpodCallback(req, res) {
           where: { id: motionGen.id },
           data: { status: "completed", outputUrl, completedAt: new Date() },
         });
+        scheduleIntegratorGenerationWebhook(motionGen.id);
         console.log(`✅ [RunPod webhook] motion-video job ${motionGen.id} completed → ${outputUrl.slice(0, 80)}`);
         return res.status(200).json({ ok: true, type: motionGen.type });
       }

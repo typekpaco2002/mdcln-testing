@@ -3,7 +3,7 @@
 > Auto-built by **`npm run docs:registry`**. Matches **literal** path strings only (e.g. `router.get('/path')`).
 > Dynamic paths, template literals, or multi-line route definitions may be missing — add manual rows in `docs/COVERAGE_INDEX.md`.
 
-**Generated at:** 2026-05-16T20:50:35.658Z
+**Generated at:** 2026-05-17T16:37:37.506Z
 
 | Verb | Path | Source file |
 |------|------|-------------|
@@ -51,6 +51,7 @@
 | GET | `/prompt-templates` | `src/routes/admin.routes.js` |
 | PUT | `/prompt-templates` | `src/routes/admin.routes.js` |
 | GET | `/provider-balances` | `src/routes/admin.routes.js` |
+| POST | `/runpod-motion/reconcile/:generationId` | `src/routes/admin.routes.js` |
 | POST | `/runpod/batch-reconcile` | `src/routes/admin.routes.js` |
 | GET | `/safety-checker-config` | `src/routes/admin.routes.js` |
 | PUT | `/safety-checker-config` | `src/routes/admin.routes.js` |
@@ -445,4 +446,4 @@
 
 ## Count
 
-- **Entries:** 435
+- **Entries:** 436
