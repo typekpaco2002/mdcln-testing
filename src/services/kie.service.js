@@ -780,17 +780,20 @@ async function generateImageWithNanoBananaKieInternal(images, prompt, options = 
     throw new Error(validation.message);
   }
 
+  const seedRaw = Number(options.seed);
+  const includeSeed = Number.isInteger(seedRaw) && seedRaw >= 0;
+
   const modelName = "nano-banana-pro";
+  const input = {
+    prompt,
+    image_input: images.slice(0, 8),
+    aspect_ratio: options.aspectRatio || "9:16",
+    resolution: options.resolution || "1K",
+  };
+  if (includeSeed) input.seed = seedRaw;
+
   const result = await kieRun(
-    {
-      model: modelName,
-      input: {
-        prompt,
-        image_input: images.slice(0, 8),
-        aspect_ratio: options.aspectRatio || "9:16",
-        resolution: options.resolution || "1K",
-      },
-    },
+    { model: modelName, input },
     modelName,
     KIE_POLL_TIMEOUT_IMAGE_MS,
     { onTaskCreated: options.onTaskCreated, forcePolling: options.forcePolling },
@@ -800,20 +803,26 @@ async function generateImageWithNanoBananaKieInternal(images, prompt, options = 
 
 /**
  * Nano Banana Pro — text-to-image (no identity images). Uses Pro model for best quality.
+ * Pass `options.seed` (32-bit non-negative integer) to vary generations of
+ * similar prompts; omit for KIE/Gemini default seed behavior.
  */
 async function generateTextToImageNanoBananaKieInternal(prompt, options = {}) {
   prompt = truncatePromptSafe(prompt);
   const modelName = "nano-banana-pro";
   console.log(`[KIE/${modelName}] text-to-image prompt="${prompt.slice(0, 80)}"`);
+
+  const seedRaw = Number(options.seed);
+  const includeSeed = Number.isInteger(seedRaw) && seedRaw >= 0;
+
+  const input = {
+    prompt,
+    aspect_ratio: options.aspectRatio || "1:1",
+    resolution: options.resolution || "1K",
+  };
+  if (includeSeed) input.seed = seedRaw;
+
   const result = await kieRun(
-    {
-      model: modelName,
-      input: {
-        prompt,
-        aspect_ratio: options.aspectRatio || "1:1",
-        resolution: options.resolution || "1K",
-      },
-    },
+    { model: modelName, input },
     modelName,
     KIE_POLL_TIMEOUT_IMAGE_MS,
     { forcePolling: options.forcePolling, onTaskCreated: options.onTaskCreated },

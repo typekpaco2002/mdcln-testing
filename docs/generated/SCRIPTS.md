@@ -1,6 +1,6 @@
 # Generated: Repository scripts
 
-**Generated at:** 2026-05-17T18:38:30.845Z
+**Generated at:** 2026-05-17T18:57:26.174Z
 
 Extensions: `.js, .mjs, .cjs, .ts, .mts, .cts, .py, .sql, .sh, .json, .md` — under `scripts/` only.
 

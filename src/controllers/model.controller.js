@@ -11,6 +11,7 @@ import {
   isExplicitContentError,
 } from "../services/wavespeed.service.js";
 import { generateImageWithNanoBananaKie, getKieCallbackUrl } from "../services/kie.service.js";
+import { randomNanoBananaSeed } from "../services/wavespeed.service.js";
 import {
   checkAndExpireCredits,
   getTotalCredits,
@@ -1702,7 +1703,10 @@ export async function generateAdvancedModel(req, res) {
       : gender ? { gender } : {};
     const appearancePrefix = buildAppearancePrefix({ savedAppearance: appearanceForPrompt, age: modelAge });
 
-    const PHOTO_ASPECTS = ["1:1", "3:4", "9:16"];
+    // Aspect ratios per pose. These match the canonical operation defaults
+    // for selfie (3:4), editorial_portrait (4:5), and editorial_full_body
+    // (2:3) so the enhancer recipe and the actual KIE framing agree.
+    const PHOTO_ASPECTS = ["3:4", "4:5", "2:3"];
 
     // INSTARAW-style anchors — "using reference image 1 for ultimate character consistency"
     // is the exact phrase Nano Banana Pro responds to by locking onto the identity photo.
@@ -1802,6 +1806,7 @@ export async function generateAdvancedModel(req, res) {
         model: "nano-banana-pro",
         resolution: "2K",
         aspectRatio: cfg0.aspectRatio,
+        seed: randomNanoBananaSeed(),
         onTaskCreated: async (taskId) => {
           await registerKieTask(taskId, "saved_model_photo", model.id, "photo1", userId, {
             flow: "advanced-model",

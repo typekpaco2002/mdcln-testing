@@ -14,7 +14,22 @@ import {
   buildModelSelfiePrompt,
   buildModelPortraitPrompt,
   buildModelFullBodyPrompt,
+  normalizeNanoBananaOperation,
+  aspectForNanoBananaOperation,
 } from "./nanobanana-prompt.service.js";
+
+/**
+ * Nano Banana / Gemini 3 Pro Image accepts a 32-bit unsigned seed.
+ * Passing a fresh random seed per generation prevents Nano Banana from
+ * collapsing similar prompts to similar faces — a known failure mode when
+ * the same seed (or no seed) is reused across the 4 model-preview photos.
+ *
+ * Call this once per image generation and pass the result to both the
+ * KIE call (so the model itself uses it) and any logs/debugging.
+ */
+export function randomNanoBananaSeed() {
+  return Math.floor(Math.random() * 2_147_483_647);
+}
 
 /**
  * Image APIs (Google/KIE) reject prompts that imply minors. Never emit ages under 18 in provider-facing text.
@@ -89,9 +104,24 @@ export async function optimizeNanoBananaPrompt(basePrompt, context = {}) {
   const refs = Number.parseInt(String(context.referenceCount ?? 0), 10);
   const hasReferenceImages = Number.isFinite(refs) && refs > 0;
 
+  // Normalize legacy operation aliases (ai-model-reference, ai-model-selfie,
+  // ai-model-portrait, ai-model-fullbody, etc.) down to the canonical
+  // taxonomy understood by the master system prompts.
+  const rawOperation = String(context.operation || "").trim();
+  const canonicalOperation = normalizeNanoBananaOperation(rawOperation);
+
+  // Derive aspect ratio from operation when caller didn't pick one. Caller
+  // overrides win — pass an explicit aspectRatio if a specific framing is
+  // required (e.g. 9:16 for vertical full-body even though the operation's
+  // natural ratio is 2:3).
+  const callerAspect = String(context.aspectRatio || "").trim();
+  const resolvedAspect = callerAspect || aspectForNanoBananaOperation(canonicalOperation);
+
   // Route by mode:
-  // - edit/img2img (has refs): INSTARAW edit prompt (reference-image anchor + reimagined sections)
-  // - text-to-image (0 refs): dedicated portrait system that forbids reference-only phrasing
+  // - edit/img2img (has refs): edit-mode master prompt with identity-anchor +
+  //   "reimagined" requirements + operation lookup.
+  // - text-to-image (0 refs): T2I master prompt with operation lookup and
+  //   universal quality bar; "reference image" / "reimagined" forbidden.
   const systemTemplateKey = hasReferenceImages
     ? "nanoBananaModelPromptEnhancerSystem"
     : "nanoBananaTextToImagePromptEnhancerSystem";
@@ -106,40 +136,58 @@ export async function optimizeNanoBananaPrompt(basePrompt, context = {}) {
     systemPrompt = systemFallback;
   }
   // Operation-specific addendum injected after the base system prompt.
-  const op = String(context.operation || "general");
   const operationAddendum = [
     "",
     "",
     "Operation-specific guidance for this call:",
     `- mode: ${hasReferenceImages ? "image-edit-with-references" : "text-to-image-no-reference"}`,
-    `- operation: ${op}`,
-    `- aspect ratio: ${String(context.aspectRatio || "unspecified")}`,
+    `- operation (canonical): ${canonicalOperation}`,
+    rawOperation && rawOperation !== canonicalOperation
+      ? `- operation (caller raw): ${rawOperation}`
+      : "",
+    `- aspect ratio: ${resolvedAspect}`,
     `- resolution: ${String(context.resolution || "2K")}`,
     `- reference images provided: ${String(context.referenceCount || 0)}`,
-    op === "ai-model-selfie"
-      ? "- ENFORCE: palm/arm-length first-person selfie POV, no visible phone, no mirror, no second photographer."
+    canonicalOperation === "selfie"
+      ? "- ENFORCE: first-person selfie POV with implied or visible extended arm; phone camera character (no 85mm, no shallow bokeh)."
       : "",
-    op === "ai-model-fullbody"
-      ? "- ENFORCE: full figure visible from crown to toes, include explicit footwear in outfit description."
+    canonicalOperation === "mirror_selfie"
+      ? "- ENFORCE: subject visible in a mirror with phone in hand or covering face partially, real mirror with frame edges and smudges, room context reflected."
+      : "",
+    canonicalOperation === "editorial_full_body"
+      ? "- ENFORCE: full figure visible from crown to toes, include explicit footwear in outfit description, location with character."
+      : "",
+    canonicalOperation === "identity_plate"
+      ? "- ENFORCE: face occupies 50-60% of frame; alive but composed expression (NOT blank neutral); clean but not pure white background."
       : "",
     !hasReferenceImages
       ? "- STRICT: do not mention 'reference image', 'reimagined', or edit-only language."
-      : "",
-    !hasReferenceImages
-      ? "- STRICT: preserve every explicit identity marker in the prompt (heritage, age, hair color/length/texture, eye color, lip size, face type, body type)."
-      : "",
+      : "- STRICT: include the identity-anchor sentence and tag every changed scene element with 'reimagined' per the Identity Lock section.",
+    "- STRICT: preserve every explicit identity marker in the prompt (heritage, age, hair color/length/texture, eye color, lip size, face type, body type).",
+    "- STRICT: enforce the Universal Quality Bar — distinctiveness, asymmetries, real skin texture, alive expression. Reject the AI-headshot stock look.",
   ]
     .filter(Boolean)
     .join("\n");
   systemPrompt = `${systemPrompt}${operationAddendum}`;
 
-  const defaultWrapperEdit = `Convert the following base instruction into a complete INSTARAW-style image edit instruction for Nano Banana Pro. Follow the mandatory structure in your system prompt exactly. Preserve all identity and reference constraints.
+  const defaultWrapperEdit = `Operation: {{OPERATION}}
+Aspect ratio: {{ASPECT_RATIO}}
+Reference images: {{REFERENCE_COUNT}}
+
+Convert the following base instruction into a complete image-edit prompt for Nano Banana Pro, following the operation recipe and Identity Lock requirements in your system prompt.
+Requirements:
+- Preserve every identity marker exactly.
+- Include the identity-anchor phrase ("using reference image 1 for ultimate character consistency...").
+- Tag every changed scene element with "reimagined".
+- Output one dense natural-language paragraph only.
 
 Base instruction:
 {{PROMPT}}
 `;
-  const defaultWrapperT2I = `Convert the following base instruction into a complete text-to-image portrait prompt for Nano Banana Pro.
+  const defaultWrapperT2I = `Operation: {{OPERATION}}
+Aspect ratio: {{ASPECT_RATIO}}
 
+Convert the following base instruction into a complete text-to-image prompt for Nano Banana Pro, following the operation recipe and Universal Quality Bar in your system prompt.
 Requirements:
 - Preserve every identity marker exactly.
 - Do not mention reference images.
@@ -156,8 +204,9 @@ Base instruction:
     hasReferenceImages ? defaultWrapperEdit : defaultWrapperT2I,
   );
   const userMessage = String(wrapperTemplate || "")
-    .replaceAll("{{OPERATION}}", String(context.operation || "general"))
-    .replaceAll("{{ASPECT_RATIO}}", String(context.aspectRatio || "unspecified"))
+    .replaceAll("{{OPERATION}}", canonicalOperation)
+    .replaceAll("{{OPERATION_RAW}}", rawOperation || canonicalOperation)
+    .replaceAll("{{ASPECT_RATIO}}", resolvedAspect)
     .replaceAll("{{RESOLUTION}}", String(context.resolution || "2K"))
     .replaceAll("{{REFERENCE_COUNT}}", String(context.referenceCount || 0))
     .replaceAll("{{PROMPT}}", promptText);
@@ -171,8 +220,11 @@ Base instruction:
       },
       body: JSON.stringify({
         model: NANO_BANANA_PROMPT_ENHANCER_MODEL,
-        max_tokens: 900,
-        temperature: 0.4,
+        max_tokens: 1100,
+        // 0.85 (was 0.4) — at 0.4 the enhancer converges to near-identical
+        // paragraph shapes regardless of input; 0.85 gives the variance the
+        // Universal Quality Bar needs to deliver distinct faces / outputs.
+        temperature: 0.85,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -184,9 +236,9 @@ Base instruction:
     const candidate = extractSinglePromptText(data?.choices?.[0]?.message?.content);
     let optimized = candidate || promptText;
 
-    // Safety rail for phase-1 face generation: if the optimizer still returns
-    // edit-only wording, drop back to the raw base prompt rather than shipping
-    // contradictory instructions that cause generic faces.
+    // Safety rail for T2I: if the optimizer still returns edit-only wording,
+    // drop back to the raw base prompt rather than shipping contradictory
+    // instructions that cause generic faces.
     if (
       !hasReferenceImages &&
       /reference image|reference photo|\breimagined\b/i.test(optimized)
@@ -197,7 +249,7 @@ Base instruction:
     if (String(process.env.MODEL_PROMPT_DEBUG || "").toLowerCase() === "true") {
       const changed = optimized !== promptText;
       console.log(
-        `[nano-banana-prompt-opt] op=${context.operation || "general"} changed=${changed} refs=${context.referenceCount || 0} ar=${context.aspectRatio || "?"} res=${context.resolution || "?"}`,
+        `[nano-banana-prompt-opt] op=${canonicalOperation} (raw=${rawOperation || "—"}) changed=${changed} refs=${context.referenceCount || 0} ar=${resolvedAspect} res=${context.resolution || "?"}`,
       );
       if (changed) {
         console.log(`[nano-banana-prompt-opt][raw] ${promptText}`);
@@ -902,6 +954,7 @@ async function generateTextToImage(prompt, options = {}) {
     resolution: options.resolution || "2K",
     outputFormat: options.outputFormat || "png",
     forcePolling: options.forcePolling,
+    seed: options.seed,
   });
 }
 
@@ -1004,8 +1057,16 @@ async function generateReferenceImage(params, opts = {}) {
     // Realistic skin texture - visible pores but no acne
     const skinTexture = "natural skin texture with visible pores, clear skin without acne, healthy glowing skin";
     
+    // Base "blueprint" — concrete identity traits only. All quality language
+    // (camera character, skin texture, lighting, distinctiveness, asymmetry,
+    // anti-stock guardrails) is owned by the enhancer system prompt now.
+    // Hardcoding "photorealistic, high quality, masterpiece" style cruft was
+    // actively hurting Gemini 3 Pro Image output — those tokens override the
+    // enhancer's Universal Quality Bar and push toward the stock AI-headshot
+    // aesthetic. The enhancer (INSTARAW_NANO_BANANA_TEXT_TO_IMAGE_SYSTEM)
+    // adds the real quality language matched to the operation recipe.
     const defaultBaseTemplate = [
-      "beautiful portrait photo of {{ARTICLE}} {{SUBJECT}}",
+      "{{ARTICLE}} {{SUBJECT}}",
       "{{HERITAGE_TEXT}}",
       "{{FACE_TYPE_TEXT}}",
       "{{HAIR_TEXT}}",
@@ -1015,8 +1076,6 @@ async function generateReferenceImage(params, opts = {}) {
       "{{STYLE_TEXT}}",
       "{{SAVED_APPEARANCE_TEXT}}",
       "{{REFERENCE_PROMPT}}",
-      "high quality, detailed face, clear features, photorealistic, attractive",
-      "{{SKIN_TEXTURE}}",
     ].join(", ");
     const baseTemplate = await getPromptTemplateValue(
       "nanoBananaModelReferenceBasePrompt",
@@ -1041,13 +1100,21 @@ async function generateReferenceImage(params, opts = {}) {
 
     // Generate reference image
     console.log("\nðŸ“ Generating reference image...");
-    const finalPromptRaw = `${basePrompt}, face portrait, looking at camera, neutral background, high-detail facial anatomy, non-generic facial structure, realistic asymmetry, visible iris texture, natural skin pores, no beauty-filter smoothing, avoid default stock-photo face`;
-    const finalPrompt = await optimizeNanoBananaPrompt(finalPromptRaw, {
+    // The enhancer reads `operation: ai-model-reference` (normalized to
+    // identity_plate) from the addendum and applies the identity-plate recipe
+    // + Universal Quality Bar. Do NOT append a hardcoded quality tail here —
+    // it would compete with and override the enhancer's output.
+    const finalPrompt = await optimizeNanoBananaPrompt(basePrompt, {
       operation: "ai-model-reference",
       aspectRatio: "1:1",
       resolution: "2K",
       referenceCount: 0,
     });
+
+    // Fresh random seed prevents Nano Banana from collapsing similar prompts
+    // to similar faces — critical for the AI-model creation flow where every
+    // identity must look distinct from every other AI-generated model.
+    const seed = randomNanoBananaSeed();
 
     // Paid create-model flow: poll KIE in-process. Onboarding trial: defer — result via KIE webhook (Vercel timeout safe).
     if (deferred) {
@@ -1064,6 +1131,7 @@ async function generateReferenceImage(params, opts = {}) {
         resolution: "2K",
         outputFormat: "png",
         forcePolling: false,
+        seed,
         onTaskCreated: typeof opts.onTaskCreated === "function" ? opts.onTaskCreated : undefined,
       });
 
@@ -1075,7 +1143,7 @@ async function generateReferenceImage(params, opts = {}) {
       if (!referenceResult.deferred || !referenceResult.taskId) {
         throw new Error(referenceResult.error || "KIE did not return a task id for deferred reference");
       }
-      console.log(`✅ Reference image job submitted (deferred): task ${referenceResult.taskId}`);
+      console.log(`✅ Reference image job submitted (deferred): task ${referenceResult.taskId}, seed=${seed}`);
       return {
         success: true,
         deferred: true,
@@ -1087,6 +1155,7 @@ async function generateReferenceImage(params, opts = {}) {
     const referenceResult = await generateTextToImage(finalPrompt, {
       aspectRatio: "1:1",
       forcePolling: true,
+      seed,
     });
 
     if (!referenceResult.success) {
@@ -1140,17 +1209,21 @@ async function generateModelPosesFromReference(
     console.log("\nðŸ“ STEP 1/3: Generating close-up selfie (kie.ai Nano Banana Pro)...");
     const prebuiltPrompts = await buildModelPosesPrompts(referenceImageUrl, options);
     const selfiePromptRaw = prebuiltPrompts.selfiePrompt;
+    // ai-model-selfie alias → canonical `selfie` op (phone POV, ambient, lived-in bg).
     const selfiePrompt = await optimizeNanoBananaPrompt(selfiePromptRaw, {
       operation: "ai-model-selfie",
-      aspectRatio: "1:1",
+      aspectRatio: "3:4",
       resolution: "2K",
       referenceCount: 1,
     });
 
+    // Fresh per-photo seeds — Nano Banana otherwise collapses the 3 preview
+    // photos toward the same face/composition when called back-to-back.
+    const selfieSeed = randomNanoBananaSeed();
     const selfieResult = await generateImageWithNanoBananaKie(
       [referenceImageUrl],
       selfiePrompt,
-      { model: "nano-banana-pro", resolution: "2K", aspectRatio: "1:1", forcePolling: true },
+      { model: "nano-banana-pro", resolution: "2K", aspectRatio: "3:4", forcePolling: true, seed: selfieSeed },
     );
 
     if (!selfieResult.success) {
@@ -1160,7 +1233,7 @@ async function generateModelPosesFromReference(
     }
 
     const photo1Url = selfieResult.outputUrl;
-    console.log(`âœ… Close-up selfie generated: ${photo1Url}`);
+    console.log(`âœ… Close-up selfie generated: ${photo1Url} (seed=${selfieSeed})`);
 
 
     // STEPS 2 + 3 in parallel: both use [referenceImage, selfie] as identity anchors.
@@ -1169,31 +1242,35 @@ async function generateModelPosesFromReference(
 
     const portraitPromptRaw = prebuiltPrompts.portraitPrompt;
     const fullBodyPromptRaw = prebuiltPrompts.fullBodyPrompt;
+    // ai-model-portrait → canonical `editorial_portrait` (art-directed, single
+    // lighting setup, textured backdrop). ai-model-fullbody → `editorial_full_body`.
     const [portraitPrompt, fullBodyPrompt] = await Promise.all([
       optimizeNanoBananaPrompt(portraitPromptRaw, {
         operation: "ai-model-portrait",
-        aspectRatio: "3:4",
+        aspectRatio: "4:5",
         resolution: "2K",
         referenceCount: 2,
       }),
       optimizeNanoBananaPrompt(fullBodyPromptRaw, {
         operation: "ai-model-fullbody",
-        aspectRatio: "9:16",
+        aspectRatio: "2:3",
         resolution: "2K",
         referenceCount: 2,
       }),
     ]);
 
+    const portraitSeed = randomNanoBananaSeed();
+    const fullBodySeed = randomNanoBananaSeed();
     const [portraitResult, fullBodyResult] = await Promise.all([
       generateImageWithNanoBananaKie(
         [referenceImageUrl, photo1Url],
         portraitPrompt,
-        { model: "nano-banana-pro", resolution: "2K", aspectRatio: "3:4", forcePolling: true },
+        { model: "nano-banana-pro", resolution: "2K", aspectRatio: "4:5", forcePolling: true, seed: portraitSeed },
       ),
       generateImageWithNanoBananaKie(
         [referenceImageUrl, photo1Url],
         fullBodyPrompt,
-        { model: "nano-banana-pro", resolution: "2K", aspectRatio: "9:16", forcePolling: true },
+        { model: "nano-banana-pro", resolution: "2K", aspectRatio: "2:3", forcePolling: true, seed: fullBodySeed },
       ),
     ]);
 
@@ -1206,8 +1283,8 @@ async function generateModelPosesFromReference(
 
     const photo2Url = portraitResult.outputUrl;
     const photo3Url = fullBodyResult.outputUrl;
-    console.log(`[poses] Steps 2+3 done - portrait: ${photo2Url}`);
-    console.log(`[poses] Steps 2+3 done - fullbody: ${photo3Url}`);
+    console.log(`[poses] Steps 2+3 done - portrait: ${photo2Url} (seed=${portraitSeed})`);
+    console.log(`[poses] Steps 2+3 done - fullbody: ${photo3Url} (seed=${fullBodySeed})`);
     console.log(`âœ… Full body shot generated: ${photo3Url}`);
 
     console.log("\nðŸŽ‰ ============================================");
@@ -1468,18 +1545,22 @@ async function generateTwoPosesFromReference(
 
     // STEP 1: Generate portrait (3/4 angle) - this will be photo2
     console.log("\nðŸ“ STEP 1/2: Generating portrait pose (kie.ai Nano Banana Pro)...");
-    const portraitPromptRaw = `Using image 1 as identity reference, create a 3/4 angle portrait of this exact same person. Keep the exact same face, facial features, hair color, eye color. Captivating look, studio lighting. ${baseEnhancement}. High quality, photorealistic, natural skin texture with visible pores, clear skin without acne.`;
+    // Identity-preserving 3/4-angle portrait. Quality language is owned by
+    // the enhancer (editorial_portrait recipe); we only inject identity +
+    // styling. No "photorealistic", "high quality", "perfect skin" cruft.
+    const portraitPromptRaw = `3/4 angle portrait of the same person from the identity reference. Captivating look. ${baseEnhancement}.`;
     const portraitPrompt = await optimizeNanoBananaPrompt(portraitPromptRaw, {
       operation: "ai-model-portrait",
-      aspectRatio: "3:4",
+      aspectRatio: "4:5",
       resolution: "2K",
       referenceCount: 1,
     });
 
+    const portraitSeed = randomNanoBananaSeed();
     const portraitResult = await generateImageWithNanoBananaKie(
       [referenceImageUrl],
       portraitPrompt,
-      { model: "nano-banana-pro", resolution: "2K", aspectRatio: "3:4", forcePolling: true },
+      { model: "nano-banana-pro", resolution: "2K", aspectRatio: "4:5", forcePolling: true, seed: portraitSeed },
     );
 
     if (!portraitResult.success) {
@@ -1936,22 +2017,24 @@ export async function optimizeModelPosesPromptBundle(prompts = {}) {
   const portraitPromptRaw = String(prompts.portraitPrompt || "").trim();
   const fullBodyPromptRaw = String(prompts.fullBodyPrompt || "").trim();
 
+  // Aspects here mirror the canonical operation defaults so prebuilt prompts
+  // match the live `generateModelPosesFromReference` pipeline.
   const [selfiePrompt, portraitPrompt, fullBodyPrompt] = await Promise.all([
     optimizeNanoBananaPrompt(selfiePromptRaw, {
       operation: "ai-model-selfie",
-      aspectRatio: "1:1",
+      aspectRatio: "3:4",
       resolution: "2K",
       referenceCount: 1,
     }),
     optimizeNanoBananaPrompt(portraitPromptRaw, {
       operation: "ai-model-portrait",
-      aspectRatio: "3:4",
+      aspectRatio: "4:5",
       resolution: "2K",
       referenceCount: 2,
     }),
     optimizeNanoBananaPrompt(fullBodyPromptRaw, {
       operation: "ai-model-fullbody",
-      aspectRatio: "9:16",
+      aspectRatio: "2:3",
       resolution: "2K",
       referenceCount: 2,
     }),

@@ -12,6 +12,7 @@ import { deleteBlobAfterKie, mirrorProviderOutputUrl } from "../utils/kieUpload.
 import { runPipelineContinuation } from "../services/kie-pipeline-continuation.service.js";
 import { getErrorMessageForDb } from "../lib/userError.js";
 import { generateImageWithNanoBananaKie, submitSoraWatermarkRemoverTask } from "../services/kie.service.js";
+import { randomNanoBananaSeed } from "../services/wavespeed.service.js";
 import { enqueueGenerationBlobRemirror } from "../services/blob-remirror-queue.service.js";
 import { persistKieGenerationCorrelation } from "../utils/kieTaskCorrelation.js";
 
@@ -465,7 +466,8 @@ router.post("/", express.raw({ type: () => true, limit: "1mb" }), async (req, re
               generateImageWithNanoBananaKie([referenceUrl, finalUrl], portraitPrompt, {
                 model: "nano-banana-pro",
                 resolution: "2K",
-                aspectRatio: "3:4",
+                aspectRatio: "4:5",
+                seed: randomNanoBananaSeed(),
                 onTaskCreated: async (newTaskId) => {
                   await upsertKieTask(newTaskId, "saved_model_photo", model.id, "photo2", model.userId, { flow: "model-poses" });
                 },
@@ -473,7 +475,8 @@ router.post("/", express.raw({ type: () => true, limit: "1mb" }), async (req, re
               generateImageWithNanoBananaKie([referenceUrl, finalUrl], fullBodyPrompt, {
                 model: "nano-banana-pro",
                 resolution: "2K",
-                aspectRatio: "9:16",
+                aspectRatio: "2:3",
+                seed: randomNanoBananaSeed(),
                 onTaskCreated: async (newTaskId) => {
                   await upsertKieTask(newTaskId, "saved_model_photo", model.id, "photo3", model.userId, { flow: "model-poses" });
                 },
@@ -505,6 +508,7 @@ router.post("/", express.raw({ type: () => true, limit: "1mb" }), async (req, re
             model: "nano-banana-pro",
             resolution: "2K",
             aspectRatio: cfg1.aspectRatio,
+            seed: randomNanoBananaSeed(),
             onTaskCreated: async (newTaskId) => {
               await upsertKieTask(newTaskId, "saved_model_photo", model.id, "photo2", model.userId, { flow: "advanced-model" });
             },
@@ -539,6 +543,7 @@ router.post("/", express.raw({ type: () => true, limit: "1mb" }), async (req, re
               model: "nano-banana-pro",
               resolution: "2K",
               aspectRatio: cfg2.aspectRatio,
+              seed: randomNanoBananaSeed(),
               onTaskCreated: async (newTaskId) => {
                 await upsertKieTask(newTaskId, "saved_model_photo", model.id, "photo3", model.userId, { flow: "advanced-model" });
               },
