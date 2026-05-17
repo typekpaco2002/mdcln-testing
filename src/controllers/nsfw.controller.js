@@ -2360,18 +2360,40 @@ export async function trainLora(req, res) {
       });
     }
 
-    await deductCredits(userId, creditsNeeded);
-    creditsDeducted = creditsNeeded;
-    console.log(`💳 Deducted ${creditsNeeded} credits for LoRA training`);
-
     const triggerWord = generateTriggerWord(model.name);
     console.log(`🔑 Generated trigger word: ${triggerWord}`);
 
-    // Lock immediately before long-running preprocessing (captioning + ZIP creation)
-    // so duplicate submissions cannot start parallel trainings for the same LoRA.
+    // ───────────────────────────────────────────────────────────────────────
+    // ATOMIC CLAIM — must happen BEFORE deductCredits.
+    //
+    // Original flow (BUG): we read targetLora.status, decided "not training",
+    // ran ~70 lines of validation, deducted credits, THEN flipped status to
+    // "training" with a non-conditional update. A fast double-click both
+    // passed the read-side check, both atomically deducted credits, both
+    // wrote "training" + a fresh falRequestId — so only the LAST request's
+    // requestId survived in the DB. When fal's webhook for the FIRST request
+    // arrived, `findFirst({falRequestId, status:"training"})` returned null
+    // → no refund. Net effect: silent double-charge. (Daniel: 2000+ → 40,
+    // 5/17/2026.)
+    //
+    // Fix: claim the row atomically with updateMany filtered by status; if
+    // the count is 0 someone else already claimed it (or it's already ready)
+    // and we bail BEFORE touching credits. If the credit deduct then fails
+    // for any reason, revert the status back to its previous value so the
+    // user can retry.
+    // ───────────────────────────────────────────────────────────────────────
+    let previousLoraStatus = null;
+    let previousLoraTriggerWord = null;
     if (targetLoraId) {
-      await prisma.trainedLora.update({
-        where: { id: targetLoraId },
+      previousLoraStatus = targetLora?.status ?? "draft";
+      previousLoraTriggerWord = targetLora?.triggerWord ?? null;
+      const claim = await prisma.trainedLora.updateMany({
+        where: {
+          id: targetLoraId,
+          modelId,
+          // Anything except training/ready is fair game (draft, failed, etc.).
+          status: { notIn: ["training", "ready"] },
+        },
         data: {
           status: "training",
           triggerWord,
@@ -2379,10 +2401,35 @@ export async function trainLora(req, res) {
           error: null,
         },
       });
+      if (claim.count === 0) {
+        // Someone else claimed it between our read and this write, OR it
+        // already transitioned to "ready". Re-fetch for a precise message.
+        const fresh = await prisma.trainedLora.findUnique({
+          where: { id: targetLoraId },
+          select: { status: true },
+        });
+        const isAlreadyTraining = fresh?.status === "training";
+        return res.status(409).json({
+          success: false,
+          code: isAlreadyTraining ? "LORA_TRAINING_IN_PROGRESS" : "LORA_NOT_CLAIMABLE",
+          message: isAlreadyTraining
+            ? "A training run for this LoRA is already in progress."
+            : "LoRA cannot be trained in its current state.",
+        });
+      }
       await syncLegacyLoraFields(modelId, targetLoraId);
     } else {
-      await prisma.savedModel.update({
-        where: { id: modelId },
+      previousLoraStatus = model.loraStatus ?? null;
+      previousLoraTriggerWord = model.loraTriggerWord ?? null;
+      const claim = await prisma.savedModel.updateMany({
+        where: {
+          id: modelId,
+          userId,
+          OR: [
+            { loraStatus: null },
+            { loraStatus: { notIn: ["training", "ready"] } },
+          ],
+        },
         data: {
           loraStatus: "training",
           loraTriggerWord: triggerWord,
@@ -2390,6 +2437,57 @@ export async function trainLora(req, res) {
           loraError: null,
         },
       });
+      if (claim.count === 0) {
+        const fresh = await prisma.savedModel.findUnique({
+          where: { id: modelId },
+          select: { loraStatus: true },
+        });
+        const isAlreadyTraining = fresh?.loraStatus === "training";
+        return res.status(409).json({
+          success: false,
+          code: isAlreadyTraining ? "LORA_TRAINING_IN_PROGRESS" : "LORA_NOT_CLAIMABLE",
+          message: isAlreadyTraining
+            ? "A training run for this model is already in progress."
+            : "Model LoRA cannot be trained in its current state.",
+        });
+      }
+    }
+
+    // Claim acquired — now safe to charge. If anything below fails we revert
+    // the status in the catch (already does refundCredits + status flip).
+    try {
+      await deductCredits(userId, creditsNeeded);
+      creditsDeducted = creditsNeeded;
+      console.log(`💳 Deducted ${creditsNeeded} credits for LoRA training (claim secured)`);
+    } catch (deductErr) {
+      // Revert claim so the user can retry without being locked out.
+      try {
+        if (targetLoraId) {
+          await prisma.trainedLora.update({
+            where: { id: targetLoraId },
+            data: {
+              status: previousLoraStatus || "draft",
+              triggerWord: previousLoraTriggerWord,
+              falRequestId: null,
+              error: null,
+            },
+          });
+          await syncLegacyLoraFields(modelId, targetLoraId);
+        } else {
+          await prisma.savedModel.update({
+            where: { id: modelId },
+            data: {
+              loraStatus: previousLoraStatus,
+              loraTriggerWord: previousLoraTriggerWord,
+              loraFalRequestId: null,
+              loraError: null,
+            },
+          });
+        }
+      } catch (revertErr) {
+        console.error("⚠️ Train LoRA: failed to revert claim after deduct error:", revertErr?.message);
+      }
+      throw deductErr;
     }
 
     let imageUrls;

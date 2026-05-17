@@ -2,7 +2,7 @@
 
 **Schema:** `prisma/schema.prisma`
 
-**Generated at:** 2026-05-17T16:43:24.883Z
+**Generated at:** 2026-05-17T17:03:54.735Z
 
 ## Models (54)
 

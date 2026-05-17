@@ -272,8 +272,18 @@ router.post(
         return res.status(200).json({ ok: true });
       }
 
-      console.warn("[fal/training webhook] no match for requestId:", requestId?.slice(0, 12));
-      return res.status(200).json({ ok: true, skipped: true, reason: "no_match" });
+      // A webhook with no matching row almost always means the row's
+      // falRequestId was overwritten by a duplicate training submission
+      // (the trainLora race we fixed by claiming the row before
+      // deductCredits — see nsfw.controller.js). The earlier submission's
+      // charge was silently lost. Log loudly so we can audit + refund.
+      console.warn(
+        `[fal/training webhook] ⚠️ ORPHAN webhook: requestId=${requestId?.slice(0, 12)} ` +
+        `status=${status} — no trainedLora or savedModel row claims this requestId. ` +
+        `Likely a previously-overwritten parallel-train submission. Inspect AdminAuditLog ` +
+        `or recent TrainedLora rows to find the affected user and refund.`,
+      );
+      return res.status(200).json({ ok: true, skipped: true, reason: "no_match", orphan: true });
     } catch (e) {
       console.error("[fal/training webhook] unhandled error:", e?.message);
       return res.status(200).json({ ok: false, error: e?.message });
