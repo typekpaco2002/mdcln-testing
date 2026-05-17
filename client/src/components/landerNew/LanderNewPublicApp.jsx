@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { LOCAL_BRANDING } from "../../config/branding";
 import { PromoBar } from "../../../../modelclone-landing/src/components/sections/PromoBar";
 import { Navbar } from "../../../../modelclone-landing/src/components/sections/Navbar";
@@ -8,7 +8,6 @@ import { CreateTodaySection } from "../../../../modelclone-landing/src/component
 import { TopChoiceSection } from "../../../../modelclone-landing/src/components/sections/TopChoiceSection";
 import { PartnersSection } from "../../../../modelclone-landing/src/components/sections/PartnersSection";
 import { PricingSection } from "../../../../modelclone-landing/src/components/sections/PricingSection";
-import { CustomCursor } from "../../../../modelclone-landing/src/components/CustomCursor";
 import { landingConfig as STANDALONE_LANDING_CONFIG } from "../../../../modelclone-landing/src/config/landing.config";
 import "../../../../modelclone-landing/src/index.css";
 
@@ -73,8 +72,10 @@ function mapToStandaloneConfig(config) {
     brand: {
       appName:    config?.brand?.appName || LOCAL_BRANDING.appName || "ModelClone",
       logoText:   "MC",
-      // Always fall back to LOCAL_BRANDING so the logo never disappears
-      logoUrl:    config?.brand?.logoUrl || LOCAL_BRANDING.logoUrl || "/logo-512.png",
+      // Brand logo is locked to the in-repo asset so an admin who forgets to
+      // re-upload after a redesign can never strand the lander with an old
+      // or broken image. /modelclone-logo.png is the current MC sculpt.
+      logoUrl:    LOCAL_BRANDING.logoUrl || "/modelclone-logo.png",
       loginHref:  "/login",
       signupHref: config?.brand?.ctaHref || "/signup",
     },
@@ -186,7 +187,10 @@ function mapToStandaloneConfig(config) {
   };
 }
 
-export default function LanderNewPublicApp({ config, noCursor = false, editMode = false }) {
+export default function LanderNewPublicApp({ config, noCursor: _noCursor = false, editMode = false }) {
+  // noCursor prop kept for backward compatibility but is now a no-op — the
+  // custom dot cursor has been removed entirely (users complained it was
+  // disorienting). Native cursor is used everywhere.
   const data = useMemo(() => mapToStandaloneConfig(config), [config]);
   const { brand, promotionBar, hero, countdown, createToday, topChoice, partners, pricing, footerCta, styles, layout } = data;
   const spacers = layout?.spacers || {};
@@ -204,23 +208,14 @@ export default function LanderNewPublicApp({ config, noCursor = false, editMode 
     "--dp-btn-ghost-border": styles?.buttonGhostBorder || undefined,
     "--dp-btn-ghost-bg": styles?.buttonGhostBackground || undefined,
   };
-  useEffect(() => {
-    if (noCursor) return undefined;
-    document.body.classList.add("lander-cursor-enabled");
-    return () => {
-      document.body.classList.remove("lander-cursor-enabled");
-    };
-  }, [noCursor]);
-
   return (
     <div className={`page${editMode ? " edit-mode" : ""}`} style={rootStyle}>
       <div className="legacy-grid-bg" aria-hidden="true" />
-      {!noCursor && <CustomCursor />}
+      {promotionBar.enabled && <PromoBar data={promotionBar} />}
+      {promotionBar.enabled && renderSpacer(spacers.beforeHeader, "layout.spacer.beforeHeader")}
       <div className="site-header-shell">
         <Navbar brand={brand} />
       </div>
-      {promotionBar.enabled && renderSpacer(spacers.beforeHeader, "layout.spacer.beforeHeader")}
-      {promotionBar.enabled && <PromoBar data={promotionBar} />}
 
       <main id="main">
         {renderSpacer(spacers.beforeHero, "layout.spacer.beforeHero")}

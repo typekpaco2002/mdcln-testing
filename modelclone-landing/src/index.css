@@ -185,7 +185,10 @@ p  { margin: 0; }
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--dp-btn-primary-text, #ffffff);
+  /* color is hard-locked to white because the admin editor exposes a
+     `buttonPrimaryText` field that has historically been saved as a dark
+     value, which leaves the CTA invisible against the violet pill. */
+  color: #ffffff !important;
   border: 1px solid var(--dp-btn-primary-border, rgba(255, 255, 255, 0.55));
   background: var(--dp-btn-primary-bg, linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%));
   border-radius: 999px;
@@ -377,10 +380,16 @@ p  { margin: 0; }
 }
 
 /* Violet primary — the real ModelClone brand color.
-   Gradient deliberately bottoms out at #7c3aed (not the lighter --violet-soft)
-   so white text keeps WCAG AA contrast across the whole button face. */
+   - Gradient deliberately bottoms out at #7c3aed (not the lighter
+     --violet-soft) so white text keeps WCAG AA contrast across the
+     whole button face.
+   - `color` is hard-locked to white with !important because the admin
+     editor exposes a `styles.buttonPrimaryText` field that has
+     historically been saved as a dark value, rendering the label
+     invisible against the violet bg. The brand intent is white-on-violet
+     and we don't want a CMS toggle to be able to break that. */
 .btn-primary {
-  color: var(--dp-btn-primary-text, #ffffff);
+  color: #ffffff !important;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   border-color: var(--dp-btn-primary-border, rgba(196, 181, 253, 0.45));
@@ -418,7 +427,7 @@ p  { margin: 0; }
    "Sign up" label stays legible. Previously the gradient ended in
    rgba(202,122,255,1) which dropped white text contrast to ~2:1. */
 #signup.btn-primary {
-  color: #ffffff;
+  color: #ffffff !important;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   background: linear-gradient(90deg, #7c3aed 0%, #5b21b6 100%);
@@ -438,12 +447,16 @@ p  { margin: 0; }
 }
 
 .btn-ghost {
-  color: var(--dp-btn-ghost-text, rgba(255, 255, 255, 0.94));
+  /* Same hard-lock as .btn-primary: white text always wins, regardless of
+     the admin editor's `buttonGhostText` value. The navbar background is
+     dark glass; a dark text override would render the Login link
+     invisible. */
+  color: #ffffff !important;
   border-color: var(--dp-btn-ghost-border, var(--border));
   background: var(--dp-btn-ghost-bg, transparent);
 }
 .btn-ghost:hover {
-  color: var(--dp-btn-ghost-text, #ffffff);
+  color: #ffffff !important;
   border-color: var(--dp-btn-ghost-border, var(--border-bright));
   background: var(--dp-btn-ghost-bg, var(--surface));
 }
@@ -1794,46 +1807,10 @@ main {
     0 10px 26px rgba(124, 58, 237, 0.6);
 }
 
-/* ─── Custom Cursor ───────────────────────────────────────────────────────── */
-@media (hover: hover) and (pointer: fine) {
-  body.lander-cursor-enabled,
-  body.lander-cursor-enabled a,
-  body.lander-cursor-enabled button,
-  body.lander-cursor-enabled input,
-  body.lander-cursor-enabled textarea,
-  body.lander-cursor-enabled select,
-  body.lander-cursor-enabled [role="button"] {
-    cursor: none !important;
-  }
-}
-
-.custom-cursor-dot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  pointer-events: none;
-  z-index: 9999;
-  background: rgba(255, 255, 255, 0.95);
-  opacity: 0.92;
-  filter: blur(0px);
-  transition:
-    filter 70ms linear,
-    opacity 90ms linear;
-  will-change: transform, filter, opacity;
-}
-
-.custom-cursor-dot.is-moving {
-  filter: blur(9px);
-  opacity: 0.78;
-}
-
-.custom-cursor-dot.is-pressed {
-  filter: blur(0px);
-  opacity: 1;
-}
+/* The custom cursor (dot + glow + `cursor: none` body lock) was removed.
+   Users found it disorienting and it stripped affordance cues for text
+   selection, resizing, and pointer-only elements. The lander now uses
+   the native system cursor. */
 
 .footer-inner {
   display: flex;
