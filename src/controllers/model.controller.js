@@ -802,6 +802,7 @@ export async function generateAIModelReference(req, res) {
       gender,
       age,
       savedAppearance,
+      // Legacy slim-form fields (kept for back-compat with older callers).
       hairColor,
       hairLength,
       hairTexture,
@@ -811,6 +812,24 @@ export async function generateAIModelReference(req, res) {
       style,
       bodyType,
       heritage,
+      // Full chip-selector fields sent by GenerateAIModelForm /
+      // OnboardingPage. These were previously SILENTLY DROPPED, which is why
+      // user picks for hair style, skin tone, eye shape, nose, face shape,
+      // ethnicity, height, waist, hips, breast/butt, and tattoos never made
+      // it into the prompt. Now relayed verbatim into the structured
+      // blueprint built by generateReferenceImage().
+      hairType,
+      skinTone,
+      eyeShape,
+      noseShape,
+      faceShape,
+      ethnicity,
+      height,
+      waist,
+      hips,
+      breastSize,
+      buttSize,
+      tattoos,
     } = req.body;
     userId = req.user.userId;
 
@@ -873,6 +892,7 @@ export async function generateAIModelReference(req, res) {
       gender,
       age,
       savedAppearance: savedAppearance && typeof savedAppearance === "object" ? savedAppearance : undefined,
+      // Legacy fields
       hairColor,
       hairLength,
       hairTexture,
@@ -882,6 +902,20 @@ export async function generateAIModelReference(req, res) {
       style: style || "natural",
       bodyType,
       heritage,
+      // Full chip-selector blueprint — relayed verbatim into the structured
+      // blueprint built by generateReferenceImage().
+      hairType,
+      skinTone,
+      eyeShape,
+      noseShape,
+      faceShape,
+      ethnicity,
+      height,
+      waist,
+      hips,
+      breastSize,
+      buttSize,
+      tattoos,
     });
 
     if (!generationResult.success) {

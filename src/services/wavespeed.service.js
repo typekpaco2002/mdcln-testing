@@ -221,10 +221,13 @@ Base instruction:
       body: JSON.stringify({
         model: NANO_BANANA_PROMPT_ENHANCER_MODEL,
         max_tokens: 1100,
-        // 0.85 (was 0.4) — at 0.4 the enhancer converges to near-identical
-        // paragraph shapes regardless of input; 0.85 gives the variance the
-        // Universal Quality Bar needs to deliver distinct faces / outputs.
-        temperature: 0.85,
+        // identity_plate needs precision — the user picks specific chips
+        // (hair / nose / lips / eye color / etc.) and the output MUST match
+        // them. High temperature here produced androgynous "creative" faces
+        // that ignored the blueprint. Other operations (editorial,
+        // lifestyle, selfie, etc.) benefit from variance to escape the
+        // stock AI-headshot look.
+        temperature: canonicalOperation === "identity_plate" ? 0.55 : 0.85,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -1001,10 +1004,28 @@ async function generateReferenceImage(params, opts = {}) {
       style,
       bodyType,
       heritage,
+      // Full chip-selector fields from GenerateAIModelForm /
+      // OnboardingPage. Previously silently dropped — root cause of "looks
+      // like a man / doesn't match my picks".
+      hairType,
+      skinTone,
+      eyeShape,
+      noseShape,
+      faceShape,
+      ethnicity,
+      height,
+      waist,
+      hips,
+      breastSize,
+      buttSize,
+      tattoos,
     } = params;
 
-    // Build comprehensive prompt for reference image (NON-EXPLICIT)
+    // Gender is the single most load-bearing trait. Pin it at the top of
+    // the blueprint AND tag it as a non-negotiable presentation note so the
+    // enhancer (master GENDER LOCK rule) doesn't drift androgynous.
     const genderText = gender === "male" ? "man" : "woman";
+    const genderPresentation = gender === "male" ? "masculine" : "feminine";
     const { article, subject } = portraitSubjectAgeGender(age, genderText);
     const savedAppearanceText =
       savedAppearance && typeof savedAppearance === "object"
@@ -1034,67 +1055,123 @@ async function generateReferenceImage(params, opts = {}) {
       mixed: "mixed ethnicity, unique blend of features",
     };
 
-    // Safe fallbacks for all parameters
-    const bodyTypeText = bodyType ? `${bodyType} body type` : "";
+    // Style direction.
     const styleText = stylePrompts[style] || stylePrompts["natural"] || "natural beauty, soft natural lighting";
-    const heritageText = heritagePrompts[heritage] || "";
-    
-    // Build hair description: combine length, texture, and color
-    const hairParts = [hairLength, hairTexture, hairColor].filter(Boolean);
-    const hairText = hairParts.length > 0 ? `with ${hairParts.join(" ")} hair` : "";
-    
-    // Lip size description
-    const lipText = lipSize ? `${lipSize} lips` : "";
-    
-    // Face type descriptions (with safe fallback)
+
+    // Heritage / ethnicity — prefer the explicit chip selection over the
+    // legacy slim-form mapping. The chip selector already returns a phrase
+    // the enhancer can use directly ("east asian", "latina", etc.).
+    const ethnicityText = ethnicity
+      ? `${ethnicity} features`
+      : heritagePrompts[heritage] || "";
+
+    // Body — bodyType chip is "athletic body" already; do not append "body type".
+    const bodyTypeText = (bodyType || "").trim();
+
+    // Hair — collapse legacy hairLength/hairTexture/hairColor plus the new
+    // `hairType` chip (full descriptions like "bangs with long hair") into
+    // one authoritative line. The enhancer must echo this verbatim.
+    const hairLegacyParts = [hairLength, hairTexture, hairColor].filter(Boolean);
+    const hairLegacyText = hairLegacyParts.length > 0 ? hairLegacyParts.join(" ") + " hair" : "";
+    const hairText = [hairType, hairLegacyText].filter(Boolean).join(", ");
+
+    // Eyes — `eyeColor` chip already contains "eyes" (e.g. "green eyes"); the
+    // old template added another "eyes" producing "green eyes eyes".
+    const eyeColorText = (eyeColor || "").trim();
+    const eyeShapeText = (eyeShape || "").trim();
+    const eyesText = [eyeColorText, eyeShapeText].filter(Boolean).join(", ");
+
+    // Other identity chips — most are already full phrases ("medium lips",
+    // "small button nose", "slim waist"). Pass through as-is.
+    const lipsText = (lipSize || "").trim();
+    const noseText = (noseShape || "").trim();
+    const faceShapeText = (faceShape || "").trim();
+    const heightText = (height || "").trim();
+    const waistText = (waist || "").trim();
+    const hipsText = (hips || "").trim();
+    const breastText = (breastSize || "").trim();
+    const buttText = (buttSize || "").trim();
+    const skinText = (skinTone || "").trim();
+    const tattoosText = (tattoos || "").trim();
+
+    // Legacy face-type fallback — only used when no faceShape chip and no
+    // explicit faceType was provided.
     const faceTypePrompts = {
       cute: "soft feminine features, youthful cute face, delicate features",
       model: "striking features, high cheekbones, defined jawline, photogenic face",
       natural: "natural balanced features",
     };
-    const faceTypeText = faceTypePrompts[faceType] || faceTypePrompts["natural"] || "";
+    const faceTypeText = faceShapeText
+      ? ""
+      : (faceTypePrompts[faceType] || "");
 
     // Realistic skin texture - visible pores but no acne
     const skinTexture = "natural skin texture with visible pores, clear skin without acne, healthy glowing skin";
     
-    // Base "blueprint" — concrete identity traits only. All quality language
-    // (camera character, skin texture, lighting, distinctiveness, asymmetry,
-    // anti-stock guardrails) is owned by the enhancer system prompt now.
-    // Hardcoding "photorealistic, high quality, masterpiece" style cruft was
-    // actively hurting Gemini 3 Pro Image output — those tokens override the
-    // enhancer's Universal Quality Bar and push toward the stock AI-headshot
-    // aesthetic. The enhancer (INSTARAW_NANO_BANANA_TEXT_TO_IMAGE_SYSTEM)
-    // adds the real quality language matched to the operation recipe.
-    const defaultBaseTemplate = [
-      "{{ARTICLE}} {{SUBJECT}}",
-      "{{HERITAGE_TEXT}}",
-      "{{FACE_TYPE_TEXT}}",
-      "{{HAIR_TEXT}}",
-      "{{EYE_TEXT}}",
-      "{{LIP_TEXT}}",
-      "{{BODY_TYPE_TEXT}}",
-      "{{STYLE_TEXT}}",
-      "{{SAVED_APPEARANCE_TEXT}}",
-      "{{REFERENCE_PROMPT}}",
-    ].join(", ");
+    // STRUCTURED BLUEPRINT — key-value lines instead of comma-soup.
+    //
+    // Why: the previous flat-comma format made the enhancer guess which
+    // token described hair vs nose vs lips, and at temperature 0.85 it
+    // overrode blueprint values with default beauty-stock substitutes
+    // (= "doesn't match anything I put in there" + androgynous outputs).
+    //
+    // The enhancer master prompt's GENDER LOCK and "use blueprint verbatim"
+    // rules read this structured shape as authoritative. Every field below
+    // must appear verbatim in the output — no substitutions, no defaults.
+    const blueprintLines = [
+      `Subject: ${article} ${subject}, ${genderPresentation} presentation (non-negotiable).`,
+      ethnicityText ? `Ethnicity: ${ethnicityText}.` : "",
+      skinText ? `Skin tone: ${skinText}.` : "",
+      hairText ? `Hair: ${hairText}.` : "",
+      eyesText ? `Eyes: ${eyesText}.` : "",
+      faceShapeText
+        ? `Face shape: ${faceShapeText}.`
+        : (faceTypeText ? `Face: ${faceTypeText}.` : ""),
+      noseText ? `Nose: ${noseText}.` : "",
+      lipsText ? `Lips: ${lipsText}.` : "",
+      bodyTypeText ? `Body type: ${bodyTypeText}.` : "",
+      heightText ? `Height: ${heightText}.` : "",
+      waistText ? `Waist: ${waistText}.` : "",
+      hipsText ? `Hips: ${hipsText}.` : "",
+      breastText ? `Bust: ${breastText}.` : "",
+      buttText ? `Seat: ${buttText}.` : "",
+      tattoosText ? `Tattoos / piercings: ${tattoosText}.` : "",
+      styleText ? `Style direction: ${styleText}.` : "",
+      savedAppearanceText ? `Additional appearance notes: ${savedAppearanceText}.` : "",
+      referencePrompt ? `User direction: ${referencePrompt}.` : "",
+    ].filter(Boolean);
+    const structuredBlueprint = `SUBJECT BLUEPRINT (use every trait verbatim; gender is non-negotiable):\n${blueprintLines.join("\n")}`;
+
+    // Legacy template hook — admins can still override via prompt-template
+    // config. The default path uses the structured blueprint as-is (the
+    // renderPromptTemplate helper collapses whitespace and would obliterate
+    // the \n line breaks the blueprint depends on).
+    const DEFAULT_TEMPLATE_SENTINEL = "{{STRUCTURED_BLUEPRINT}}";
     const baseTemplate = await getPromptTemplateValue(
       "nanoBananaModelReferenceBasePrompt",
-      defaultBaseTemplate,
+      DEFAULT_TEMPLATE_SENTINEL,
     );
-    const basePrompt = renderPromptTemplate(baseTemplate, {
-      ARTICLE: article,
-      SUBJECT: subject,
-      HERITAGE_TEXT: heritageText,
-      FACE_TYPE_TEXT: faceTypeText,
-      HAIR_TEXT: hairText,
-      EYE_TEXT: eyeColor ? `and ${eyeColor} eyes` : "",
-      LIP_TEXT: lipText,
-      BODY_TYPE_TEXT: bodyTypeText,
-      STYLE_TEXT: styleText,
-      SAVED_APPEARANCE_TEXT: savedAppearanceText,
-      REFERENCE_PROMPT: referencePrompt || "",
-      SKIN_TEXTURE: skinTexture,
-    });
+    const usingDefaultTemplate =
+      !baseTemplate || baseTemplate.trim() === DEFAULT_TEMPLATE_SENTINEL;
+    const basePrompt = usingDefaultTemplate
+      ? structuredBlueprint
+      : renderPromptTemplate(baseTemplate, {
+          STRUCTURED_BLUEPRINT: structuredBlueprint,
+          // Legacy template variables kept populated for admin-overridden
+          // templates that still reference them.
+          ARTICLE: article,
+          SUBJECT: subject,
+          HERITAGE_TEXT: ethnicityText,
+          FACE_TYPE_TEXT: faceTypeText,
+          HAIR_TEXT: hairText,
+          EYE_TEXT: eyesText,
+          LIP_TEXT: lipsText,
+          BODY_TYPE_TEXT: bodyTypeText,
+          STYLE_TEXT: styleText,
+          SAVED_APPEARANCE_TEXT: savedAppearanceText,
+          REFERENCE_PROMPT: referencePrompt || "",
+          SKIN_TEXTURE: skinTexture,
+        });
 
     console.log(`\nðŸ“ Generated base prompt: ${basePrompt}`);
 

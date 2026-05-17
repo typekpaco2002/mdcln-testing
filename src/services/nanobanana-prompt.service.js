@@ -156,24 +156,30 @@ UNIVERSAL QUALITY BAR (always applies, every operation)
 
 THE TEST: a viewer scrolling Instagram should not flag the result as AI within three seconds. If the prompt would produce something a human can spot as AI at a glance — symmetric idealized face, poreless skin, blank backdrop, stock-pose, generic-attractive-20-something, plastic-perfect everything — the prompt has failed regardless of operation.
 
-IDENTITY PRESERVATION (non-negotiable):
-- Keep every blueprint trait verbatim: heritage, age, hair color/length/texture, eye color, lip size, face type, body type, free-form direction.
-- Never substitute generic defaults for concrete traits. Do not drift toward blonde / soft-pale / symmetric defaults.
-- Never introduce contradictory traits.
+GENDER LOCK (highest priority, supersedes every other rule):
+- The blueprint specifies a gender presentation (woman / feminine, or man / masculine). The output MUST read unambiguously as that gender on first glance — no androgyny, no "soft masculine for a young woman", no "delicate features for a young man". If the blueprint says "feminine presentation (non-negotiable)", the resulting face must read clearly female to any viewer.
+- This is the most common failure mode at high temperature: the LLM dilutes feminine cues with character-driven asymmetries and ends up with an androgynous face. Hold the line.
 
-DISTINCTIVENESS — MANDATORY in every output:
-- Invent at least 4 anatomical specifics the blueprint does not provide: nose bridge character (bump, narrow tip, deviated, wider nostrils), eyelid type (hooded / monolid / deep-set / almond / asymmetric crease), eyebrow shape and density, philtrum length, ear shape and protrusion, lash density, iris detail (limbal ring tone, central radiation, faint heterochromia), tooth detail if visible.
-- At least 2 named asymmetries: one eye sits higher, one brow arches more, lip corners differ, jaw fuller on one side, hair parts off-center, one nostril larger, one ear protrudes more.
-- At least 1 small specific marking when it fits the persona: mole at left jawline, beauty mark above lip, freckle cluster at temple, faint scar through brow, small piercing, healed nick.
+IDENTITY PRESERVATION — BLUEPRINT IS AUTHORITATIVE (non-negotiable):
+- The caller passes a STRUCTURED BLUEPRINT with labeled fields (Hair / Skin tone / Eyes / Nose / Lips / Body type / Waist / Hips / etc.). Every field present in the blueprint MUST appear in the output verbatim — same words, same descriptors.
+- NEVER substitute. If the blueprint says "bangs with long hair", the output describes bangs with long hair. If it says "small button nose", the output describes a small button nose. Do not "improve" or "refine" toward generic defaults.
+- Do not drift toward blonde / soft-pale / symmetric defaults.
+- Do not introduce contradictory traits.
 
-SKIN AND BODY — always specific, never uniform:
-- Skin texture: visible pores, faint freckles across the bridge, post-acne texture on one cheek, sun damage where realistic, faint redness around nostrils, slight uneven tone. Match texture to age and heritage.
-- When body is in frame: tan gradient with visible tan lines, fine vellus hair on forearms, healthy body fat appropriate to body type, muscle insertion shadows where the build is athletic, strap marks, jewelry indentations, knee and elbow texture, faint cellulite where realistic, healed nicks, small moles.
+DISTINCTIVENESS — FILL THE GAPS ONLY:
+- ONLY invent anatomical specifics for fields the blueprint does NOT provide. If the blueprint already states hair / nose / lips / eyes / face shape / body / etc., USE THOSE VERBATIM and do not add competing variants on top.
+- For fields the blueprint leaves blank, pick 2-4 specifics from: nose bridge character (bump, narrow tip, deviated, wider nostrils), eyelid type (hooded / monolid / deep-set / almond / asymmetric crease), eyebrow shape and density, philtrum length, ear shape and protrusion, lash density, iris detail (limbal ring tone, central radiation, faint heterochromia), tooth detail if visible. These must REINFORCE the locked gender presentation, never undermine it.
+- Add 1-2 small asymmetries that are subtle and gender-consistent (one eye sits slightly higher, faint asymmetric brow arch, one lip corner lifts more, hair parts off-center). Avoid heavy "character-actor" asymmetries on young feminine faces.
+- At most 1 small specific marking when it fits the persona: a single mole, a freckle cluster, a healed nick. Do NOT stack multiple markings.
+
+SKIN AND BODY — match the blueprint, then refine texture:
+- Skin tone is set by the blueprint ("pale white skin", "olive skin", "brown skin", etc.) — preserve it exactly. THEN layer realistic texture on top: visible pores, age-appropriate fine lines, faint redness, light freckles where the heritage supports them. Match texture intensity to the stated age.
+- When body is in frame: respect the blueprint's body type, waist, hips, bust, height verbatim. Add realism details (tan gradient, fine vellus hair, healthy fat distribution, strap marks, jewelry indentations) that REINFORCE — never override — the blueprint values.
 - NEVER write "smooth skin", "flawless complexion", "porcelain skin", "perfect skin", "airbrushed".
 
 EXPRESSION — alive, never neutral-default:
 - Real micro-moments: half-smile with nose crinkle, eyes-closed laugh, smirk with one raised brow, mid-sentence, biting lower lip, post-laugh exhale, looking off at something, slight squint, tongue against cheek.
-- "Natural neutral expression" is FORBIDDEN unless the operation explicitly requires it (identity_plate only).
+- "Natural neutral expression" is FORBIDDEN unless the operation explicitly requires it (identity_plate only — and even there, a faint asymmetric half-smile is preferred over blank neutral).
 
 ═══════════════════════════════════════════════════════
 OPERATION LOOKUP
@@ -313,19 +319,24 @@ UNIVERSAL QUALITY BAR (always applies, every operation)
 
 THE TEST: a viewer scrolling Instagram should not flag the result as AI within three seconds. If the prompt would produce something a human can spot as AI at a glance — symmetric idealized face, poreless skin, blank backdrop, stock-pose, generic-attractive-20-something, plastic-perfect everything — the prompt has failed regardless of operation.
 
-IDENTITY PRESERVATION (non-negotiable):
-- Keep every blueprint trait verbatim: heritage, age, hair color/length/texture, eye color, lip size, face type, body type, free-form direction.
-- Never substitute generic defaults for concrete traits. Do not drift toward blonde / soft-pale / symmetric defaults.
-- Never introduce contradictory traits.
+GENDER LOCK (highest priority, supersedes every other rule):
+- The blueprint and uploaded references specify a gender presentation. The output MUST read unambiguously as that gender — no androgyny, no diluted feminine cues for a young woman, no softened masculine cues for a young man. Hold the line at high temperature; this is the most common failure mode.
 
-DISTINCTIVENESS — MANDATORY in every output:
-- When the operation framing shows the face, invent or preserve at least 4 anatomical specifics: nose bridge character, eyelid type, eyebrow shape and density, philtrum length, ear shape, lash density, iris detail, tooth detail if visible.
-- At least 2 named asymmetries: one eye sits higher, one brow arches more, lip corners differ, jaw fuller on one side, hair parts off-center, one nostril larger, one ear protrudes more.
-- At least 1 small specific marking when it fits the persona: mole at left jawline, beauty mark above lip, freckle cluster at temple, faint scar through brow, small piercing.
+IDENTITY PRESERVATION — BLUEPRINT + REFERENCE ARE AUTHORITATIVE (non-negotiable):
+- The caller passes a STRUCTURED BLUEPRINT with labeled fields. Every field present MUST appear verbatim in the output — same words, same descriptors. Combine that with face/body anatomy from the uploaded reference image(s).
+- NEVER substitute. If the blueprint says "bangs with long hair", the edit describes bangs with long hair.
+- Do not drift toward blonde / soft-pale / symmetric defaults.
+- Do not introduce contradictory traits.
 
-SKIN AND BODY — always specific, never uniform:
-- Skin texture: visible pores, faint freckles across the bridge, post-acne texture on one cheek, sun damage where realistic, faint redness around nostrils, slight uneven tone. Match texture to age and heritage.
-- When body is in frame: tan gradient with visible tan lines, fine vellus hair on forearms, healthy body fat appropriate to body type, muscle insertion shadows where the build is athletic, strap marks, jewelry indentations, knee and elbow texture, faint cellulite where realistic, healed nicks, small moles.
+DISTINCTIVENESS — FILL THE GAPS ONLY:
+- ONLY invent anatomical specifics for fields the blueprint does NOT provide. If hair / nose / lips / eyes / face shape / body / etc. are stated, USE VERBATIM.
+- For unstated fields, pick 2-4 specifics from: nose bridge character, eyelid type, eyebrow shape and density, philtrum length, ear shape, lash density, iris detail, tooth detail. Must reinforce the locked gender presentation.
+- Add 1-2 subtle gender-consistent asymmetries. Avoid heavy character-actor asymmetries on young feminine faces.
+- At most 1 small specific marking when it fits the persona. Do NOT stack multiple markings.
+
+SKIN AND BODY — match the blueprint, then refine texture:
+- Skin tone is set by the blueprint and the reference — preserve it exactly. Layer realistic texture on top: visible pores, age-appropriate fine lines, faint redness, light freckles where heritage supports them.
+- When body is in frame: respect blueprint body type, waist, hips, bust, height verbatim. Realism details must REINFORCE — never override — blueprint values.
 - NEVER write "smooth skin", "flawless complexion", "porcelain skin", "perfect skin", "airbrushed".
 
 EXPRESSION — alive, never neutral-default:
